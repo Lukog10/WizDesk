@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <ellipse cx="100" cy="222" rx="38" ry="7" fill="#000000" opacity="0.12"/>
+  <path d="M55,100
+           A45,45 0 1,1 145,100
+           L145,195
+           A11.25,15 0 0,1 122.5,195
+           A11.25,15 0 0,1 100,195
+           A11.25,15 0 0,1 77.5,195
+           A11.25,15 0 0,1 55,195
+           Z"
+        fill="#F7F3EA" stroke="#111111" stroke-width="6" stroke-linejoin="round"/>
+  <!-- dash eye -->
+  <rect x="68" y="126" width="20" height="7" rx="3.5" fill="#111111"/>
+  <!-- sparkle eye -->
+  <path d="M118,110 L122,124 L136,128 L122,132 L118,146 L114,132 L100,128 L114,124 Z"
+        fill="#111111"/>
+  <!-- tiny attention burst above head -->
+  <circle cx="152" cy="72" r="4" fill="#111111"/>
+  <circle cx="164" cy="86" r="3" fill="#111111"/>
+</svg>
