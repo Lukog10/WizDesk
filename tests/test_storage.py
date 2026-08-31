@@ -76,12 +76,20 @@ def test_task_subtask_hierarchy_and_logs(repo):
     assert len(t.subtasks[1].logs) == 1
     assert t.subtasks[1].logs[0].content == "hit CORS issue, debugging"
 
-    # Mark both subtasks done -> verify parent auto-completes to 'done'
+    # Mark both subtasks done -> parent task stays in its current status
     repo.update_subtask_status(st1_id, "done")
     repo.update_subtask_status(st2_id, "done")
 
     tasks_after = repo.get_task_hierarchy()
-    assert tasks_after[0].status == "done"
+    assert tasks_after[0].subtasks[0].status == "done"
+    assert tasks_after[0].subtasks[1].status == "done"
+    assert tasks_after[0].status == "not_started"
+
+    # User explicitly checks parent task
+    repo.update_task_status(task_id, "done")
+    tasks_done = repo.get_task_hierarchy(status_filter="Completed")
+    assert len(tasks_done) == 1
+    assert tasks_done[0].status == "done"
 
 
 def test_project_keyword_matching(repo):

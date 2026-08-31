@@ -281,7 +281,7 @@ class StorageRepository:
             return subtask_id
 
     def update_subtask_status(self, subtask_id: int, status: str) -> bool:
-        """Update status of a subtask and auto-check parent task completion."""
+        """Update status of a subtask without modifying parent task status."""
         completed_at = datetime.now().isoformat() if status == "done" else None
         with self.db.cursor() as cur:
             cur.execute(
@@ -292,24 +292,6 @@ class StorageRepository:
                 """,
                 (status, completed_at, subtask_id),
             )
-
-            # Check if all subtasks under this parent are done
-            cur.execute("SELECT task_id FROM subtasks WHERE id = ?", (subtask_id,))
-            row = cur.fetchone()
-            if row:
-                task_id = row["task_id"]
-                cur.execute(
-                    "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as done_count FROM subtasks WHERE task_id = ?",
-                    (task_id,),
-                )
-                counts = cur.fetchone()
-                if counts and counts["total"] > 0 and counts["total"] == counts["done_count"]:
-                    # Auto-mark parent as done
-                    cur.execute(
-                        "UPDATE tasks SET status = 'done', completed_at = ? WHERE id = ?",
-                        (datetime.now().isoformat(), task_id),
-                    )
-
             return True
 
     def add_task_log(self, task_id: int, content: str, subtask_id: Optional[int] = None) -> int:

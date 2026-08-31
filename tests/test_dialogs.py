@@ -76,18 +76,24 @@ def test_quick_entry_dialog_subtasks_and_section_change(qapp, repo):
     assert len(target.subtasks) == 1
     assert target.subtasks[0].title == "Create Figma vector assets"
 
-    # Toggle subtask to done
+    # Toggle subtask to done -> parent task stays in 'Task'
     st_id = target.subtasks[0].id
     dialog._on_subtask_toggled(st_id, "done")
-    tasks_after_st = repo.get_task_hierarchy(status_filter="Completed")
+    tasks_after_st = repo.get_task_hierarchy(status_filter="Task")
     target_after = [t for t in tasks_after_st if t.id == task_id][0]
-    assert target_after.status == "done"
+    assert target_after.status == "not_started"
+    assert target_after.subtasks[0].status == "done"
 
     # Move section from 'Personal Projects' to 'Work'
     dialog._on_task_project_changed(task_id, "Work")
-    tasks_work = repo.get_task_hierarchy(status_filter="Completed")
+    tasks_work = repo.get_task_hierarchy(status_filter="Task")
     target_work = [t for t in tasks_work if t.id == task_id][0]
     assert target_work.project_tag == "Work"
+
+    # Toggle parent task to done -> goes to 'Completed'
+    dialog._on_task_status_toggled(task_id, "done")
+    completed_tasks = repo.get_task_hierarchy(status_filter="Completed")
+    assert any(t.id == task_id for t in completed_tasks)
 
     # Delete subtask
     dialog._on_subtask_deleted(st_id)
