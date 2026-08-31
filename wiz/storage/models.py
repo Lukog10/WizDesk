@@ -166,6 +166,15 @@ class StorageRepository:
             cur.execute("DELETE FROM notes WHERE id = ?", (note_id,))
             return cur.rowcount > 0
 
+    def update_note_project(self, note_id: int, project_tag: str) -> bool:
+        """Update the project/section tag of a quick note."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                "UPDATE notes SET project_tag = ? WHERE id = ?",
+                (project_tag.strip(), note_id),
+            )
+            return cur.rowcount > 0
+
     def get_notes_for_date(self, target_date: date) -> List[NoteRecord]:
         """Fetch all notes created on the specified date."""
         day_str = target_date.strftime("%Y-%m-%d")

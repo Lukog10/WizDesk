@@ -697,15 +697,24 @@ class TaskRowWidget(QWidget):
 
 
 class NoteRowWidget(QWidget):
-    """Single quick work note row with completion checkbox, project tag, and timestamp."""
+    """
+    Single quick work note row featuring:
+    - Completion checkbox
+    - Note content
+    - Clickable section tag with right-click context menu and section switching
+    - Timestamp
+    - Delete button ('x')
+    """
 
     toggled = pyqtSignal(int, bool)  # note_id, is_completed
     delete_requested = pyqtSignal(int)  # note_id
+    project_changed = pyqtSignal(int, str)  # note_id, new_project
 
-    def __init__(self, note: NoteRecord, parent: Optional[QWidget] = None):
+    def __init__(self, note: NoteRecord, all_projects: List[str], parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.note = note
         self.note_id = note.id or 0
+        self.all_projects = all_projects
 
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(4, 6, 4, 6)
@@ -728,17 +737,28 @@ class NoteRowWidget(QWidget):
         meta_layout = QHBoxLayout()
         meta_layout.setSpacing(8)
 
-        if note.project_tag:
-            tag_lbl = QLabel(f"[{note.project_tag}]")
-            tag_lbl.setStyleSheet(f"""
-                QLabel {{
-                    color: #2563EB;
-                    font-family: {FONT_MONO};
-                    font-size: 11px;
-                    font-weight: 600;
-                }}
-            """)
-            meta_layout.addWidget(tag_lbl)
+        tag_text = note.project_tag or "General"
+        self.tag_btn = QPushButton(f"[{tag_text}]")
+        self.tag_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.tag_btn.setToolTip("Click to change section")
+        self.tag_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #2563EB;
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 11px;
+                font-weight: 600;
+                padding: 1px 4px;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(37, 99, 235, 0.08);
+                color: #1D4ED8;
+            }}
+        """)
+        self.tag_btn.clicked.connect(self._show_section_menu)
+        meta_layout.addWidget(self.tag_btn)
 
         time_str = note.created_at.strftime("%I:%M %p").lstrip("0")
         time_lbl = QLabel(time_str)
@@ -776,6 +796,101 @@ class NoteRowWidget(QWidget):
         """)
         del_btn.clicked.connect(lambda: self.delete_requested.emit(self.note_id))
         self.layout.addWidget(del_btn)
+
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._show_context_menu)
+
+    def _show_section_menu(self) -> None:
+        """Show section selection menu when clicking on section badge."""
+        self._open_section_menu(self.tag_btn.mapToGlobal(QPoint(0, self.tag_btn.height())))
+
+    def _show_context_menu(self, pos: QPoint) -> None:
+        """Show full context menu on right click."""
+        self._open_context_menu(self.mapToGlobal(pos))
+
+    def _open_context_menu(self, global_pos: QPoint) -> None:
+        menu = QMenu(self)
+        menu.setStyleSheet(f"""
+            QMenu {{
+                background-color: #FFFFFF;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 8px;
+                padding: 4px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+            QMenu::item {{
+                padding: 6px 16px;
+                border-radius: 4px;
+            }}
+            QMenu::item:selected {{
+                background-color: #F4F4F5;
+                color: #000000;
+            }}
+        """)
+
+        section_menu = menu.addMenu("Move to Section")
+        section_menu.setStyleSheet(menu.styleSheet())
+        curr_proj = self.note.project_tag or "General"
+
+        for proj in self.all_projects:
+            act = section_menu.addAction(f"Section: {proj}")
+            if proj == curr_proj:
+                act.setEnabled(False)
+            act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
+
+        section_menu.addSeparator()
+        action_new_sec = section_menu.addAction("+ Create New Section...")
+
+        menu.addSeparator()
+        action_delete = menu.addAction("Delete Note")
+
+        action = menu.exec(global_pos)
+        if action == action_new_sec:
+            name, ok = CreateSectionDialog.get_section_name(self)
+            if ok and name.strip():
+                self.project_changed.emit(self.note_id, name.strip())
+        elif action == action_delete:
+            self.delete_requested.emit(self.note_id)
+
+    def _open_section_menu(self, global_pos: QPoint) -> None:
+        menu = QMenu(self)
+        menu.setStyleSheet(f"""
+            QMenu {{
+                background-color: #FFFFFF;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 8px;
+                padding: 4px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+            QMenu::item {{
+                padding: 6px 16px;
+                border-radius: 4px;
+            }}
+            QMenu::item:selected {{
+                background-color: #F4F4F5;
+                color: #000000;
+            }}
+        """)
+
+        curr_proj = self.note.project_tag or "General"
+        for proj in self.all_projects:
+            act = menu.addAction(f"Section: {proj}")
+            if proj == curr_proj:
+                act.setEnabled(False)
+            act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
+
+        menu.addSeparator()
+        action_new_sec = menu.addAction("+ Create New Section...")
+
+        action = menu.exec(global_pos)
+        if action == action_new_sec:
+            name, ok = CreateSectionDialog.get_section_name(self)
+            if ok and name.strip():
+                self.project_changed.emit(self.note_id, name.strip())
 
     def _update_text_style(self, is_done: bool) -> None:
         if is_done:
@@ -1529,6 +1644,9 @@ class QuickEntryDialog(QDialog):
                 child.widget().deleteLater()
 
         notes = self.repo.get_notes_for_date(date.today())
+        all_projects = [p.name for p in self.repo.get_all_projects()]
+        if not all_projects:
+            all_projects = ["Work", "Personal Projects"]
 
         if not notes:
             empty_label = QLabel("No work notes logged today yet.")
@@ -1545,10 +1663,18 @@ class QuickEntryDialog(QDialog):
             return
 
         for idx, note in enumerate(notes):
-            row = NoteRowWidget(note, self.notes_content_widget)
+            row = NoteRowWidget(note, all_projects, self.notes_content_widget)
             row.toggled.connect(self._on_note_toggled)
             row.delete_requested.connect(self._on_note_deleted)
+            row.project_changed.connect(self._on_note_project_changed)
             self.notes_content_layout.insertWidget(idx, row)
+
+    def _on_note_project_changed(self, note_id: int, new_project: str) -> None:
+        """Handle moving a quick note to a different section/project."""
+        self.repo.create_or_update_project(new_project, [new_project.lower()])
+        self.repo.update_note_project(note_id, new_project)
+        self._populate_projects()
+        self.refresh_notes()
 
     def _on_task_status_toggled(self, task_id: int, new_status: str) -> None:
         """Handle checkbox check/uncheck status change."""

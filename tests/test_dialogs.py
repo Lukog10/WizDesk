@@ -128,6 +128,12 @@ def test_quick_entry_dialog_notes_flow(qapp, repo):
     updated_note = [n for n in reloaded_notes if n.id == target_note.id][0]
     assert updated_note.is_completed is True
 
+    # Move note section from 'Work' to 'Personal Projects'
+    dialog._on_note_project_changed(target_note.id, "Personal Projects")
+    notes_moved = repo.get_notes_for_date(date.today())
+    moved_note = [n for n in notes_moved if n.id == target_note.id][0]
+    assert moved_note.project_tag == "Personal Projects"
+
     dialog.close()
 
 

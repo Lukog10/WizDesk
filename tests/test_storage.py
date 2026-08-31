@@ -53,6 +53,11 @@ def test_note_creation_and_completion(repo):
     notes_updated = repo.get_notes_for_date(date.today())
     assert notes_updated[0].is_completed is True
 
+    # Update project
+    repo.update_note_project(note_id, "Wiz Companion")
+    notes_moved = repo.get_notes_for_date(date.today())
+    assert notes_moved[0].project_tag == "Wiz Companion"
+
 
 def test_task_subtask_hierarchy_and_logs(repo):
     """Test task hierarchy, subtask status auto-completion, and log entries."""
