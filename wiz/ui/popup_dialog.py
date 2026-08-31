@@ -360,9 +360,10 @@ class QuickEntryDialog(QDialog):
         self.frame_layout.setContentsMargins(18, 14, 18, 18)
         self.frame_layout.setSpacing(12)
 
-        # Top Bar: Date header + Close button
+        # Top Bar: Date header + Window Controls (Minimize, Maximize, Close)
         top_bar = QHBoxLayout()
         top_bar.setContentsMargins(4, 0, 4, 0)
+        top_bar.setSpacing(6)
 
         current_date_str = datetime.now().strftime("%B %d, %A")
         self.date_label = QLabel(current_date_str)
@@ -378,15 +379,16 @@ class QuickEntryDialog(QDialog):
         top_bar.addWidget(self.date_label)
         top_bar.addStretch()
 
-        close_btn = QPushButton("x")
-        close_btn.setFixedSize(22, 22)
-        close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        close_btn.setStyleSheet("""
+        # Window Controls Container
+        controls_layout = QHBoxLayout()
+        controls_layout.setSpacing(4)
+
+        btn_style = """
             QPushButton {
                 background: transparent;
-                color: #888890;
+                color: #777780;
                 border: none;
-                font-family: 'Consolas', monospace;
+                font-family: 'Consolas', 'Segoe UI', monospace;
                 font-size: 13px;
                 font-weight: bold;
                 border-radius: 11px;
@@ -395,10 +397,36 @@ class QuickEntryDialog(QDialog):
                 background-color: rgba(0, 0, 0, 0.08);
                 color: #111111;
             }
-        """)
-        close_btn.clicked.connect(self.close)
-        top_bar.addWidget(close_btn)
+        """
 
+        # 1. Minimize Button
+        self.min_btn = QPushButton("—")
+        self.min_btn.setFixedSize(22, 22)
+        self.min_btn.setToolTip("Minimize")
+        self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.min_btn.setStyleSheet(btn_style)
+        self.min_btn.clicked.connect(self.showMinimized)
+        controls_layout.addWidget(self.min_btn)
+
+        # 2. Maximize / Restore Button
+        self.max_btn = QPushButton("□")
+        self.max_btn.setFixedSize(22, 22)
+        self.max_btn.setToolTip("Maximize")
+        self.max_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.max_btn.setStyleSheet(btn_style)
+        self.max_btn.clicked.connect(self._toggle_maximize_restore)
+        controls_layout.addWidget(self.max_btn)
+
+        # 3. Close Button
+        self.close_btn = QPushButton("x")
+        self.close_btn.setFixedSize(22, 22)
+        self.close_btn.setToolTip("Close")
+        self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.close_btn.setStyleSheet(btn_style)
+        self.close_btn.clicked.connect(self.close)
+        controls_layout.addWidget(self.close_btn)
+
+        top_bar.addLayout(controls_layout)
         self.frame_layout.addLayout(top_bar)
 
         # Inner Canvas Card (Pure White #FFFFFF)
@@ -634,7 +662,34 @@ class QuickEntryDialog(QDialog):
         self.refresh_tasks()
         app_signals.task_created.emit(task_id)
 
-    # --- Mouse drag for frameless window movement ---
+    def _toggle_maximize_restore(self) -> None:
+        """Toggle between maximized and normal window state."""
+        if self.isMaximized():
+            self.showNormal()
+            self.max_btn.setText("□")
+            self.max_btn.setToolTip("Maximize")
+            self.outer_layout.setContentsMargins(12, 12, 12, 12)
+            self.outer_frame.setStyleSheet("""
+                QFrame#outerFrame {
+                    background-color: #E6E6EA;
+                    border: 1px solid #D8D8DE;
+                    border-radius: 24px;
+                }
+            """)
+        else:
+            self.showMaximized()
+            self.max_btn.setText("❐")
+            self.max_btn.setToolTip("Restore")
+            self.outer_layout.setContentsMargins(0, 0, 0, 0)
+            self.outer_frame.setStyleSheet("""
+                QFrame#outerFrame {
+                    background-color: #E6E6EA;
+                    border: none;
+                    border-radius: 0px;
+                }
+            """)
+
+    # --- Mouse drag & double click for frameless window movement & maximize ---
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -643,8 +698,15 @@ class QuickEntryDialog(QDialog):
         else:
             super().mousePressEvent(event)
 
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._toggle_maximize_restore()
+            event.accept()
+        else:
+            super().mouseDoubleClickEvent(event)
+
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if event.buttons() & Qt.MouseButton.LeftButton and not self._drag_pos.isNull():
+        if event.buttons() & Qt.MouseButton.LeftButton and not self._drag_pos.isNull() and not self.isMaximized():
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
         else:
