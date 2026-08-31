@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
-from wiz.ui.popup_dialog import QuickEntryDialog
+from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox
 from wiz.ui.settings_dialog import SettingsDialog
 
 
@@ -29,38 +29,44 @@ def repo(tmp_path):
     return StorageRepository(Database(db_file))
 
 
-def test_quick_entry_dialog_notes(qapp, repo):
-    """Test creating and displaying notes via QuickEntryDialog."""
+def test_quick_entry_dialog_task_flow(qapp, repo):
+    """Test creating tasks and filtering via redesigned QuickEntryDialog."""
     sm = StateMachine()
     dialog = QuickEntryDialog(sm, repository=repo)
 
-    # Simulate typing note
-    dialog.note_input.setText("Testing dialog note creation")
-    dialog._on_save_note()
+    # Verify initial seeded tasks or add a new task
+    dialog.add_input.setText("Ship MVP update")
+    dialog.project_combo.setCurrentText("Work")
+    dialog._on_quick_add_task()
 
-    # Verify note in DB and UI
-    notes = repo.get_notes_for_date(date.today())
-    assert len(notes) == 1
-    assert notes[0].content == "Testing dialog note creation"
+    # Verify task in DB
+    tasks = repo.get_task_hierarchy(status_filter="To-do")
+    task_titles = [t.title for t in tasks]
+    assert "Ship MVP update" in task_titles
 
-    assert dialog.notes_list.count() == 1
-    dialog.close()
+    # Switch filter tab
+    dialog.filter_bar.set_active_filter("Completed")
+    assert dialog.filter_bar.current_filter == "Completed"
 
+    # Toggle a task to done
+    target_task = [t for t in tasks if t.title == "Ship MVP update"][0]
+    dialog._on_task_status_toggled(target_task.id, "done")
 
-def test_quick_entry_dialog_tasks(qapp, repo):
-    """Test creating and displaying tasks via QuickEntryDialog."""
-    sm = StateMachine()
-    dialog = QuickEntryDialog(sm, repository=repo)
-
-    dialog.task_input.setText("Implement UI Polish")
-    dialog._on_save_task()
-
-    tasks = repo.get_task_hierarchy()
-    assert len(tasks) == 1
-    assert tasks[0].title == "Implement UI Polish"
-    assert dialog.task_tree.topLevelItemCount() == 1
+    # Now verify in completed list
+    completed_tasks = repo.get_task_hierarchy(status_filter="Completed")
+    completed_titles = [t.title for t in completed_tasks]
+    assert "Ship MVP update" in completed_titles
 
     dialog.close()
+
+
+def test_rounded_checkbox(qapp):
+    """Test RoundedCheckbox state toggling."""
+    box = RoundedCheckbox(checked=False)
+    assert not box.isChecked
+
+    box.setChecked(True)
+    assert box.isChecked
 
 
 def test_settings_dialog(qapp, repo, tmp_path):

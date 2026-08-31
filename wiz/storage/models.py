@@ -310,19 +310,37 @@ class StorageRepository:
             )
             return cur.lastrowid or 0
 
-    def get_task_hierarchy(self, target_date: Optional[date] = None, include_completed: bool = True) -> List[TaskRecord]:
-        """Fetch all tasks with their nested subtasks and log entries."""
+    def get_task_hierarchy(
+        self,
+        target_date: Optional[date] = None,
+        status_filter: Optional[str] = None,
+        include_completed: bool = True,
+    ) -> List[TaskRecord]:
+        """Fetch all tasks with their nested subtasks and log entries, with optional status filtering."""
         with self.db.cursor() as cur:
+            query = "SELECT * FROM tasks WHERE 1=1 "
+            params: list = []
+
             if target_date is not None:
                 day_str = target_date.strftime("%Y-%m-%d")
-                query = "SELECT * FROM tasks WHERE substr(created_at, 1, 10) = ? "
-                params: list = [day_str]
-            else:
-                query = "SELECT * FROM tasks WHERE 1=1 "
-                params = []
+                query += "AND substr(created_at, 1, 10) = ? "
+                params.append(day_str)
 
-            if not include_completed:
-                query += "AND status != 'done' "
+            if status_filter:
+                # Map friendly UI filter names to database status values
+                status_map = {
+                    "to-do": ["not_started", "to_do"],
+                    "completed": ["done", "completed"],
+                    "pending": ["in_progress", "pending"],
+                    "on hold": ["on_hold"],
+                    "cancelled": ["cancelled"],
+                }
+                valid_statuses = status_map.get(status_filter.lower(), [status_filter.lower()])
+                placeholders = ",".join("?" for _ in valid_statuses)
+                query += f"AND status IN ({placeholders}) "
+                params.extend(valid_statuses)
+            elif not include_completed:
+                query += "AND status NOT IN ('done', 'completed') "
 
             query += "ORDER BY created_at DESC"
             cur.execute(query, params)

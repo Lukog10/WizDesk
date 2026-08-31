@@ -203,6 +203,7 @@ Daily logs are stored inside the configured Obsidian Vault path under the `/WizD
 | **M5** | **State Machine and Face Animations** | **COMPLETED** | Dynamic mascot state switcher (`idle`, `working`, `notify`, `complete`, `sleep`), rotating spinner eye animation for working state (`wiz/core/state_machine.py`, `wiz/ui/mascot_widget.py`). |
 | **M6** | **Obsidian Vault Sync Engine** | **COMPLETED** | Markdown generator, atomic batched file writing to `/WizDesk Logs/YYYY-MM-DD.md`, vault path selector dialog (`wiz/sync/obsidian.py`). |
 | **M7** | **Project Mapping and Settings UI** | **COMPLETED** | Settings window for keyword rules, poll intervals, hotkey configs, and notification cadence (`wiz/ui/settings_dialog.py`, `wiz/utils/hotkey.py`). |
+| **M8** | **Minimalist Card & Filter Tab Redesign** | **COMPLETED** | Card container, dynamic monospace date header, segmented capsule filter bar (`To-do`, `Completed`, `Pending`, `On Hold`, `Cancelled`), collapsible project headers with chevrons, and custom rounded-square checkboxes (`wiz/ui/popup_dialog.py`). |
 
 ---
 
