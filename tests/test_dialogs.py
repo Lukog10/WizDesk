@@ -164,3 +164,20 @@ def test_settings_dialog(qapp, repo, tmp_path):
 
     assert dialog.result() == SettingsDialog.DialogCode.Accepted
     dialog.close()
+
+
+def test_app_icon_and_favicon_loading(qapp):
+    """Test get_app_icon and get_app_pixmap using idle SVG."""
+    from wiz.ui.icons import get_app_icon, get_app_pixmap
+
+    icon = get_app_icon("wiz-idle.svg")
+    assert not icon.isNull()
+
+    pm = get_app_pixmap(32, asset_name="wiz-idle.svg")
+    assert not pm.isNull()
+    assert pm.width() == 32
+    assert pm.height() == 32
+
+    # Test alias idle.svg
+    icon_alias = get_app_icon("idle.svg")
+    assert not icon_alias.isNull()

@@ -48,6 +48,7 @@ from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
+from wiz.ui.icons import get_app_icon, get_app_pixmap
 
 
 # Professional Typography Stacks
@@ -95,6 +96,7 @@ class CreateSectionDialog(QDialog):
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setWindowTitle("Create Section - WizDesk")
+        self.setWindowIcon(get_app_icon("wiz-idle.svg"))
         self.setFixedSize(380, 200)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
@@ -964,6 +966,7 @@ class QuickEntryDialog(QDialog):
 
         # Window settings
         self.setWindowTitle("WizDesk - Workspace")
+        self.setWindowIcon(get_app_icon("wiz-idle.svg"))
         self.setMinimumSize(480, 600)
         self.resize(520, 680)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
@@ -996,9 +999,18 @@ class QuickEntryDialog(QDialog):
         self.frame_layout.setContentsMargins(18, 12, 18, 18)
         self.frame_layout.setSpacing(10)
 
-        # --- Top Outer Bar: Window Controls Only (Minimize, Maximize, Close) ---
+        # --- Top Outer Bar: Favicon + Brand & Window Controls ---
         top_bar = QHBoxLayout()
         top_bar.setContentsMargins(4, 0, 4, 0)
+        top_bar.setSpacing(6)
+
+        favicon_lbl = QLabel()
+        favicon_pixmap = get_app_pixmap(18, asset_name="wiz-idle.svg")
+        if not favicon_pixmap.isNull():
+            favicon_lbl.setPixmap(favicon_pixmap)
+            favicon_lbl.setFixedSize(18, 18)
+            favicon_lbl.setScaledContents(True)
+            top_bar.addWidget(favicon_lbl)
 
         title_brand = QLabel("WizDesk")
         title_brand.setStyleSheet(f"""

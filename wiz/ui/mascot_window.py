@@ -9,6 +9,7 @@ from wiz.core.config import config
 from wiz.core.state_machine import MascotState, StateMachine
 from wiz.core.signals import app_signals
 from wiz.ui.mascot_widget import MascotWidget
+from wiz.ui.icons import get_app_icon
 
 
 class MascotWindow(QWidget):
@@ -20,6 +21,7 @@ class MascotWindow(QWidget):
     def __init__(self, state_machine: StateMachine, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.state_machine = state_machine
+        self.setWindowIcon(get_app_icon("wiz-idle.svg"))
 
         # Window flags: frameless, stays on top, tool window (avoids cluttering taskbar)
         self.setWindowFlags(

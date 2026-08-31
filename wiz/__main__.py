@@ -18,6 +18,7 @@ from wiz.ui.mascot_window import MascotWindow
 from wiz.ui.tray_icon import TrayIcon
 from wiz.ui.popup_dialog import QuickEntryDialog
 from wiz.ui.settings_dialog import SettingsDialog
+from wiz.ui.icons import get_app_icon
 from wiz.tracker.window_tracker import WindowTracker
 from wiz.sync.obsidian import ObsidianSync
 from wiz.utils.hotkey import GlobalHotkeyListener
@@ -125,6 +126,7 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("WizDesk")
     app.setApplicationDisplayName("WizDesk")
+    app.setWindowIcon(get_app_icon("wiz-idle.svg"))
     app.setQuitOnLastWindowClosed(False)
 
     wiz_app = WizApplication()

@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 
 from wiz.core.config import config
 from wiz.storage.models import StorageRepository
+from wiz.ui.icons import get_app_icon, get_app_pixmap
 
 
 class SettingsDialog(QDialog):
@@ -33,6 +34,7 @@ class SettingsDialog(QDialog):
         self.repo = repository or StorageRepository()
 
         self.setWindowTitle("WizDesk - Settings and Preferences")
+        self.setWindowIcon(get_app_icon("wiz-idle.svg"))
         self.setMinimumSize(520, 480)
         self.setStyleSheet("""
             QDialog {
@@ -101,10 +103,23 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(14)
 
-        # Header
+        # Header with favicon
+        hdr_layout = QHBoxLayout()
+        hdr_layout.setSpacing(10)
+
+        favicon_lbl = QLabel()
+        fav_pm = get_app_pixmap(24, asset_name="wiz-idle.svg")
+        if not fav_pm.isNull():
+            favicon_lbl.setPixmap(fav_pm)
+            favicon_lbl.setFixedSize(24, 24)
+            favicon_lbl.setScaledContents(True)
+            hdr_layout.addWidget(favicon_lbl)
+
         title = QLabel("WizDesk Settings")
         title.setFont(QFont("Segoe UI", 15, QFont.Weight.Bold))
-        layout.addWidget(title)
+        hdr_layout.addWidget(title)
+        hdr_layout.addStretch()
+        layout.addLayout(hdr_layout)
 
         # Section 1: Obsidian Vault Configuration
         obs_header = QLabel("Obsidian Vault Integration:")
