@@ -105,3 +105,22 @@ def test_project_keyword_matching(repo):
 
     match_none = repo.match_project_tag("Spotify - Music Player")
     assert match_none is None
+
+
+def test_in_progress_filter_behavior(repo):
+    """Test that 'In progress' filter includes tasks in task state and excludes only completed/cancelled."""
+    t1 = repo.create_task("Active Task 1", project_tag="Work")  # status: not_started
+    t2 = repo.create_task("Active Task 2", project_tag="Work")  # status: in_progress
+    repo.update_task_status(t2, "in_progress")
+    t3 = repo.create_task("Completed Task", project_tag="Work")
+    repo.update_task_status(t3, "done")
+    t4 = repo.create_task("Cancelled Task", project_tag="Work")
+    repo.update_task_status(t4, "cancelled")
+
+    in_progress_tasks = repo.get_task_hierarchy(status_filter="In progress")
+    in_progress_ids = [t.id for t in in_progress_tasks]
+
+    assert t1 in in_progress_ids
+    assert t2 in in_progress_ids
+    assert t3 not in in_progress_ids
+    assert t4 not in in_progress_ids

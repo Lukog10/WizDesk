@@ -328,9 +328,9 @@ class StorageRepository:
                 status_map = {
                     "task": ["not_started", "to_do", "todo", "task"],
                     "to-do": ["not_started", "to_do", "todo", "task"],
-                    "in progress": ["in_progress", "pending"],
-                    "in_progress": ["in_progress", "pending"],
-                    "pending": ["in_progress", "pending"],
+                    "in progress": ["not_started", "to_do", "todo", "task", "in_progress", "pending"],
+                    "in_progress": ["not_started", "to_do", "todo", "task", "in_progress", "pending"],
+                    "pending": ["not_started", "to_do", "todo", "task", "in_progress", "pending"],
                     "completed": ["done", "completed"],
                     "done": ["done", "completed"],
                     "on hold": ["on_hold"],
@@ -341,7 +341,7 @@ class StorageRepository:
                 query += f"AND status IN ({placeholders}) "
                 params.extend(valid_statuses)
             elif not include_completed:
-                query += "AND status NOT IN ('done', 'completed') "
+                query += "AND status NOT IN ('done', 'completed', 'cancelled', 'canceled') "
 
             query += "ORDER BY created_at DESC"
             cur.execute(query, params)
