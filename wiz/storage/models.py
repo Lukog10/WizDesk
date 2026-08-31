@@ -326,15 +326,12 @@ class StorageRepository:
                 query += "AND substr(created_at, 1, 10) = ? "
                 params.append(day_str)
 
-            if status_filter and status_filter.lower() != "all":
+            if status_filter:
                 # Map friendly UI filter names to database status values
                 status_map = {
-                    "to do": ["not_started", "to_do"],
                     "to-do": ["not_started", "to_do"],
-                    "in progress": ["in_progress", "pending"],
-                    "pending": ["in_progress", "pending"],
-                    "done": ["done", "completed"],
                     "completed": ["done", "completed"],
+                    "pending": ["in_progress", "pending"],
                     "on hold": ["on_hold"],
                     "cancelled": ["cancelled"],
                 }
@@ -342,7 +339,7 @@ class StorageRepository:
                 placeholders = ",".join("?" for _ in valid_statuses)
                 query += f"AND status IN ({placeholders}) "
                 params.extend(valid_statuses)
-            elif not status_filter and not include_completed:
+            elif not include_completed:
                 query += "AND status NOT IN ('done', 'completed') "
 
             query += "ORDER BY created_at DESC"
