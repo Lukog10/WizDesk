@@ -196,13 +196,13 @@ Daily logs are stored inside the configured Obsidian Vault path under the `/Wiz 
 | Milestone | Feature / Component | Status | Key Deliverables |
 |---|---|---|---|
 | **M0** | **Environment & Project Setup** | **COMPLETED** | Virtualenv `.venv`, installed PyQt6, pywin32, psutil, pynput, pytest, verified imports, created `requirements.txt` & `context.md`. |
-| **M1** | **Floating Mascot Shell & Tray** | *PENDING* | Frameless transparent PyQt6 mascot window, draggable, system tray menu (Show/Hide/Settings/Quit), floating bob animation. |
-| **M2** | **SQLite Buffer & Repositories** | *PENDING* | `db.py` initialization, schema migrations, CRUD operations for sessions, notes, tasks, subtasks, task_logs, projects. |
-| **M3** | **Active Window Auto-Tracker** | *PENDING* | Background worker thread polling active window/process every 30m, matching project keywords, storing session intervals. |
-| **M4** | **Quick-Entry Popup & Task UI** | *PENDING* | Hotkey-activated dialog for quick note capture, task/subtask creation, status toggling, and timestamped log trails. |
-| **M5** | **State Machine & Face Animations** | *PENDING* | Dynamic mascot state switcher (`idle`, `working`, `notify`, `complete`, `sleep`), rotating spinner eye animation for working state. |
-| **M6** | **Obsidian Vault Sync Engine** | *PENDING* | Markdown generator, atomic batched file writing to `/Wiz Logs/YYYY-MM-DD.md`, vault path selector dialog. |
-| **M7** | **Project Mapping & Configuration** | *PENDING* | Settings window for keyword rules, poll intervals, hotkey configs, and notification cadence. |
+| **M1** | **Floating Mascot Shell & Tray** | **COMPLETED** | Frameless transparent PyQt6 mascot window, draggable, system tray menu (Show/Hide/Settings/Quit), floating bob animation (`wiz/ui/mascot_window.py`, `wiz/ui/mascot_widget.py`, `wiz/ui/tray_icon.py`). |
+| **M2** | **SQLite Buffer & Repositories** | **COMPLETED** | `db.py` initialization, schema migrations, CRUD operations for sessions, notes, tasks, subtasks, task_logs, projects (`wiz/storage/db.py`, `wiz/storage/models.py`). |
+| **M3** | **Active Window Auto-Tracker** | **COMPLETED** | Background worker thread polling active window/process every 30m, matching project keywords, storing session intervals (`wiz/tracker/window_tracker.py`). |
+| **M4** | **Quick-Entry Popup & Task UI** | **COMPLETED** | Hotkey-activated dialog for quick note capture, task/subtask creation, status toggling, and timestamped log trails (`wiz/ui/popup_dialog.py`). |
+| **M5** | **State Machine & Face Animations** | **COMPLETED** | Dynamic mascot state switcher (`idle`, `working`, `notify`, `complete`, `sleep`), rotating spinner eye animation for working state (`wiz/core/state_machine.py`, `wiz/ui/mascot_widget.py`). |
+| **M6** | **Obsidian Vault Sync Engine** | **COMPLETED** | Markdown generator, atomic batched file writing to `/Wiz Logs/YYYY-MM-DD.md`, vault path selector dialog (`wiz/sync/obsidian.py`). |
+| **M7** | **Project Mapping & Settings UI** | **COMPLETED** | Settings window for keyword rules, poll intervals, hotkey configs, and notification cadence (`wiz/ui/settings_dialog.py`, `wiz/utils/hotkey.py`). |
 
 ---
 
