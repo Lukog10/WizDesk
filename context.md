@@ -9,6 +9,7 @@
 - **Name**: Wiz
 - **Description**: A lightweight, minimalist desktop companion/pet for Windows that floats on the screen, passively tracks work/app activity, captures manual notes and multi-step tasks, and syncs structured daily work logs directly into an Obsidian vault.
 - **Author**: Gokul R
+- **Repository**: [https://github.com/Lukog10/wiz](https://github.com/Lukog10/wiz)
 - **Target Platform (MVP)**: Windows 10 / 11
 - **Long-term Platform**: Cross-platform (Windows / macOS / Linux)
 
