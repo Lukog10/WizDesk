@@ -104,7 +104,7 @@ If the user corrects your work:
 
 ## 6. Technology Preferences
 
-<!-- ✏️ CUSTOMIZE: Add your project's technology preferences and conventions. Examples below. -->
+<!-- CUSTOMIZE: Add your project's technology preferences and conventions. Examples below. -->
 
 ### General
 - Prefer TypeScript over JavaScript where the project uses TypeScript.

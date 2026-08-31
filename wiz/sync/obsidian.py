@@ -43,12 +43,12 @@ class ObsidianSync:
                     # Subtask logs
                     for log in subtask.logs:
                         time_str = log.created_at.strftime("%H:%M")
-                        lines.append(f"    - {time_str} — {log.content}")
+                        lines.append(f"    - {time_str} - {log.content}")
 
                 # Parent task logs
                 for log in task.task_logs:
                     time_str = log.created_at.strftime("%H:%M")
-                    lines.append(f"  - {time_str} — {log.content}")
+                    lines.append(f"  - {time_str} - {log.content}")
         else:
             lines.append("_No tasks recorded for today._")
 
@@ -62,7 +62,7 @@ class ObsidianSync:
                 end_str = s.end_time.strftime("%H:%M")
                 app_clean = s.app_name.removesuffix(".exe")
                 desc = s.project_tag or s.window_title or "general"
-                lines.append(f"- {start_str}–{end_str} — {app_clean} ({desc})")
+                lines.append(f"- {start_str}-{end_str} - {app_clean} ({desc})")
         else:
             lines.append("_No activity tracked._")
 
@@ -75,8 +75,7 @@ class ObsidianSync:
                 check_char = "x" if note.is_completed else " "
                 time_str = note.created_at.strftime("%H:%M")
                 tag_str = f"[{note.project_tag}] " if note.project_tag else ""
-                check_emoji = " ✅" if note.is_completed else ""
-                lines.append(f"- [{check_char}] {tag_str}{note.content}{check_emoji} {time_str}")
+                lines.append(f"- [{check_char}] {tag_str}{note.content} ({time_str})")
         else:
             lines.append("_No notes logged._")
 
@@ -96,7 +95,7 @@ class ObsidianSync:
             app_signals.sync_finished.emit(False, msg)
             return False, msg
 
-        logs_folder_name = config.get("obsidian_logs_folder", "Wiz Logs")
+        logs_folder_name = config.get("obsidian_logs_folder", "WizDesk Logs")
         dest_dir = vault_path / logs_folder_name
         dest_dir.mkdir(parents=True, exist_ok=True)
 

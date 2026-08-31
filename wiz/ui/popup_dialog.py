@@ -136,7 +136,7 @@ class QuickEntryDialog(QDialog):
         self.state_machine = state_machine
         self.repo = repository or StorageRepository()
 
-        self.setWindowTitle("Wiz — Log Activity")
+        self.setWindowTitle("WizDesk - Log Activity")
         self.setMinimumSize(540, 520)
         self.setStyleSheet(DARK_STYLE)
 
@@ -147,12 +147,12 @@ class QuickEntryDialog(QDialog):
 
         # Header Title
         header_layout = QHBoxLayout()
-        title_label = QLabel("👻  Wiz Log Capture")
+        title_label = QLabel("WizDesk Log Capture")
         title_label.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
         header_layout.addWidget(title_label)
         header_layout.addStretch()
 
-        close_btn = QPushButton("✕")
+        close_btn = QPushButton("x")
         close_btn.setFixedSize(30, 30)
         close_btn.clicked.connect(self.close)
         header_layout.addWidget(close_btn)
@@ -167,8 +167,8 @@ class QuickEntryDialog(QDialog):
         self._setup_notes_tab()
         self._setup_tasks_tab()
 
-        self.tabs.addTab(self.tab_notes, "📝  Quick Notes")
-        self.tabs.addTab(self.tab_tasks, "📋  Tasks & Subtasks")
+        self.tabs.addTab(self.tab_notes, "Quick Notes")
+        self.tabs.addTab(self.tab_tasks, "Tasks and Subtasks")
         self.main_layout.addWidget(self.tabs)
 
         # Load initial data
@@ -308,15 +308,15 @@ class QuickEntryDialog(QDialog):
         # Action buttons for selected tree item
         btn_layout = QHBoxLayout()
 
-        add_subtask_btn = QPushButton("➕ Add Subtask")
+        add_subtask_btn = QPushButton("Add Subtask")
         add_subtask_btn.clicked.connect(self._on_add_subtask_prompt)
         btn_layout.addWidget(add_subtask_btn)
 
-        add_log_btn = QPushButton("💬 Add Progress Log")
+        add_log_btn = QPushButton("Add Progress Log")
         add_log_btn.clicked.connect(self._on_add_log_prompt)
         btn_layout.addWidget(add_log_btn)
 
-        toggle_status_btn = QPushButton("✓ Toggle Done")
+        toggle_status_btn = QPushButton("Toggle Done")
         toggle_status_btn.clicked.connect(self._on_toggle_status_selected)
         btn_layout.addWidget(toggle_status_btn)
 
@@ -343,7 +343,7 @@ class QuickEntryDialog(QDialog):
         for task in tasks:
             task_item = QTreeWidgetItem(self.task_tree)
             tag_str = f"[{task.project_tag}] " if task.project_tag else ""
-            task_item.setText(0, f"📌 {tag_str}{task.title}")
+            task_item.setText(0, f"{tag_str}{task.title}")
             task_item.setText(1, task.status.upper().replace("_", " "))
             task_item.setText(2, task.created_at.strftime("%H:%M"))
             task_item.setData(0, Qt.ItemDataRole.UserRole, ("task", task.id, task.status))
@@ -360,14 +360,14 @@ class QuickEntryDialog(QDialog):
             # Parent logs
             for log in task.task_logs:
                 log_item = QTreeWidgetItem(task_item)
-                log_item.setText(0, f"  💬 {log.content}")
+                log_item.setText(0, f"  - {log.content}")
                 log_item.setText(2, log.created_at.strftime("%H:%M"))
                 log_item.setForeground(0, QColor("#B0B0C0"))
 
             # Subtasks
             for subtask in task.subtasks:
                 sub_item = QTreeWidgetItem(task_item)
-                sub_item.setText(0, f"  ↳ {subtask.title}")
+                sub_item.setText(0, f"  > {subtask.title}")
                 sub_item.setText(1, subtask.status.upper().replace("_", " "))
                 sub_item.setText(2, subtask.created_at.strftime("%H:%M"))
                 sub_item.setData(0, Qt.ItemDataRole.UserRole, ("subtask", subtask.id, subtask.status))
@@ -381,7 +381,7 @@ class QuickEntryDialog(QDialog):
                 # Subtask logs
                 for log in subtask.logs:
                     sub_log_item = QTreeWidgetItem(sub_item)
-                    sub_log_item.setText(0, f"    💬 {log.content}")
+                    sub_log_item.setText(0, f"    - {log.content}")
                     sub_log_item.setText(2, log.created_at.strftime("%H:%M"))
                     sub_log_item.setForeground(0, QColor("#B0B0C0"))
 

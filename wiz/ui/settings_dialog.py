@@ -1,4 +1,4 @@
-"""Settings and preferences dialog for Wiz."""
+"""Settings and preferences dialog for WizDesk."""
 
 from pathlib import Path
 from typing import Optional
@@ -32,7 +32,7 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.repo = repository or StorageRepository()
 
-        self.setWindowTitle("Wiz — Settings & Preferences")
+        self.setWindowTitle("WizDesk - Settings and Preferences")
         self.setMinimumSize(520, 480)
         self.setStyleSheet("""
             QDialog {
@@ -102,7 +102,7 @@ class SettingsDialog(QDialog):
         layout.setSpacing(14)
 
         # Header
-        title = QLabel("⚙️  Wiz Settings")
+        title = QLabel("WizDesk Settings")
         title.setFont(QFont("Segoe UI", 15, QFont.Weight.Bold))
         layout.addWidget(title)
 
@@ -144,11 +144,11 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.proj_table)
 
         proj_btn_layout = QHBoxLayout()
-        add_proj_btn = QPushButton("➕ Add Project")
+        add_proj_btn = QPushButton("Add Project")
         add_proj_btn.clicked.connect(self._on_add_project)
         proj_btn_layout.addWidget(add_proj_btn)
 
-        del_proj_btn = QPushButton("🗑️ Remove Selected")
+        del_proj_btn = QPushButton("Remove Selected")
         del_proj_btn.clicked.connect(self._on_remove_project)
         proj_btn_layout.addWidget(del_proj_btn)
         layout.addLayout(proj_btn_layout)

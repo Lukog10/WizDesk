@@ -8,7 +8,7 @@
 
 ## 1. Project Context
 
-<!-- ✏️ FILL THIS IN for your project. Delete example rows, add your own. -->
+<!-- FILL THIS IN for your project. Delete example rows, add your own. -->
 
 | Key | Value |
 |---|---|
@@ -28,7 +28,7 @@
 
 Before writing **any** code, the agent MUST check the table below and load the matching `SKILL.md` file. If multiple skills match, load all of them and follow each in order.
 
-<!-- ✏️ ADD your own skills below. Delete example rows. -->
+<!-- ADD your own skills below. Delete example rows. -->
 
 ### 2.1 Frontend Tasks
 
@@ -254,7 +254,7 @@ When instructions conflict, follow this precedence order (highest first):
 
 ## 7. Quick Reference — Common Task Flows
 
-<!-- ✏️ CUSTOMIZE these for your project. Examples below. -->
+<!-- CUSTOMIZE these for your project. Examples below. -->
 
 ### "Build a new page / component"
 → `brainstorming` → `building-ui` → `ui-review` (audit) → verify → deliver

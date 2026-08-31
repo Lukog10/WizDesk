@@ -1,4 +1,4 @@
-"""Application configuration and persistent settings manager for Wiz."""
+"""Application configuration and persistent settings manager for WizDesk."""
 
 import json
 import os
@@ -17,14 +17,14 @@ class Config:
         # User app data directory for persistent settings & storage
         appdata = os.environ.get("APPDATA")
         if appdata:
-            self.user_data_dir = Path(appdata) / "Wiz"
+            self.user_data_dir = Path(appdata) / "WizDesk"
         else:
-            self.user_data_dir = Path.home() / ".wiz"
+            self.user_data_dir = Path.home() / ".wizdesk"
             
         self.user_data_dir.mkdir(parents=True, exist_ok=True)
 
         self.config_file = config_file or (self.user_data_dir / "config.json")
-        self.db_path = self.user_data_dir / "wiz.db"
+        self.db_path = self.user_data_dir / "wizdesk.db"
 
         # Default settings dictionary
         self._defaults: Dict[str, Any] = {
@@ -36,7 +36,7 @@ class Config:
             "enable_floating_animation": True,
             "tracking_interval_seconds": 1800,  # 30 minutes
             "obsidian_vault_path": "",
-            "obsidian_logs_folder": "Wiz Logs",
+            "obsidian_logs_folder": "WizDesk Logs",
             "global_hotkey": "<ctrl>+<shift>+w",
             "auto_start_on_login": False,
             "sound_effects": False,

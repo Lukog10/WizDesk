@@ -127,7 +127,7 @@ Each step above is a manual update from the user — Wiz doesn't guess subtask c
 - 09:30–10:00 — Chrome (research)
 
 ### Notes
-- [x] Fixed booking bug in TurfLine ✅ 10:15
+- [x] Fixed booking bug in TurfLine (10:15)
 - [ ] Draft resume for ML role
 ```
 

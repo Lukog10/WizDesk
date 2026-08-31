@@ -1,4 +1,4 @@
-"""System Tray Icon and tray menu management for Wiz."""
+"""System Tray Icon and tray menu management for WizDesk."""
 
 from typing import Optional
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -23,7 +23,7 @@ class TrayIcon(QSystemTrayIcon):
 
         # Set tray icon from rendered SVG
         self._update_icon()
-        self.setToolTip("Wiz — Desktop Companion & Work Tracker")
+        self.setToolTip("WizDesk - Desktop Companion and Work Tracker")
 
         # Build context menu
         self._build_menu()
@@ -88,33 +88,33 @@ class TrayIcon(QSystemTrayIcon):
         """)
 
         # Quick Note Action
-        action_note = self.menu.addAction("📝  Quick Note / Task")
+        action_note = self.menu.addAction("Quick Note / Task")
         action_note.setShortcut("Ctrl+Shift+W")
         action_note.triggered.connect(lambda: app_signals.request_quick_entry.emit())
 
         # Toggle Mascot Visibility Action
-        action_toggle = self.menu.addAction("👁️  Show / Hide Mascot")
+        action_toggle = self.menu.addAction("Show / Hide Mascot")
         action_toggle.triggered.connect(lambda: app_signals.toggle_mascot_visibility.emit())
 
         self.menu.addSeparator()
 
         # State Switcher Submenu
-        self.state_menu = self.menu.addMenu("🎭  Mascot State")
+        self.state_menu = self.menu.addMenu("Mascot State")
         self.state_menu.setStyleSheet(self.menu.styleSheet())
         self._rebuild_state_menu()
 
         # Sync Obsidian Action
-        action_sync = self.menu.addAction("📓  Sync Obsidian Daily Note")
+        action_sync = self.menu.addAction("Sync Obsidian Daily Note")
         action_sync.triggered.connect(lambda: app_signals.request_sync.emit())
 
         self.menu.addSeparator()
 
         # Settings Action
-        action_settings = self.menu.addAction("⚙️  Settings")
+        action_settings = self.menu.addAction("Settings")
         action_settings.triggered.connect(lambda: app_signals.request_settings.emit())
 
         # Quit Action
-        action_quit = self.menu.addAction("❌  Quit Wiz")
+        action_quit = self.menu.addAction("Quit WizDesk")
         action_quit.triggered.connect(lambda: app_signals.quit_application.emit())
 
         self.setContextMenu(self.menu)
@@ -125,9 +125,9 @@ class TrayIcon(QSystemTrayIcon):
         current = self.state_machine.current_state
 
         for state in MascotState:
-            action = self.state_menu.addAction(f"{state.value.capitalize()}")
+            action = self.state_menu.addAction(state.value.capitalize())
             if current == state:
-                action.setText(f"✓ {state.value.capitalize()}")
+                action.setText(f"[x] {state.value.capitalize()}")
             action.triggered.connect(lambda checked, s=state: self.state_machine.set_state(s))
 
     def _on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:

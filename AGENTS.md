@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents (Claude Code, Cursor, Copilot, A
 
 ## Repository Overview
 
-<!-- ✏️ FILL IN: One-paragraph description of what this project is. -->
+<!-- FILL IN: One-paragraph description of what this project is. -->
 
 ## Skill-Driven Execution Model
 
@@ -27,7 +27,7 @@ This project uses a **skill-driven execution model**. Skills are packaged instru
 
 The agent should automatically map user intent to skills:
 
-<!-- ✏️ CUSTOMIZE these mappings for your project. Examples: -->
+<!-- CUSTOMIZE these mappings for your project. Examples: -->
 
 - Feature / new functionality → plan first, then build incrementally
 - Bug / failure / unexpected behavior → debug and recover

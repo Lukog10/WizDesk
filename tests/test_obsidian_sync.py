@@ -1,4 +1,4 @@
-"""Unit tests for Wiz Obsidian Sync Engine and Markdown formatting."""
+"""Unit tests for WizDesk Obsidian Sync Engine and Markdown formatting."""
 
 from datetime import datetime, date, timedelta
 from pathlib import Path
@@ -43,7 +43,7 @@ def repo_with_data(tmp_path):
 
 
 def test_obsidian_markdown_generation(repo_with_data):
-    """Test generating structured Markdown daily note matching the PRD format."""
+    """Test generating structured Markdown daily note matching the PRD format without emojis."""
     sync_engine = ObsidianSync(repo_with_data)
     md = sync_engine.generate_markdown(date(2026, 8, 31))
 
@@ -57,11 +57,11 @@ def test_obsidian_markdown_generation(repo_with_data):
     assert "fixed, testing now" in md
 
     assert "### Auto-tracked" in md
-    assert "09:00–09:30 — Code (TurfLine)" in md
-    assert "09:30–10:00 — chrome (research)" in md
+    assert "09:00-09:30 - Code (TurfLine)" in md
+    assert "09:30-10:00 - chrome (research)" in md
 
     assert "### Notes" in md
-    assert "[x] [TurfLine] Fixed booking bug in TurfLine ✅" in md
+    assert "[x] [TurfLine] Fixed booking bug in TurfLine (10:15)" in md or "[x] [TurfLine] Fixed booking bug in TurfLine" in md
     assert "[ ] Draft resume for ML role" in md
 
 
@@ -79,7 +79,7 @@ def test_obsidian_vault_file_sync(repo_with_data, tmp_path, monkeypatch):
     success, msg = sync_engine.sync_date(date(2026, 8, 31))
 
     assert success is True
-    expected_file = vault_dir / "Wiz Logs" / "2026-08-31.md"
+    expected_file = vault_dir / "WizDesk Logs" / "2026-08-31.md"
     assert expected_file.exists()
 
     content = expected_file.read_text(encoding="utf-8")

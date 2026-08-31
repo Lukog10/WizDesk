@@ -82,7 +82,6 @@ def test_tray_icon_init(qapp):
     """Test TrayIcon initialization and menu creation."""
     sm = StateMachine(initial_state=MascotState.IDLE)
     tray = TrayIcon(sm)
-
-    assert tray.toolTip() == "Wiz — Desktop Companion & Work Tracker"
+    assert tray.toolTip() == "WizDesk - Desktop Companion and Work Tracker"
     assert tray.contextMenu() is not None
     assert len(tray.contextMenu().actions()) > 0

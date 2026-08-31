@@ -161,36 +161,36 @@ class MascotWindow(QWidget):
         """)
 
         # Quick Note Action
-        action_note = menu.addAction("📝  Quick Note / Task")
+        action_note = menu.addAction("Quick Note / Task")
         action_note.triggered.connect(lambda: app_signals.request_quick_entry.emit())
 
         menu.addSeparator()
 
         # State Switcher Submenu (useful for instant testing and manual status)
-        state_menu = menu.addMenu("🎭  Mascot State")
+        state_menu = menu.addMenu("Mascot State")
         state_menu.setStyleSheet(menu.styleSheet())
 
         for state in MascotState:
-            action = state_menu.addAction(f"{state.value.capitalize()}")
+            action = state_menu.addAction(state.value.capitalize())
             if self.state_machine.current_state == state:
-                action.setText(f"✓ {state.value.capitalize()}")
+                action.setText(f"[x] {state.value.capitalize()}")
             # Capture state in default arg
             action.triggered.connect(lambda checked, s=state: self.state_machine.set_state(s))
 
         menu.addSeparator()
 
         # Settings
-        action_settings = menu.addAction("⚙️  Settings")
+        action_settings = menu.addAction("Settings")
         action_settings.triggered.connect(lambda: app_signals.request_settings.emit())
 
         # Hide Mascot
-        action_hide = menu.addAction("👁️  Hide Mascot")
+        action_hide = menu.addAction("Hide Mascot")
         action_hide.triggered.connect(self.hide)
 
         menu.addSeparator()
 
         # Quit
-        action_quit = menu.addAction("❌  Quit Wiz")
+        action_quit = menu.addAction("Quit WizDesk")
         action_quit.triggered.connect(lambda: app_signals.quit_application.emit())
 
         menu.exec(event.globalPos())

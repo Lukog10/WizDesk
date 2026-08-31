@@ -1,4 +1,4 @@
-"""Main application entry point for Wiz desktop companion."""
+"""Main application entry point for WizDesk desktop companion."""
 
 import sys
 import os
@@ -27,10 +27,10 @@ def set_windows_app_id() -> None:
     """Set Windows AppUserModelID for proper taskbar / notification grouping."""
     if sys.platform == "win32":
         try:
-            my_app_id = "lukog.wiz.desktop.companion.v1"
+            my_app_id = "lukog.wizdesk.desktop.companion.v1"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(my_app_id)
         except Exception as e:
-            print(f"[Wiz] Warning: Failed to set AppUserModelID: {e}")
+            print(f"[WizDesk] Warning: Failed to set AppUserModelID: {e}")
 
 
 class WizApplication:
@@ -71,7 +71,7 @@ class WizApplication:
 
         # If Obsidian vault path is empty on first run, offer a gentle notification
         if not config.obsidian_vault_path:
-            print("[Wiz] Tip: Configure your Obsidian Vault path in Settings to enable daily log sync.")
+            print("[WizDesk] Tip: Configure your Obsidian Vault path in Settings to enable daily log sync.")
 
     def show_quick_entry(self) -> None:
         """Open or focus the Quick-Entry note and task dialog."""
@@ -98,7 +98,7 @@ class WizApplication:
     def _on_sync_finished(self, success: bool, message: str) -> None:
         """Handle sync completion notifications."""
         icon = TrayIcon.MessageIcon.Information if success else TrayIcon.MessageIcon.Warning
-        self.tray_icon.showMessage("Wiz Sync", message, icon, 3000)
+        self.tray_icon.showMessage("WizDesk Sync", message, icon, 3000)
 
     def _on_session_polled(self, app_name: str, window_title: str, project_tag: str) -> None:
         """Briefly react when activity tracking records active project work."""
@@ -107,13 +107,13 @@ class WizApplication:
 
     def shutdown(self) -> None:
         """Gracefully stop background threads and flush pending data."""
-        print("[Wiz] Shutting down background services...")
+        print("[WizDesk] Shutting down background services...")
         self.tracker.stop()
         self.hotkey_listener.stop()
 
 
 def main() -> None:
-    """Initialize and run the Wiz companion application."""
+    """Initialize and run the WizDesk companion application."""
     set_windows_app_id()
 
     # Enable High DPI scaling
@@ -123,8 +123,8 @@ def main() -> None:
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Wiz")
-    app.setApplicationDisplayName("Wiz")
+    app.setApplicationName("WizDesk")
+    app.setApplicationDisplayName("WizDesk")
     app.setQuitOnLastWindowClosed(False)
 
     wiz_app = WizApplication()
@@ -133,7 +133,7 @@ def main() -> None:
     # Connect app quit
     app_signals.quit_application.connect(lambda: (wiz_app.shutdown(), app.quit()))
 
-    print("[Wiz] Desktop Companion running.")
+    print("[WizDesk] Desktop Companion running.")
     sys.exit(app.exec())
 
 
