@@ -73,12 +73,15 @@ class TrayIcon(QSystemTrayIcon):
                 font-size: 13px;
             }
             QMenu::item {
-                padding: 6px 20px 6px 12px;
+                padding: 6px 30px 6px 12px;
                 border-radius: 4px;
             }
             QMenu::item:selected {
                 background-color: #2D2D38;
                 color: #FFFFFF;
+            }
+            QMenu::right-arrow {
+                margin-right: 8px;
             }
             QMenu::separator {
                 height: 1px;

@@ -54,6 +54,37 @@ from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, Not
 FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
 FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
 
+CONTEXT_MENU_STYLE = f"""
+    QMenu {{
+        background-color: #FFFFFF;
+        color: #18181B;
+        border: 1px solid #E4E4E7;
+        border-radius: 8px;
+        padding: 4px;
+        font-family: {FONT_SANS};
+        font-size: 12.5px;
+    }}
+    QMenu::item {{
+        padding: 6px 32px 6px 14px;
+        border-radius: 4px;
+    }}
+    QMenu::item:selected {{
+        background-color: #F4F4F5;
+        color: #000000;
+    }}
+    QMenu::item:disabled {{
+        color: #A1A1AA;
+    }}
+    QMenu::right-arrow {{
+        margin-right: 10px;
+    }}
+    QMenu::separator {{
+        height: 1px;
+        background-color: #E4E4E7;
+        margin: 4px 6px;
+    }}
+"""
+
 
 class CreateSectionDialog(QDialog):
     """
@@ -632,32 +663,14 @@ class TaskRowWidget(QWidget):
 
     def _show_context_menu(self, pos: QPoint) -> None:
         menu = QMenu(self)
-        menu.setStyleSheet(f"""
-            QMenu {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
-                border-radius: 8px;
-                padding: 4px;
-                font-family: {FONT_SANS};
-                font-size: 12px;
-            }}
-            QMenu::item {{
-                padding: 6px 16px;
-                border-radius: 4px;
-            }}
-            QMenu::item:selected {{
-                background-color: #F4F4F5;
-                color: #000000;
-            }}
-        """)
+        menu.setStyleSheet(CONTEXT_MENU_STYLE)
 
         action_add_sub = menu.addAction("+ Add Subtask")
         menu.addSeparator()
 
         # "Move to Section" submenu
         section_menu = menu.addMenu("Move to Section")
-        section_menu.setStyleSheet(menu.styleSheet())
+        section_menu.setStyleSheet(CONTEXT_MENU_STYLE)
         curr_proj = self.task.project_tag or "General"
 
         for proj in self.all_projects:
@@ -810,28 +823,10 @@ class NoteRowWidget(QWidget):
 
     def _open_context_menu(self, global_pos: QPoint) -> None:
         menu = QMenu(self)
-        menu.setStyleSheet(f"""
-            QMenu {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
-                border-radius: 8px;
-                padding: 4px;
-                font-family: {FONT_SANS};
-                font-size: 12px;
-            }}
-            QMenu::item {{
-                padding: 6px 16px;
-                border-radius: 4px;
-            }}
-            QMenu::item:selected {{
-                background-color: #F4F4F5;
-                color: #000000;
-            }}
-        """)
+        menu.setStyleSheet(CONTEXT_MENU_STYLE)
 
         section_menu = menu.addMenu("Move to Section")
-        section_menu.setStyleSheet(menu.styleSheet())
+        section_menu.setStyleSheet(CONTEXT_MENU_STYLE)
         curr_proj = self.note.project_tag or "General"
 
         for proj in self.all_projects:
@@ -856,25 +851,7 @@ class NoteRowWidget(QWidget):
 
     def _open_section_menu(self, global_pos: QPoint) -> None:
         menu = QMenu(self)
-        menu.setStyleSheet(f"""
-            QMenu {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
-                border-radius: 8px;
-                padding: 4px;
-                font-family: {FONT_SANS};
-                font-size: 12px;
-            }}
-            QMenu::item {{
-                padding: 6px 16px;
-                border-radius: 4px;
-            }}
-            QMenu::item:selected {{
-                background-color: #F4F4F5;
-                color: #000000;
-            }}
-        """)
+        menu.setStyleSheet(CONTEXT_MENU_STYLE)
 
         curr_proj = self.note.project_tag or "General"
         for proj in self.all_projects:
