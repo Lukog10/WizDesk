@@ -481,11 +481,11 @@ class QuickEntryDialog(QDialog):
         """)
 
         # Add drop shadow
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(28)
-        shadow.setColor(QColor(0, 0, 0, 45))
-        shadow.setOffset(0, 6)
-        self.outer_frame.setGraphicsEffect(shadow)
+        self._shadow_effect = QGraphicsDropShadowEffect(self)
+        self._shadow_effect.setBlurRadius(28)
+        self._shadow_effect.setColor(QColor(0, 0, 0, 45))
+        self._shadow_effect.setOffset(0, 6)
+        self.outer_frame.setGraphicsEffect(self._shadow_effect)
 
         self.frame_layout = QVBoxLayout(self.outer_frame)
         self.frame_layout.setContentsMargins(18, 12, 18, 18)
@@ -1188,28 +1188,32 @@ class QuickEntryDialog(QDialog):
         """Toggle between maximized and normal window state."""
         if self.isMaximized():
             self.showNormal()
-            self.max_btn.setText("□")
-            self.max_btn.setToolTip("Maximize")
-            self.outer_layout.setContentsMargins(12, 12, 12, 12)
-            self.outer_frame.setStyleSheet("""
-                QFrame#outerFrame {
-                    background-color: #E6E6EA;
-                    border: 1px solid #D8D8DE;
-                    border-radius: 24px;
-                }
-            """)
         else:
             self.showMaximized()
-            self.max_btn.setText("❐")
-            self.max_btn.setToolTip("Restore")
-            self.outer_layout.setContentsMargins(0, 0, 0, 0)
-            self.outer_frame.setStyleSheet("""
-                QFrame#outerFrame {
-                    background-color: #E6E6EA;
-                    border: none;
-                    border-radius: 0px;
-                }
-            """)
+
+    def changeEvent(self, event) -> None:
+        """Handle window state changes (e.g. Maximize / Restore / Snap)."""
+        if event.type() == event.Type.WindowStateChange:
+            if self.isMaximized():
+                self.max_btn.setText("❐")
+                self.max_btn.setToolTip("Restore")
+                if hasattr(self, "_shadow_effect"):
+                    self._shadow_effect.setEnabled(False)
+            else:
+                self.max_btn.setText("□")
+                self.max_btn.setToolTip("Maximize")
+                if hasattr(self, "_shadow_effect"):
+                    self._shadow_effect.setEnabled(True)
+            self.update()
+        super().changeEvent(event)
+
+    def paintEvent(self, event) -> None:
+        """Explicitly clear translucent surface buffer to prevent widget ghosting on resize/maximize."""
+        painter = QPainter(self)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.end()
+        super().paintEvent(event)
 
     # --- Mouse drag & double click for frameless window movement & maximize ---
 
