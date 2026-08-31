@@ -243,10 +243,25 @@ class StorageRepository:
             )
             return cur.rowcount > 0
 
+    def update_task_project(self, task_id: int, project_tag: str) -> bool:
+        """Update the project/section tag of a task."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                "UPDATE tasks SET project_tag = ? WHERE id = ?",
+                (project_tag.strip(), task_id),
+            )
+            return cur.rowcount > 0
+
     def delete_task(self, task_id: int) -> bool:
         """Delete a task and cascade its subtasks and logs."""
         with self.db.cursor() as cur:
             cur.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+            return cur.rowcount > 0
+
+    def delete_subtask(self, subtask_id: int) -> bool:
+        """Delete a subtask by ID."""
+        with self.db.cursor() as cur:
+            cur.execute("DELETE FROM subtasks WHERE id = ?", (subtask_id,))
             return cur.rowcount > 0
 
     def create_subtask(self, task_id: int, title: str) -> int:

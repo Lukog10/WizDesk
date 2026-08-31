@@ -60,6 +60,44 @@ def test_quick_entry_dialog_task_flow(qapp, repo):
     dialog.close()
 
 
+def test_quick_entry_dialog_subtasks_and_section_change(qapp, repo):
+    """Test creating subtasks under a task and changing task section/project."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    # Create a task in 'Personal Projects'
+    task_id = repo.create_task("Build custom prototype", project_tag="Personal Projects")
+    dialog.refresh_tasks()
+
+    # Add a subtask
+    dialog._on_subtask_added(task_id, "Create Figma vector assets")
+    tasks = repo.get_task_hierarchy(status_filter="To-do")
+    target = [t for t in tasks if t.id == task_id][0]
+    assert len(target.subtasks) == 1
+    assert target.subtasks[0].title == "Create Figma vector assets"
+
+    # Toggle subtask to done
+    st_id = target.subtasks[0].id
+    dialog._on_subtask_toggled(st_id, "done")
+    tasks_after_st = repo.get_task_hierarchy(status_filter="Completed")
+    target_after = [t for t in tasks_after_st if t.id == task_id][0]
+    assert target_after.status == "done"
+
+    # Move section from 'Personal Projects' to 'Work'
+    dialog._on_task_project_changed(task_id, "Work")
+    tasks_work = repo.get_task_hierarchy(status_filter="Completed")
+    target_work = [t for t in tasks_work if t.id == task_id][0]
+    assert target_work.project_tag == "Work"
+
+    # Delete subtask
+    dialog._on_subtask_deleted(st_id)
+    tasks_reloaded = repo.get_task_hierarchy(status_filter="Completed")
+    target_reloaded = [t for t in tasks_reloaded if t.id == task_id][0]
+    assert len(target_reloaded.subtasks) == 0
+
+    dialog.close()
+
+
 def test_quick_entry_dialog_notes_flow(qapp, repo):
     """Test switching to Quick Notes mode and logging/toggling work notes."""
     sm = StateMachine()

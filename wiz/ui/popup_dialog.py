@@ -1,12 +1,13 @@
 """
-Minimalist, card-based activity, task, and quick-note tracking window for WizDesk.
+Minimalist, card-based activity, task, subtask, and quick-note tracking window for WizDesk.
 Implements the exact layout hierarchy:
 1. Outer window controls (Minimize, Maximize, Close).
 2. Inside White Card:
    - Top: Tasks | Quick Notes switcher
    - Below Switcher: Formatted Date (e.g. August 31, Monday)
    - Below Date: To-do | Completed | Pending | On Hold | Cancelled status bar
-   - Task / Note Content Area
+   - Task / Subtask / Note Content Area
+   - Task options: Add subtasks, inline subtask checkoffs, and Move to Section (e.g. Personal -> Work)
    - Bottom Add Bar with Section selector & Create Section option
 """
 
@@ -59,10 +60,11 @@ class RoundedCheckbox(QWidget):
 
     toggled = pyqtSignal(bool)
 
-    def __init__(self, checked: bool = False, parent: Optional[QWidget] = None):
+    def __init__(self, checked: bool = False, size: int = 20, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self._checked = checked
-        self.setFixedSize(20, 20)
+        self._size = size
+        self.setFixedSize(size, size)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
     @property
@@ -87,8 +89,10 @@ class RoundedCheckbox(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
-        rect = QRectF(2.0, 2.0, 16.0, 16.0)
-        radius = 4.5
+        margin = 2.0
+        s = float(self._size) - (margin * 2)
+        rect = QRectF(margin, margin, s, s)
+        radius = 4.0 if self._size >= 18 else 3.0
 
         if self._checked:
             # Filled dark rounded square with crisp white checkmark
@@ -96,11 +100,18 @@ class RoundedCheckbox(QWidget):
             painter.setBrush(QColor("#18181B"))
             painter.drawRoundedRect(rect, radius, radius)
 
-            # Draw white checkmark path
-            pen = QPen(QColor("#FFFFFF"), 1.8, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+            # Draw white checkmark path scaled to size
+            scale = self._size / 20.0
+            pen = QPen(QColor("#FFFFFF"), 1.8 * scale, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
             painter.setPen(pen)
-            painter.drawLine(int(rect.x() + 4.5), int(rect.y() + 8.5), int(rect.x() + 7.5), int(rect.y() + 11.5))
-            painter.drawLine(int(rect.x() + 7.5), int(rect.y() + 11.5), int(rect.x() + 12.0), int(rect.y() + 5.0))
+            p1_x = rect.x() + (4.5 * scale)
+            p1_y = rect.y() + (8.5 * scale)
+            p2_x = rect.x() + (7.5 * scale)
+            p2_y = rect.y() + (11.5 * scale)
+            p3_x = rect.x() + (12.0 * scale)
+            p3_y = rect.y() + (5.0 * scale)
+            painter.drawLine(int(p1_x), int(p1_y), int(p2_x), int(p2_y))
+            painter.drawLine(int(p2_x), int(p2_y), int(p3_x), int(p3_y))
         else:
             # Clean subtle grey rounded outline
             pen = QPen(QColor("#D0D0D6"), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
@@ -186,34 +197,229 @@ class SegmentedFilterBar(QWidget):
                 """)
 
 
+class SubtaskRowWidget(QWidget):
+    """Single subtask row nested under a parent task."""
+
+    status_toggled = pyqtSignal(int, str)  # subtask_id, new_status
+    delete_requested = pyqtSignal(int)  # subtask_id
+
+    def __init__(self, subtask: SubtaskRecord, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.subtask = subtask
+        self.subtask_id = subtask.id or 0
+
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(28, 2, 4, 2)
+        self.layout.setSpacing(8)
+
+        is_done = (subtask.status in ("done", "completed"))
+        self.checkbox = RoundedCheckbox(checked=is_done, size=16, parent=self)
+        self.checkbox.toggled.connect(self._on_toggled)
+        self.layout.addWidget(self.checkbox)
+
+        self.label = QLabel(subtask.title)
+        self.label.setFont(QFont("Segoe UI", 9))
+        self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        self._update_label_style(is_done)
+        self.layout.addWidget(self.label, stretch=1)
+
+        del_btn = QPushButton("x")
+        del_btn.setFixedSize(16, 16)
+        del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        del_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #D4D4D8;
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 10px;
+                font-weight: bold;
+                border-radius: 8px;
+            }}
+            QPushButton:hover {{
+                color: #EF4444;
+                background-color: rgba(239, 68, 68, 0.1);
+            }}
+        """)
+        del_btn.clicked.connect(lambda: self.delete_requested.emit(self.subtask_id))
+        self.layout.addWidget(del_btn)
+
+    def _update_label_style(self, is_done: bool) -> None:
+        if is_done:
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #A1A1AA;
+                    text-decoration: line-through;
+                    font-family: {FONT_SANS};
+                    font-size: 12.5px;
+                }}
+            """)
+        else:
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #52525B;
+                    text-decoration: none;
+                    font-family: {FONT_SANS};
+                    font-size: 12.5px;
+                }}
+            """)
+
+    def _on_toggled(self, checked: bool) -> None:
+        new_status = "done" if checked else "not_started"
+        self._update_label_style(checked)
+        self.status_toggled.emit(self.subtask_id, new_status)
+
+
 class TaskRowWidget(QWidget):
-    """Single task row with custom checkbox, project tag, and clean typography."""
+    """
+    Parent task row featuring:
+    - Custom rounded checkbox & task title
+    - Nested subtask list with checkboxes
+    - '+ subtask' inline adder
+    - Right-click context menu with 'Move to Section ->' (e.g. Work, Personal Projects) and status moves
+    """
 
     status_toggled = pyqtSignal(int, str)  # task_id, new_status
     action_requested = pyqtSignal(str, int)  # action_type, task_id
+    project_changed = pyqtSignal(int, str)  # task_id, new_project
+    subtask_added = pyqtSignal(int, str)  # task_id, subtask_title
+    subtask_toggled = pyqtSignal(int, str)  # subtask_id, new_status
+    subtask_deleted = pyqtSignal(int)  # subtask_id
 
-    def __init__(self, task: TaskRecord, parent: Optional[QWidget] = None):
+    def __init__(self, task: TaskRecord, all_projects: List[str], parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.task = task
         self.task_id = task.id or 0
+        self.all_projects = all_projects
 
-        self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(4, 4, 4, 4)
-        self.layout.setSpacing(10)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 2, 0, 2)
+        self.main_layout.setSpacing(3)
+
+        # Top row: Checkbox, Title, + Subtask button
+        self.top_widget = QWidget()
+        top_layout = QHBoxLayout(self.top_widget)
+        top_layout.setContentsMargins(4, 3, 4, 3)
+        top_layout.setSpacing(10)
 
         is_done = (task.status in ("done", "completed"))
-        self.checkbox = RoundedCheckbox(checked=is_done, parent=self)
+        self.checkbox = RoundedCheckbox(checked=is_done, size=20, parent=self.top_widget)
         self.checkbox.toggled.connect(self._on_checkbox_toggled)
-        self.layout.addWidget(self.checkbox)
+        top_layout.addWidget(self.checkbox)
 
         self.label = QLabel(task.title)
         self.label.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self._update_label_style(is_done)
-        self.layout.addWidget(self.label, stretch=1)
+        top_layout.addWidget(self.label, stretch=1)
+
+        # "+ subtask" button
+        self.add_sub_btn = QPushButton("+ subtask")
+        self.add_sub_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.add_sub_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #A1A1AA;
+                border: none;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 500;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                color: #18181B;
+                background-color: #F4F4F5;
+            }}
+        """)
+        self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
+        top_layout.addWidget(self.add_sub_btn)
+
+        self.main_layout.addWidget(self.top_widget)
+
+        # Subtasks container
+        self.subtasks_container = QWidget()
+        self.subtasks_layout = QVBoxLayout(self.subtasks_container)
+        self.subtasks_layout.setContentsMargins(0, 0, 0, 0)
+        self.subtasks_layout.setSpacing(2)
+
+        # Populate existing subtasks
+        for st in task.subtasks:
+            st_row = SubtaskRowWidget(st, self.subtasks_container)
+            st_row.status_toggled.connect(self.subtask_toggled.emit)
+            st_row.delete_requested.connect(self.subtask_deleted.emit)
+            self.subtasks_layout.addWidget(st_row)
+
+        # Inline subtask input bar (hidden by default)
+        self.sub_input_widget = QWidget()
+        sub_input_layout = QHBoxLayout(self.sub_input_widget)
+        sub_input_layout.setContentsMargins(28, 2, 4, 2)
+        sub_input_layout.setSpacing(6)
+
+        self.sub_input = QLineEdit()
+        self.sub_input.setPlaceholderText("+ Add subtask... (Press Enter)")
+        self.sub_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #D4D4D8;
+                border-radius: 6px;
+                padding: 4px 8px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+            QLineEdit:focus {{
+                background-color: #FFFFFF;
+                border: 1.5px solid #18181B;
+            }}
+        """)
+        self.sub_input.returnPressed.connect(self._on_submit_subtask)
+        sub_input_layout.addWidget(self.sub_input, stretch=1)
+
+        sub_add_confirm_btn = QPushButton("Add")
+        sub_add_confirm_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        sub_add_confirm_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #18181B;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-family: {FONT_SANS};
+                font-size: 11.5px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: #3F3F46;
+            }}
+        """)
+        sub_add_confirm_btn.clicked.connect(self._on_submit_subtask)
+        sub_input_layout.addWidget(sub_add_confirm_btn)
+
+        self.sub_input_widget.setVisible(False)
+        self.subtasks_layout.addWidget(self.sub_input_widget)
+
+        self.main_layout.addWidget(self.subtasks_container)
 
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
+
+    def _toggle_subtask_input(self, force_show: bool = False) -> None:
+        """Toggle inline subtask input visibility."""
+        is_vis = self.sub_input_widget.isVisible()
+        new_vis = True if force_show else not is_vis
+        self.sub_input_widget.setVisible(new_vis)
+        if new_vis:
+            self.sub_input.setFocus()
+
+    def _on_submit_subtask(self) -> None:
+        """Submit new subtask."""
+        title = self.sub_input.text().strip()
+        if not title:
+            return
+        self.subtask_added.emit(self.task_id, title)
+        self.sub_input.clear()
+        self.sub_input_widget.setVisible(False)
 
     def _update_label_style(self, is_done: bool) -> None:
         if is_done:
@@ -263,6 +469,24 @@ class TaskRowWidget(QWidget):
             }}
         """)
 
+        action_add_sub = menu.addAction("+ Add Subtask")
+        menu.addSeparator()
+
+        # "Move to Section" submenu
+        section_menu = menu.addMenu("Move to Section")
+        section_menu.setStyleSheet(menu.styleSheet())
+        curr_proj = self.task.project_tag or "General"
+
+        for proj in self.all_projects:
+            act = section_menu.addAction(f"Section: {proj}")
+            if proj == curr_proj:
+                act.setEnabled(False)
+            act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.task_id, p))
+
+        section_menu.addSeparator()
+        action_new_sec = section_menu.addAction("+ Create New Section...")
+
+        menu.addSeparator()
         action_todo = menu.addAction("Move to To-do")
         action_pending = menu.addAction("Move to Pending")
         action_on_hold = menu.addAction("Move to On Hold")
@@ -271,7 +495,13 @@ class TaskRowWidget(QWidget):
         action_delete = menu.addAction("Delete Task")
 
         action = menu.exec(self.mapToGlobal(pos))
-        if action == action_todo:
+        if action == action_add_sub:
+            self._toggle_subtask_input(force_show=True)
+        elif action == action_new_sec:
+            name, ok = QInputDialog.getText(self, "Create Section", "New Section / Project Name:")
+            if ok and name.strip():
+                self.project_changed.emit(self.task_id, name.strip())
+        elif action == action_todo:
             self.status_toggled.emit(self.task_id, "not_started")
         elif action == action_pending:
             self.status_toggled.emit(self.task_id, "in_progress")
@@ -298,7 +528,7 @@ class NoteRowWidget(QWidget):
         self.layout.setContentsMargins(4, 6, 4, 6)
         self.layout.setSpacing(10)
 
-        self.checkbox = RoundedCheckbox(checked=note.is_completed, parent=self)
+        self.checkbox = RoundedCheckbox(checked=note.is_completed, size=20, parent=self)
         self.checkbox.toggled.connect(self._on_toggled)
         self.layout.addWidget(self.checkbox)
 
@@ -447,7 +677,7 @@ class QuickEntryDialog(QDialog):
       1. Tasks | Quick Notes switcher
       2. Dynamic Date (e.g. August 31, Monday)
       3. Filter Capsule Bar (To-do, Completed, Pending, On Hold, Cancelled)
-      4. Task / Note scroll area
+      4. Task / Subtask / Note scroll area
       5. Bottom Add Bar with Section picker and Create Section option
     """
 
@@ -971,12 +1201,15 @@ class QuickEntryDialog(QDialog):
         existing = self.repo.get_task_hierarchy()
         if not existing:
             self.repo.create_or_update_project("Work", ["work", "code", "landing", "testing"])
-            self.repo.create_task("Finalize landing page wireframes", project_tag="Work")
+            t1 = self.repo.create_task("Finalize landing page wireframes", project_tag="Work")
+            self.repo.create_subtask(t1, "Hero layout design")
+            self.repo.create_subtask(t1, "Responsive mobile view")
             self.repo.create_task("Conduct user testing on prototypes", project_tag="Work")
             self.repo.create_task("Implement feedback and iterate on designs", project_tag="Work")
 
             self.repo.create_or_update_project("Personal Projects", ["personal", "figma", "motion", "hero"])
-            self.repo.create_task("Explore motion interaction ideas", project_tag="Personal Projects")
+            t2 = self.repo.create_task("Explore motion interaction ideas", project_tag="Personal Projects")
+            self.repo.create_subtask(t2, "Ghost mascot idle breathing loop")
             self.repo.create_task("Improve Figma variables structure", project_tag="Personal Projects")
             self.repo.create_task("Design new hero section concept", project_tag="Personal Projects")
 
@@ -1064,6 +1297,10 @@ class QuickEntryDialog(QDialog):
         active_filter = self.filter_bar.current_filter
         tasks = self.repo.get_task_hierarchy(status_filter=active_filter)
 
+        all_projects = [p.name for p in self.repo.get_all_projects()]
+        if not all_projects:
+            all_projects = ["Work", "Personal Projects"]
+
         # Group tasks by project tag
         grouped: Dict[str, List[TaskRecord]] = {}
         for t in tasks:
@@ -1089,9 +1326,13 @@ class QuickEntryDialog(QDialog):
             group_widget = ProjectGroupWidget(project_name, task_list, self.content_widget)
 
             for task in task_list:
-                row = TaskRowWidget(task, group_widget.tasks_container)
+                row = TaskRowWidget(task, all_projects, group_widget.tasks_container)
                 row.status_toggled.connect(self._on_task_status_toggled)
                 row.action_requested.connect(self._on_task_action)
+                row.project_changed.connect(self._on_task_project_changed)
+                row.subtask_added.connect(self._on_subtask_added)
+                row.subtask_toggled.connect(self._on_subtask_toggled)
+                row.subtask_deleted.connect(self._on_subtask_deleted)
                 group_widget.tasks_layout.addWidget(row)
 
             self.content_layout.insertWidget(idx, group_widget)
@@ -1139,6 +1380,30 @@ class QuickEntryDialog(QDialog):
         if action_type == "delete":
             self.repo.delete_task(task_id)
             self.refresh_tasks()
+
+    def _on_task_project_changed(self, task_id: int, new_project: str) -> None:
+        """Handle moving a task to a different section/project."""
+        self.repo.create_or_update_project(new_project, [new_project.lower()])
+        self.repo.update_task_project(task_id, new_project)
+        self._populate_projects()
+        self.refresh_tasks()
+
+    def _on_subtask_added(self, task_id: int, title: str) -> None:
+        """Add a subtask under a task."""
+        self.repo.create_subtask(task_id, title)
+        self.refresh_tasks()
+
+    def _on_subtask_toggled(self, subtask_id: int, new_status: str) -> None:
+        """Toggle subtask status."""
+        self.repo.update_subtask_status(subtask_id, new_status)
+        if new_status == "done":
+            self.state_machine.trigger_complete(duration_ms=2000)
+        self.refresh_tasks()
+
+    def _on_subtask_deleted(self, subtask_id: int) -> None:
+        """Delete a subtask."""
+        self.repo.delete_subtask(subtask_id)
+        self.refresh_tasks()
 
     def _on_note_toggled(self, note_id: int, is_completed: bool) -> None:
         """Toggle note completion status."""
