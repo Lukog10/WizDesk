@@ -1,8 +1,12 @@
-"""Minimalist, card-based activity and task tracking dialog matching the reference design."""
+"""
+Minimalist, card-based activity, task, and quick-note tracking window for WizDesk.
+Uses professional typography (Inter / Segoe UI / JetBrains Mono) and provides
+both structured project tasks and instant manual work-note logging for Obsidian sync.
+"""
 
 from datetime import datetime, date
 from typing import Optional, List, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QRect, QRectF
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QRectF
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -30,16 +34,22 @@ from PyQt6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QMessageBox,
     QInputDialog,
+    QStackedWidget,
 )
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
-from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord
+from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
+
+
+# Professional Font Stacks
+FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
+FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
 
 
 class RoundedCheckbox(QWidget):
-    """Custom rounded-square checkbox widget matching the reference aesthetic."""
+    """Custom rounded-square checkbox widget with high-precision anti-aliased rendering."""
 
     toggled = pyqtSignal(bool)
 
@@ -139,39 +149,39 @@ class SegmentedFilterBar(QWidget):
         """Update button styles to give the active button a white pill elevation."""
         for opt, btn in self._buttons.items():
             if opt == self.current_filter:
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #FFFFFF;
                         color: #111113;
                         border: none;
                         border-radius: 7px;
-                        font-family: 'Consolas', 'Cascadia Code', 'SF Mono', monospace;
+                        font-family: {FONT_SANS};
                         font-size: 12.5px;
-                        font-weight: bold;
+                        font-weight: 600;
                         padding: 0 10px;
-                    }
+                    }}
                 """)
             else:
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: transparent;
-                        color: #72727D;
+                        color: #71717A;
                         border: none;
                         border-radius: 7px;
-                        font-family: 'Consolas', 'Cascadia Code', 'SF Mono', monospace;
+                        font-family: {FONT_SANS};
                         font-size: 12.5px;
                         font-weight: 500;
                         padding: 0 10px;
-                    }
-                    QPushButton:hover {
-                        color: #222226;
+                    }}
+                    QPushButton:hover {{
+                        color: #18181B;
                         background-color: rgba(255, 255, 255, 0.4);
-                    }
+                    }}
                 """)
 
 
 class TaskRowWidget(QWidget):
-    """Single task row with custom checkbox and monospace label."""
+    """Single task row with custom checkbox, project tag, and clean typography."""
 
     status_toggled = pyqtSignal(int, str)  # task_id, new_status
     action_requested = pyqtSignal(str, int)  # action_type, task_id
@@ -191,7 +201,7 @@ class TaskRowWidget(QWidget):
         self.layout.addWidget(self.checkbox)
 
         self.label = QLabel(task.title)
-        self.label.setFont(QFont("Consolas", 11, QFont.Weight.Medium))
+        self.label.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self._update_label_style(is_done)
         self.layout.addWidget(self.label, stretch=1)
@@ -201,22 +211,23 @@ class TaskRowWidget(QWidget):
 
     def _update_label_style(self, is_done: bool) -> None:
         if is_done:
-            self.label.setStyleSheet("""
-                QLabel {
-                    color: #9898A0;
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #A1A1AA;
                     text-decoration: line-through;
-                    font-family: 'Consolas', 'Cascadia Code', monospace;
+                    font-family: {FONT_SANS};
                     font-size: 13.5px;
-                }
+                }}
             """)
         else:
-            self.label.setStyleSheet("""
-                QLabel {
-                    color: #1A1A1E;
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #18181B;
                     text-decoration: none;
-                    font-family: 'Consolas', 'Cascadia Code', monospace;
+                    font-family: {FONT_SANS};
                     font-size: 13.5px;
-                }
+                    font-weight: 500;
+                }}
             """)
 
     def _on_checkbox_toggled(self, checked: bool) -> None:
@@ -226,24 +237,24 @@ class TaskRowWidget(QWidget):
 
     def _show_context_menu(self, pos: QPoint) -> None:
         menu = QMenu(self)
-        menu.setStyleSheet("""
-            QMenu {
+        menu.setStyleSheet(f"""
+            QMenu {{
                 background-color: #FFFFFF;
-                color: #1A1A1E;
-                border: 1px solid #E0E0E6;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
                 border-radius: 8px;
                 padding: 4px;
-                font-family: 'Consolas', 'Cascadia Code', monospace;
+                font-family: {FONT_SANS};
                 font-size: 12px;
-            }
-            QMenu::item {
+            }}
+            QMenu::item {{
                 padding: 6px 16px;
                 border-radius: 4px;
-            }
-            QMenu::item:selected {
-                background-color: #F0F0F4;
+            }}
+            QMenu::item:selected {{
+                background-color: #F4F4F5;
                 color: #000000;
-            }
+            }}
         """)
 
         action_todo = menu.addAction("Move to To-do")
@@ -266,6 +277,113 @@ class TaskRowWidget(QWidget):
             self.action_requested.emit("delete", self.task_id)
 
 
+class NoteRowWidget(QWidget):
+    """Single quick work note row with completion checkbox, project tag, and timestamp."""
+
+    toggled = pyqtSignal(int, bool)  # note_id, is_completed
+    delete_requested = pyqtSignal(int)  # note_id
+
+    def __init__(self, note: NoteRecord, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.note = note
+        self.note_id = note.id or 0
+
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(4, 6, 4, 6)
+        self.layout.setSpacing(10)
+
+        self.checkbox = RoundedCheckbox(checked=note.is_completed, parent=self)
+        self.checkbox.toggled.connect(self._on_toggled)
+        self.layout.addWidget(self.checkbox)
+
+        # Content column
+        content_layout = QVBoxLayout()
+        content_layout.setSpacing(2)
+
+        self.label = QLabel(note.content)
+        self.label.setFont(QFont("Segoe UI", 10))
+        self._update_text_style(note.is_completed)
+        content_layout.addWidget(self.label)
+
+        # Meta row: tag + timestamp
+        meta_layout = QHBoxLayout()
+        meta_layout.setSpacing(8)
+
+        if note.project_tag:
+            tag_lbl = QLabel(f"[{note.project_tag}]")
+            tag_lbl.setStyleSheet(f"""
+                QLabel {{
+                    color: #2563EB;
+                    font-family: {FONT_MONO};
+                    font-size: 11px;
+                    font-weight: 600;
+                }}
+            """)
+            meta_layout.addWidget(tag_lbl)
+
+        time_str = note.created_at.strftime("%I:%M %p").lstrip("0")
+        time_lbl = QLabel(time_str)
+        time_lbl.setStyleSheet(f"""
+            QLabel {{
+                color: #A1A1AA;
+                font-family: {FONT_MONO};
+                font-size: 11px;
+            }}
+        """)
+        meta_layout.addWidget(time_lbl)
+        meta_layout.addStretch()
+
+        content_layout.addLayout(meta_layout)
+        self.layout.addLayout(content_layout, stretch=1)
+
+        # Delete button
+        del_btn = QPushButton("x")
+        del_btn.setFixedSize(18, 18)
+        del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        del_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #D4D4D8;
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 11px;
+                font-weight: bold;
+                border-radius: 9px;
+            }}
+            QPushButton:hover {{
+                color: #EF4444;
+                background-color: rgba(239, 68, 68, 0.1);
+            }}
+        """)
+        del_btn.clicked.connect(lambda: self.delete_requested.emit(self.note_id))
+        self.layout.addWidget(del_btn)
+
+    def _update_text_style(self, is_done: bool) -> None:
+        if is_done:
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #A1A1AA;
+                    text-decoration: line-through;
+                    font-family: {FONT_SANS};
+                    font-size: 13.5px;
+                }}
+            """)
+        else:
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #18181B;
+                    text-decoration: none;
+                    font-family: {FONT_SANS};
+                    font-size: 13.5px;
+                    font-weight: 500;
+                }}
+            """)
+
+    def _on_toggled(self, checked: bool) -> None:
+        self._update_text_style(checked)
+        self.toggled.emit(self.note_id, checked)
+
+
 class ProjectGroupWidget(QWidget):
     """Collapsible project section with chevron header (e.g. ▼ Work)."""
 
@@ -282,20 +400,20 @@ class ProjectGroupWidget(QWidget):
         # Header bar
         self.header_btn = QPushButton(f"v {project_name}")
         self.header_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.header_btn.setStyleSheet("""
-            QPushButton {
+        self.header_btn.setStyleSheet(f"""
+            QPushButton {{
                 background: transparent;
                 border: none;
                 text-align: left;
-                font-family: 'Consolas', 'Cascadia Code', monospace;
-                font-size: 15px;
-                font-weight: bold;
-                color: #111113;
+                font-family: {FONT_SANS};
+                font-size: 14.5px;
+                font-weight: 700;
+                color: #18181B;
                 padding: 4px 0;
-            }
-            QPushButton:hover {
-                color: #44444C;
-            }
+            }}
+            QPushButton:hover {{
+                color: #52525B;
+            }}
         """)
         self.header_btn.clicked.connect(self.toggle_collapse)
         self.main_layout.addWidget(self.header_btn)
@@ -317,19 +435,22 @@ class ProjectGroupWidget(QWidget):
 
 class QuickEntryDialog(QDialog):
     """
-    Minimalist desktop window matching the reference design with dynamic date header,
-    pill capsule filter bar, grouped project sections, and rounded checkboxes.
+    State-of-the-art desktop workspace for WizDesk:
+    - Clean minimalist card layout with professional typography (Inter / Segoe UI / JetBrains Mono).
+    - Top Switcher for Tasks vs Quick Work Notes.
+    - Full Obsidian daily log sync integration.
     """
 
     def __init__(self, state_machine: StateMachine, repository: Optional[StorageRepository] = None, parent=None):
         super().__init__(parent)
         self.state_machine = state_machine
         self.repo = repository or StorageRepository()
+        self.current_view_mode = "tasks"  # "tasks" or "notes"
 
         # Window settings
-        self.setWindowTitle("WizDesk - Tasks")
-        self.setMinimumSize(480, 560)
-        self.resize(500, 600)
+        self.setWindowTitle("WizDesk - Workspace")
+        self.setMinimumSize(480, 580)
+        self.resize(520, 640)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
 
@@ -338,7 +459,7 @@ class QuickEntryDialog(QDialog):
         self.outer_layout.setContentsMargins(12, 12, 12, 12)
         self.outer_layout.setSpacing(0)
 
-        # Outer rounded card frame (#E8E8EC)
+        # Outer rounded card frame (#E6E6EA)
         self.outer_frame = QFrame()
         self.outer_frame.setObjectName("outerFrame")
         self.outer_frame.setStyleSheet("""
@@ -360,46 +481,71 @@ class QuickEntryDialog(QDialog):
         self.frame_layout.setContentsMargins(18, 14, 18, 18)
         self.frame_layout.setSpacing(12)
 
-        # Top Bar: Date header + Window Controls (Minimize, Maximize, Close)
+        # --- Top Bar: Mode Switcher (Tasks | Quick Notes) + Date + Window Controls ---
         top_bar = QHBoxLayout()
         top_bar.setContentsMargins(4, 0, 4, 0)
-        top_bar.setSpacing(6)
+        top_bar.setSpacing(10)
+
+        # Mode switcher capsule (Tasks | Quick Notes)
+        mode_capsule = QFrame()
+        mode_capsule.setStyleSheet("""
+            QFrame {
+                background-color: #DCDCE2;
+                border-radius: 8px;
+            }
+        """)
+        mode_layout = QHBoxLayout(mode_capsule)
+        mode_layout.setContentsMargins(2, 2, 2, 2)
+        mode_layout.setSpacing(2)
+
+        self.tasks_mode_btn = QPushButton("Tasks")
+        self.tasks_mode_btn.setFixedHeight(26)
+        self.tasks_mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.tasks_mode_btn.clicked.connect(lambda: self._set_view_mode("tasks"))
+        mode_layout.addWidget(self.tasks_mode_btn)
+
+        self.notes_mode_btn = QPushButton("Quick Notes")
+        self.notes_mode_btn.setFixedHeight(26)
+        self.notes_mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.notes_mode_btn.clicked.connect(lambda: self._set_view_mode("notes"))
+        mode_layout.addWidget(self.notes_mode_btn)
+
+        top_bar.addWidget(mode_capsule)
+        top_bar.addStretch()
 
         current_date_str = datetime.now().strftime("%B %d, %A")
         self.date_label = QLabel(current_date_str)
-        self.date_label.setStyleSheet("""
-            QLabel {
-                color: #55555C;
-                font-family: 'Consolas', 'Cascadia Code', 'SF Mono', monospace;
+        self.date_label.setStyleSheet(f"""
+            QLabel {{
+                color: #52525B;
+                font-family: {FONT_MONO};
                 font-size: 13px;
                 font-weight: 600;
-            }
+            }}
         """)
-        top_bar.addStretch()
         top_bar.addWidget(self.date_label)
         top_bar.addStretch()
 
-        # Window Controls Container
+        # Window Controls (Minimize, Maximize, Close)
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(4)
 
-        btn_style = """
-            QPushButton {
+        btn_style = f"""
+            QPushButton {{
                 background: transparent;
-                color: #777780;
+                color: #71717A;
                 border: none;
-                font-family: 'Consolas', 'Segoe UI', monospace;
+                font-family: {FONT_MONO};
                 font-size: 13px;
                 font-weight: bold;
                 border-radius: 11px;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: rgba(0, 0, 0, 0.08);
-                color: #111111;
-            }
+                color: #18181B;
+            }}
         """
 
-        # 1. Minimize Button
         self.min_btn = QPushButton("—")
         self.min_btn.setFixedSize(22, 22)
         self.min_btn.setToolTip("Minimize")
@@ -408,7 +554,6 @@ class QuickEntryDialog(QDialog):
         self.min_btn.clicked.connect(self.showMinimized)
         controls_layout.addWidget(self.min_btn)
 
-        # 2. Maximize / Restore Button
         self.max_btn = QPushButton("□")
         self.max_btn.setFixedSize(22, 22)
         self.max_btn.setToolTip("Maximize")
@@ -417,7 +562,6 @@ class QuickEntryDialog(QDialog):
         self.max_btn.clicked.connect(self._toggle_maximize_restore)
         controls_layout.addWidget(self.max_btn)
 
-        # 3. Close Button
         self.close_btn = QPushButton("x")
         self.close_btn.setFixedSize(22, 22)
         self.close_btn.setToolTip("Close")
@@ -443,10 +587,21 @@ class QuickEntryDialog(QDialog):
         self.inner_layout.setContentsMargins(16, 16, 16, 16)
         self.inner_layout.setSpacing(12)
 
+        # Stacked Widget for switching between Tasks View and Quick Notes View
+        self.stack = QStackedWidget()
+
+        # ==========================================
+        # PAGE 1: TASKS VIEW
+        # ==========================================
+        self.tasks_page = QWidget()
+        tasks_page_layout = QVBoxLayout(self.tasks_page)
+        tasks_page_layout.setContentsMargins(0, 0, 0, 0)
+        tasks_page_layout.setSpacing(12)
+
         # 1. Segmented Filter Capsule Bar
         self.filter_bar = SegmentedFilterBar()
         self.filter_bar.filter_changed.connect(self._on_filter_changed)
-        self.inner_layout.addWidget(self.filter_bar)
+        tasks_page_layout.addWidget(self.filter_bar)
 
         # 2. Scrollable Tasks Area
         self.scroll_area = QScrollArea()
@@ -463,7 +618,7 @@ class QuickEntryDialog(QDialog):
                 margin: 0px;
             }
             QScrollBar::handle:vertical {
-                background: #D8D8DC;
+                background: #D4D4D8;
                 min-height: 20px;
                 border-radius: 3px;
             }
@@ -480,74 +635,196 @@ class QuickEntryDialog(QDialog):
         self.content_layout.addStretch()
 
         self.scroll_area.setWidget(self.content_widget)
-        self.inner_layout.addWidget(self.scroll_area, stretch=1)
+        tasks_page_layout.addWidget(self.scroll_area, stretch=1)
 
         # 3. Bottom Inline Add Task Bar
-        add_bar_layout = QHBoxLayout()
-        add_bar_layout.setSpacing(8)
+        add_task_layout = QHBoxLayout()
+        add_task_layout.setSpacing(8)
 
         self.add_input = QLineEdit()
         self.add_input.setPlaceholderText("+ Add task... (Press Enter)")
-        self.add_input.setStyleSheet("""
-            QLineEdit {
-                background-color: #F6F6F8;
-                color: #1A1A1E;
-                border: 1px solid #E2E2E6;
+        self.add_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
                 border-radius: 8px;
                 padding: 8px 12px;
-                font-family: 'Consolas', 'Cascadia Code', monospace;
+                font-family: {FONT_SANS};
                 font-size: 13px;
-            }
-            QLineEdit:focus {
+            }}
+            QLineEdit:focus {{
                 background-color: #FFFFFF;
-                border: 1.5px solid #111111;
-            }
+                border: 1.5px solid #18181B;
+            }}
         """)
         self.add_input.returnPressed.connect(self._on_quick_add_task)
-        add_bar_layout.addWidget(self.add_input, stretch=3)
+        add_task_layout.addWidget(self.add_input, stretch=3)
 
         self.project_combo = QComboBox()
         self.project_combo.setEditable(True)
         self.project_combo.setPlaceholderText("Project")
-        self.project_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #F6F6F8;
-                color: #1A1A1E;
-                border: 1px solid #E2E2E6;
+        self.project_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
                 border-radius: 8px;
                 padding: 6px 10px;
-                font-family: 'Consolas', 'Cascadia Code', monospace;
+                font-family: {FONT_SANS};
                 font-size: 12.5px;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox::drop-down {{
                 border: none;
-            }
+            }}
         """)
         self._populate_projects()
-        add_bar_layout.addWidget(self.project_combo, stretch=1)
+        add_task_layout.addWidget(self.project_combo, stretch=1)
 
-        add_btn = QPushButton("Add")
-        add_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        add_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #111113;
+        add_task_btn = QPushButton("Add")
+        add_task_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        add_task_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #18181B;
                 color: #FFFFFF;
                 border: none;
                 border-radius: 8px;
                 padding: 8px 14px;
-                font-family: 'Consolas', 'Cascadia Code', monospace;
+                font-family: {FONT_SANS};
                 font-size: 12.5px;
-                font-weight: bold;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: #3F3F46;
+            }}
+        """)
+        add_task_btn.clicked.connect(self._on_quick_add_task)
+        add_task_layout.addWidget(add_task_btn)
+
+        tasks_page_layout.addLayout(add_task_layout)
+        self.stack.addWidget(self.tasks_page)
+
+        # ==========================================
+        # PAGE 2: QUICK NOTES VIEW
+        # ==========================================
+        self.notes_page = QWidget()
+        notes_page_layout = QVBoxLayout(self.notes_page)
+        notes_page_layout.setContentsMargins(0, 0, 0, 0)
+        notes_page_layout.setSpacing(12)
+
+        # Notes subtitle / hint
+        notes_hdr = QLabel("Track work progress notes, thoughts, or blockers for today:")
+        notes_hdr.setStyleSheet(f"""
+            QLabel {{
+                color: #71717A;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+                font-weight: 500;
+            }}
+        """)
+        notes_page_layout.addWidget(notes_hdr)
+
+        # Scrollable Notes Area
+        self.notes_scroll = QScrollArea()
+        self.notes_scroll.setWidgetResizable(True)
+        self.notes_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.notes_scroll.setStyleSheet("""
+            QScrollArea {
+                background: transparent;
+                border: none;
             }
-            QPushButton:hover {
-                background-color: #333338;
+            QScrollBar:vertical {
+                background: transparent;
+                width: 6px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #D4D4D8;
+                min-height: 20px;
+                border-radius: 3px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
             }
         """)
-        add_btn.clicked.connect(self._on_quick_add_task)
-        add_bar_layout.addWidget(add_btn)
 
-        self.inner_layout.addLayout(add_bar_layout)
+        self.notes_content_widget = QWidget()
+        self.notes_content_widget.setStyleSheet("background: transparent;")
+        self.notes_content_layout = QVBoxLayout(self.notes_content_widget)
+        self.notes_content_layout.setContentsMargins(4, 4, 4, 4)
+        self.notes_content_layout.setSpacing(8)
+        self.notes_content_layout.addStretch()
 
+        self.notes_scroll.setWidget(self.notes_content_widget)
+        notes_page_layout.addWidget(self.notes_scroll, stretch=1)
+
+        # Bottom Inline Add Note Bar
+        add_note_layout = QHBoxLayout()
+        add_note_layout.setSpacing(8)
+
+        self.note_input = QLineEdit()
+        self.note_input.setPlaceholderText("+ Log a quick work note... (Press Enter)")
+        self.note_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+            }}
+            QLineEdit:focus {{
+                background-color: #FFFFFF;
+                border: 1.5px solid #18181B;
+            }}
+        """)
+        self.note_input.returnPressed.connect(self._on_quick_add_note)
+        add_note_layout.addWidget(self.note_input, stretch=3)
+
+        self.note_project_combo = QComboBox()
+        self.note_project_combo.setEditable(True)
+        self.note_project_combo.setPlaceholderText("Project")
+        self.note_project_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 8px;
+                padding: 6px 10px;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+            }}
+            QComboBox::drop-down {{
+                border: none;
+            }}
+        """)
+        add_note_layout.addWidget(self.note_project_combo, stretch=1)
+
+        add_note_btn = QPushButton("Log Note")
+        add_note_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        add_note_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #18181B;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 14px;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: #3F3F46;
+            }}
+        """)
+        add_note_btn.clicked.connect(self._on_quick_add_note)
+        add_note_layout.addWidget(add_note_btn)
+
+        notes_page_layout.addLayout(add_note_layout)
+        self.stack.addWidget(self.notes_page)
+
+        self.inner_layout.addWidget(self.stack, stretch=1)
         self.frame_layout.addWidget(self.inner_card, stretch=1)
         self.outer_layout.addWidget(self.outer_frame)
 
@@ -557,33 +834,105 @@ class QuickEntryDialog(QDialog):
         # Seed sample projects/tasks if repository is completely blank
         self._seed_initial_data_if_empty()
 
-        # Initial render
+        # Initial view mode styling & render
+        self._set_view_mode("tasks")
         self.refresh_tasks()
+        self.refresh_notes()
+
+    def _set_view_mode(self, mode: str) -> None:
+        """Switch between Tasks mode and Quick Notes mode."""
+        self.current_view_mode = mode
+        if mode == "tasks":
+            self.stack.setCurrentWidget(self.tasks_page)
+            self.tasks_mode_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #FFFFFF;
+                    color: #18181B;
+                    border: none;
+                    border-radius: 6px;
+                    font-family: {FONT_SANS};
+                    font-size: 12px;
+                    font-weight: 600;
+                    padding: 0 10px;
+                }}
+            """)
+            self.notes_mode_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    color: #71717A;
+                    border: none;
+                    border-radius: 6px;
+                    font-family: {FONT_SANS};
+                    font-size: 12px;
+                    font-weight: 500;
+                    padding: 0 10px;
+                }}
+                QPushButton:hover {{
+                    color: #18181B;
+                }}
+            """)
+            self.refresh_tasks()
+        else:
+            self.stack.setCurrentWidget(self.notes_page)
+            self.notes_mode_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #FFFFFF;
+                    color: #18181B;
+                    border: none;
+                    border-radius: 6px;
+                    font-family: {FONT_SANS};
+                    font-size: 12px;
+                    font-weight: 600;
+                    padding: 0 10px;
+                }}
+            """)
+            self.tasks_mode_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    color: #71717A;
+                    border: none;
+                    border-radius: 6px;
+                    font-family: {FONT_SANS};
+                    font-size: 12px;
+                    font-weight: 500;
+                    padding: 0 10px;
+                }}
+                QPushButton:hover {{
+                    color: #18181B;
+                }}
+            """)
+            self.refresh_notes()
 
     def _seed_initial_data_if_empty(self) -> None:
         """Seed clean initial tasks matching the reference if database has no tasks."""
         existing = self.repo.get_task_hierarchy()
         if not existing:
-            # Seed Work project
             self.repo.create_or_update_project("Work", ["work", "code", "landing", "testing"])
             self.repo.create_task("Finalize landing page wireframes", project_tag="Work")
             self.repo.create_task("Conduct user testing on prototypes", project_tag="Work")
             self.repo.create_task("Implement feedback and iterate on designs", project_tag="Work")
 
-            # Seed Personal Projects
             self.repo.create_or_update_project("Personal Projects", ["personal", "figma", "motion", "hero"])
             self.repo.create_task("Explore motion interaction ideas", project_tag="Personal Projects")
             self.repo.create_task("Improve Figma variables structure", project_tag="Personal Projects")
             self.repo.create_task("Design new hero section concept", project_tag="Personal Projects")
 
+        # Seed sample note if notes table empty
+        existing_notes = self.repo.get_notes_for_date(date.today())
+        if not existing_notes:
+            self.repo.create_note("Drafted initial system architecture", project_tag="Work")
+
     def _populate_projects(self) -> None:
-        """Populate project selector choices."""
+        """Populate project selector choices across tasks and notes."""
         projects = self.repo.get_all_projects()
         names = [p.name for p in projects]
         if not names:
             names = ["Work", "Personal Projects"]
         self.project_combo.clear()
         self.project_combo.addItems(names)
+        if hasattr(self, "note_project_combo"):
+            self.note_project_combo.clear()
+            self.note_project_combo.addItems(names)
 
     def _on_filter_changed(self, filter_name: str) -> None:
         """Called when a segmented filter pill is clicked."""
@@ -591,7 +940,6 @@ class QuickEntryDialog(QDialog):
 
     def refresh_tasks(self) -> None:
         """Re-render the task list grouped by project under the current filter."""
-        # Clear existing rows in content layout
         while self.content_layout.count() > 1:
             child = self.content_layout.takeAt(0)
             if child.widget():
@@ -609,13 +957,13 @@ class QuickEntryDialog(QDialog):
         if not grouped:
             empty_label = QLabel(f"No {active_filter.lower()} tasks found.")
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_label.setStyleSheet("""
-                QLabel {
-                    color: #9999A2;
-                    font-family: 'Consolas', 'Cascadia Code', monospace;
+            empty_label.setStyleSheet(f"""
+                QLabel {{
+                    color: #A1A1AA;
+                    font-family: {FONT_SANS};
                     font-size: 13px;
                     padding: 40px 0;
-                }
+                }}
             """)
             self.content_layout.insertWidget(0, empty_label)
             return
@@ -633,13 +981,41 @@ class QuickEntryDialog(QDialog):
             self.content_layout.insertWidget(idx, group_widget)
             idx += 1
 
+    def refresh_notes(self) -> None:
+        """Re-render the quick notes list for today."""
+        while self.notes_content_layout.count() > 1:
+            child = self.notes_content_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        notes = self.repo.get_notes_for_date(date.today())
+
+        if not notes:
+            empty_label = QLabel("No work notes logged today yet.")
+            empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty_label.setStyleSheet(f"""
+                QLabel {{
+                    color: #A1A1AA;
+                    font-family: {FONT_SANS};
+                    font-size: 13px;
+                    padding: 40px 0;
+                }}
+            """)
+            self.notes_content_layout.insertWidget(0, empty_label)
+            return
+
+        for idx, note in enumerate(notes):
+            row = NoteRowWidget(note, self.notes_content_widget)
+            row.toggled.connect(self._on_note_toggled)
+            row.delete_requested.connect(self._on_note_deleted)
+            self.notes_content_layout.insertWidget(idx, row)
+
     def _on_task_status_toggled(self, task_id: int, new_status: str) -> None:
         """Handle checkbox check/uncheck status change."""
         self.repo.update_task_status(task_id, new_status)
-        if new_status == "done":
+        if new_status in ("done", "completed"):
             self.state_machine.trigger_complete(duration_ms=3000)
 
-        # Refresh list
         self.refresh_tasks()
 
     def _on_task_action(self, action_type: str, task_id: int) -> None:
@@ -648,8 +1024,19 @@ class QuickEntryDialog(QDialog):
             self.repo.delete_task(task_id)
             self.refresh_tasks()
 
+    def _on_note_toggled(self, note_id: int, is_completed: bool) -> None:
+        """Toggle note completion status."""
+        self.repo.toggle_note_completed(note_id, is_completed)
+        if is_completed:
+            self.state_machine.trigger_complete(duration_ms=2000)
+
+    def _on_note_deleted(self, note_id: int) -> None:
+        """Delete a note."""
+        self.repo.delete_note(note_id)
+        self.refresh_notes()
+
     def _on_quick_add_task(self) -> None:
-        """Add a new task under the active or chosen project."""
+        """Add a new task under the chosen project."""
         title = self.add_input.text().strip()
         if not title:
             return
@@ -661,6 +1048,21 @@ class QuickEntryDialog(QDialog):
         self._populate_projects()
         self.refresh_tasks()
         app_signals.task_created.emit(task_id)
+
+    def _on_quick_add_note(self) -> None:
+        """Add a new quick work note."""
+        content = self.note_input.text().strip()
+        if not content:
+            return
+
+        project = self.note_project_combo.currentText().strip() or "Work"
+        note_id = self.repo.create_note(content, project_tag=project)
+
+        self.note_input.clear()
+        self._populate_projects()
+        self.refresh_notes()
+        self.state_machine.trigger_working()
+        app_signals.note_created.emit(note_id)
 
     def _toggle_maximize_restore(self) -> None:
         """Toggle between maximized and normal window state."""

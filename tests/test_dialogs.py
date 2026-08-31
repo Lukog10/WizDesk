@@ -60,6 +60,33 @@ def test_quick_entry_dialog_task_flow(qapp, repo):
     dialog.close()
 
 
+def test_quick_entry_dialog_notes_flow(qapp, repo):
+    """Test switching to Quick Notes mode and logging/toggling work notes."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    # Switch to notes mode
+    dialog._set_view_mode("notes")
+    assert dialog.current_view_mode == "notes"
+
+    # Log a quick work note
+    dialog.note_input.setText("Investigated background window polling performance")
+    dialog.note_project_combo.setCurrentText("Work")
+    dialog._on_quick_add_note()
+
+    notes = repo.get_notes_for_date(date.today())
+    assert any("Investigated background window polling" in n.content for n in notes)
+
+    target_note = [n for n in notes if "Investigated background window polling" in n.content][0]
+    dialog._on_note_toggled(target_note.id, True)
+
+    reloaded_notes = repo.get_notes_for_date(date.today())
+    updated_note = [n for n in reloaded_notes if n.id == target_note.id][0]
+    assert updated_note.is_completed is True
+
+    dialog.close()
+
+
 def test_rounded_checkbox(qapp):
     """Test RoundedCheckbox state toggling."""
     box = RoundedCheckbox(checked=False)
