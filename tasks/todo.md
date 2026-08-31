@@ -4,8 +4,8 @@
 
 ## Current Tasks
 
-- [x] Expand task models and status handling (`wiz/storage/models.py`)
-- [x] Implement minimalist UI dialog in `wiz/ui/popup_dialog.py` matching reference design
+- [x] Implement card-based Project Tracking window in `wiz/ui/popup_dialog.py` matching new reference design
+- [x] Ensure full PRD feature support (hierarchical subtasks, timestamped logs, project tags, status filters)
 - [x] Update unit tests in `tests/test_dialogs.py`
-- [x] Verify visually and execute pytest test suite
+- [x] Verify test suite with pytest
 - [x] Update `context.md` and commit/push changes to GitHub
