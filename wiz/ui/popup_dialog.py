@@ -306,14 +306,14 @@ class RoundedCheckbox(QWidget):
 
 
 class SegmentedFilterBar(QWidget):
-    """Pill capsule segmented filter bar (To-do, Completed, Pending, On Hold, Cancelled)."""
+    """Pill capsule segmented filter bar (Task, In progress, Completed, Cancelled)."""
 
     filter_changed = pyqtSignal(str)
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
-        self.options = ["To-do", "Completed", "Pending", "On Hold", "Cancelled"]
-        self.current_filter = "To-do"
+        self.options = ["Task", "In progress", "Completed", "Cancelled"]
+        self.current_filter = "Task"
         self._buttons: Dict[str, QPushButton] = {}
 
         self.setFixedHeight(38)
@@ -670,9 +670,9 @@ class TaskRowWidget(QWidget):
         action_new_sec = section_menu.addAction("+ Create New Section...")
 
         menu.addSeparator()
-        action_todo = menu.addAction("Move to To-do")
-        action_pending = menu.addAction("Move to Pending")
-        action_on_hold = menu.addAction("Move to On Hold")
+        action_task = menu.addAction("Move to Task")
+        action_in_progress = menu.addAction("Move to In progress")
+        action_completed = menu.addAction("Move to Completed")
         action_cancelled = menu.addAction("Move to Cancelled")
         menu.addSeparator()
         action_delete = menu.addAction("Delete Task")
@@ -684,12 +684,12 @@ class TaskRowWidget(QWidget):
             name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
                 self.project_changed.emit(self.task_id, name.strip())
-        elif action == action_todo:
+        elif action == action_task:
             self.status_toggled.emit(self.task_id, "not_started")
-        elif action == action_pending:
+        elif action == action_in_progress:
             self.status_toggled.emit(self.task_id, "in_progress")
-        elif action == action_on_hold:
-            self.status_toggled.emit(self.task_id, "on_hold")
+        elif action == action_completed:
+            self.status_toggled.emit(self.task_id, "done")
         elif action == action_cancelled:
             self.status_toggled.emit(self.task_id, "cancelled")
         elif action == action_delete:

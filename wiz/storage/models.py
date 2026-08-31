@@ -344,11 +344,15 @@ class StorageRepository:
             if status_filter:
                 # Map friendly UI filter names to database status values
                 status_map = {
-                    "to-do": ["not_started", "to_do"],
-                    "completed": ["done", "completed"],
+                    "task": ["not_started", "to_do", "todo", "task"],
+                    "to-do": ["not_started", "to_do", "todo", "task"],
+                    "in progress": ["in_progress", "pending"],
+                    "in_progress": ["in_progress", "pending"],
                     "pending": ["in_progress", "pending"],
+                    "completed": ["done", "completed"],
+                    "done": ["done", "completed"],
                     "on hold": ["on_hold"],
-                    "cancelled": ["cancelled"],
+                    "cancelled": ["cancelled", "canceled"],
                 }
                 valid_statuses = status_map.get(status_filter.lower(), [status_filter.lower()])
                 placeholders = ",".join("?" for _ in valid_statuses)

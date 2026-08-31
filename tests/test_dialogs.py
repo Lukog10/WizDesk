@@ -40,7 +40,7 @@ def test_quick_entry_dialog_task_flow(qapp, repo):
     dialog._on_quick_add_task()
 
     # Verify task in DB
-    tasks = repo.get_task_hierarchy(status_filter="To-do")
+    tasks = repo.get_task_hierarchy(status_filter="Task")
     task_titles = [t.title for t in tasks]
     assert "Ship MVP update" in task_titles
 
@@ -71,7 +71,7 @@ def test_quick_entry_dialog_subtasks_and_section_change(qapp, repo):
 
     # Add a subtask
     dialog._on_subtask_added(task_id, "Create Figma vector assets")
-    tasks = repo.get_task_hierarchy(status_filter="To-do")
+    tasks = repo.get_task_hierarchy(status_filter="Task")
     target = [t for t in tasks if t.id == task_id][0]
     assert len(target.subtasks) == 1
     assert target.subtasks[0].title == "Create Figma vector assets"
