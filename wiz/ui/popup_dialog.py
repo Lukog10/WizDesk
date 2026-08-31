@@ -55,6 +55,189 @@ FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Tex
 FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
 
 
+class CreateSectionDialog(QDialog):
+    """
+    Custom modal dialog for creating a new Section in WizDesk.
+    Replaces default OS input dialogs with WizDesk's clean minimalist rounded card design.
+    """
+
+    def __init__(self, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.setWindowTitle("Create Section - WizDesk")
+        self.setFixedSize(380, 200)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
+        self.setModal(True)
+
+        self.outer_layout = QVBoxLayout(self)
+        self.outer_layout.setContentsMargins(12, 12, 12, 12)
+
+        self.card = QFrame()
+        self.card.setObjectName("createSectionCard")
+        self.card.setStyleSheet("""
+            QFrame#createSectionCard {
+                background-color: #FFFFFF;
+                border: 1px solid #E4E4E7;
+                border-radius: 18px;
+            }
+        """)
+
+        # Drop shadow
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(28)
+        shadow.setColor(QColor(0, 0, 0, 50))
+        shadow.setOffset(0, 6)
+        self.card.setGraphicsEffect(shadow)
+
+        self.card_layout = QVBoxLayout(self.card)
+        self.card_layout.setContentsMargins(20, 18, 20, 18)
+        self.card_layout.setSpacing(12)
+
+        # Header Row
+        hdr_layout = QHBoxLayout()
+        hdr_title = QLabel("Create New Section")
+        hdr_title.setStyleSheet(f"""
+            QLabel {{
+                color: #18181B;
+                font-family: {FONT_SANS};
+                font-size: 14.5px;
+                font-weight: 700;
+            }}
+        """)
+        hdr_layout.addWidget(hdr_title)
+        hdr_layout.addStretch()
+
+        close_btn = QPushButton("x")
+        close_btn.setFixedSize(20, 20)
+        close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        close_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #A1A1AA;
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 12px;
+                font-weight: bold;
+                border-radius: 10px;
+            }}
+            QPushButton:hover {{
+                color: #18181B;
+                background-color: #F4F4F5;
+            }}
+        """)
+        close_btn.clicked.connect(self.reject)
+        hdr_layout.addWidget(close_btn)
+        self.card_layout.addLayout(hdr_layout)
+
+        # Input Field
+        self.input_field = QLineEdit()
+        self.input_field.setPlaceholderText("Section name (e.g. Design, Backend, Marketing)...")
+        self.input_field.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #D4D4D8;
+                border-radius: 8px;
+                padding: 9px 12px;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+            }}
+            QLineEdit:focus {{
+                background-color: #FFFFFF;
+                border: 1.5px solid #18181B;
+            }}
+        """)
+        self.input_field.returnPressed.connect(self._on_submit)
+        self.card_layout.addWidget(self.input_field)
+
+        # Buttons Row
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(8)
+        btn_layout.addStretch()
+
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #F4F4F5;
+                color: #52525B;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+                font-weight: 500;
+            }}
+            QPushButton:hover {{
+                background-color: #E4E4E7;
+                color: #18181B;
+            }}
+        """)
+        cancel_btn.clicked.connect(self.reject)
+        btn_layout.addWidget(cancel_btn)
+
+        submit_btn = QPushButton("Create Section")
+        submit_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        submit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #18181B;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 18px;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: #3F3F46;
+            }}
+        """)
+        submit_btn.clicked.connect(self._on_submit)
+        btn_layout.addWidget(submit_btn)
+
+        self.card_layout.addLayout(btn_layout)
+        self.outer_layout.addWidget(self.card)
+
+    def _on_submit(self) -> None:
+        if self.section_name:
+            self.accept()
+
+    @property
+    def section_name(self) -> str:
+        return self.input_field.text().strip()
+
+    @classmethod
+    def get_section_name(cls, parent: Optional[QWidget] = None) -> tuple[str, bool]:
+        """Show custom modal dialog and return (section_name, accepted)."""
+        dlg = cls(parent)
+        dlg.input_field.setFocus()
+        if parent:
+            # Center over parent geometry
+            p_geo = parent.geometry()
+            dlg.move(
+                p_geo.center().x() - (dlg.width() // 2),
+                p_geo.center().y() - (dlg.height() // 2),
+            )
+        result = dlg.exec()
+        if result == QDialog.DialogCode.Accepted and dlg.section_name:
+            return dlg.section_name, True
+        return "", False
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.end()
+        super().paintEvent(event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Escape:
+            self.reject()
+        else:
+            super().keyPressEvent(event)
+
+
 class RoundedCheckbox(QWidget):
     """Custom rounded-square checkbox widget with high-precision anti-aliased rendering."""
 
@@ -498,7 +681,7 @@ class TaskRowWidget(QWidget):
         if action == action_add_sub:
             self._toggle_subtask_input(force_show=True)
         elif action == action_new_sec:
-            name, ok = QInputDialog.getText(self, "Create Section", "New Section / Project Name:")
+            name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
                 self.project_changed.emit(self.task_id, name.strip())
         elif action == action_todo:
@@ -1259,7 +1442,7 @@ class QuickEntryDialog(QDialog):
         """Handle selection of '+ Create Section...' in task project combo."""
         text = self.project_combo.currentText()
         if text == "+ Create Section...":
-            name, ok = QInputDialog.getText(self, "Create Section", "New Section / Project Name:")
+            name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
                 clean_name = name.strip()
                 self.repo.create_or_update_project(clean_name, [clean_name.lower()])
@@ -1273,7 +1456,7 @@ class QuickEntryDialog(QDialog):
         """Handle selection of '+ Create Section...' in note project combo."""
         text = self.note_project_combo.currentText()
         if text == "+ Create Section...":
-            name, ok = QInputDialog.getText(self, "Create Section", "New Section / Project Name:")
+            name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
                 clean_name = name.strip()
                 self.repo.create_or_update_project(clean_name, [clean_name.lower()])

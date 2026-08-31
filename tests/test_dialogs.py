@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
-from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox
+from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox, CreateSectionDialog
 from wiz.ui.settings_dialog import SettingsDialog
 
 
@@ -132,6 +132,16 @@ def test_rounded_checkbox(qapp):
 
     box.setChecked(True)
     assert box.isChecked
+
+
+def test_create_section_dialog(qapp):
+    """Test custom CreateSectionDialog functionality."""
+    dlg = CreateSectionDialog()
+    dlg.input_field.setText("  Architecture & Design  ")
+    assert dlg.section_name == "Architecture & Design"
+    dlg._on_submit()
+    assert dlg.result() == CreateSectionDialog.DialogCode.Accepted
+    dlg.close()
 
 
 def test_settings_dialog(qapp, repo, tmp_path):
