@@ -91,6 +91,12 @@ CONTEXT_MENU_STYLE = f"""
 """
 
 
+CALENDAR_MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+]
+
+
 class CalendarPopupDialog(QDialog):
     """
     Clean, minimalist popup calendar for WizDesk date navigation.
@@ -102,7 +108,7 @@ class CalendarPopupDialog(QDialog):
         self.setWindowTitle("Select Date - WizDesk")
         self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setFixedWidth(290)
+        self.setFixedWidth(310)
 
         self.selected_date = current_date
 
@@ -117,6 +123,50 @@ class CalendarPopupDialog(QDialog):
                 border: 1px solid #E4E4E7;
                 border-radius: 14px;
             }}
+            QComboBox {{
+                background-color: #F4F4F5;
+                border: 1px solid #E4E4E7;
+                border-radius: 6px;
+                padding: 4px 8px;
+                color: #18181B;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                font-weight: 600;
+            }}
+            QComboBox:hover {{
+                background-color: #E4E4E7;
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                width: 14px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: #FFFFFF;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 8px;
+                selection-background-color: #18181B;
+                selection-color: #FFFFFF;
+                padding: 4px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                outline: none;
+            }}
+            QPushButton#calNavBtn {{
+                background-color: transparent;
+                color: #71717A;
+                border: 1px solid transparent;
+                border-radius: 6px;
+                font-family: {FONT_SANS};
+                font-size: 14px;
+                font-weight: bold;
+                padding: 2px 8px;
+            }}
+            QPushButton#calNavBtn:hover {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+            }}
             QCalendarWidget {{
                 background-color: #FFFFFF;
                 border: none;
@@ -124,54 +174,6 @@ class CalendarPopupDialog(QDialog):
             QCalendarWidget QWidget {{
                 alternate-background-color: #FFFFFF;
                 background-color: #FFFFFF;
-            }}
-            QCalendarWidget #qt_calendar_navigationbar {{
-                background-color: #FFFFFF;
-                border: none;
-                border-bottom: 1px solid #F4F4F5;
-                min-height: 38px;
-            }}
-            QCalendarWidget QToolButton {{
-                background-color: transparent;
-                color: #18181B;
-                font-family: {FONT_SANS};
-                font-size: 13px;
-                font-weight: 600;
-                border-radius: 6px;
-                padding: 4px 8px;
-                margin: 2px;
-                border: none;
-            }}
-            QCalendarWidget QToolButton:hover {{
-                background-color: #F4F4F5;
-                color: #000000;
-            }}
-            QCalendarWidget #qt_calendar_prevmonth, QCalendarWidget #qt_calendar_nextmonth {{
-                font-size: 15px;
-                font-weight: bold;
-                color: #71717A;
-                min-width: 28px;
-            }}
-            QCalendarWidget #qt_calendar_prevmonth:hover, QCalendarWidget #qt_calendar_nextmonth:hover {{
-                color: #18181B;
-                background-color: #F4F4F5;
-            }}
-            QCalendarWidget QMenu {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
-                border-radius: 8px;
-                padding: 4px;
-                font-family: {FONT_SANS};
-            }}
-            QCalendarWidget QSpinBox {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
-                border-radius: 6px;
-                font-family: {FONT_SANS};
-                font-size: 12px;
-                padding: 2px 4px;
             }}
             QCalendarWidget QTableView {{
                 background-color: #FFFFFF;
@@ -199,35 +201,65 @@ class CalendarPopupDialog(QDialog):
         """)
 
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(10, 10, 10, 10)
-        card_layout.setSpacing(8)
+        card_layout.setContentsMargins(12, 12, 12, 12)
+        card_layout.setSpacing(10)
+
+        # Custom Top Navigation Bar with matching dropdown boxes for Month & Year
+        nav_layout = QHBoxLayout()
+        nav_layout.setContentsMargins(0, 0, 0, 0)
+        nav_layout.setSpacing(6)
+
+        self.prev_btn = QPushButton("‹")
+        self.prev_btn.setObjectName("calNavBtn")
+        self.prev_btn.setFixedSize(28, 28)
+        self.prev_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.prev_btn.clicked.connect(self._on_prev_month)
+        nav_layout.addWidget(self.prev_btn)
+
+        self.month_combo = QComboBox()
+        self.month_combo.addItems(CALENDAR_MONTHS)
+        self.month_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.month_combo.currentIndexChanged.connect(self._on_combo_page_changed)
+        nav_layout.addWidget(self.month_combo, stretch=3)
+
+        self.year_combo = QComboBox()
+        for y in range(2020, 2036):
+            self.year_combo.addItem(str(y))
+        self.year_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.year_combo.currentIndexChanged.connect(self._on_combo_page_changed)
+        nav_layout.addWidget(self.year_combo, stretch=2)
+
+        self.next_btn = QPushButton("›")
+        self.next_btn.setObjectName("calNavBtn")
+        self.next_btn.setFixedSize(28, 28)
+        self.next_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.next_btn.clicked.connect(self._on_next_month)
+        nav_layout.addWidget(self.next_btn)
+
+        card_layout.addLayout(nav_layout)
 
         self.calendar = QCalendarWidget()
+        self.calendar.setNavigationBarVisible(False)
         self.calendar.setVerticalHeaderFormat(QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader)
         self.calendar.setHorizontalHeaderFormat(QCalendarWidget.HorizontalHeaderFormat.ShortDayNames)
         self.calendar.setGridVisible(False)
-        self.calendar.setNavigationBarVisible(True)
         self.calendar.setSelectedDate(QDate(current_date.year, current_date.month, current_date.day))
 
-        prev_btn = self.calendar.findChild(QToolButton, "qt_calendar_prevmonth")
-        next_btn = self.calendar.findChild(QToolButton, "qt_calendar_nextmonth")
-        if prev_btn:
-            prev_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-            prev_btn.setText("<")
-        if next_btn:
-            next_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-            next_btn.setText(">")
-
         # Format header days cleanly in muted grey
+        hdr_font = QFont("Segoe UI")
+        hdr_font.setPointSize(9)
+        hdr_font.setWeight(QFont.Weight.DemiBold)
         hdr_fmt = QTextCharFormat()
         hdr_fmt.setForeground(QColor("#71717A"))
-        hdr_fmt.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        hdr_fmt.setFont(hdr_font)
         self.calendar.setHeaderTextFormat(hdr_fmt)
 
         # Neutralize weekend red text to clean charcoal
+        work_font = QFont("Segoe UI")
+        work_font.setPointSize(9)
         work_fmt = QTextCharFormat()
         work_fmt.setForeground(QColor("#18181B"))
-        work_fmt.setFont(QFont("Segoe UI", 9))
+        work_fmt.setFont(work_font)
         for day in [
             Qt.DayOfWeek.Sunday,
             Qt.DayOfWeek.Monday,
@@ -239,9 +271,12 @@ class CalendarPopupDialog(QDialog):
         ]:
             self.calendar.setWeekdayTextFormat(day, work_fmt)
 
+        self.calendar.currentPageChanged.connect(self._sync_combos_from_page)
         self.calendar.activated.connect(self._on_date_selected)
         self.calendar.clicked.connect(self._on_date_selected)
         card_layout.addWidget(self.calendar)
+
+        self._sync_combos_from_page(self.calendar.yearShown(), self.calendar.monthShown())
 
         # Quick 'Today' button
         today_btn = QPushButton("Go to Today")
@@ -273,6 +308,37 @@ class CalendarPopupDialog(QDialog):
         shadow.setColor(QColor(0, 0, 0, 40))
         shadow.setOffset(0, 4)
         card.setGraphicsEffect(shadow)
+
+    def _sync_combos_from_page(self, year: int, month: int) -> None:
+        """Keep month and year dropdowns in sync when navigating pages."""
+        self.month_combo.blockSignals(True)
+        self.year_combo.blockSignals(True)
+        self.month_combo.setCurrentIndex(month - 1)
+        self.year_combo.setCurrentText(str(year))
+        self.month_combo.blockSignals(False)
+        self.year_combo.blockSignals(False)
+
+    def _on_combo_page_changed(self) -> None:
+        """Update calendar view when month or year dropdown changes."""
+        m = self.month_combo.currentIndex() + 1
+        y = int(self.year_combo.currentText() or str(self.selected_date.year))
+        self.calendar.setCurrentPage(y, m)
+
+    def _on_prev_month(self) -> None:
+        cur_y = self.calendar.yearShown()
+        cur_m = self.calendar.monthShown()
+        if cur_m == 1:
+            self.calendar.setCurrentPage(cur_y - 1, 12)
+        else:
+            self.calendar.setCurrentPage(cur_y, cur_m - 1)
+
+    def _on_next_month(self) -> None:
+        cur_y = self.calendar.yearShown()
+        cur_m = self.calendar.monthShown()
+        if cur_m == 12:
+            self.calendar.setCurrentPage(cur_y + 1, 1)
+        else:
+            self.calendar.setCurrentPage(cur_y, cur_m + 1)
 
     def _on_date_selected(self, qdate: QDate) -> None:
         self.selected_date = date(qdate.year(), qdate.month(), qdate.day())
