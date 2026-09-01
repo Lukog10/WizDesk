@@ -668,27 +668,18 @@ class TaskRowWidget(QWidget):
 
         self.main_layout.addWidget(self.top_widget)
 
-        # Status pills bar directly below task title
+        # Status dropdown directly below task title
         self.status_bar_widget = QWidget()
         status_bar_layout = QHBoxLayout(self.status_bar_widget)
         status_bar_layout.setContentsMargins(34, 0, 4, 3)
         status_bar_layout.setSpacing(6)
 
-        self.btn_in_progress = QPushButton("In progress")
-        self.btn_in_progress.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_in_progress.clicked.connect(lambda: self._on_status_button_clicked("in_progress"))
-        status_bar_layout.addWidget(self.btn_in_progress)
-
-        self.btn_completed = QPushButton("Completed")
-        self.btn_completed.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_completed.clicked.connect(lambda: self._on_status_button_clicked("done"))
-        status_bar_layout.addWidget(self.btn_completed)
-
-        self.btn_cancelled = QPushButton("Cancelled")
-        self.btn_cancelled.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_cancelled.clicked.connect(lambda: self._on_status_button_clicked("cancelled"))
-        status_bar_layout.addWidget(self.btn_cancelled)
-
+        self.status_combo = QComboBox()
+        self.status_combo.setEditable(False)
+        self.status_combo.addItems(["Status", "In progress", "Completed", "Cancelled"])
+        self.status_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.status_combo.currentIndexChanged.connect(self._on_status_combo_changed)
+        status_bar_layout.addWidget(self.status_combo)
         status_bar_layout.addStretch()
         self.main_layout.addWidget(self.status_bar_widget)
 
@@ -779,17 +770,17 @@ class TaskRowWidget(QWidget):
         self.sub_input.clear()
         self.sub_input_widget.setVisible(False)
 
-    def _on_status_button_clicked(self, target_status: str) -> None:
-        """Toggle status when a pill button is clicked."""
-        curr = (self.task.status or "not_started").lower()
-        if target_status == "in_progress":
-            new_status = "not_started" if curr in ("in_progress", "pending", "ongoing") else "in_progress"
-        elif target_status == "done":
-            new_status = "not_started" if curr in ("done", "completed") else "done"
-        elif target_status == "cancelled":
-            new_status = "not_started" if curr in ("cancelled", "canceled") else "cancelled"
+    def _on_status_combo_changed(self, index: int) -> None:
+        """Handle status selection change from the dropdown."""
+        text = self.status_combo.currentText()
+        if text == "In progress":
+            new_status = "in_progress"
+        elif text == "Completed":
+            new_status = "done"
+        elif text == "Cancelled":
+            new_status = "cancelled"
         else:
-            new_status = target_status
+            new_status = "not_started"
 
         self.task.status = new_status
         self._update_status_ui(new_status)
@@ -802,7 +793,7 @@ class TaskRowWidget(QWidget):
         self.status_toggled.emit(self.task_id, new_status)
 
     def _update_status_ui(self, status: str) -> None:
-        """Synchronize task checkbox, label text decorations, and status pills."""
+        """Synchronize task checkbox, label text decorations, and status dropdown."""
         is_done = status in ("done", "completed")
         is_cancelled = status in ("cancelled", "canceled")
         is_in_progress = status in ("in_progress", "pending", "ongoing")
@@ -811,6 +802,18 @@ class TaskRowWidget(QWidget):
         self.checkbox.blockSignals(True)
         self.checkbox.setChecked(is_done)
         self.checkbox.blockSignals(False)
+
+        # Sync combobox current text without re-triggering signal
+        self.status_combo.blockSignals(True)
+        if is_in_progress:
+            self.status_combo.setCurrentText("In progress")
+        elif is_done:
+            self.status_combo.setCurrentText("Completed")
+        elif is_cancelled:
+            self.status_combo.setCurrentText("Cancelled")
+        else:
+            self.status_combo.setCurrentText("Status")
+        self.status_combo.blockSignals(False)
 
         # Label styling
         if is_done:
@@ -853,111 +856,125 @@ class TaskRowWidget(QWidget):
                 }}
             """)
 
-        # Style In progress button
+        # Dropdown styling based on state
         if is_in_progress:
-            self.btn_in_progress.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: rgba(37, 99, 235, 0.12);
+            self.status_combo.setStyleSheet(f"""
+                QComboBox {{
+                    background-color: rgba(37, 99, 235, 0.10);
                     color: #2563EB;
                     border: 1px solid rgba(37, 99, 235, 0.35);
-                    border-radius: 5px;
+                    border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 600;
-                    padding: 2px 8px;
+                    padding: 2px 22px 2px 8px;
+                    min-height: 22px;
                 }}
-                QPushButton:hover {{
-                    background-color: rgba(37, 99, 235, 0.20);
+                QComboBox::drop-down {{
+                    border: none;
+                    width: 16px;
                 }}
-            """)
-        else:
-            self.btn_in_progress.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: transparent;
-                    color: #71717A;
-                    border: 1px solid #E4E4E7;
-                    border-radius: 5px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                    font-weight: 500;
-                    padding: 2px 8px;
-                }}
-                QPushButton:hover {{
+                QComboBox QAbstractItemView {{
+                    background-color: #FFFFFF;
                     color: #18181B;
-                    background-color: #F4F4F5;
-                    border-color: #D4D4D8;
+                    border: 1px solid #E4E4E7;
+                    border-radius: 8px;
+                    selection-background-color: #F4F4F5;
+                    selection-color: #000000;
+                    padding: 4px;
+                    font-family: {FONT_SANS};
+                    font-size: 11.5px;
                 }}
             """)
-
-        # Style Completed button
-        if is_done:
-            self.btn_completed.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: rgba(16, 185, 129, 0.12);
+        elif is_done:
+            self.status_combo.setStyleSheet(f"""
+                QComboBox {{
+                    background-color: rgba(16, 185, 129, 0.10);
                     color: #059669;
                     border: 1px solid rgba(16, 185, 129, 0.35);
-                    border-radius: 5px;
+                    border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 600;
-                    padding: 2px 8px;
+                    padding: 2px 22px 2px 8px;
+                    min-height: 22px;
                 }}
-                QPushButton:hover {{
-                    background-color: rgba(16, 185, 129, 0.20);
+                QComboBox::drop-down {{
+                    border: none;
+                    width: 16px;
                 }}
-            """)
-        else:
-            self.btn_completed.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: transparent;
-                    color: #71717A;
-                    border: 1px solid #E4E4E7;
-                    border-radius: 5px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                    font-weight: 500;
-                    padding: 2px 8px;
-                }}
-                QPushButton:hover {{
+                QComboBox QAbstractItemView {{
+                    background-color: #FFFFFF;
                     color: #18181B;
-                    background-color: #F4F4F5;
-                    border-color: #D4D4D8;
+                    border: 1px solid #E4E4E7;
+                    border-radius: 8px;
+                    selection-background-color: #F4F4F5;
+                    selection-color: #000000;
+                    padding: 4px;
+                    font-family: {FONT_SANS};
+                    font-size: 11.5px;
                 }}
             """)
-
-        # Style Cancelled button
-        if is_cancelled:
-            self.btn_cancelled.setStyleSheet(f"""
-                QPushButton {{
+        elif is_cancelled:
+            self.status_combo.setStyleSheet(f"""
+                QComboBox {{
                     background-color: rgba(239, 68, 68, 0.10);
                     color: #DC2626;
                     border: 1px solid rgba(239, 68, 68, 0.30);
-                    border-radius: 5px;
+                    border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 600;
-                    padding: 2px 8px;
+                    padding: 2px 22px 2px 8px;
+                    min-height: 22px;
                 }}
-                QPushButton:hover {{
-                    background-color: rgba(239, 68, 68, 0.18);
+                QComboBox::drop-down {{
+                    border: none;
+                    width: 16px;
+                }}
+                QComboBox QAbstractItemView {{
+                    background-color: #FFFFFF;
+                    color: #18181B;
+                    border: 1px solid #E4E4E7;
+                    border-radius: 8px;
+                    selection-background-color: #F4F4F5;
+                    selection-color: #000000;
+                    padding: 4px;
+                    font-family: {FONT_SANS};
+                    font-size: 11.5px;
                 }}
             """)
         else:
-            self.btn_cancelled.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: transparent;
+            self.status_combo.setStyleSheet(f"""
+                QComboBox {{
+                    background-color: #F4F4F5;
                     color: #71717A;
                     border: 1px solid #E4E4E7;
-                    border-radius: 5px;
+                    border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                    padding: 2px 8px;
+                    padding: 2px 22px 2px 8px;
+                    min-height: 22px;
                 }}
-                QPushButton:hover {{
+                QComboBox:hover {{
                     color: #18181B;
-                    background-color: #F4F4F5;
                     border-color: #D4D4D8;
+                }}
+                QComboBox::drop-down {{
+                    border: none;
+                    width: 16px;
+                }}
+                QComboBox QAbstractItemView {{
+                    background-color: #FFFFFF;
+                    color: #18181B;
+                    border: 1px solid #E4E4E7;
+                    border-radius: 8px;
+                    selection-background-color: #F4F4F5;
+                    selection-color: #000000;
+                    padding: 4px;
+                    font-family: {FONT_SANS};
+                    font-size: 11.5px;
                 }}
             """)
 

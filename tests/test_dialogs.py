@@ -184,7 +184,7 @@ def test_app_icon_and_favicon_loading(qapp):
 
 
 def test_task_row_inline_status_toggles(qapp, repo):
-    """Test clicking the inline status pills (In progress, Completed, Cancelled) on TaskRowWidget."""
+    """Test changing status via the status dropdown (In progress, Completed, Cancelled, Status) on TaskRowWidget."""
     task_id = repo.create_task("Test inline status task", project_tag="Work")
     tasks = repo.get_task_hierarchy(status_filter="Task")
     task = [t for t in tasks if t.id == task_id][0]
@@ -195,26 +195,27 @@ def test_task_row_inline_status_toggles(qapp, repo):
 
     # Initial state
     assert not row.checkbox.isChecked
+    assert row.status_combo.currentText() == "Status"
 
-    # Click 'In progress' pill
-    row.btn_in_progress.click()
+    # Select 'In progress' from dropdown
+    row.status_combo.setCurrentText("In progress")
     assert emitted_statuses[-1] == "in_progress"
     assert row.task.status == "in_progress"
 
-    # Click 'Completed' pill
-    row.btn_completed.click()
+    # Select 'Completed' from dropdown
+    row.status_combo.setCurrentText("Completed")
     assert emitted_statuses[-1] == "done"
     assert row.task.status == "done"
     assert row.checkbox.isChecked
 
-    # Click 'Cancelled' pill
-    row.btn_cancelled.click()
+    # Select 'Cancelled' from dropdown
+    row.status_combo.setCurrentText("Cancelled")
     assert emitted_statuses[-1] == "cancelled"
     assert row.task.status == "cancelled"
     assert not row.checkbox.isChecked
 
-    # Click 'Cancelled' pill again to un-toggle back to 'not_started'
-    row.btn_cancelled.click()
+    # Select 'Status' (default) to reset
+    row.status_combo.setCurrentText("Status")
     assert emitted_statuses[-1] == "not_started"
     assert row.task.status == "not_started"
 
