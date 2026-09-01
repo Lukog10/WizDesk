@@ -586,9 +586,12 @@ class SubtaskRowWidget(QWidget):
         self.checkbox.toggled.connect(self._on_toggled)
         top_layout.addWidget(self.checkbox)
 
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._show_context_menu)
+
         self.label = EditableTaskLabel(subtask.title)
         self.label.setFont(QFont("Segoe UI", 9))
-        self.label.setToolTip("Double-click to rename")
+        self.label.setToolTip("Double-click or right-click to rename")
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
@@ -720,6 +723,32 @@ class SubtaskRowWidget(QWidget):
             self.subtask.completed_at = None
         self._update_label_style(checked)
         self.status_toggled.emit(self.subtask_id, new_status)
+
+    def contextMenuEvent(self, event) -> None:
+        """Handle right-click context menu event for subtasks."""
+        self._show_context_menu(event.pos())
+
+    def _show_context_menu(self, pos: QPoint) -> None:
+        """Display subtask context menu with Rename, Toggle Done, and Delete options."""
+        menu = QMenu(self)
+        menu.setStyleSheet(CONTEXT_MENU_STYLE)
+
+        action_rename = menu.addAction("Rename Subtask")
+
+        is_done = (self.subtask.status in ("done", "completed"))
+        toggle_label = "Mark Incomplete" if is_done else "Mark Done"
+        action_toggle = menu.addAction(toggle_label)
+
+        menu.addSeparator()
+        action_delete = menu.addAction("Delete Subtask")
+
+        action = menu.exec(self.mapToGlobal(pos))
+        if action == action_rename:
+            self.start_renaming()
+        elif action == action_toggle:
+            self.checkbox.setChecked(not is_done)
+        elif action == action_delete:
+            self.delete_requested.emit(self.subtask_id)
 
 
 class TaskRowWidget(QWidget):
