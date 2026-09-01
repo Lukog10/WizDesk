@@ -72,6 +72,10 @@ class StateMachine(QObject):
 
         self.state_changed.emit(new_state, old_state)
 
+    def transition_to(self, new_state: MascotState, duration_ms: Optional[int] = None) -> None:
+        """Alias for set_state to transition to a new state."""
+        self.set_state(new_state, duration_ms=duration_ms)
+
     def trigger_idle(self) -> None:
         """Set mascot to IDLE resting state."""
         self.set_state(MascotState.IDLE)

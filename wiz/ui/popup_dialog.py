@@ -2085,7 +2085,7 @@ class QuickEntryDialog(QDialog):
         if new_status in ("done", "completed"):
             self.state_machine.trigger_complete(duration_ms=3000)
         elif new_status in ("in_progress", "pending", "ongoing"):
-            self.state_machine.transition_to(MascotState.WORKING)
+            self.state_machine.trigger_working()
 
         self.refresh_tasks()
 

@@ -51,8 +51,8 @@ def test_state_machine_transitions(qapp):
 
     sm.state_changed.connect(handle_state_change)
 
-    # Transition to WORKING
-    sm.trigger_working()
+    # Transition to WORKING via transition_to alias
+    sm.transition_to(MascotState.WORKING)
     assert sm.current_state == MascotState.WORKING
     assert emitted_states[-1] == (MascotState.WORKING, MascotState.IDLE)
 

@@ -48,9 +48,17 @@ def test_quick_entry_dialog_task_flow(qapp, repo):
     dialog.filter_bar.set_active_filter("Completed")
     assert dialog.filter_bar.current_filter == "Completed"
 
-    # Toggle a task to done
+    # Toggle a task to in_progress and verify mascot state and task list
     target_task = [t for t in tasks if t.title == "Ship MVP update"][0]
+    dialog._on_task_status_toggled(target_task.id, "in_progress")
+    assert sm.current_state == MascotState.WORKING
+
+    in_prog_tasks = repo.get_task_hierarchy(status_filter="In progress")
+    assert "Ship MVP update" in [t.title for t in in_prog_tasks]
+
+    # Toggle a task to done
     dialog._on_task_status_toggled(target_task.id, "done")
+    assert sm.current_state == MascotState.COMPLETE
 
     # Now verify in completed list
     completed_tasks = repo.get_task_hierarchy(status_filter="Completed")
