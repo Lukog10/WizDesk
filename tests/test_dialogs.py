@@ -275,3 +275,55 @@ def test_calendar_date_navigation_and_day_isolation(qapp, repo, tmp_path):
     assert dialog.today_pill_btn.isHidden()
 
     dialog.close()
+
+
+def test_task_and_subtask_ui_renaming(qapp, repo):
+    """Test inline renaming for TaskRowWidget and SubtaskRowWidget."""
+    t_id = repo.create_task("Draft UI spec", project_tag="Work")
+    st_id = repo.create_subtask(t_id, "Draw mockups")
+
+    tasks = repo.get_task_hierarchy(status_filter="Task")
+    task = [t for t in tasks if t.id == t_id][0]
+
+    row = TaskRowWidget(task, ["Work", "Personal"])
+    renamed_tasks = []
+    renamed_subtasks = []
+    row.task_renamed.connect(lambda tid, title: renamed_tasks.append((tid, title)))
+    row.subtask_renamed.connect(lambda sid, title: renamed_subtasks.append((sid, title)))
+
+    # Test Task renaming flow
+    assert not row.label.isHidden()
+    assert row.edit_input.isHidden()
+
+    row.start_renaming()
+    assert row.label.isHidden()
+    assert not row.edit_input.isHidden()
+    assert row.edit_input.text() == "Draft UI spec"
+
+    # Finish renaming
+    row.edit_input.setText("Finalize UI spec")
+    row._finish_renaming()
+
+    assert not row.label.isHidden()
+    assert row.edit_input.isHidden()
+    assert row.label.text() == "Finalize UI spec"
+    assert renamed_tasks[-1] == (t_id, "Finalize UI spec")
+
+    # Test Subtask renaming flow
+    st_row = row.subtasks_layout.itemAt(0).widget()
+    assert not st_row.label.isHidden()
+    assert st_row.edit_input.isHidden()
+
+    st_row.start_renaming()
+    assert st_row.label.isHidden()
+    assert not st_row.edit_input.isHidden()
+
+    st_row.edit_input.setText("Draw vector icons")
+    st_row._finish_renaming()
+
+    assert not st_row.label.isHidden()
+    assert st_row.edit_input.isHidden()
+    assert st_row.label.text() == "Draw vector icons"
+    assert renamed_subtasks[-1] == (st_id, "Draw vector icons")
+
+    row.deleteLater()

@@ -529,11 +529,41 @@ class SegmentedFilterBar(QWidget):
                 """)
 
 
+class EditableTaskLabel(QLabel):
+    """A QLabel that emits double_clicked on mouse double click for inline editing."""
+    double_clicked = pyqtSignal()
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.double_clicked.emit()
+            event.accept()
+        else:
+            super().mouseDoubleClickEvent(event)
+
+
+class InlineEditInput(QLineEdit):
+    """A QLineEdit that handles Enter to submit, Escape to cancel, and FocusOut to submit."""
+    editing_cancelled = pyqtSignal()
+
+    def __init__(self, text: str = "", parent: Optional[QWidget] = None):
+        super().__init__(text, parent)
+        self._is_cancelling = False
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Escape:
+            self._is_cancelling = True
+            self.editing_cancelled.emit()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
+
 class SubtaskRowWidget(QWidget):
-    """Single subtask row nested under a parent task."""
+    """Single subtask row nested under a parent task with rename & delete support."""
 
     status_toggled = pyqtSignal(int, str)  # subtask_id, new_status
     delete_requested = pyqtSignal(int)  # subtask_id
+    subtask_renamed = pyqtSignal(int, str)  # subtask_id, new_title
 
     def __init__(self, subtask: SubtaskRecord, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -549,11 +579,31 @@ class SubtaskRowWidget(QWidget):
         self.checkbox.toggled.connect(self._on_toggled)
         self.layout.addWidget(self.checkbox)
 
-        self.label = QLabel(subtask.title)
+        self.label = EditableTaskLabel(subtask.title)
         self.label.setFont(QFont("Segoe UI", 9))
+        self.label.setToolTip("Double-click to rename")
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        self.label.double_clicked.connect(self.start_renaming)
         self._update_label_style(is_done)
         self.layout.addWidget(self.label, stretch=1)
+
+        self.edit_input = InlineEditInput(subtask.title, self)
+        self.edit_input.setFont(QFont("Segoe UI", 9))
+        self.edit_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: #FFFFFF;
+                color: #18181B;
+                border: 1.5px solid #18181B;
+                border-radius: 4px;
+                padding: 1px 6px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+        """)
+        self.edit_input.setVisible(False)
+        self.edit_input.returnPressed.connect(self._finish_renaming)
+        self.edit_input.editing_cancelled.connect(self._cancel_renaming)
+        self.layout.addWidget(self.edit_input, stretch=1)
 
         del_btn = QPushButton("x")
         del_btn.setFixedSize(16, 16)
@@ -575,6 +625,32 @@ class SubtaskRowWidget(QWidget):
         """)
         del_btn.clicked.connect(lambda: self.delete_requested.emit(self.subtask_id))
         self.layout.addWidget(del_btn)
+
+    def start_renaming(self) -> None:
+        """Enter inline subtask renaming mode."""
+        self.edit_input.setText(self.subtask.title)
+        self.label.setVisible(False)
+        self.edit_input.setVisible(True)
+        self.edit_input.setFocus()
+        self.edit_input.selectAll()
+
+    def _finish_renaming(self) -> None:
+        """Save renamed subtask title."""
+        if self.edit_input.isHidden():
+            return
+        new_title = self.edit_input.text().strip()
+        self.edit_input.setVisible(False)
+        self.label.setVisible(True)
+        if new_title and new_title != self.subtask.title:
+            self.subtask.title = new_title
+            self.label.setText(new_title)
+            self.subtask_renamed.emit(self.subtask_id, new_title)
+
+    def _cancel_renaming(self) -> None:
+        """Cancel inline subtask renaming."""
+        self.edit_input.setText(self.subtask.title)
+        self.edit_input.setVisible(False)
+        self.label.setVisible(True)
 
     def _update_label_style(self, is_done: bool) -> None:
         if is_done:
@@ -605,18 +681,20 @@ class SubtaskRowWidget(QWidget):
 class TaskRowWidget(QWidget):
     """
     Parent task row featuring:
-    - Custom rounded checkbox & task title
-    - Nested subtask list with checkboxes
+    - Custom rounded checkbox & task title with inline renaming (double-click or context menu)
+    - Nested subtask list with checkboxes & renaming
     - '+ subtask' inline adder
-    - Right-click context menu with 'Move to Section ->' (e.g. Work, Personal Projects) and status moves
+    - Right-click context menu with 'Rename Task', 'Move to Section ->', status moves, and 'Delete Task'
     """
 
     status_toggled = pyqtSignal(int, str)  # task_id, new_status
     action_requested = pyqtSignal(str, int)  # action_type, task_id
     project_changed = pyqtSignal(int, str)  # task_id, new_project
+    task_renamed = pyqtSignal(int, str)  # task_id, new_title
     subtask_added = pyqtSignal(int, str)  # task_id, subtask_title
     subtask_toggled = pyqtSignal(int, str)  # subtask_id, new_status
     subtask_deleted = pyqtSignal(int)  # subtask_id
+    subtask_renamed = pyqtSignal(int, str)  # subtask_id, new_title
 
     def __init__(self, task: TaskRecord, all_projects: List[str], parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -639,10 +717,30 @@ class TaskRowWidget(QWidget):
         self.checkbox.toggled.connect(self._on_checkbox_toggled)
         top_layout.addWidget(self.checkbox)
 
-        self.label = QLabel(task.title)
+        self.label = EditableTaskLabel(task.title)
         self.label.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
+        self.label.setToolTip("Double-click or right-click to rename")
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
+
+        self.edit_input = InlineEditInput(task.title, self)
+        self.edit_input.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
+        self.edit_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: #FFFFFF;
+                color: #18181B;
+                border: 1.5px solid #18181B;
+                border-radius: 5px;
+                padding: 2px 6px;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+            }}
+        """)
+        self.edit_input.setVisible(False)
+        self.edit_input.returnPressed.connect(self._finish_renaming)
+        self.edit_input.editing_cancelled.connect(self._cancel_renaming)
+        top_layout.addWidget(self.edit_input, stretch=1)
 
         # "+ subtask" button
         self.add_sub_btn = QPushButton("+ subtask")
@@ -694,6 +792,7 @@ class TaskRowWidget(QWidget):
             st_row = SubtaskRowWidget(st, self.subtasks_container)
             st_row.status_toggled.connect(self.subtask_toggled.emit)
             st_row.delete_requested.connect(self.subtask_deleted.emit)
+            st_row.subtask_renamed.connect(self.subtask_renamed.emit)
             self.subtasks_layout.addWidget(st_row)
 
         # Inline subtask input bar (hidden by default)
@@ -978,10 +1077,37 @@ class TaskRowWidget(QWidget):
                 }}
             """)
 
+    def start_renaming(self) -> None:
+        """Enter inline task renaming mode."""
+        self.edit_input.setText(self.task.title)
+        self.label.setVisible(False)
+        self.edit_input.setVisible(True)
+        self.edit_input.setFocus()
+        self.edit_input.selectAll()
+
+    def _finish_renaming(self) -> None:
+        """Save renamed task title."""
+        if self.edit_input.isHidden():
+            return
+        new_title = self.edit_input.text().strip()
+        self.edit_input.setVisible(False)
+        self.label.setVisible(True)
+        if new_title and new_title != self.task.title:
+            self.task.title = new_title
+            self.label.setText(new_title)
+            self.task_renamed.emit(self.task_id, new_title)
+
+    def _cancel_renaming(self) -> None:
+        """Cancel inline task renaming."""
+        self.edit_input.setText(self.task.title)
+        self.edit_input.setVisible(False)
+        self.label.setVisible(True)
+
     def _show_context_menu(self, pos: QPoint) -> None:
         menu = QMenu(self)
         menu.setStyleSheet(CONTEXT_MENU_STYLE)
 
+        action_rename = menu.addAction("Rename Task")
         action_add_sub = menu.addAction("+ Add Subtask")
         menu.addSeparator()
 
@@ -1008,7 +1134,9 @@ class TaskRowWidget(QWidget):
         action_delete = menu.addAction("Delete Task")
 
         action = menu.exec(self.mapToGlobal(pos))
-        if action == action_add_sub:
+        if action == action_rename:
+            self.start_renaming()
+        elif action == action_add_sub:
             self._toggle_subtask_input(force_show=True)
         elif action == action_new_sec:
             name, ok = CreateSectionDialog.get_section_name(self)
@@ -2031,9 +2159,11 @@ class QuickEntryDialog(QDialog):
                 row.status_toggled.connect(self._on_task_status_toggled)
                 row.action_requested.connect(self._on_task_action)
                 row.project_changed.connect(self._on_task_project_changed)
+                row.task_renamed.connect(self._on_task_renamed)
                 row.subtask_added.connect(self._on_subtask_added)
                 row.subtask_toggled.connect(self._on_subtask_toggled)
                 row.subtask_deleted.connect(self._on_subtask_deleted)
+                row.subtask_renamed.connect(self._on_subtask_renamed)
                 group_widget.tasks_layout.addWidget(row)
 
             self.content_layout.insertWidget(idx, group_widget)
@@ -2089,6 +2219,11 @@ class QuickEntryDialog(QDialog):
 
         self.refresh_tasks()
 
+    def _on_task_renamed(self, task_id: int, new_title: str) -> None:
+        """Handle renaming a task."""
+        self.repo.update_task_title(task_id, new_title)
+        self.refresh_tasks()
+
     def _on_task_action(self, action_type: str, task_id: int) -> None:
         """Handle task deletion or other actions."""
         if action_type == "delete":
@@ -2112,6 +2247,11 @@ class QuickEntryDialog(QDialog):
         self.repo.update_subtask_status(subtask_id, new_status)
         if new_status == "done":
             self.state_machine.trigger_complete(duration_ms=2000)
+        self.refresh_tasks()
+
+    def _on_subtask_renamed(self, subtask_id: int, new_title: str) -> None:
+        """Handle renaming a subtask."""
+        self.repo.update_subtask_title(subtask_id, new_title)
         self.refresh_tasks()
 
     def _on_subtask_deleted(self, subtask_id: int) -> None:

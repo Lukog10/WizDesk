@@ -153,3 +153,23 @@ def test_in_progress_filter_behavior(repo):
     assert t1 not in cancelled_ids
     assert t2 not in cancelled_ids
     assert t3 not in cancelled_ids
+
+
+def test_task_and_subtask_renaming(repo):
+    """Test renaming tasks and subtasks."""
+    t_id = repo.create_task("Original Task Title", project_tag="General")
+    st_id = repo.create_subtask(t_id, "Original Subtask Title")
+
+    # Rename task
+    assert repo.update_task_title(t_id, "Renamed Task Title")
+    tasks = repo.get_task_hierarchy()
+    assert tasks[0].title == "Renamed Task Title"
+
+    # Rename subtask
+    assert repo.update_subtask_title(st_id, "Renamed Subtask Title")
+    tasks = repo.get_task_hierarchy()
+    assert tasks[0].subtasks[0].title == "Renamed Subtask Title"
+
+    # Reject empty titles
+    assert not repo.update_task_title(t_id, "   ")
+    assert not repo.update_subtask_title(st_id, "")

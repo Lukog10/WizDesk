@@ -252,6 +252,30 @@ class StorageRepository:
             )
             return cur.rowcount > 0
 
+    def update_task_title(self, task_id: int, new_title: str) -> bool:
+        """Update the title of a task."""
+        title = new_title.strip()
+        if not title:
+            return False
+        with self.db.cursor() as cur:
+            cur.execute(
+                "UPDATE tasks SET title = ? WHERE id = ?",
+                (title, task_id),
+            )
+            return cur.rowcount > 0
+
+    def update_subtask_title(self, subtask_id: int, new_title: str) -> bool:
+        """Update the title of a subtask."""
+        title = new_title.strip()
+        if not title:
+            return False
+        with self.db.cursor() as cur:
+            cur.execute(
+                "UPDATE subtasks SET title = ? WHERE id = ?",
+                (title, subtask_id),
+            )
+            return cur.rowcount > 0
+
     def update_task_project(self, task_id: int, project_tag: str) -> bool:
         """Update the project/section tag of a task."""
         with self.db.cursor() as cur:
