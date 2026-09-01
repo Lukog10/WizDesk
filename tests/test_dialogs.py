@@ -6,10 +6,11 @@ import pytest
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 
+from wiz.core.config import config
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
-from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox, CreateSectionDialog, TaskRowWidget
+from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox, CreateSectionDialog, TaskRowWidget, CalendarPopupDialog
 from wiz.ui.settings_dialog import SettingsDialog
 
 
@@ -376,3 +377,56 @@ def test_task_and_subtask_time_display(qapp, repo):
     assert expected_created in row.time_label.text()
 
     row.deleteLater()
+
+
+def test_dark_mode_theme_toggle_and_dialog_styling(qapp, repo):
+    """Test dynamic theme switching between Light and Dark mode on QuickEntryDialog and SettingsDialog."""
+    sm = StateMachine()
+    qed = QuickEntryDialog(sm, repository=repo)
+    settings = SettingsDialog(repository=repo)
+
+    # 1. Verify default or initial theme application
+    qed.apply_theme("light")
+    assert not qed.is_dark
+    assert qed.theme_btn.text() == "☾"
+
+    settings.apply_theme("light")
+    assert not settings.is_dark
+    assert not settings.dark_mode_check.isChecked()
+
+    # 2. Switch to Dark Mode via theme_btn / apply_theme
+    qed.toggle_theme()
+    assert config.theme == "dark"
+    assert qed.is_dark
+    assert qed.theme_btn.text() == "☀"
+
+    # Verify settings dialog responded to theme change
+    assert settings.is_dark
+    assert settings.dark_mode_check.isChecked()
+
+    # 3. Switch back to Light Mode via SettingsCheckbox
+    settings.dark_mode_check.setChecked(False)
+    assert config.theme == "light"
+    assert not qed.is_dark
+    assert qed.theme_btn.text() == "☾"
+    assert not settings.is_dark
+
+    # 4. Test CalendarPopupDialog with dark mode
+    cal_dark = CalendarPopupDialog(date.today(), is_dark=True)
+    assert cal_dark.is_dark
+    cal_light = CalendarPopupDialog(date.today(), is_dark=False)
+    assert not cal_light.is_dark
+
+    # 5. Test CreateSectionDialog with dark mode
+    sec_dark = CreateSectionDialog(is_dark=True)
+    assert sec_dark.is_dark
+    sec_light = CreateSectionDialog(is_dark=False)
+    assert not sec_light.is_dark
+
+    qed.close()
+    settings.close()
+    cal_dark.close()
+    cal_light.close()
+    sec_dark.close()
+    sec_light.close()
+

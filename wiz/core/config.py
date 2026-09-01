@@ -40,6 +40,7 @@ class Config:
             "global_hotkey": "<ctrl>+<shift>+w",
             "auto_start_on_login": False,
             "sound_effects": False,
+            "theme": "light",
         }
 
         self._data: Dict[str, Any] = self._defaults.copy()
@@ -109,6 +110,16 @@ class Config:
         """Return Path to Obsidian vault if configured."""
         val = self.get("obsidian_vault_path", "").strip()
         return Path(val) if val else None
+
+    @property
+    def theme(self) -> str:
+        """Return current application theme ('light' or 'dark')."""
+        return str(self.get("theme", "light")).lower()
+
+    def set_theme(self, theme_name: str) -> None:
+        """Set and persist the application theme ('light' or 'dark')."""
+        clean_theme = "dark" if theme_name.lower() == "dark" else "light"
+        self.set("theme", clean_theme)
 
 
 # Global singleton instance

@@ -59,36 +59,46 @@ from wiz.sync.obsidian import sync_today_logs
 FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
 FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
 
-CONTEXT_MENU_STYLE = f"""
-    QMenu {{
-        background-color: #FFFFFF;
-        color: #18181B;
-        border: 1px solid #E4E4E7;
-        border-radius: 8px;
-        padding: 4px;
-        font-family: {FONT_SANS};
-        font-size: 12.5px;
-    }}
-    QMenu::item {{
-        padding: 6px 32px 6px 14px;
-        border-radius: 4px;
-    }}
-    QMenu::item:selected {{
-        background-color: #F4F4F5;
-        color: #000000;
-    }}
-    QMenu::item:disabled {{
-        color: #A1A1AA;
-    }}
-    QMenu::right-arrow {{
-        margin-right: 10px;
-    }}
-    QMenu::separator {{
-        height: 1px;
-        background-color: #E4E4E7;
-        margin: 4px 6px;
-    }}
-"""
+def get_context_menu_style(is_dark: bool = False) -> str:
+    bg = "#18181B" if is_dark else "#FFFFFF"
+    color = "#F4F4F5" if is_dark else "#18181B"
+    border = "#27272A" if is_dark else "#E4E4E7"
+    hover_bg = "#27272A" if is_dark else "#F4F4F5"
+    hover_color = "#FAFAFA" if is_dark else "#000000"
+    disabled_color = "#71717A" if is_dark else "#A1A1AA"
+    return f"""
+        QMenu {{
+            background-color: {bg};
+            color: {color};
+            border: 1px solid {border};
+            border-radius: 8px;
+            padding: 4px;
+            font-family: {FONT_SANS};
+            font-size: 12.5px;
+        }}
+        QMenu::item {{
+            padding: 6px 32px 6px 14px;
+            border-radius: 4px;
+        }}
+        QMenu::item:selected {{
+            background-color: {hover_bg};
+            color: {hover_color};
+        }}
+        QMenu::item:disabled {{
+            color: {disabled_color};
+        }}
+        QMenu::right-arrow {{
+            margin-right: 10px;
+        }}
+        QMenu::separator {{
+            height: 1px;
+            background-color: {border};
+            margin: 4px 6px;
+        }}
+    """
+
+
+CONTEXT_MENU_STYLE = get_context_menu_style(False)
 
 
 CALENDAR_MONTHS = [
@@ -101,9 +111,10 @@ class CalendarPopupDialog(QDialog):
     """
     Clean, minimalist popup calendar for WizDesk date navigation.
     Matches the card-based aesthetic with rounded corners, subtle borders, and smooth shadows.
+    Supports dynamic Light and Dark themes.
     """
 
-    def __init__(self, current_date: date, parent: Optional[QWidget] = None):
+    def __init__(self, current_date: date, parent: Optional[QWidget] = None, is_dark: Optional[bool] = None):
         super().__init__(parent)
         self.setWindowTitle("Select Date - WizDesk")
         self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
@@ -111,42 +122,60 @@ class CalendarPopupDialog(QDialog):
         self.setFixedWidth(310)
 
         self.selected_date = current_date
+        self.is_dark = is_dark if is_dark is not None else (config.theme == "dark")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
+
+        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        card_border = "#27272A" if self.is_dark else "#E4E4E7"
+        combo_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        combo_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        combo_text = "#F4F4F5" if self.is_dark else "#18181B"
+        nav_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
+        nav_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        nav_btn_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        table_text = "#F4F4F5" if self.is_dark else "#18181B"
+        table_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        table_sel_bg = "#FAFAFA" if self.is_dark else "#18181B"
+        table_sel_text = "#18181B" if self.is_dark else "#FFFFFF"
+        today_btn_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        today_btn_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        today_btn_text = "#F4F4F5" if self.is_dark else "#18181B"
+        today_btn_hover_bg = "#3F3F46" if self.is_dark else "#E4E4E7"
 
         card = QFrame()
         card.setObjectName("calCard")
         card.setStyleSheet(f"""
             QFrame#calCard {{
-                background-color: #FFFFFF;
-                border: 1px solid #E4E4E7;
+                background-color: {card_bg};
+                border: 1px solid {card_border};
                 border-radius: 14px;
             }}
             QComboBox {{
-                background-color: #F4F4F5;
-                border: 1px solid #E4E4E7;
+                background-color: {combo_bg};
+                border: 1px solid {combo_border};
                 border-radius: 6px;
                 padding: 4px 8px;
-                color: #18181B;
+                color: {combo_text};
                 font-family: {FONT_SANS};
                 font-size: 12px;
                 font-weight: 600;
             }}
             QComboBox:hover {{
-                background-color: #E4E4E7;
+                background-color: {nav_btn_hover_bg};
             }}
             QComboBox::drop-down {{
                 border: none;
                 width: 14px;
             }}
             QComboBox QAbstractItemView {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
+                background-color: {card_bg};
+                color: {combo_text};
+                border: 1px solid {card_border};
                 border-radius: 8px;
-                selection-background-color: #18181B;
-                selection-color: #FFFFFF;
+                selection-background-color: {nav_btn_hover_bg};
+                selection-color: {combo_text};
                 padding: 4px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
@@ -154,7 +183,7 @@ class CalendarPopupDialog(QDialog):
             }}
             QPushButton#calNavBtn {{
                 background-color: transparent;
-                color: #71717A;
+                color: {nav_btn_color};
                 border: 1px solid transparent;
                 border-radius: 6px;
                 font-family: {FONT_SANS};
@@ -163,26 +192,26 @@ class CalendarPopupDialog(QDialog):
                 padding: 2px 8px;
             }}
             QPushButton#calNavBtn:hover {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
+                background-color: {nav_btn_hover_bg};
+                color: {nav_btn_hover_color};
+                border: 1px solid {combo_border};
             }}
             QCalendarWidget {{
-                background-color: #FFFFFF;
+                background-color: {card_bg};
                 border: none;
             }}
             QCalendarWidget QWidget {{
-                alternate-background-color: #FFFFFF;
-                background-color: #FFFFFF;
+                alternate-background-color: {card_bg};
+                background-color: {card_bg};
             }}
             QCalendarWidget QTableView {{
-                background-color: #FFFFFF;
-                alternate-background-color: #FFFFFF;
-                color: #18181B;
+                background-color: {card_bg};
+                alternate-background-color: {card_bg};
+                color: {table_text};
                 font-family: {FONT_SANS};
                 font-size: 12px;
-                selection-background-color: #18181B;
-                selection-color: #FFFFFF;
+                selection-background-color: {table_sel_bg};
+                selection-color: {table_sel_text};
                 border: none;
                 outline: none;
             }}
@@ -191,12 +220,12 @@ class CalendarPopupDialog(QDialog):
                 padding: 2px;
             }}
             QCalendarWidget QTableView:item:hover {{
-                background-color: #F4F4F5;
-                color: #18181B;
+                background-color: {table_hover_bg};
+                color: {table_text};
             }}
             QCalendarWidget QTableView:item:selected {{
-                background-color: #18181B;
-                color: #FFFFFF;
+                background-color: {table_sel_bg};
+                color: {table_sel_text};
             }}
         """)
 
@@ -250,15 +279,15 @@ class CalendarPopupDialog(QDialog):
         hdr_font.setPointSize(9)
         hdr_font.setWeight(QFont.Weight.DemiBold)
         hdr_fmt = QTextCharFormat()
-        hdr_fmt.setForeground(QColor("#71717A"))
+        hdr_fmt.setForeground(QColor("#A1A1AA" if self.is_dark else "#71717A"))
         hdr_fmt.setFont(hdr_font)
         self.calendar.setHeaderTextFormat(hdr_fmt)
 
-        # Neutralize weekend red text to clean charcoal
+        # Neutralize weekend text to clean theme color
         work_font = QFont("Segoe UI")
         work_font.setPointSize(9)
         work_fmt = QTextCharFormat()
-        work_fmt.setForeground(QColor("#18181B"))
+        work_fmt.setForeground(QColor("#F4F4F5" if self.is_dark else "#18181B"))
         work_fmt.setFont(work_font)
         for day in [
             Qt.DayOfWeek.Sunday,
@@ -283,9 +312,9 @@ class CalendarPopupDialog(QDialog):
         today_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         today_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
+                background-color: {today_btn_bg};
+                color: {today_btn_text};
+                border: 1px solid {today_btn_border};
                 border-radius: 6px;
                 padding: 6px;
                 font-family: {FONT_SANS};
@@ -293,8 +322,8 @@ class CalendarPopupDialog(QDialog):
                 font-weight: 600;
             }}
             QPushButton:hover {{
-                background-color: #E4E4E7;
-                color: #000000;
+                background-color: {today_btn_hover_bg};
+                color: #FFFFFF;
             }}
         """)
         today_btn.clicked.connect(self._on_today_clicked)
@@ -305,7 +334,7 @@ class CalendarPopupDialog(QDialog):
         # Drop shadow
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
-        shadow.setColor(QColor(0, 0, 0, 40))
+        shadow.setColor(QColor(0, 0, 0, 60 if self.is_dark else 40))
         shadow.setOffset(0, 4)
         card.setGraphicsEffect(shadow)
 
@@ -353,9 +382,10 @@ class CreateSectionDialog(QDialog):
     """
     Custom modal dialog for creating a new Section in WizDesk.
     Replaces default OS input dialogs with WizDesk's clean minimalist rounded card design.
+    Supports dynamic Light & Dark themes.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: Optional[QWidget] = None, is_dark: Optional[bool] = None):
         super().__init__(parent)
         self.setWindowTitle("Create Section - WizDesk")
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
@@ -364,23 +394,41 @@ class CreateSectionDialog(QDialog):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setModal(True)
 
+        self.is_dark = is_dark if is_dark is not None else (config.theme == "dark")
+
+        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        card_border = "#27272A" if self.is_dark else "#E4E4E7"
+        title_color = "#F4F4F5" if self.is_dark else "#18181B"
+        close_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
+        input_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        input_border = "#3F3F46" if self.is_dark else "#D4D4D8"
+        input_text = "#F4F4F5" if self.is_dark else "#18181B"
+        input_focus_border = "#FAFAFA" if self.is_dark else "#18181B"
+        cancel_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        cancel_text = "#A1A1AA" if self.is_dark else "#52525B"
+        cancel_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        cancel_hover_bg = "#3F3F46" if self.is_dark else "#E4E4E7"
+        submit_bg = "#FAFAFA" if self.is_dark else "#18181B"
+        submit_text = "#18181B" if self.is_dark else "#FFFFFF"
+        submit_hover_bg = "#E4E4E7" if self.is_dark else "#3F3F46"
+
         self.outer_layout = QVBoxLayout(self)
         self.outer_layout.setContentsMargins(12, 12, 12, 12)
 
         self.card = QFrame()
         self.card.setObjectName("createSectionCard")
-        self.card.setStyleSheet("""
-            QFrame#createSectionCard {
-                background-color: #FFFFFF;
-                border: 1px solid #E4E4E7;
+        self.card.setStyleSheet(f"""
+            QFrame#createSectionCard {{
+                background-color: {card_bg};
+                border: 1px solid {card_border};
                 border-radius: 18px;
-            }
+            }}
         """)
 
         # Drop shadow
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(28)
-        shadow.setColor(QColor(0, 0, 0, 50))
+        shadow.setColor(QColor(0, 0, 0, 60 if self.is_dark else 40))
         shadow.setOffset(0, 6)
         self.card.setGraphicsEffect(shadow)
 
@@ -393,7 +441,7 @@ class CreateSectionDialog(QDialog):
         hdr_title = QLabel("Create New Section")
         hdr_title.setStyleSheet(f"""
             QLabel {{
-                color: #18181B;
+                color: {title_color};
                 font-family: {FONT_SANS};
                 font-size: 14.5px;
                 font-weight: 700;
@@ -408,7 +456,7 @@ class CreateSectionDialog(QDialog):
         close_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: #A1A1AA;
+                color: {close_btn_color};
                 border: none;
                 font-family: {FONT_MONO};
                 font-size: 12px;
@@ -416,8 +464,8 @@ class CreateSectionDialog(QDialog):
                 border-radius: 10px;
             }}
             QPushButton:hover {{
-                color: #18181B;
-                background-color: #F4F4F5;
+                color: {title_color};
+                background-color: {input_bg};
             }}
         """)
         close_btn.clicked.connect(self.reject)
@@ -429,17 +477,17 @@ class CreateSectionDialog(QDialog):
         self.input_field.setPlaceholderText("Section name (e.g. Design, Backend, Marketing)...")
         self.input_field.setStyleSheet(f"""
             QLineEdit {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #D4D4D8;
+                background-color: {input_bg};
+                color: {input_text};
+                border: 1px solid {input_border};
                 border-radius: 8px;
                 padding: 9px 12px;
                 font-family: {FONT_SANS};
                 font-size: 13px;
             }}
             QLineEdit:focus {{
-                background-color: #FFFFFF;
-                border: 1.5px solid #18181B;
+                background-color: {card_bg};
+                border: 1.5px solid {input_focus_border};
             }}
         """)
         self.input_field.returnPressed.connect(self._on_submit)
@@ -454,8 +502,8 @@ class CreateSectionDialog(QDialog):
         cancel_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         cancel_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: #F4F4F5;
-                color: #52525B;
+                background-color: {cancel_bg};
+                color: {cancel_text};
                 border: none;
                 border-radius: 8px;
                 padding: 8px 16px;
@@ -464,8 +512,8 @@ class CreateSectionDialog(QDialog):
                 font-weight: 500;
             }}
             QPushButton:hover {{
-                background-color: #E4E4E7;
-                color: #18181B;
+                background-color: {cancel_hover_bg};
+                color: {cancel_hover_color};
             }}
         """)
         cancel_btn.clicked.connect(self.reject)
@@ -475,8 +523,8 @@ class CreateSectionDialog(QDialog):
         submit_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         submit_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: #18181B;
-                color: #FFFFFF;
+                background-color: {submit_bg};
+                color: {submit_text};
                 border: none;
                 border-radius: 8px;
                 padding: 8px 18px;
@@ -485,7 +533,7 @@ class CreateSectionDialog(QDialog):
                 font-weight: 600;
             }}
             QPushButton:hover {{
-                background-color: #3F3F46;
+                background-color: {submit_hover_bg};
             }}
         """)
         submit_btn.clicked.connect(self._on_submit)
@@ -534,14 +582,15 @@ class CreateSectionDialog(QDialog):
 
 
 class RoundedCheckbox(QWidget):
-    """Custom rounded-square checkbox widget with high-precision anti-aliased rendering."""
+    """Custom rounded-square checkbox widget with high-precision anti-aliased rendering and dark mode support."""
 
     toggled = pyqtSignal(bool)
 
-    def __init__(self, checked: bool = False, size: int = 20, parent: Optional[QWidget] = None):
+    def __init__(self, checked: bool = False, size: int = 20, parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
         self._checked = checked
         self._size = size
+        self.is_dark = is_dark
         self.setFixedSize(size, size)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
@@ -554,6 +603,11 @@ class RoundedCheckbox(QWidget):
             self._checked = value
             self.update()
             self.toggled.emit(self._checked)
+
+    def set_dark_mode(self, is_dark: bool) -> None:
+        if self.is_dark != is_dark:
+            self.is_dark = is_dark
+            self.update()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -574,14 +628,17 @@ class RoundedCheckbox(QWidget):
         radius = 4.0 if self._size >= 18 else 3.0
 
         if self._checked:
-            # Filled dark rounded square with crisp white checkmark
+            # Filled rounded square with checkmark
+            bg_color = QColor("#FAFAFA") if self.is_dark else QColor("#18181B")
+            check_color = QColor("#18181B") if self.is_dark else QColor("#FFFFFF")
+
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#18181B"))
+            painter.setBrush(bg_color)
             painter.drawRoundedRect(rect, radius, radius)
 
-            # Draw white checkmark path scaled to size
+            # Draw checkmark path scaled to size
             scale = self._size / 20.0
-            pen = QPen(QColor("#FFFFFF"), 1.8 * scale, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+            pen = QPen(check_color, 1.8 * scale, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
             painter.setPen(pen)
             p1_x = rect.x() + (4.5 * scale)
             p1_y = rect.y() + (8.5 * scale)
@@ -592,37 +649,34 @@ class RoundedCheckbox(QWidget):
             painter.drawLine(int(p1_x), int(p1_y), int(p2_x), int(p2_y))
             painter.drawLine(int(p2_x), int(p2_y), int(p3_x), int(p3_y))
         else:
-            # Clean subtle grey rounded outline
-            pen = QPen(QColor("#D0D0D6"), 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
+            # Clean subtle rounded outline
+            border_color = QColor("#52525B") if self.is_dark else QColor("#D0D0D6")
+            bg_color = QColor("#27272A") if self.is_dark else QColor("#FFFFFF")
+
+            pen = QPen(border_color, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)
-            painter.setBrush(QColor("#FFFFFF"))
+            painter.setBrush(bg_color)
             painter.drawRoundedRect(rect, radius, radius)
 
         painter.end()
 
 
 class SegmentedFilterBar(QWidget):
-    """Pill capsule segmented filter bar (Task, In progress, Completed, Cancelled)."""
+    """Pill capsule segmented filter bar (Task, In progress, Completed, Cancelled) with Light/Dark support."""
 
     filter_changed = pyqtSignal(str)
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
         self.options = ["Task", "In progress", "Completed", "Cancelled"]
         self.current_filter = "Task"
+        self.is_dark = is_dark
         self._buttons: Dict[str, QPushButton] = {}
 
         self.setFixedHeight(38)
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(3, 3, 3, 3)
         self.layout.setSpacing(2)
-
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #ECECF0;
-                border-radius: 9px;
-            }
-        """)
 
         for opt in self.options:
             btn = QPushButton(opt)
@@ -632,7 +686,23 @@ class SegmentedFilterBar(QWidget):
             self._buttons[opt] = btn
             self.layout.addWidget(btn)
 
+        self._update_container_style()
         self._update_button_styles()
+
+    def set_dark_mode(self, is_dark: bool) -> None:
+        if self.is_dark != is_dark:
+            self.is_dark = is_dark
+            self._update_container_style()
+            self._update_button_styles()
+
+    def _update_container_style(self) -> None:
+        bg = "#27272A" if self.is_dark else "#ECECF0"
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {bg};
+                border-radius: 9px;
+            }}
+        """)
 
     def set_active_filter(self, filter_name: str) -> None:
         """Switch active filter tab."""
@@ -642,13 +712,19 @@ class SegmentedFilterBar(QWidget):
             self.filter_changed.emit(filter_name)
 
     def _update_button_styles(self) -> None:
-        """Update button styles to give the active button a white pill elevation."""
+        """Update button styles to give the active button an elevated pill look."""
+        active_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        active_color = "#F4F4F5" if self.is_dark else "#111113"
+        inactive_color = "#A1A1AA" if self.is_dark else "#71717A"
+        hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(255, 255, 255, 0.4)"
+
         for opt, btn in self._buttons.items():
             if opt == self.current_filter:
                 btn.setStyleSheet(f"""
                     QPushButton {{
-                        background-color: #FFFFFF;
-                        color: #111113;
+                        background-color: {active_bg};
+                        color: {active_color};
                         border: none;
                         border-radius: 7px;
                         font-family: {FONT_SANS};
@@ -661,7 +737,7 @@ class SegmentedFilterBar(QWidget):
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: transparent;
-                        color: #71717A;
+                        color: {inactive_color};
                         border: none;
                         border-radius: 7px;
                         font-family: {FONT_SANS};
@@ -670,8 +746,8 @@ class SegmentedFilterBar(QWidget):
                         padding: 0 10px;
                     }}
                     QPushButton:hover {{
-                        color: #18181B;
-                        background-color: rgba(255, 255, 255, 0.4);
+                        color: {hover_color};
+                        background-color: {hover_bg};
                     }}
                 """)
 
@@ -712,10 +788,11 @@ class SubtaskRowWidget(QWidget):
     delete_requested = pyqtSignal(int)  # subtask_id
     subtask_renamed = pyqtSignal(int, str)  # subtask_id, new_title
 
-    def __init__(self, subtask: SubtaskRecord, parent: Optional[QWidget] = None):
+    def __init__(self, subtask: SubtaskRecord, parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
         self.subtask = subtask
         self.subtask_id = subtask.id or 0
+        self.is_dark = is_dark
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 1, 0, 1)
@@ -728,7 +805,7 @@ class SubtaskRowWidget(QWidget):
         top_layout.setSpacing(8)
 
         is_done = (subtask.status in ("done", "completed"))
-        self.checkbox = RoundedCheckbox(checked=is_done, size=16, parent=self.top_widget)
+        self.checkbox = RoundedCheckbox(checked=is_done, size=16, parent=self.top_widget, is_dark=self.is_dark)
         self.checkbox.toggled.connect(self._on_toggled)
         top_layout.addWidget(self.checkbox)
 
@@ -742,13 +819,17 @@ class SubtaskRowWidget(QWidget):
         self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
 
+        edit_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        edit_color = "#F4F4F5" if self.is_dark else "#18181B"
+        edit_border = "#FAFAFA" if self.is_dark else "#18181B"
+
         self.edit_input = InlineEditInput(subtask.title, self)
         self.edit_input.setFont(QFont("Segoe UI", 9))
         self.edit_input.setStyleSheet(f"""
             QLineEdit {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1.5px solid #18181B;
+                background-color: {edit_bg};
+                color: {edit_color};
+                border: 1.5px solid {edit_border};
                 border-radius: 4px;
                 padding: 1px 6px;
                 font-family: {FONT_SANS};
@@ -763,10 +844,11 @@ class SubtaskRowWidget(QWidget):
         del_btn = QPushButton("x")
         del_btn.setFixedSize(16, 16)
         del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        del_btn_color = "#71717A" if self.is_dark else "#D4D4D8"
         del_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: #D4D4D8;
+                color: {del_btn_color};
                 border: none;
                 font-family: {FONT_MONO};
                 font-size: 10px;
@@ -775,7 +857,7 @@ class SubtaskRowWidget(QWidget):
             }}
             QPushButton:hover {{
                 color: #EF4444;
-                background-color: rgba(239, 68, 68, 0.1);
+                background-color: rgba(239, 68, 68, 0.15);
             }}
         """)
         del_btn.clicked.connect(lambda: self.delete_requested.emit(self.subtask_id))
@@ -788,10 +870,11 @@ class SubtaskRowWidget(QWidget):
         time_layout.setContentsMargins(52, 0, 4, 2)
         time_layout.setSpacing(4)
 
+        time_color = "#71717A" if self.is_dark else "#A1A1AA"
         self.time_label = QLabel()
         self.time_label.setStyleSheet(f"""
             QLabel {{
-                color: #A1A1AA;
+                color: {time_color};
                 font-family: {FONT_SANS};
                 font-size: 10.5px;
                 font-weight: 500;
@@ -841,10 +924,13 @@ class SubtaskRowWidget(QWidget):
 
     def _update_label_style(self, is_done: bool) -> None:
         self._update_time_label(is_done)
+        done_color = "#71717A" if self.is_dark else "#A1A1AA"
+        active_color = "#D4D4D8" if self.is_dark else "#52525B"
+
         if is_done:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #A1A1AA;
+                    color: {done_color};
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
                     font-size: 12.5px;
@@ -853,7 +939,7 @@ class SubtaskRowWidget(QWidget):
         else:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #52525B;
+                    color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
                     font-size: 12.5px;
@@ -877,7 +963,7 @@ class SubtaskRowWidget(QWidget):
     def _show_context_menu(self, pos: QPoint) -> None:
         """Display subtask context menu with Rename, Toggle Done, and Delete options."""
         menu = QMenu(self)
-        menu.setStyleSheet(CONTEXT_MENU_STYLE)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
         action_rename = menu.addAction("Rename Subtask")
 
@@ -915,11 +1001,12 @@ class TaskRowWidget(QWidget):
     subtask_deleted = pyqtSignal(int)  # subtask_id
     subtask_renamed = pyqtSignal(int, str)  # subtask_id, new_title
 
-    def __init__(self, task: TaskRecord, all_projects: List[str], parent: Optional[QWidget] = None):
+    def __init__(self, task: TaskRecord, all_projects: List[str], parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
         self.task = task
         self.task_id = task.id or 0
         self.all_projects = all_projects
+        self.is_dark = is_dark
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 2, 0, 2)
@@ -932,7 +1019,7 @@ class TaskRowWidget(QWidget):
         top_layout.setSpacing(10)
 
         is_done = (task.status in ("done", "completed"))
-        self.checkbox = RoundedCheckbox(checked=is_done, size=20, parent=self.top_widget)
+        self.checkbox = RoundedCheckbox(checked=is_done, size=20, parent=self.top_widget, is_dark=self.is_dark)
         self.checkbox.toggled.connect(self._on_checkbox_toggled)
         top_layout.addWidget(self.checkbox)
 
@@ -943,13 +1030,17 @@ class TaskRowWidget(QWidget):
         self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
 
+        edit_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        edit_color = "#F4F4F5" if self.is_dark else "#18181B"
+        edit_border = "#FAFAFA" if self.is_dark else "#18181B"
+
         self.edit_input = InlineEditInput(task.title, self)
         self.edit_input.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
         self.edit_input.setStyleSheet(f"""
             QLineEdit {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1.5px solid #18181B;
+                background-color: {edit_bg};
+                color: {edit_color};
+                border: 1.5px solid {edit_border};
                 border-radius: 5px;
                 padding: 2px 6px;
                 font-family: {FONT_SANS};
@@ -964,10 +1055,13 @@ class TaskRowWidget(QWidget):
         # "+ subtask" button
         self.add_sub_btn = QPushButton("+ subtask")
         self.add_sub_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        sub_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
+        sub_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        sub_btn_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
         self.add_sub_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: #A1A1AA;
+                color: {sub_btn_color};
                 border: none;
                 font-family: {FONT_SANS};
                 font-size: 11px;
@@ -976,8 +1070,8 @@ class TaskRowWidget(QWidget):
                 border-radius: 4px;
             }}
             QPushButton:hover {{
-                color: #18181B;
-                background-color: #F4F4F5;
+                color: {sub_btn_hover_color};
+                background-color: {sub_btn_hover_bg};
             }}
         """)
         self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
@@ -999,10 +1093,11 @@ class TaskRowWidget(QWidget):
         status_bar_layout.addWidget(self.status_combo)
 
         # Time metadata label
+        time_color = "#71717A" if self.is_dark else "#A1A1AA"
         self.time_label = QLabel()
         self.time_label.setStyleSheet(f"""
             QLabel {{
-                color: #A1A1AA;
+                color: {time_color};
                 font-family: {FONT_SANS};
                 font-size: 11px;
                 font-weight: 500;
@@ -1021,7 +1116,7 @@ class TaskRowWidget(QWidget):
 
         # Populate existing subtasks
         for st in task.subtasks:
-            st_row = SubtaskRowWidget(st, self.subtasks_container)
+            st_row = SubtaskRowWidget(st, self.subtasks_container, is_dark=self.is_dark)
             st_row.status_toggled.connect(self.subtask_toggled.emit)
             st_row.delete_requested.connect(self.subtask_deleted.emit)
             st_row.subtask_renamed.connect(self.subtask_renamed.emit)
@@ -1033,32 +1128,41 @@ class TaskRowWidget(QWidget):
         sub_input_layout.setContentsMargins(28, 2, 4, 2)
         sub_input_layout.setSpacing(6)
 
+        sub_in_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        sub_in_border = "#3F3F46" if self.is_dark else "#D4D4D8"
+        sub_in_text = "#F4F4F5" if self.is_dark else "#18181B"
+        sub_in_focus = "#FAFAFA" if self.is_dark else "#18181B"
+
         self.sub_input = QLineEdit()
         self.sub_input.setPlaceholderText("+ Add subtask... (Press Enter)")
         self.sub_input.setStyleSheet(f"""
             QLineEdit {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #D4D4D8;
+                background-color: {sub_in_bg};
+                color: {sub_in_text};
+                border: 1px solid {sub_in_border};
                 border-radius: 6px;
                 padding: 4px 8px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
             }}
             QLineEdit:focus {{
-                background-color: #FFFFFF;
-                border: 1.5px solid #18181B;
+                background-color: {edit_bg};
+                border: 1.5px solid {sub_in_focus};
             }}
         """)
         self.sub_input.returnPressed.connect(self._on_submit_subtask)
         sub_input_layout.addWidget(self.sub_input, stretch=1)
 
+        sub_btn_bg = "#FAFAFA" if self.is_dark else "#18181B"
+        sub_btn_text = "#18181B" if self.is_dark else "#FFFFFF"
+        sub_btn_hover = "#E4E4E7" if self.is_dark else "#3F3F46"
+
         sub_add_confirm_btn = QPushButton("Add")
         sub_add_confirm_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         sub_add_confirm_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: #18181B;
-                color: #FFFFFF;
+                background-color: {sub_btn_bg};
+                color: {sub_btn_text};
                 border: none;
                 border-radius: 6px;
                 padding: 4px 10px;
@@ -1067,7 +1171,7 @@ class TaskRowWidget(QWidget):
                 font-weight: 600;
             }}
             QPushButton:hover {{
-                background-color: #3F3F46;
+                background-color: {sub_btn_hover};
             }}
         """)
         sub_add_confirm_btn.clicked.connect(self._on_submit_subtask)
@@ -1167,11 +1271,15 @@ class TaskRowWidget(QWidget):
             self.status_combo.setCurrentText("Status")
         self.status_combo.blockSignals(False)
 
+        # Text colors
+        done_color = "#71717A" if self.is_dark else "#A1A1AA"
+        active_color = "#F4F4F5" if self.is_dark else "#18181B"
+
         # Label styling
         if is_done:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #A1A1AA;
+                    color: {done_color};
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
                     font-size: 13.5px;
@@ -1180,7 +1288,7 @@ class TaskRowWidget(QWidget):
         elif is_cancelled:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #A1A1AA;
+                    color: {done_color};
                     text-decoration: line-through;
                     font-style: italic;
                     font-family: {FONT_SANS};
@@ -1190,7 +1298,7 @@ class TaskRowWidget(QWidget):
         elif is_in_progress:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #18181B;
+                    color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
                     font-size: 13.5px;
@@ -1200,7 +1308,7 @@ class TaskRowWidget(QWidget):
         else:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #18181B;
+                    color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
                     font-size: 13.5px;
@@ -1208,13 +1316,20 @@ class TaskRowWidget(QWidget):
                 }}
             """)
 
+        # Dropdown popup styling
+        combo_popup_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        combo_popup_text = "#F4F4F5" if self.is_dark else "#18181B"
+        combo_popup_border = "#27272A" if self.is_dark else "#E4E4E7"
+        combo_popup_sel_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        combo_popup_sel_text = "#FFFFFF" if self.is_dark else "#000000"
+
         # Dropdown styling based on state
         if is_in_progress:
             self.status_combo.setStyleSheet(f"""
                 QComboBox {{
-                    background-color: rgba(37, 99, 235, 0.10);
-                    color: #2563EB;
-                    border: 1px solid rgba(37, 99, 235, 0.35);
+                    background-color: {'rgba(59, 130, 246, 0.20)' if self.is_dark else 'rgba(37, 99, 235, 0.10)'};
+                    color: {'#60A5FA' if self.is_dark else '#2563EB'};
+                    border: 1px solid {'rgba(96, 165, 250, 0.40)' if self.is_dark else 'rgba(37, 99, 235, 0.35)'};
                     border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
@@ -1227,12 +1342,12 @@ class TaskRowWidget(QWidget):
                     width: 16px;
                 }}
                 QComboBox QAbstractItemView {{
-                    background-color: #FFFFFF;
-                    color: #18181B;
-                    border: 1px solid #E4E4E7;
+                    background-color: {combo_popup_bg};
+                    color: {combo_popup_text};
+                    border: 1px solid {combo_popup_border};
                     border-radius: 8px;
-                    selection-background-color: #F4F4F5;
-                    selection-color: #000000;
+                    selection-background-color: {combo_popup_sel_bg};
+                    selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
                     font-size: 11.5px;
@@ -1241,9 +1356,9 @@ class TaskRowWidget(QWidget):
         elif is_done:
             self.status_combo.setStyleSheet(f"""
                 QComboBox {{
-                    background-color: rgba(16, 185, 129, 0.10);
-                    color: #059669;
-                    border: 1px solid rgba(16, 185, 129, 0.35);
+                    background-color: {'rgba(52, 211, 153, 0.20)' if self.is_dark else 'rgba(16, 185, 129, 0.10)'};
+                    color: {'#34D399' if self.is_dark else '#059669'};
+                    border: 1px solid {'rgba(52, 211, 153, 0.40)' if self.is_dark else 'rgba(16, 185, 129, 0.35)'};
                     border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
@@ -1256,12 +1371,12 @@ class TaskRowWidget(QWidget):
                     width: 16px;
                 }}
                 QComboBox QAbstractItemView {{
-                    background-color: #FFFFFF;
-                    color: #18181B;
-                    border: 1px solid #E4E4E7;
+                    background-color: {combo_popup_bg};
+                    color: {combo_popup_text};
+                    border: 1px solid {combo_popup_border};
                     border-radius: 8px;
-                    selection-background-color: #F4F4F5;
-                    selection-color: #000000;
+                    selection-background-color: {combo_popup_sel_bg};
+                    selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
                     font-size: 11.5px;
@@ -1270,9 +1385,9 @@ class TaskRowWidget(QWidget):
         elif is_cancelled:
             self.status_combo.setStyleSheet(f"""
                 QComboBox {{
-                    background-color: rgba(239, 68, 68, 0.10);
-                    color: #DC2626;
-                    border: 1px solid rgba(239, 68, 68, 0.30);
+                    background-color: {'rgba(248, 113, 113, 0.20)' if self.is_dark else 'rgba(239, 68, 68, 0.10)'};
+                    color: {'#F87171' if self.is_dark else '#DC2626'};
+                    border: 1px solid {'rgba(248, 113, 113, 0.35)' if self.is_dark else 'rgba(239, 68, 68, 0.30)'};
                     border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
@@ -1285,23 +1400,29 @@ class TaskRowWidget(QWidget):
                     width: 16px;
                 }}
                 QComboBox QAbstractItemView {{
-                    background-color: #FFFFFF;
-                    color: #18181B;
-                    border: 1px solid #E4E4E7;
+                    background-color: {combo_popup_bg};
+                    color: {combo_popup_text};
+                    border: 1px solid {combo_popup_border};
                     border-radius: 8px;
-                    selection-background-color: #F4F4F5;
-                    selection-color: #000000;
+                    selection-background-color: {combo_popup_sel_bg};
+                    selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
                     font-size: 11.5px;
                 }}
             """)
         else:
+            default_bg = "#27272A" if self.is_dark else "#F4F4F5"
+            default_color = "#A1A1AA" if self.is_dark else "#71717A"
+            default_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+            hover_border = "#52525B" if self.is_dark else "#D4D4D8"
+            hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+
             self.status_combo.setStyleSheet(f"""
                 QComboBox {{
-                    background-color: #F4F4F5;
-                    color: #71717A;
-                    border: 1px solid #E4E4E7;
+                    background-color: {default_bg};
+                    color: {default_color};
+                    border: 1px solid {default_border};
                     border-radius: 6px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
@@ -1310,20 +1431,20 @@ class TaskRowWidget(QWidget):
                     min-height: 22px;
                 }}
                 QComboBox:hover {{
-                    color: #18181B;
-                    border-color: #D4D4D8;
+                    color: {hover_color};
+                    border-color: {hover_border};
                 }}
                 QComboBox::drop-down {{
                     border: none;
                     width: 16px;
                 }}
                 QComboBox QAbstractItemView {{
-                    background-color: #FFFFFF;
-                    color: #18181B;
-                    border: 1px solid #E4E4E7;
+                    background-color: {combo_popup_bg};
+                    color: {combo_popup_text};
+                    border: 1px solid {combo_popup_border};
                     border-radius: 8px;
-                    selection-background-color: #F4F4F5;
-                    selection-color: #000000;
+                    selection-background-color: {combo_popup_sel_bg};
+                    selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
                     font-size: 11.5px;
@@ -1358,7 +1479,7 @@ class TaskRowWidget(QWidget):
 
     def _show_context_menu(self, pos: QPoint) -> None:
         menu = QMenu(self)
-        menu.setStyleSheet(CONTEXT_MENU_STYLE)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
         action_rename = menu.addAction("Rename Task")
         action_add_sub = menu.addAction("+ Add Subtask")
@@ -1366,7 +1487,7 @@ class TaskRowWidget(QWidget):
 
         # "Move to Section" submenu
         section_menu = menu.addMenu("Move to Section")
-        section_menu.setStyleSheet(CONTEXT_MENU_STYLE)
+        section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
         curr_proj = self.task.project_tag or "General"
 
         for proj in self.all_projects:
@@ -1421,17 +1542,18 @@ class NoteRowWidget(QWidget):
     delete_requested = pyqtSignal(int)  # note_id
     project_changed = pyqtSignal(int, str)  # note_id, new_project
 
-    def __init__(self, note: NoteRecord, all_projects: List[str], parent: Optional[QWidget] = None):
+    def __init__(self, note: NoteRecord, all_projects: List[str], parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
         self.note = note
         self.note_id = note.id or 0
         self.all_projects = all_projects
+        self.is_dark = is_dark
 
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(4, 6, 4, 6)
         self.layout.setSpacing(10)
 
-        self.checkbox = RoundedCheckbox(checked=note.is_completed, size=20, parent=self)
+        self.checkbox = RoundedCheckbox(checked=note.is_completed, size=20, parent=self, is_dark=self.is_dark)
         self.checkbox.toggled.connect(self._on_toggled)
         self.layout.addWidget(self.checkbox)
 
@@ -1452,10 +1574,15 @@ class NoteRowWidget(QWidget):
         self.tag_btn = QPushButton(f"[{tag_text}]")
         self.tag_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.tag_btn.setToolTip("Click to change section")
+
+        tag_color = "#60A5FA" if self.is_dark else "#2563EB"
+        tag_hover_color = "#93C5FD" if self.is_dark else "#1D4ED8"
+        tag_hover_bg = "rgba(59, 130, 246, 0.15)" if self.is_dark else "rgba(37, 99, 235, 0.08)"
+
         self.tag_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: #2563EB;
+                color: {tag_color};
                 border: none;
                 font-family: {FONT_MONO};
                 font-size: 11px;
@@ -1464,18 +1591,19 @@ class NoteRowWidget(QWidget):
                 border-radius: 4px;
             }}
             QPushButton:hover {{
-                background-color: rgba(37, 99, 235, 0.08);
-                color: #1D4ED8;
+                background-color: {tag_hover_bg};
+                color: {tag_hover_color};
             }}
         """)
         self.tag_btn.clicked.connect(self._show_section_menu)
         meta_layout.addWidget(self.tag_btn)
 
         time_str = note.created_at.strftime("%I:%M %p").lstrip("0")
+        time_color = "#71717A" if self.is_dark else "#A1A1AA"
         time_lbl = QLabel(time_str)
         time_lbl.setStyleSheet(f"""
             QLabel {{
-                color: #A1A1AA;
+                color: {time_color};
                 font-family: {FONT_MONO};
                 font-size: 11px;
             }}
@@ -1490,10 +1618,11 @@ class NoteRowWidget(QWidget):
         del_btn = QPushButton("x")
         del_btn.setFixedSize(18, 18)
         del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        del_btn_color = "#71717A" if self.is_dark else "#D4D4D8"
         del_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: #D4D4D8;
+                color: {del_btn_color};
                 border: none;
                 font-family: {FONT_MONO};
                 font-size: 11px;
@@ -1502,7 +1631,7 @@ class NoteRowWidget(QWidget):
             }}
             QPushButton:hover {{
                 color: #EF4444;
-                background-color: rgba(239, 68, 68, 0.1);
+                background-color: rgba(239, 68, 68, 0.15);
             }}
         """)
         del_btn.clicked.connect(lambda: self.delete_requested.emit(self.note_id))
@@ -1521,10 +1650,10 @@ class NoteRowWidget(QWidget):
 
     def _open_context_menu(self, global_pos: QPoint) -> None:
         menu = QMenu(self)
-        menu.setStyleSheet(CONTEXT_MENU_STYLE)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
         section_menu = menu.addMenu("Move to Section")
-        section_menu.setStyleSheet(CONTEXT_MENU_STYLE)
+        section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
         curr_proj = self.note.project_tag or "General"
 
         for proj in self.all_projects:
@@ -1549,7 +1678,7 @@ class NoteRowWidget(QWidget):
 
     def _open_section_menu(self, global_pos: QPoint) -> None:
         menu = QMenu(self)
-        menu.setStyleSheet(CONTEXT_MENU_STYLE)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
         curr_proj = self.note.project_tag or "General"
         for proj in self.all_projects:
@@ -1568,10 +1697,13 @@ class NoteRowWidget(QWidget):
                 self.project_changed.emit(self.note_id, name.strip())
 
     def _update_text_style(self, is_done: bool) -> None:
+        done_color = "#71717A" if self.is_dark else "#A1A1AA"
+        active_color = "#F4F4F5" if self.is_dark else "#18181B"
+
         if is_done:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #A1A1AA;
+                    color: {done_color};
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
                     font-size: 13.5px;
@@ -1580,7 +1712,7 @@ class NoteRowWidget(QWidget):
         else:
             self.label.setStyleSheet(f"""
                 QLabel {{
-                    color: #18181B;
+                    color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
                     font-size: 13.5px;
@@ -1596,10 +1728,11 @@ class NoteRowWidget(QWidget):
 class ProjectGroupWidget(QWidget):
     """Collapsible project section with chevron header (e.g. ▼ Work)."""
 
-    def __init__(self, project_name: str, tasks: List[TaskRecord], parent: Optional[QWidget] = None):
+    def __init__(self, project_name: str, tasks: List[TaskRecord], parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
         self.project_name = project_name
         self.tasks = tasks
+        self.is_dark = is_dark
         self._is_expanded = True
 
         self.main_layout = QVBoxLayout(self)
@@ -1607,6 +1740,9 @@ class ProjectGroupWidget(QWidget):
         self.main_layout.setSpacing(6)
 
         # Header bar
+        header_color = "#F4F4F5" if self.is_dark else "#18181B"
+        header_hover = "#A1A1AA" if self.is_dark else "#52525B"
+
         self.header_btn = QPushButton(f"v {project_name}")
         self.header_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.header_btn.setStyleSheet(f"""
@@ -1617,11 +1753,11 @@ class ProjectGroupWidget(QWidget):
                 font-family: {FONT_SANS};
                 font-size: 14.5px;
                 font-weight: 700;
-                color: #18181B;
+                color: {header_color};
                 padding: 4px 0;
             }}
             QPushButton:hover {{
-                color: #52525B;
+                color: {header_hover};
             }}
         """)
         self.header_btn.clicked.connect(self.toggle_collapse)
@@ -1645,11 +1781,11 @@ class ProjectGroupWidget(QWidget):
 class QuickEntryDialog(QDialog):
     """
     Refined WizDesk workspace:
-    - Outer Top Bar: Window Controls (Minimize, Maximize, Close).
-    - Inside White Card:
+    - Outer Top Bar: Window Controls (Theme Toggle, Minimize, Maximize, Close).
+    - Inside Card (Light or Dark):
       1. Tasks | Quick Notes switcher
       2. Dynamic Date (e.g. August 31, Monday)
-      3. Filter Capsule Bar (To-do, Completed, Pending, On Hold, Cancelled)
+      3. Filter Capsule Bar (Task, In progress, Completed, Cancelled)
       4. Task / Subtask / Note scroll area
       5. Bottom Add Bar with Section picker and Create Section option
     """
@@ -1660,6 +1796,7 @@ class QuickEntryDialog(QDialog):
         self.repo = repository or StorageRepository()
         self.current_view_mode = "tasks"
         self.selected_date: date = date.today()
+        self.is_dark = (config.theme == "dark")
 
         # Window settings
         self.setWindowTitle("WizDesk - Workspace")
@@ -1674,21 +1811,14 @@ class QuickEntryDialog(QDialog):
         self.outer_layout.setContentsMargins(12, 12, 12, 12)
         self.outer_layout.setSpacing(0)
 
-        # Outer rounded card frame (#E6E6EA)
+        # Outer rounded card frame
         self.outer_frame = QFrame()
         self.outer_frame.setObjectName("outerFrame")
-        self.outer_frame.setStyleSheet("""
-            QFrame#outerFrame {
-                background-color: #E6E6EA;
-                border: 1px solid #D8D8DE;
-                border-radius: 24px;
-            }
-        """)
 
         # Add drop shadow
         self._shadow_effect = QGraphicsDropShadowEffect(self)
         self._shadow_effect.setBlurRadius(28)
-        self._shadow_effect.setColor(QColor(0, 0, 0, 35))
+        self._shadow_effect.setColor(QColor(0, 0, 0, 50 if self.is_dark else 35))
         self._shadow_effect.setOffset(0, 6)
         self.outer_frame.setGraphicsEffect(self._shadow_effect)
 
@@ -1704,37 +1834,26 @@ class QuickEntryDialog(QDialog):
         top_bar.setContentsMargins(4, 0, 4, 0)
 
         # Subtle drag hint / branding
-        brand_lbl = QLabel("  WizDesk")
-        brand_lbl.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
-        brand_lbl.setStyleSheet("color: #71717A;")
-        top_bar.addWidget(brand_lbl)
+        self.brand_lbl = QLabel("  WizDesk")
+        self.brand_lbl.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        top_bar.addWidget(self.brand_lbl)
         top_bar.addStretch()
 
-        # Window control buttons (—, □, x)
+        # Window control buttons (Theme, —, □, x)
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(6)
 
-        btn_style = f"""
-            QPushButton {{
-                background-color: transparent;
-                color: #52525B;
-                border: none;
-                font-family: {FONT_MONO};
-                font-size: 13px;
-                font-weight: bold;
-                border-radius: 11px;
-            }}
-            QPushButton:hover {{
-                background-color: rgba(0, 0, 0, 0.08);
-                color: #18181B;
-            }}
-        """
+        self.theme_btn = QPushButton("☀" if self.is_dark else "☾")
+        self.theme_btn.setFixedSize(22, 22)
+        self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
+        self.theme_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.theme_btn.clicked.connect(self.toggle_theme)
+        controls_layout.addWidget(self.theme_btn)
 
         self.min_btn = QPushButton("—")
         self.min_btn.setFixedSize(22, 22)
         self.min_btn.setToolTip("Minimize")
         self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.min_btn.setStyleSheet(btn_style)
         self.min_btn.clicked.connect(self.showMinimized)
         controls_layout.addWidget(self.min_btn)
 
@@ -1742,7 +1861,6 @@ class QuickEntryDialog(QDialog):
         self.max_btn.setFixedSize(22, 22)
         self.max_btn.setToolTip("Maximize")
         self.max_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.max_btn.setStyleSheet(btn_style)
         self.max_btn.clicked.connect(self._toggle_maximize_restore)
         controls_layout.addWidget(self.max_btn)
 
@@ -1750,23 +1868,15 @@ class QuickEntryDialog(QDialog):
         self.close_btn.setFixedSize(22, 22)
         self.close_btn.setToolTip("Close")
         self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.close_btn.setStyleSheet(btn_style)
         self.close_btn.clicked.connect(self.close)
         controls_layout.addWidget(self.close_btn)
 
         top_bar.addLayout(controls_layout)
         self.frame_layout.addLayout(top_bar)
 
-        # --- Inner Canvas Card (Pure White #FFFFFF) ---
+        # --- Inner Canvas Card ---
         self.inner_card = QFrame()
         self.inner_card.setObjectName("innerCard")
-        self.inner_card.setStyleSheet("""
-            QFrame#innerCard {
-                background-color: #FFFFFF;
-                border-radius: 20px;
-                border: 1px solid #ECECEF;
-            }
-        """)
         self.inner_layout = QVBoxLayout(self.inner_card)
         self.inner_layout.setContentsMargins(18, 16, 18, 16)
         self.inner_layout.setSpacing(12)
@@ -1776,14 +1886,9 @@ class QuickEntryDialog(QDialog):
         page_header_layout.setContentsMargins(0, 0, 0, 0)
         page_header_layout.addStretch()
 
-        mode_capsule = QFrame()
-        mode_capsule.setStyleSheet("""
-            QFrame {
-                background-color: #ECECF0;
-                border-radius: 9px;
-            }
-        """)
-        mode_layout = QHBoxLayout(mode_capsule)
+        self.mode_capsule = QFrame()
+        self.mode_capsule.setObjectName("modeCapsule")
+        mode_layout = QHBoxLayout(self.mode_capsule)
         mode_layout.setContentsMargins(3, 3, 3, 3)
         mode_layout.setSpacing(2)
 
@@ -1799,7 +1904,7 @@ class QuickEntryDialog(QDialog):
         self.notes_mode_btn.clicked.connect(lambda: self._set_view_mode("notes"))
         mode_layout.addWidget(self.notes_mode_btn)
 
-        page_header_layout.addWidget(mode_capsule)
+        page_header_layout.addWidget(self.mode_capsule)
         page_header_layout.addStretch()
         self.inner_layout.addLayout(page_header_layout)
 
@@ -1813,44 +1918,12 @@ class QuickEntryDialog(QDialog):
         self.prev_day_btn.setFixedSize(26, 26)
         self.prev_day_btn.setToolTip("Previous Day")
         self.prev_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.prev_day_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                color: #71717A;
-                border: 1px solid #E4E4E7;
-                border-radius: 6px;
-                font-family: {FONT_MONO};
-                font-size: 12px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                color: #18181B;
-                background-color: #F4F4F5;
-                border-color: #D4D4D8;
-            }}
-        """)
         self.prev_day_btn.clicked.connect(self._on_prev_day)
         date_header_layout.addWidget(self.prev_day_btn)
 
         self.date_btn = QPushButton()
         self.date_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.date_btn.setToolTip("Click to open calendar")
-        self.date_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                color: #27272A;
-                border: none;
-                font-family: {FONT_MONO};
-                font-size: 13.5px;
-                font-weight: 600;
-                padding: 4px 10px;
-                border-radius: 6px;
-            }}
-            QPushButton:hover {{
-                background-color: #F4F4F5;
-                color: #000000;
-            }}
-        """)
         self.date_btn.clicked.connect(self._open_calendar)
         date_header_layout.addWidget(self.date_btn)
 
@@ -1858,43 +1931,12 @@ class QuickEntryDialog(QDialog):
         self.next_day_btn.setFixedSize(26, 26)
         self.next_day_btn.setToolTip("Next Day")
         self.next_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.next_day_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                color: #71717A;
-                border: 1px solid #E4E4E7;
-                border-radius: 6px;
-                font-family: {FONT_MONO};
-                font-size: 12px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                color: #18181B;
-                background-color: #F4F4F5;
-                border-color: #D4D4D8;
-            }}
-        """)
         self.next_day_btn.clicked.connect(self._on_next_day)
         date_header_layout.addWidget(self.next_day_btn)
 
         self.today_pill_btn = QPushButton("Today")
         self.today_pill_btn.setFixedHeight(26)
         self.today_pill_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.today_pill_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #18181B;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 6px;
-                font-family: {FONT_SANS};
-                font-size: 11px;
-                font-weight: 600;
-                padding: 0 8px;
-            }}
-            QPushButton:hover {{
-                background-color: #3F3F46;
-            }}
-        """)
         self.today_pill_btn.clicked.connect(self._on_today_clicked)
         self.today_pill_btn.setVisible(False)
         date_header_layout.addWidget(self.today_pill_btn)
@@ -1917,7 +1959,7 @@ class QuickEntryDialog(QDialog):
         tasks_page_layout.setSpacing(12)
 
         # 3. Status Filter Capsule Bar (Below the Date)
-        self.filter_bar = SegmentedFilterBar()
+        self.filter_bar = SegmentedFilterBar(is_dark=self.is_dark)
         self.filter_bar.filter_changed.connect(self._on_filter_changed)
         tasks_page_layout.addWidget(self.filter_bar)
 
@@ -1950,79 +1992,18 @@ class QuickEntryDialog(QDialog):
 
         self.add_input = QLineEdit()
         self.add_input.setPlaceholderText("+ Add task... (Press Enter)")
-        self.add_input.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #D4D4D8;
-                border-radius: 8px;
-                padding: 8px 12px;
-                font-family: {FONT_SANS};
-                font-size: 13px;
-            }}
-            QLineEdit:focus {{
-                background-color: #FFFFFF;
-                border: 1.5px solid #18181B;
-            }}
-        """)
         self.add_input.returnPressed.connect(self._on_quick_add_task)
         add_task_layout.addWidget(self.add_input, stretch=3)
 
         self.project_combo = QComboBox()
         self.project_combo.setEditable(False)
-        self.project_combo.setStyleSheet(f"""
-            QComboBox {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #D4D4D8;
-                border-radius: 8px;
-                padding: 6px 12px;
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-                font-weight: 500;
-                min-width: 130px;
-            }}
-            QComboBox:hover {{
-                border-color: #A1A1AA;
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                width: 20px;
-            }}
-            QComboBox QAbstractItemView {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
-                border-radius: 8px;
-                selection-background-color: #F4F4F5;
-                selection-color: #000000;
-                padding: 4px;
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-            }}
-        """)
         self.project_combo.currentIndexChanged.connect(self._on_project_combo_changed)
         add_task_layout.addWidget(self.project_combo, stretch=1)
 
-        add_task_btn = QPushButton("Add")
-        add_task_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        add_task_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #18181B;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #3F3F46;
-            }}
-        """)
-        add_task_btn.clicked.connect(self._on_quick_add_task)
-        add_task_layout.addWidget(add_task_btn)
+        self.add_task_btn = QPushButton("Add")
+        self.add_task_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.add_task_btn.clicked.connect(self._on_quick_add_task)
+        add_task_layout.addWidget(self.add_task_btn)
 
         tasks_page_layout.addLayout(add_task_layout)
         self.stack.addWidget(self.tasks_page)
@@ -2036,16 +2017,8 @@ class QuickEntryDialog(QDialog):
         notes_page_layout.setSpacing(12)
 
         # Notes subtitle / hint
-        notes_hdr = QLabel("Track work progress notes, thoughts, or blockers for today:")
-        notes_hdr.setStyleSheet(f"""
-            QLabel {{
-                color: #71717A;
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-                font-weight: 500;
-            }}
-        """)
-        notes_page_layout.addWidget(notes_hdr)
+        self.notes_hdr = QLabel("Track work progress notes, thoughts, or blockers for today:")
+        notes_page_layout.addWidget(self.notes_hdr)
 
         # Scrollable Notes Area (Without visible scrollbar)
         self.notes_scroll = QScrollArea()
@@ -2076,79 +2049,18 @@ class QuickEntryDialog(QDialog):
 
         self.note_input = QLineEdit()
         self.note_input.setPlaceholderText("+ Log a quick work note... (Press Enter)")
-        self.note_input.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #D4D4D8;
-                border-radius: 8px;
-                padding: 8px 12px;
-                font-family: {FONT_SANS};
-                font-size: 13px;
-            }}
-            QLineEdit:focus {{
-                background-color: #FFFFFF;
-                border: 1.5px solid #18181B;
-            }}
-        """)
         self.note_input.returnPressed.connect(self._on_quick_add_note)
         add_note_layout.addWidget(self.note_input, stretch=3)
 
         self.note_project_combo = QComboBox()
         self.note_project_combo.setEditable(False)
-        self.note_project_combo.setStyleSheet(f"""
-            QComboBox {{
-                background-color: #F4F4F5;
-                color: #18181B;
-                border: 1px solid #D4D4D8;
-                border-radius: 8px;
-                padding: 6px 12px;
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-                font-weight: 500;
-                min-width: 130px;
-            }}
-            QComboBox:hover {{
-                border-color: #A1A1AA;
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                width: 20px;
-            }}
-            QComboBox QAbstractItemView {{
-                background-color: #FFFFFF;
-                color: #18181B;
-                border: 1px solid #E4E4E7;
-                border-radius: 8px;
-                selection-background-color: #F4F4F5;
-                selection-color: #000000;
-                padding: 4px;
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-            }}
-        """)
         self.note_project_combo.currentIndexChanged.connect(self._on_note_project_combo_changed)
         add_note_layout.addWidget(self.note_project_combo, stretch=1)
 
-        add_note_btn = QPushButton("Log Note")
-        add_note_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        add_note_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #18181B;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #3F3F46;
-            }}
-        """)
-        add_note_btn.clicked.connect(self._on_quick_add_note)
-        add_note_layout.addWidget(add_note_btn)
+        self.add_note_btn = QPushButton("Log Note")
+        self.add_note_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.add_note_btn.clicked.connect(self._on_quick_add_note)
+        add_note_layout.addWidget(self.add_note_btn)
 
         notes_page_layout.addLayout(add_note_layout)
         self.stack.addWidget(self.notes_page)
@@ -2159,24 +2071,261 @@ class QuickEntryDialog(QDialog):
         # Drag state for frameless window movement
         self._drag_pos = QPoint()
 
+        # Connect theme changed broadcast
+        app_signals.theme_changed.connect(self.apply_theme)
+
+        # Apply initial theme stylesheet
+        self.apply_theme(config.theme)
+
         # Seed sample projects/tasks if repository is completely blank
         self._seed_initial_data_if_empty()
 
         # Initial populate & render
         self._populate_projects()
         self._set_view_mode("tasks")
-        self.refresh_tasks()
-        self.refresh_notes()
+
+    def toggle_theme(self) -> None:
+        """Toggle between light and dark themes and broadcast."""
+        new_theme = "light" if self.is_dark else "dark"
+        config.set_theme(new_theme)
+        app_signals.theme_changed.emit(new_theme)
+
+    def apply_theme(self, theme_name: str) -> None:
+        """Dynamically apply Light or Dark theme styling to the entire workspace."""
+        self.is_dark = (theme_name.lower() == "dark")
+        self.theme_btn.setText("☀" if self.is_dark else "☾")
+        self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
+
+        # Color tokens
+        outer_bg = "#121214" if self.is_dark else "#E6E6EA"
+        outer_border = "#27272A" if self.is_dark else "#D8D8DE"
+        inner_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        inner_border = "#27272A" if self.is_dark else "#ECECEF"
+        brand_color = "#A1A1AA" if self.is_dark else "#71717A"
+        ctrl_btn_color = "#A1A1AA" if self.is_dark else "#52525B"
+        ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.08)"
+        ctrl_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        mode_capsule_bg = "#27272A" if self.is_dark else "#ECECF0"
+        day_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
+        day_btn_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        day_btn_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        day_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        date_btn_color = "#F4F4F5" if self.is_dark else "#27272A"
+        today_pill_bg = "#FAFAFA" if self.is_dark else "#18181B"
+        today_pill_color = "#18181B" if self.is_dark else "#FFFFFF"
+        today_pill_hover = "#E4E4E7" if self.is_dark else "#3F3F46"
+        input_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        input_color = "#F4F4F5" if self.is_dark else "#18181B"
+        input_border = "#3F3F46" if self.is_dark else "#D4D4D8"
+        input_focus_border = "#FAFAFA" if self.is_dark else "#18181B"
+        combo_popup_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        combo_popup_border = "#27272A" if self.is_dark else "#E4E4E7"
+        combo_popup_sel_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        combo_popup_sel_text = "#FFFFFF" if self.is_dark else "#000000"
+        btn_action_bg = "#FAFAFA" if self.is_dark else "#18181B"
+        btn_action_color = "#18181B" if self.is_dark else "#FFFFFF"
+        btn_action_hover = "#E4E4E7" if self.is_dark else "#3F3F46"
+        notes_hdr_color = "#A1A1AA" if self.is_dark else "#71717A"
+
+        # 1. Outer Frame & Inner Card
+        self.outer_frame.setStyleSheet(f"""
+            QFrame#outerFrame {{
+                background-color: {outer_bg};
+                border: 1px solid {outer_border};
+                border-radius: 24px;
+            }}
+        """)
+        self.inner_card.setStyleSheet(f"""
+            QFrame#innerCard {{
+                background-color: {inner_bg};
+                border-radius: 20px;
+                border: 1px solid {inner_border};
+            }}
+        """)
+
+        # 2. Window Controls
+        self.brand_lbl.setStyleSheet(f"color: {brand_color};")
+        ctrl_qss = f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {ctrl_btn_color};
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 13px;
+                font-weight: bold;
+                border-radius: 11px;
+            }}
+            QPushButton:hover {{
+                background-color: {ctrl_btn_hover_bg};
+                color: {ctrl_btn_hover_color};
+            }}
+        """
+        self.theme_btn.setStyleSheet(ctrl_qss)
+        self.min_btn.setStyleSheet(ctrl_qss)
+        self.max_btn.setStyleSheet(ctrl_qss)
+        self.close_btn.setStyleSheet(ctrl_qss)
+
+        # 3. Mode Capsule
+        self.mode_capsule.setStyleSheet(f"""
+            QFrame#modeCapsule {{
+                background-color: {mode_capsule_bg};
+                border-radius: 9px;
+            }}
+        """)
+
+        # 4. Date header
+        day_nav_qss = f"""
+            QPushButton {{
+                background: transparent;
+                color: {day_btn_color};
+                border: 1px solid {day_btn_border};
+                border-radius: 6px;
+                font-family: {FONT_MONO};
+                font-size: 12px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                color: {day_btn_hover_color};
+                background-color: {day_btn_hover_bg};
+                border-color: {input_border};
+            }}
+        """
+        self.prev_day_btn.setStyleSheet(day_nav_qss)
+        self.next_day_btn.setStyleSheet(day_nav_qss)
+
+        self.date_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {date_btn_color};
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 13.5px;
+                font-weight: 600;
+                padding: 4px 10px;
+                border-radius: 6px;
+            }}
+            QPushButton:hover {{
+                background-color: {day_btn_hover_bg};
+            }}
+        """)
+
+        self.today_pill_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {today_pill_bg};
+                color: {today_pill_color};
+                border: none;
+                border-radius: 6px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+                padding: 0 8px;
+            }}
+            QPushButton:hover {{
+                background-color: {today_pill_hover};
+            }}
+        """)
+
+        # 5. Filter bar
+        self.filter_bar.set_dark_mode(self.is_dark)
+
+        # 6. Bottom Add Task / Note inputs & buttons
+        input_qss = f"""
+            QLineEdit {{
+                background-color: {input_bg};
+                color: {input_color};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 8px 12px;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+            }}
+            QLineEdit:focus {{
+                background-color: {inner_bg};
+                border: 1.5px solid {input_focus_border};
+            }}
+        """
+        self.add_input.setStyleSheet(input_qss)
+        self.note_input.setStyleSheet(input_qss)
+
+        combo_qss = f"""
+            QComboBox {{
+                background-color: {input_bg};
+                color: {input_color};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 6px 12px;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+                font-weight: 500;
+                min-width: 130px;
+            }}
+            QComboBox:hover {{
+                border-color: {input_focus_border};
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                width: 20px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {combo_popup_bg};
+                color: {input_color};
+                border: 1px solid {combo_popup_border};
+                border-radius: 8px;
+                selection-background-color: {combo_popup_sel_bg};
+                selection-color: {combo_popup_sel_text};
+                padding: 4px;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+            }}
+        """
+        self.project_combo.setStyleSheet(combo_qss)
+        self.note_project_combo.setStyleSheet(combo_qss)
+
+        btn_action_qss = f"""
+            QPushButton {{
+                background-color: {btn_action_bg};
+                color: {btn_action_color};
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_action_hover};
+            }}
+        """
+        self.add_task_btn.setStyleSheet(btn_action_qss)
+        self.add_note_btn.setStyleSheet(btn_action_qss)
+
+        # 7. Notes Header
+        self.notes_hdr.setStyleSheet(f"""
+            QLabel {{
+                color: {notes_hdr_color};
+                font-family: {FONT_SANS};
+                font-size: 12.5px;
+                font-weight: 500;
+            }}
+        """)
+
+        # 8. Re-apply mode buttons
+        self._set_view_mode(self.current_view_mode)
 
     def _set_view_mode(self, mode: str) -> None:
         """Switch between Tasks mode and Quick Notes mode."""
         self.current_view_mode = mode
+        active_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        active_color = "#F4F4F5" if self.is_dark else "#18181B"
+        inactive_color = "#A1A1AA" if self.is_dark else "#71717A"
+        hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+
         if mode == "tasks":
             self.stack.setCurrentWidget(self.tasks_page)
             self.tasks_mode_btn.setStyleSheet(f"""
                 QPushButton {{
-                    background-color: #FFFFFF;
-                    color: #18181B;
+                    background-color: {active_bg};
+                    color: {active_color};
                     border: none;
                     border-radius: 7px;
                     font-family: {FONT_SANS};
@@ -2188,7 +2337,7 @@ class QuickEntryDialog(QDialog):
             self.notes_mode_btn.setStyleSheet(f"""
                 QPushButton {{
                     background-color: transparent;
-                    color: #71717A;
+                    color: {inactive_color};
                     border: none;
                     border-radius: 7px;
                     font-family: {FONT_SANS};
@@ -2197,7 +2346,7 @@ class QuickEntryDialog(QDialog):
                     padding: 0 14px;
                 }}
                 QPushButton:hover {{
-                    color: #18181B;
+                    color: {hover_color};
                 }}
             """)
             self.refresh_tasks()
@@ -2205,8 +2354,8 @@ class QuickEntryDialog(QDialog):
             self.stack.setCurrentWidget(self.notes_page)
             self.notes_mode_btn.setStyleSheet(f"""
                 QPushButton {{
-                    background-color: #FFFFFF;
-                    color: #18181B;
+                    background-color: {active_bg};
+                    color: {active_color};
                     border: none;
                     border-radius: 7px;
                     font-family: {FONT_SANS};
@@ -2218,7 +2367,7 @@ class QuickEntryDialog(QDialog):
             self.tasks_mode_btn.setStyleSheet(f"""
                 QPushButton {{
                     background-color: transparent;
-                    color: #71717A;
+                    color: {inactive_color};
                     border: none;
                     border-radius: 7px;
                     font-family: {FONT_SANS};
@@ -2227,7 +2376,7 @@ class QuickEntryDialog(QDialog):
                     padding: 0 14px;
                 }}
                 QPushButton:hover {{
-                    color: #18181B;
+                    color: {hover_color};
                 }}
             """)
             self.refresh_notes()
@@ -2336,7 +2485,7 @@ class QuickEntryDialog(QDialog):
 
     def _open_calendar(self) -> None:
         """Open popup calendar picker."""
-        dlg = CalendarPopupDialog(self.selected_date, self)
+        dlg = CalendarPopupDialog(self.selected_date, self, is_dark=self.is_dark)
         btn_pos = self.date_btn.mapToGlobal(QPoint(0, self.date_btn.height() + 4))
         x = btn_pos.x() + (self.date_btn.width() // 2) - (dlg.width() // 2)
         y = btn_pos.y()
@@ -2380,9 +2529,10 @@ class QuickEntryDialog(QDialog):
 
             empty_label = QLabel(empty_msg)
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty_color = "#71717A" if self.is_dark else "#A1A1AA"
             empty_label.setStyleSheet(f"""
                 QLabel {{
-                    color: #A1A1AA;
+                    color: {empty_color};
                     font-family: {FONT_SANS};
                     font-size: 13px;
                     padding: 40px 0;
@@ -2393,10 +2543,10 @@ class QuickEntryDialog(QDialog):
             return
 
         for project_name, task_list in grouped.items():
-            group_widget = ProjectGroupWidget(project_name, task_list, self.content_widget)
+            group_widget = ProjectGroupWidget(project_name, task_list, self.content_widget, is_dark=self.is_dark)
 
             for task in task_list:
-                row = TaskRowWidget(task, all_projects, group_widget.tasks_container)
+                row = TaskRowWidget(task, all_projects, group_widget.tasks_container, is_dark=self.is_dark)
                 row.status_toggled.connect(self._on_task_status_toggled)
                 row.action_requested.connect(self._on_task_action)
                 row.project_changed.connect(self._on_task_project_changed)
@@ -2426,11 +2576,12 @@ class QuickEntryDialog(QDialog):
             all_projects = ["Work", "Personal Projects"]
 
         if not notes:
+            empty_color = "#71717A" if self.is_dark else "#A1A1AA"
             empty_label = QLabel(f"No notes logged for {self.selected_date.strftime('%B %d')}.")
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty_label.setStyleSheet(f"""
                 QLabel {{
-                    color: #A1A1AA;
+                    color: {empty_color};
                     font-family: {FONT_SANS};
                     font-size: 13px;
                     padding: 40px 0;
@@ -2441,7 +2592,7 @@ class QuickEntryDialog(QDialog):
             return
 
         for note in notes:
-            row = NoteRowWidget(note, all_projects, self.notes_content_widget)
+            row = NoteRowWidget(note, all_projects, self.notes_content_widget, is_dark=self.is_dark)
             row.toggled.connect(self._on_note_toggled)
             row.delete_requested.connect(self._on_note_deleted)
             row.project_changed.connect(self._on_note_project_changed)
@@ -2634,3 +2785,4 @@ class QuickEntryDialog(QDialog):
             self.close()
         else:
             super().keyPressEvent(event)
+
