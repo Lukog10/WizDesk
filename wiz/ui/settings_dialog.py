@@ -383,7 +383,7 @@ class SettingsDialog(QDialog):
         # Section 3: Project Auto-Tagging Keywords
         # ----------------------------------------------------
         proj_box = QVBoxLayout()
-        proj_box.setSpacing(6)
+        proj_box.setSpacing(8)
 
         proj_title = QLabel("Project Auto-Tagging Keywords")
         proj_title.setStyleSheet("font-size: 12.5px; font-weight: 600; color: #18181B;")
@@ -400,11 +400,13 @@ class SettingsDialog(QDialog):
         self.proj_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.proj_table.verticalHeader().setVisible(False)
         self.proj_table.verticalHeader().setDefaultSectionSize(32)
-        self.proj_table.setFixedHeight(175)
+        self.proj_table.setFixedHeight(130)
         self.proj_table.itemChanged.connect(self._on_table_item_changed)
         proj_box.addWidget(self.proj_table)
 
+        # Action buttons placed cleanly outside and below the table
         proj_btn_layout = QHBoxLayout()
+        proj_btn_layout.setContentsMargins(0, 4, 0, 0)
         proj_btn_layout.setSpacing(8)
 
         add_proj_btn = QPushButton("+ Add Project")
@@ -415,7 +417,7 @@ class SettingsDialog(QDialog):
                 color: #18181B;
                 border: 1px solid #E4E4E7;
                 border-radius: 8px;
-                padding: 5px 12px;
+                padding: 6px 14px;
                 font-family: {FONT_SANS};
                 font-size: 11.5px;
                 font-weight: 600;
@@ -436,7 +438,7 @@ class SettingsDialog(QDialog):
                 color: #EF4444;
                 border: 1px solid #FEE2E2;
                 border-radius: 8px;
-                padding: 5px 12px;
+                padding: 6px 14px;
                 font-family: {FONT_SANS};
                 font-size: 11.5px;
                 font-weight: 600;
@@ -538,13 +540,24 @@ class SettingsDialog(QDialog):
             self.vault_path_input.setText(folder)
 
     def _load_projects(self) -> None:
-        """Load projects from database into table."""
+        """Load projects from database into table with clean secondary styling."""
         self.proj_table.blockSignals(True)
         projects = self.repo.get_all_projects()
         self.proj_table.setRowCount(len(projects))
+
+        font_name = QFont("Segoe UI", 9)
+        font_name.setWeight(QFont.Weight.Normal)
+        font_kw = QFont("JetBrains Mono", 8)
+
         for row, p in enumerate(projects):
             name_item = QTableWidgetItem(p.name)
+            name_item.setFont(font_name)
+            name_item.setForeground(QColor("#52525B"))
+
             kw_item = QTableWidgetItem(", ".join(p.keywords))
+            kw_item.setFont(font_kw)
+            kw_item.setForeground(QColor("#71717A"))
+
             self.proj_table.setItem(row, 0, name_item)
             self.proj_table.setItem(row, 1, kw_item)
         self.proj_table.blockSignals(False)
