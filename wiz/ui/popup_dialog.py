@@ -25,6 +25,7 @@ from PyQt6.QtGui import (
     QPainterPath,
     QCursor,
     QAction,
+    QTextCharFormat,
 )
 from PyQt6.QtWidgets import (
     QDialog,
@@ -43,6 +44,7 @@ from PyQt6.QtWidgets import (
     QInputDialog,
     QStackedWidget,
     QCalendarWidget,
+    QToolButton,
 )
 
 from wiz.core.config import config
@@ -100,11 +102,12 @@ class CalendarPopupDialog(QDialog):
         self.setWindowTitle("Select Date - WizDesk")
         self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setFixedWidth(290)
 
         self.selected_date = current_date
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         card = QFrame()
         card.setObjectName("calCard")
@@ -114,52 +117,128 @@ class CalendarPopupDialog(QDialog):
                 border: 1px solid #E4E4E7;
                 border-radius: 14px;
             }}
+            QCalendarWidget {{
+                background-color: #FFFFFF;
+                border: none;
+            }}
             QCalendarWidget QWidget {{
                 alternate-background-color: #FFFFFF;
-                font-family: {FONT_SANS};
-            }}
-            QCalendarWidget QAbstractItemView:enabled {{
-                font-family: {FONT_SANS};
-                font-size: 12px;
-                color: #18181B;
-                selection-background-color: #18181B;
-                selection-color: #FFFFFF;
-                border-radius: 4px;
-            }}
-            QCalendarWidget QMenu {{
                 background-color: #FFFFFF;
-                border: 1px solid #E4E4E7;
-                font-family: {FONT_SANS};
             }}
-            QCalendarWidget QSpinBox {{
-                font-family: {FONT_SANS};
-                font-size: 12px;
-                background-color: #F4F4F5;
-                border: 1px solid #E4E4E7;
-                border-radius: 4px;
+            QCalendarWidget #qt_calendar_navigationbar {{
+                background-color: #FFFFFF;
+                border: none;
+                border-bottom: 1px solid #F4F4F5;
+                min-height: 38px;
             }}
             QCalendarWidget QToolButton {{
                 background-color: transparent;
-                border: none;
-                border-radius: 6px;
                 color: #18181B;
                 font-family: {FONT_SANS};
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: 600;
+                border-radius: 6px;
                 padding: 4px 8px;
+                margin: 2px;
+                border: none;
             }}
             QCalendarWidget QToolButton:hover {{
                 background-color: #F4F4F5;
+                color: #000000;
+            }}
+            QCalendarWidget #qt_calendar_prevmonth, QCalendarWidget #qt_calendar_nextmonth {{
+                font-size: 15px;
+                font-weight: bold;
+                color: #71717A;
+                min-width: 28px;
+            }}
+            QCalendarWidget #qt_calendar_prevmonth:hover, QCalendarWidget #qt_calendar_nextmonth:hover {{
+                color: #18181B;
+                background-color: #F4F4F5;
+            }}
+            QCalendarWidget QMenu {{
+                background-color: #FFFFFF;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 8px;
+                padding: 4px;
+                font-family: {FONT_SANS};
+            }}
+            QCalendarWidget QSpinBox {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 6px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                padding: 2px 4px;
+            }}
+            QCalendarWidget QTableView {{
+                background-color: #FFFFFF;
+                alternate-background-color: #FFFFFF;
+                color: #18181B;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                selection-background-color: #18181B;
+                selection-color: #FFFFFF;
+                border: none;
+                outline: none;
+            }}
+            QCalendarWidget QTableView:item {{
+                border-radius: 6px;
+                padding: 2px;
+            }}
+            QCalendarWidget QTableView:item:hover {{
+                background-color: #F4F4F5;
+                color: #18181B;
+            }}
+            QCalendarWidget QTableView:item:selected {{
+                background-color: #18181B;
+                color: #FFFFFF;
             }}
         """)
 
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(8, 8, 8, 8)
+        card_layout.setContentsMargins(10, 10, 10, 10)
         card_layout.setSpacing(8)
 
         self.calendar = QCalendarWidget()
+        self.calendar.setVerticalHeaderFormat(QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader)
+        self.calendar.setHorizontalHeaderFormat(QCalendarWidget.HorizontalHeaderFormat.ShortDayNames)
         self.calendar.setGridVisible(False)
+        self.calendar.setNavigationBarVisible(True)
         self.calendar.setSelectedDate(QDate(current_date.year, current_date.month, current_date.day))
+
+        prev_btn = self.calendar.findChild(QToolButton, "qt_calendar_prevmonth")
+        next_btn = self.calendar.findChild(QToolButton, "qt_calendar_nextmonth")
+        if prev_btn:
+            prev_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+            prev_btn.setText("<")
+        if next_btn:
+            next_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+            next_btn.setText(">")
+
+        # Format header days cleanly in muted grey
+        hdr_fmt = QTextCharFormat()
+        hdr_fmt.setForeground(QColor("#71717A"))
+        hdr_fmt.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        self.calendar.setHeaderTextFormat(hdr_fmt)
+
+        # Neutralize weekend red text to clean charcoal
+        work_fmt = QTextCharFormat()
+        work_fmt.setForeground(QColor("#18181B"))
+        work_fmt.setFont(QFont("Segoe UI", 9))
+        for day in [
+            Qt.DayOfWeek.Sunday,
+            Qt.DayOfWeek.Monday,
+            Qt.DayOfWeek.Tuesday,
+            Qt.DayOfWeek.Wednesday,
+            Qt.DayOfWeek.Thursday,
+            Qt.DayOfWeek.Friday,
+            Qt.DayOfWeek.Saturday,
+        ]:
+            self.calendar.setWeekdayTextFormat(day, work_fmt)
+
         self.calendar.activated.connect(self._on_date_selected)
         self.calendar.clicked.connect(self._on_date_selected)
         card_layout.addWidget(self.calendar)
@@ -191,7 +270,7 @@ class CalendarPopupDialog(QDialog):
         # Drop shadow
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(24)
-        shadow.setColor(QColor(0, 0, 0, 50))
+        shadow.setColor(QColor(0, 0, 0, 40))
         shadow.setOffset(0, 4)
         card.setGraphicsEffect(shadow)
 
@@ -2193,7 +2272,9 @@ class QuickEntryDialog(QDialog):
         """Open popup calendar picker."""
         dlg = CalendarPopupDialog(self.selected_date, self)
         btn_pos = self.date_btn.mapToGlobal(QPoint(0, self.date_btn.height() + 4))
-        dlg.move(btn_pos)
+        x = btn_pos.x() + (self.date_btn.width() // 2) - (dlg.width() // 2)
+        y = btn_pos.y()
+        dlg.move(x, y)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self.set_selected_date(dlg.selected_date)
 
