@@ -113,7 +113,7 @@ def test_project_keyword_matching(repo):
 
 
 def test_in_progress_filter_behavior(repo):
-    """Test that 'In progress' filter includes tasks in task state and excludes only completed/cancelled."""
+    """Test that 'Task' filter shows all tasks and specific filters strictly isolate states."""
     t1 = repo.create_task("Active Task 1", project_tag="Work")  # status: not_started
     t2 = repo.create_task("Active Task 2", project_tag="Work")  # status: in_progress
     repo.update_task_status(t2, "in_progress")
@@ -122,10 +122,34 @@ def test_in_progress_filter_behavior(repo):
     t4 = repo.create_task("Cancelled Task", project_tag="Work")
     repo.update_task_status(t4, "cancelled")
 
+    # 'Task' filter returns ALL tasks
+    all_tasks = repo.get_task_hierarchy(status_filter="Task")
+    all_ids = [t.id for t in all_tasks]
+    assert t1 in all_ids
+    assert t2 in all_ids
+    assert t3 in all_ids
+    assert t4 in all_ids
+
+    # 'In progress' filter returns ONLY in_progress tasks
     in_progress_tasks = repo.get_task_hierarchy(status_filter="In progress")
     in_progress_ids = [t.id for t in in_progress_tasks]
-
-    assert t1 in in_progress_ids
+    assert t1 not in in_progress_ids
     assert t2 in in_progress_ids
     assert t3 not in in_progress_ids
     assert t4 not in in_progress_ids
+
+    # 'Completed' filter returns ONLY completed tasks
+    completed_tasks = repo.get_task_hierarchy(status_filter="Completed")
+    completed_ids = [t.id for t in completed_tasks]
+    assert t3 in completed_ids
+    assert t1 not in completed_ids
+    assert t2 not in completed_ids
+    assert t4 not in completed_ids
+
+    # 'Cancelled' filter returns ONLY cancelled tasks
+    cancelled_tasks = repo.get_task_hierarchy(status_filter="Cancelled")
+    cancelled_ids = [t.id for t in cancelled_tasks]
+    assert t4 in cancelled_ids
+    assert t1 not in cancelled_ids
+    assert t2 not in cancelled_ids
+    assert t3 not in cancelled_ids

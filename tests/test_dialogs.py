@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
-from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox, CreateSectionDialog
+from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox, CreateSectionDialog, TaskRowWidget
 from wiz.ui.settings_dialog import SettingsDialog
 
 
@@ -181,3 +181,41 @@ def test_app_icon_and_favicon_loading(qapp):
     # Test alias idle.svg
     icon_alias = get_app_icon("idle.svg")
     assert not icon_alias.isNull()
+
+
+def test_task_row_inline_status_toggles(qapp, repo):
+    """Test clicking the inline status pills (In progress, Completed, Cancelled) on TaskRowWidget."""
+    task_id = repo.create_task("Test inline status task", project_tag="Work")
+    tasks = repo.get_task_hierarchy(status_filter="Task")
+    task = [t for t in tasks if t.id == task_id][0]
+
+    row = TaskRowWidget(task, ["Work", "Personal"])
+    emitted_statuses = []
+    row.status_toggled.connect(lambda tid, st: emitted_statuses.append(st))
+
+    # Initial state
+    assert not row.checkbox.isChecked
+
+    # Click 'In progress' pill
+    row.btn_in_progress.click()
+    assert emitted_statuses[-1] == "in_progress"
+    assert row.task.status == "in_progress"
+
+    # Click 'Completed' pill
+    row.btn_completed.click()
+    assert emitted_statuses[-1] == "done"
+    assert row.task.status == "done"
+    assert row.checkbox.isChecked
+
+    # Click 'Cancelled' pill
+    row.btn_cancelled.click()
+    assert emitted_statuses[-1] == "cancelled"
+    assert row.task.status == "cancelled"
+    assert not row.checkbox.isChecked
+
+    # Click 'Cancelled' pill again to un-toggle back to 'not_started'
+    row.btn_cancelled.click()
+    assert emitted_statuses[-1] == "not_started"
+    assert row.task.status == "not_started"
+
+    row.deleteLater()

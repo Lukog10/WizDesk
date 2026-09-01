@@ -46,7 +46,7 @@ from PyQt6.QtWidgets import (
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
-from wiz.core.state_machine import StateMachine
+from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
 from wiz.ui.icons import get_app_icon, get_app_pixmap
 
@@ -526,7 +526,6 @@ class TaskRowWidget(QWidget):
         self.label = QLabel(task.title)
         self.label.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        self._update_label_style(is_done)
         top_layout.addWidget(self.label, stretch=1)
 
         # "+ subtask" button
@@ -552,6 +551,30 @@ class TaskRowWidget(QWidget):
         top_layout.addWidget(self.add_sub_btn)
 
         self.main_layout.addWidget(self.top_widget)
+
+        # Status pills bar directly below task title
+        self.status_bar_widget = QWidget()
+        status_bar_layout = QHBoxLayout(self.status_bar_widget)
+        status_bar_layout.setContentsMargins(34, 0, 4, 3)
+        status_bar_layout.setSpacing(6)
+
+        self.btn_in_progress = QPushButton("In progress")
+        self.btn_in_progress.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_in_progress.clicked.connect(lambda: self._on_status_button_clicked("in_progress"))
+        status_bar_layout.addWidget(self.btn_in_progress)
+
+        self.btn_completed = QPushButton("Completed")
+        self.btn_completed.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_completed.clicked.connect(lambda: self._on_status_button_clicked("done"))
+        status_bar_layout.addWidget(self.btn_completed)
+
+        self.btn_cancelled = QPushButton("Cancelled")
+        self.btn_cancelled.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_cancelled.clicked.connect(lambda: self._on_status_button_clicked("cancelled"))
+        status_bar_layout.addWidget(self.btn_cancelled)
+
+        status_bar_layout.addStretch()
+        self.main_layout.addWidget(self.status_bar_widget)
 
         # Subtasks container
         self.subtasks_container = QWidget()
@@ -620,6 +643,9 @@ class TaskRowWidget(QWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
 
+        # Initialize visual status representation
+        self._update_status_ui(task.status or "not_started")
+
     def _toggle_subtask_input(self, force_show: bool = False) -> None:
         """Toggle inline subtask input visibility."""
         is_vis = self.sub_input_widget.isVisible()
@@ -637,7 +663,40 @@ class TaskRowWidget(QWidget):
         self.sub_input.clear()
         self.sub_input_widget.setVisible(False)
 
-    def _update_label_style(self, is_done: bool) -> None:
+    def _on_status_button_clicked(self, target_status: str) -> None:
+        """Toggle status when a pill button is clicked."""
+        curr = (self.task.status or "not_started").lower()
+        if target_status == "in_progress":
+            new_status = "not_started" if curr in ("in_progress", "pending", "ongoing") else "in_progress"
+        elif target_status == "done":
+            new_status = "not_started" if curr in ("done", "completed") else "done"
+        elif target_status == "cancelled":
+            new_status = "not_started" if curr in ("cancelled", "canceled") else "cancelled"
+        else:
+            new_status = target_status
+
+        self.task.status = new_status
+        self._update_status_ui(new_status)
+        self.status_toggled.emit(self.task_id, new_status)
+
+    def _on_checkbox_toggled(self, checked: bool) -> None:
+        new_status = "done" if checked else "not_started"
+        self.task.status = new_status
+        self._update_status_ui(new_status)
+        self.status_toggled.emit(self.task_id, new_status)
+
+    def _update_status_ui(self, status: str) -> None:
+        """Synchronize task checkbox, label text decorations, and status pills."""
+        is_done = status in ("done", "completed")
+        is_cancelled = status in ("cancelled", "canceled")
+        is_in_progress = status in ("in_progress", "pending", "ongoing")
+
+        # Sync checkbox state without re-triggering signal
+        self.checkbox.blockSignals(True)
+        self.checkbox.setChecked(is_done)
+        self.checkbox.blockSignals(False)
+
+        # Label styling
         if is_done:
             self.label.setStyleSheet(f"""
                 QLabel {{
@@ -645,6 +704,26 @@ class TaskRowWidget(QWidget):
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
                     font-size: 13.5px;
+                }}
+            """)
+        elif is_cancelled:
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #A1A1AA;
+                    text-decoration: line-through;
+                    font-style: italic;
+                    font-family: {FONT_SANS};
+                    font-size: 13.5px;
+                }}
+            """)
+        elif is_in_progress:
+            self.label.setStyleSheet(f"""
+                QLabel {{
+                    color: #18181B;
+                    text-decoration: none;
+                    font-family: {FONT_SANS};
+                    font-size: 13.5px;
+                    font-weight: 600;
                 }}
             """)
         else:
@@ -658,10 +737,113 @@ class TaskRowWidget(QWidget):
                 }}
             """)
 
-    def _on_checkbox_toggled(self, checked: bool) -> None:
-        new_status = "done" if checked else "not_started"
-        self._update_label_style(checked)
-        self.status_toggled.emit(self.task_id, new_status)
+        # Style In progress button
+        if is_in_progress:
+            self.btn_in_progress.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: rgba(37, 99, 235, 0.12);
+                    color: #2563EB;
+                    border: 1px solid rgba(37, 99, 235, 0.35);
+                    border-radius: 5px;
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 2px 8px;
+                }}
+                QPushButton:hover {{
+                    background-color: rgba(37, 99, 235, 0.20);
+                }}
+            """)
+        else:
+            self.btn_in_progress.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    color: #71717A;
+                    border: 1px solid #E4E4E7;
+                    border-radius: 5px;
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    font-weight: 500;
+                    padding: 2px 8px;
+                }}
+                QPushButton:hover {{
+                    color: #18181B;
+                    background-color: #F4F4F5;
+                    border-color: #D4D4D8;
+                }}
+            """)
+
+        # Style Completed button
+        if is_done:
+            self.btn_completed.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: rgba(16, 185, 129, 0.12);
+                    color: #059669;
+                    border: 1px solid rgba(16, 185, 129, 0.35);
+                    border-radius: 5px;
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 2px 8px;
+                }}
+                QPushButton:hover {{
+                    background-color: rgba(16, 185, 129, 0.20);
+                }}
+            """)
+        else:
+            self.btn_completed.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    color: #71717A;
+                    border: 1px solid #E4E4E7;
+                    border-radius: 5px;
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    font-weight: 500;
+                    padding: 2px 8px;
+                }}
+                QPushButton:hover {{
+                    color: #18181B;
+                    background-color: #F4F4F5;
+                    border-color: #D4D4D8;
+                }}
+            """)
+
+        # Style Cancelled button
+        if is_cancelled:
+            self.btn_cancelled.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: rgba(239, 68, 68, 0.10);
+                    color: #DC2626;
+                    border: 1px solid rgba(239, 68, 68, 0.30);
+                    border-radius: 5px;
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 2px 8px;
+                }}
+                QPushButton:hover {{
+                    background-color: rgba(239, 68, 68, 0.18);
+                }}
+            """)
+        else:
+            self.btn_cancelled.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    color: #71717A;
+                    border: 1px solid #E4E4E7;
+                    border-radius: 5px;
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    font-weight: 500;
+                    padding: 2px 8px;
+                }}
+                QPushButton:hover {{
+                    color: #18181B;
+                    background-color: #F4F4F5;
+                    border-color: #D4D4D8;
+                }}
+            """)
 
     def _show_context_menu(self, pos: QPoint) -> None:
         menu = QMenu(self)
@@ -1595,7 +1777,18 @@ class QuickEntryDialog(QDialog):
             grouped.setdefault(proj, []).append(t)
 
         if not grouped:
-            empty_label = QLabel(f"No {active_filter.lower()} tasks found.")
+            if active_filter.lower() in ("task", "all"):
+                empty_msg = "No tasks found. Add a task below to get started!"
+            elif active_filter.lower() == "in progress":
+                empty_msg = "No in progress tasks found."
+            elif active_filter.lower() == "completed":
+                empty_msg = "No completed tasks found."
+            elif active_filter.lower() == "cancelled":
+                empty_msg = "No cancelled tasks found."
+            else:
+                empty_msg = f"No {active_filter.lower()} tasks found."
+
+            empty_label = QLabel(empty_msg)
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty_label.setStyleSheet(f"""
                 QLabel {{
@@ -1666,10 +1859,12 @@ class QuickEntryDialog(QDialog):
         self.refresh_notes()
 
     def _on_task_status_toggled(self, task_id: int, new_status: str) -> None:
-        """Handle checkbox check/uncheck status change."""
+        """Handle task status change (In progress, Completed, Cancelled, etc.)."""
         self.repo.update_task_status(task_id, new_status)
-        if new_status == "done":
+        if new_status in ("done", "completed"):
             self.state_machine.trigger_complete(duration_ms=3000)
+        elif new_status in ("in_progress", "pending", "ongoing"):
+            self.state_machine.transition_to(MascotState.WORKING)
 
         self.refresh_tasks()
 

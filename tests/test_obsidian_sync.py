@@ -37,7 +37,14 @@ def repo_with_data(tmp_path):
     # 3. Add Notes
     n1 = repo.create_note("Fixed booking bug in TurfLine", project_tag="TurfLine")
     repo.toggle_note_completed(n1, True)
-    repo.create_note("Draft resume for ML role")
+    n2 = repo.create_note("Draft resume for ML role")
+
+    # Ensure records match the test target date 2026-08-31
+    with db.cursor() as cur:
+        cur.execute("UPDATE tasks SET created_at = '2026-08-31T09:00:00'")
+        cur.execute("UPDATE subtasks SET created_at = '2026-08-31T09:00:00'")
+        cur.execute("UPDATE task_logs SET created_at = '2026-08-31T09:15:00'")
+        cur.execute("UPDATE notes SET created_at = '2026-08-31T10:15:00'")
 
     return repo
 

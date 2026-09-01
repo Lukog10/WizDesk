@@ -333,22 +333,28 @@ class StorageRepository:
                 params.append(day_str)
 
             if status_filter:
-                # Map friendly UI filter names to database status values
-                status_map = {
-                    "task": ["not_started", "to_do", "todo", "task"],
-                    "to-do": ["not_started", "to_do", "todo", "task"],
-                    "in progress": ["not_started", "to_do", "todo", "task", "in_progress", "pending"],
-                    "in_progress": ["not_started", "to_do", "todo", "task", "in_progress", "pending"],
-                    "pending": ["not_started", "to_do", "todo", "task", "in_progress", "pending"],
-                    "completed": ["done", "completed"],
-                    "done": ["done", "completed"],
-                    "on hold": ["on_hold"],
-                    "cancelled": ["cancelled", "canceled"],
-                }
-                valid_statuses = status_map.get(status_filter.lower(), [status_filter.lower()])
-                placeholders = ",".join("?" for _ in valid_statuses)
-                query += f"AND status IN ({placeholders}) "
-                params.extend(valid_statuses)
+                filter_key = status_filter.strip().lower()
+                if filter_key in ("task", "all"):
+                    # Shows all tasks regardless of status
+                    pass
+                else:
+                    # Map friendly UI filter names to database status values
+                    status_map = {
+                        "in progress": ["in_progress", "pending", "ongoing"],
+                        "in_progress": ["in_progress", "pending", "ongoing"],
+                        "ongoing": ["in_progress", "pending", "ongoing"],
+                        "pending": ["in_progress", "pending", "ongoing"],
+                        "completed": ["done", "completed"],
+                        "done": ["done", "completed"],
+                        "on hold": ["on_hold"],
+                        "on_hold": ["on_hold"],
+                        "cancelled": ["cancelled", "canceled"],
+                        "canceled": ["cancelled", "canceled"],
+                    }
+                    valid_statuses = status_map.get(filter_key, [filter_key])
+                    placeholders = ",".join("?" for _ in valid_statuses)
+                    query += f"AND status IN ({placeholders}) "
+                    params.extend(valid_statuses)
             elif not include_completed:
                 query += "AND status NOT IN ('done', 'completed', 'cancelled', 'canceled') "
 
