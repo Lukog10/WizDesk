@@ -82,7 +82,7 @@ class ObsidianSync:
         lines.append("")
         return "\n".join(lines)
 
-    def sync_date(self, target_date: date) -> Tuple[bool, str]:
+    def sync_date(self, target_date: date, emit_signal: bool = True) -> Tuple[bool, str]:
         """
         Write or overwrite the daily Markdown note in the Obsidian Vault.
         
@@ -92,7 +92,8 @@ class ObsidianSync:
         vault_path = config.obsidian_vault_path
         if not vault_path or not vault_path.exists():
             msg = "Obsidian vault path not configured or directory does not exist."
-            app_signals.sync_finished.emit(False, msg)
+            if emit_signal:
+                app_signals.sync_finished.emit(False, msg)
             return False, msg
 
         logs_folder_name = config.get("obsidian_logs_folder", "WizDesk Logs")
@@ -111,15 +112,17 @@ class ObsidianSync:
             temp_file.replace(dest_file)
 
             msg = f"Successfully synced daily logs to {dest_file.name}"
-            app_signals.sync_finished.emit(True, msg)
+            if emit_signal:
+                app_signals.sync_finished.emit(True, msg)
             return True, msg
         except Exception as e:
             msg = f"Error writing to Obsidian vault: {e}"
-            app_signals.sync_finished.emit(False, msg)
+            if emit_signal:
+                app_signals.sync_finished.emit(False, msg)
             return False, msg
 
 
-def sync_today_logs() -> Tuple[bool, str]:
+def sync_today_logs(emit_signal: bool = True) -> Tuple[bool, str]:
     """Helper to sync today's logs directly."""
     sync_engine = ObsidianSync()
-    return sync_engine.sync_date(date.today())
+    return sync_engine.sync_date(date.today(), emit_signal=emit_signal)

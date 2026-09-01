@@ -62,6 +62,8 @@ class WizApplication:
         app_signals.request_sync.connect(self.trigger_sync)
         app_signals.sync_finished.connect(self._on_sync_finished)
         app_signals.session_polled.connect(self._on_session_polled)
+        app_signals.task_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
+        app_signals.note_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
 
     def start(self) -> None:
         """Launch UI and background worker threads."""
@@ -71,8 +73,10 @@ class WizApplication:
         self.hotkey_listener.start()
 
         # If Obsidian vault path is empty on first run, offer a gentle notification
-        if not config.obsidian_vault_path:
+        if not config.obsidian_vault_path or not config.obsidian_vault_path.exists():
             print("[WizDesk] Tip: Configure your Obsidian Vault path in Settings to enable daily log sync.")
+        else:
+            self.sync_engine.sync_date(date.today(), emit_signal=False)
 
     def show_quick_entry(self) -> None:
         """Open or focus the Quick-Entry note and task dialog."""
@@ -92,7 +96,7 @@ class WizApplication:
 
     def trigger_sync(self) -> None:
         """Run manual or scheduled Obsidian sync."""
-        success, msg = self.sync_engine.sync_date(date.today())
+        success, msg = self.sync_engine.sync_date(date.today(), emit_signal=True)
         if success:
             self.state_machine.trigger_complete(duration_ms=3000)
 
@@ -105,12 +109,14 @@ class WizApplication:
         """Briefly react when activity tracking records active project work."""
         if project_tag:
             self.state_machine.trigger_working()
+        self.sync_engine.sync_date(date.today(), emit_signal=False)
 
     def shutdown(self) -> None:
         """Gracefully stop background threads and flush pending data."""
         print("[WizDesk] Shutting down background services...")
         self.tracker.stop()
         self.hotkey_listener.stop()
+        self.sync_engine.sync_date(date.today(), emit_signal=False)
 
 
 def main() -> None:

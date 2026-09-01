@@ -50,6 +50,7 @@ from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
 from wiz.ui.icons import get_app_icon, get_app_pixmap
+from wiz.sync.obsidian import sync_today_logs
 
 
 # Professional Typography Stacks
@@ -2327,17 +2328,20 @@ class QuickEntryDialog(QDialog):
             self.state_machine.revert_to_baseline()
 
         self.refresh_tasks()
+        sync_today_logs(emit_signal=False)
 
     def _on_task_renamed(self, task_id: int, new_title: str) -> None:
         """Handle renaming a task."""
         self.repo.update_task_title(task_id, new_title)
         self.refresh_tasks()
+        sync_today_logs(emit_signal=False)
 
     def _on_task_action(self, action_type: str, task_id: int) -> None:
         """Handle task deletion or other actions."""
         if action_type == "delete":
             self.repo.delete_task(task_id)
             self.refresh_tasks()
+            sync_today_logs(emit_signal=False)
 
     def _on_task_project_changed(self, task_id: int, new_project: str) -> None:
         """Handle moving a task to a different section/project."""
@@ -2345,12 +2349,14 @@ class QuickEntryDialog(QDialog):
         self.repo.update_task_project(task_id, new_project)
         self._populate_projects()
         self.refresh_tasks()
+        sync_today_logs(emit_signal=False)
 
     def _on_subtask_added(self, task_id: int, title: str) -> None:
         """Add a subtask under a task."""
         self.repo.create_subtask(task_id, title)
         self.refresh_tasks()
         self.state_machine.trigger_notify(duration_ms=3500)
+        sync_today_logs(emit_signal=False)
 
     def _on_subtask_toggled(self, subtask_id: int, new_status: str) -> None:
         """Toggle subtask status."""
@@ -2362,16 +2368,19 @@ class QuickEntryDialog(QDialog):
         else:
             self.state_machine.revert_to_baseline()
         self.refresh_tasks()
+        sync_today_logs(emit_signal=False)
 
     def _on_subtask_renamed(self, subtask_id: int, new_title: str) -> None:
         """Handle renaming a subtask."""
         self.repo.update_subtask_title(subtask_id, new_title)
         self.refresh_tasks()
+        sync_today_logs(emit_signal=False)
 
     def _on_subtask_deleted(self, subtask_id: int) -> None:
         """Delete a subtask."""
         self.repo.delete_subtask(subtask_id)
         self.refresh_tasks()
+        sync_today_logs(emit_signal=False)
 
     def _on_note_toggled(self, note_id: int, is_completed: bool) -> None:
         """Toggle note completion status."""
@@ -2380,11 +2389,13 @@ class QuickEntryDialog(QDialog):
             self.state_machine.trigger_complete(duration_ms=3500)
         else:
             self.state_machine.revert_to_baseline()
+        sync_today_logs(emit_signal=False)
 
     def _on_note_deleted(self, note_id: int) -> None:
         """Delete a note."""
         self.repo.delete_note(note_id)
         self.refresh_notes()
+        sync_today_logs(emit_signal=False)
 
     def _on_quick_add_task(self) -> None:
         """Submit quick task from bottom input bar."""
