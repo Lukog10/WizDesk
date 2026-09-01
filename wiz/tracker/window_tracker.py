@@ -110,9 +110,9 @@ class WindowTracker(QThread):
                 if info:
                     project_tag = self.repo.match_project_tag(f"{info.window_title} {info.app_name}")
 
-                    # Check if active window/app changed or if 30m session limit reached
+                    # Check if active window/app changed or if 5m session limit reached
                     elapsed = (now - self._session_start).total_seconds()
-                    max_session_sec = config.get("tracking_interval_seconds", 1800)
+                    max_session_sec = config.get("tracking_interval_seconds", 300)
 
                     app_changed = (self._current_app != info.app_name)
                     title_changed = (self._current_title != info.window_title)

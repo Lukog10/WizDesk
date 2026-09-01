@@ -27,7 +27,7 @@ def test_config_defaults(tmp_path):
     cfg = Config(config_file=test_config_file)
 
     assert cfg.window_size == (140, 168)
-    assert cfg.get("tracking_interval_seconds") == 1800
+    assert cfg.get("tracking_interval_seconds") == 300
     assert cfg.get("enable_floating_animation") is True
 
     # Test setting and saving

@@ -144,6 +144,18 @@ class SettingsDialog(QDialog):
         self.float_anim_check.setChecked(config.get("enable_floating_animation", True))
         pref_layout.addWidget(self.float_anim_check)
 
+        pref_layout.addSpacing(20)
+        interval_lbl = QLabel("Auto-tracking interval:")
+        pref_layout.addWidget(interval_lbl)
+
+        self.interval_spin = QSpinBox()
+        self.interval_spin.setRange(1, 120)
+        curr_interval_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
+        self.interval_spin.setValue(curr_interval_min)
+        self.interval_spin.setSuffix(" min")
+        pref_layout.addWidget(self.interval_spin)
+        pref_layout.addStretch()
+
         layout.addLayout(pref_layout)
 
         # Section 3: Project Keyword Mappings
@@ -231,5 +243,6 @@ class SettingsDialog(QDialog):
         """Persist settings to config."""
         config.set("obsidian_vault_path", self.vault_path_input.text().strip())
         config.set("enable_floating_animation", self.float_anim_check.isChecked())
+        config.set("tracking_interval_seconds", self.interval_spin.value() * 60)
         config.save()
         self.accept()

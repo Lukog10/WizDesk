@@ -34,7 +34,7 @@ class Config:
             "window_y": None,
             "always_on_top": True,
             "enable_floating_animation": True,
-            "tracking_interval_seconds": 1800,  # 30 minutes
+            "tracking_interval_seconds": 300,  # 5 minutes
             "obsidian_vault_path": "",
             "obsidian_logs_folder": "WizDesk Logs",
             "global_hotkey": "<ctrl>+<shift>+w",
