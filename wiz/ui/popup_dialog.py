@@ -571,20 +571,27 @@ class SubtaskRowWidget(QWidget):
         self.subtask = subtask
         self.subtask_id = subtask.id or 0
 
-        self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(28, 2, 4, 2)
-        self.layout.setSpacing(8)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 1, 0, 1)
+        self.main_layout.setSpacing(1)
+
+        # Top row: Checkbox, Title, and Delete ('x') button
+        self.top_widget = QWidget()
+        top_layout = QHBoxLayout(self.top_widget)
+        top_layout.setContentsMargins(28, 2, 4, 1)
+        top_layout.setSpacing(8)
 
         is_done = (subtask.status in ("done", "completed"))
-        self.checkbox = RoundedCheckbox(checked=is_done, size=16, parent=self)
+        self.checkbox = RoundedCheckbox(checked=is_done, size=16, parent=self.top_widget)
         self.checkbox.toggled.connect(self._on_toggled)
-        self.layout.addWidget(self.checkbox)
+        top_layout.addWidget(self.checkbox)
 
         self.label = EditableTaskLabel(subtask.title)
         self.label.setFont(QFont("Segoe UI", 9))
         self.label.setToolTip("Double-click to rename")
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.label.double_clicked.connect(self.start_renaming)
+        top_layout.addWidget(self.label, stretch=1)
 
         self.edit_input = InlineEditInput(subtask.title, self)
         self.edit_input.setFont(QFont("Segoe UI", 9))
@@ -602,22 +609,7 @@ class SubtaskRowWidget(QWidget):
         self.edit_input.setVisible(False)
         self.edit_input.returnPressed.connect(self._finish_renaming)
         self.edit_input.editing_cancelled.connect(self._cancel_renaming)
-
-        self.time_label = QLabel()
-        self.time_label.setStyleSheet(f"""
-            QLabel {{
-                color: #A1A1AA;
-                font-family: {FONT_SANS};
-                font-size: 10.5px;
-                font-weight: 500;
-            }}
-        """)
-
-        self._update_label_style(is_done)
-
-        self.layout.addWidget(self.label, stretch=1)
-        self.layout.addWidget(self.edit_input, stretch=1)
-        self.layout.addWidget(self.time_label)
+        top_layout.addWidget(self.edit_input, stretch=1)
 
         del_btn = QPushButton("x")
         del_btn.setFixedSize(16, 16)
@@ -638,7 +630,29 @@ class SubtaskRowWidget(QWidget):
             }}
         """)
         del_btn.clicked.connect(lambda: self.delete_requested.emit(self.subtask_id))
-        self.layout.addWidget(del_btn)
+        top_layout.addWidget(del_btn)
+        self.main_layout.addWidget(self.top_widget)
+
+        # Bottom row: Timestamp placed below the subtask title
+        self.time_bar_widget = QWidget()
+        time_layout = QHBoxLayout(self.time_bar_widget)
+        time_layout.setContentsMargins(52, 0, 4, 2)
+        time_layout.setSpacing(4)
+
+        self.time_label = QLabel()
+        self.time_label.setStyleSheet(f"""
+            QLabel {{
+                color: #A1A1AA;
+                font-family: {FONT_SANS};
+                font-size: 10.5px;
+                font-weight: 500;
+            }}
+        """)
+        time_layout.addWidget(self.time_label)
+        time_layout.addStretch()
+        self.main_layout.addWidget(self.time_bar_widget)
+
+        self._update_label_style(is_done)
 
     def start_renaming(self) -> None:
         """Enter inline subtask renaming mode."""
