@@ -249,7 +249,17 @@ class SettingsDialog(QDialog):
                 selection-color: #18181B;
             }}
             QTableWidget::item {{
-                padding: 6px 10px;
+                padding: 4px 8px;
+            }}
+            QTableWidget QLineEdit {{
+                background-color: #FFFFFF;
+                color: #18181B;
+                border: 1.5px solid #18181B;
+                border-radius: 4px;
+                padding: 2px 6px;
+                margin: 1px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
             }}
             QHeaderView::section {{
                 background-color: #F4F4F5;
@@ -389,7 +399,9 @@ class SettingsDialog(QDialog):
         self.proj_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.proj_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.proj_table.verticalHeader().setVisible(False)
-        self.proj_table.setFixedHeight(120)
+        self.proj_table.verticalHeader().setDefaultSectionSize(32)
+        self.proj_table.setFixedHeight(175)
+        self.proj_table.itemChanged.connect(self._on_table_item_changed)
         proj_box.addWidget(self.proj_table)
 
         proj_btn_layout = QHBoxLayout()
@@ -527,6 +539,7 @@ class SettingsDialog(QDialog):
 
     def _load_projects(self) -> None:
         """Load projects from database into table."""
+        self.proj_table.blockSignals(True)
         projects = self.repo.get_all_projects()
         self.proj_table.setRowCount(len(projects))
         for row, p in enumerate(projects):
@@ -534,6 +547,19 @@ class SettingsDialog(QDialog):
             kw_item = QTableWidgetItem(", ".join(p.keywords))
             self.proj_table.setItem(row, 0, name_item)
             self.proj_table.setItem(row, 1, kw_item)
+        self.proj_table.blockSignals(False)
+
+    def _on_table_item_changed(self, item: QTableWidgetItem) -> None:
+        """Handle inline editing of project names and keywords directly in table."""
+        row = item.row()
+        name_item = self.proj_table.item(row, 0)
+        kw_item = self.proj_table.item(row, 1)
+        if name_item and kw_item:
+            pname = name_item.text().strip()
+            kw_str = kw_item.text().strip()
+            if pname:
+                keywords = [k.strip() for k in kw_str.split(",") if k.strip()]
+                self.repo.create_or_update_project(pname, keywords)
 
     def _on_add_project(self) -> None:
         """Add a new row to the project keyword table."""

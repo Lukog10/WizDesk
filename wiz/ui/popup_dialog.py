@@ -2089,26 +2089,11 @@ class QuickEntryDialog(QDialog):
             self.refresh_notes()
 
     def _seed_initial_data_if_empty(self) -> None:
-        """Seed clean initial tasks matching the reference if database has no tasks."""
-        existing = self.repo.get_task_hierarchy()
-        if not existing:
-            self.repo.create_or_update_project("Work", ["work", "code", "landing", "testing"])
-            t1 = self.repo.create_task("Finalize landing page wireframes", project_tag="Work")
-            self.repo.create_subtask(t1, "Hero layout design")
-            self.repo.create_subtask(t1, "Responsive mobile view")
-            self.repo.create_task("Conduct user testing on prototypes", project_tag="Work")
-            self.repo.create_task("Implement feedback and iterate on designs", project_tag="Work")
-
-            self.repo.create_or_update_project("Personal Projects", ["personal", "figma", "motion", "hero"])
-            t2 = self.repo.create_task("Explore motion interaction ideas", project_tag="Personal Projects")
-            self.repo.create_subtask(t2, "Ghost mascot idle breathing loop")
-            self.repo.create_task("Improve Figma variables structure", project_tag="Personal Projects")
-            self.repo.create_task("Design new hero section concept", project_tag="Personal Projects")
-
-        # Seed sample note if notes table empty
-        existing_notes = self.repo.get_notes_for_date(date.today())
-        if not existing_notes:
-            self.repo.create_note("Drafted initial system architecture", project_tag="Work")
+        """Seed default project categories if database has no projects."""
+        projects = self.repo.get_all_projects()
+        if not projects:
+            self.repo.create_or_update_project("Work", ["work", "code"])
+            self.repo.create_or_update_project("Personal Projects", ["personal"])
 
     def _populate_projects(self) -> None:
         """Populate project/section choices with '+ Create Section...' option."""
