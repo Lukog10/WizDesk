@@ -2010,7 +2010,6 @@ class QuickEntryDialog(QDialog):
 
         self.inner_layout.addWidget(self.stack, stretch=1)
         self.frame_layout.addWidget(self.inner_card, stretch=1)
-        self.outer_layout.addWidget(self.outer_frame)
 
         # Drag state for frameless window movement
         self._drag_pos = QPoint()
@@ -2200,10 +2199,12 @@ class QuickEntryDialog(QDialog):
 
     def refresh_tasks(self) -> None:
         """Re-render the task list for the selected date grouped by project under the current filter."""
-        while self.content_layout.count() > 1:
-            child = self.content_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
+        while self.content_layout.count() > 0:
+            item = self.content_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
 
         active_filter = self.filter_bar.current_filter
         tasks = self.repo.get_task_hierarchy(target_date=self.selected_date, status_filter=active_filter)
@@ -2240,10 +2241,10 @@ class QuickEntryDialog(QDialog):
                     padding: 40px 0;
                 }}
             """)
-            self.content_layout.insertWidget(0, empty_label)
+            self.content_layout.addWidget(empty_label)
+            self.content_layout.addStretch()
             return
 
-        idx = 0
         for project_name, task_list in grouped.items():
             group_widget = ProjectGroupWidget(project_name, task_list, self.content_widget)
 
@@ -2259,15 +2260,18 @@ class QuickEntryDialog(QDialog):
                 row.subtask_renamed.connect(self._on_subtask_renamed)
                 group_widget.tasks_layout.addWidget(row)
 
-            self.content_layout.insertWidget(idx, group_widget)
-            idx += 1
+            self.content_layout.addWidget(group_widget)
+
+        self.content_layout.addStretch()
 
     def refresh_notes(self) -> None:
         """Re-render the quick notes list for the selected date."""
-        while self.notes_content_layout.count() > 1:
-            child = self.notes_content_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
+        while self.notes_content_layout.count() > 0:
+            item = self.notes_content_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
 
         notes = self.repo.get_notes_for_date(self.selected_date)
         all_projects = [p.name for p in self.repo.get_all_projects()]
@@ -2285,15 +2289,18 @@ class QuickEntryDialog(QDialog):
                     padding: 40px 0;
                 }}
             """)
-            self.notes_content_layout.insertWidget(0, empty_label)
+            self.notes_content_layout.addWidget(empty_label)
+            self.notes_content_layout.addStretch()
             return
 
-        for idx, note in enumerate(notes):
+        for note in notes:
             row = NoteRowWidget(note, all_projects, self.notes_content_widget)
             row.toggled.connect(self._on_note_toggled)
             row.delete_requested.connect(self._on_note_deleted)
             row.project_changed.connect(self._on_note_project_changed)
-            self.notes_content_layout.insertWidget(idx, row)
+            self.notes_content_layout.addWidget(row)
+
+        self.notes_content_layout.addStretch()
 
     def _on_note_project_changed(self, note_id: int, new_project: str) -> None:
         """Handle moving a quick note to a different section/project."""
