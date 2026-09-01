@@ -11,9 +11,9 @@ Implements the exact layout hierarchy:
    - Bottom Add Bar with Section selector & Create Section option
 """
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QRectF
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QRectF, QDate
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -42,6 +42,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QInputDialog,
     QStackedWidget,
+    QCalendarWidget,
 )
 
 from wiz.core.config import config
@@ -85,6 +86,121 @@ CONTEXT_MENU_STYLE = f"""
         margin: 4px 6px;
     }}
 """
+
+
+class CalendarPopupDialog(QDialog):
+    """
+    Clean, minimalist popup calendar for WizDesk date navigation.
+    Matches the card-based aesthetic with rounded corners, subtle borders, and smooth shadows.
+    """
+
+    def __init__(self, current_date: date, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Date - WizDesk")
+        self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+
+        self.selected_date = current_date
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+
+        card = QFrame()
+        card.setObjectName("calCard")
+        card.setStyleSheet(f"""
+            QFrame#calCard {{
+                background-color: #FFFFFF;
+                border: 1px solid #E4E4E7;
+                border-radius: 14px;
+            }}
+            QCalendarWidget QWidget {{
+                alternate-background-color: #FFFFFF;
+                font-family: {FONT_SANS};
+            }}
+            QCalendarWidget QAbstractItemView:enabled {{
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                color: #18181B;
+                selection-background-color: #18181B;
+                selection-color: #FFFFFF;
+                border-radius: 4px;
+            }}
+            QCalendarWidget QMenu {{
+                background-color: #FFFFFF;
+                border: 1px solid #E4E4E7;
+                font-family: {FONT_SANS};
+            }}
+            QCalendarWidget QSpinBox {{
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                background-color: #F4F4F5;
+                border: 1px solid #E4E4E7;
+                border-radius: 4px;
+            }}
+            QCalendarWidget QToolButton {{
+                background-color: transparent;
+                border: none;
+                border-radius: 6px;
+                color: #18181B;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                font-weight: 600;
+                padding: 4px 8px;
+            }}
+            QCalendarWidget QToolButton:hover {{
+                background-color: #F4F4F5;
+            }}
+        """)
+
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(8, 8, 8, 8)
+        card_layout.setSpacing(8)
+
+        self.calendar = QCalendarWidget()
+        self.calendar.setGridVisible(False)
+        self.calendar.setSelectedDate(QDate(current_date.year, current_date.month, current_date.day))
+        self.calendar.activated.connect(self._on_date_selected)
+        self.calendar.clicked.connect(self._on_date_selected)
+        card_layout.addWidget(self.calendar)
+
+        # Quick 'Today' button
+        today_btn = QPushButton("Go to Today")
+        today_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        today_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #F4F4F5;
+                color: #18181B;
+                border: 1px solid #E4E4E7;
+                border-radius: 6px;
+                padding: 6px;
+                font-family: {FONT_SANS};
+                font-size: 11.5px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: #E4E4E7;
+                color: #000000;
+            }}
+        """)
+        today_btn.clicked.connect(self._on_today_clicked)
+        card_layout.addWidget(today_btn)
+
+        layout.addWidget(card)
+
+        # Drop shadow
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(24)
+        shadow.setColor(QColor(0, 0, 0, 50))
+        shadow.setOffset(0, 4)
+        card.setGraphicsEffect(shadow)
+
+    def _on_date_selected(self, qdate: QDate) -> None:
+        self.selected_date = date(qdate.year(), qdate.month(), qdate.day())
+        self.accept()
+
+    def _on_today_clicked(self) -> None:
+        self.selected_date = date.today()
+        self.accept()
 
 
 class CreateSectionDialog(QDialog):
@@ -1144,7 +1260,8 @@ class QuickEntryDialog(QDialog):
         super().__init__(parent)
         self.state_machine = state_machine
         self.repo = repository or StorageRepository()
-        self.current_view_mode = "tasks"  # "tasks" or "notes"
+        self.current_view_mode = "tasks"
+        self.selected_date: date = date.today()
 
         # Window settings
         self.setWindowTitle("WizDesk - Workspace")
@@ -1173,48 +1290,36 @@ class QuickEntryDialog(QDialog):
         # Add drop shadow
         self._shadow_effect = QGraphicsDropShadowEffect(self)
         self._shadow_effect.setBlurRadius(28)
-        self._shadow_effect.setColor(QColor(0, 0, 0, 45))
+        self._shadow_effect.setColor(QColor(0, 0, 0, 35))
         self._shadow_effect.setOffset(0, 6)
         self.outer_frame.setGraphicsEffect(self._shadow_effect)
 
-        self.frame_layout = QVBoxLayout(self.outer_frame)
-        self.frame_layout.setContentsMargins(18, 12, 18, 18)
-        self.frame_layout.setSpacing(10)
+        self.outer_layout.addWidget(self.outer_frame)
 
-        # --- Top Outer Bar: Favicon + Brand & Window Controls ---
+        # Frame Inner Layout
+        self.frame_layout = QVBoxLayout(self.outer_frame)
+        self.frame_layout.setContentsMargins(12, 10, 12, 12)
+        self.frame_layout.setSpacing(8)
+
+        # Top Bar: Frameless Drag Region & Window Controls
         top_bar = QHBoxLayout()
         top_bar.setContentsMargins(4, 0, 4, 0)
-        top_bar.setSpacing(6)
 
-        favicon_lbl = QLabel()
-        favicon_pixmap = get_app_pixmap(18, asset_name="wiz-idle.svg")
-        if not favicon_pixmap.isNull():
-            favicon_lbl.setPixmap(favicon_pixmap)
-            favicon_lbl.setFixedSize(18, 18)
-            favicon_lbl.setScaledContents(True)
-            top_bar.addWidget(favicon_lbl)
-
-        title_brand = QLabel("WizDesk")
-        title_brand.setStyleSheet(f"""
-            QLabel {{
-                color: #71717A;
-                font-family: {FONT_SANS};
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 0.5px;
-            }}
-        """)
-        top_bar.addWidget(title_brand)
+        # Subtle drag hint / branding
+        brand_lbl = QLabel("  WizDesk")
+        brand_lbl.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        brand_lbl.setStyleSheet("color: #71717A;")
+        top_bar.addWidget(brand_lbl)
         top_bar.addStretch()
 
-        # Window Controls
+        # Window control buttons (—, □, x)
         controls_layout = QHBoxLayout()
-        controls_layout.setSpacing(4)
+        controls_layout.setSpacing(6)
 
         btn_style = f"""
             QPushButton {{
-                background: transparent;
-                color: #71717A;
+                background-color: transparent;
+                color: #52525B;
                 border: none;
                 font-family: {FONT_MONO};
                 font-size: 13px;
@@ -1300,20 +1405,107 @@ class QuickEntryDialog(QDialog):
         page_header_layout.addStretch()
         self.inner_layout.addLayout(page_header_layout)
 
-        # 2. Date Header (Below the Tasks | Quick Notes Switcher)
-        current_date_str = datetime.now().strftime("%B %d, %A")
-        self.date_label = QLabel(current_date_str)
-        self.date_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.date_label.setStyleSheet(f"""
-            QLabel {{
-                color: #52525B;
+        # 2. Date Header with Navigation & Interactive Calendar Picker
+        date_header_layout = QHBoxLayout()
+        date_header_layout.setContentsMargins(0, 0, 0, 0)
+        date_header_layout.setSpacing(6)
+        date_header_layout.addStretch()
+
+        self.prev_day_btn = QPushButton("<")
+        self.prev_day_btn.setFixedSize(26, 26)
+        self.prev_day_btn.setToolTip("Previous Day")
+        self.prev_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.prev_day_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #71717A;
+                border: 1px solid #E4E4E7;
+                border-radius: 6px;
+                font-family: {FONT_MONO};
+                font-size: 12px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                color: #18181B;
+                background-color: #F4F4F5;
+                border-color: #D4D4D8;
+            }}
+        """)
+        self.prev_day_btn.clicked.connect(self._on_prev_day)
+        date_header_layout.addWidget(self.prev_day_btn)
+
+        self.date_btn = QPushButton()
+        self.date_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.date_btn.setToolTip("Click to open calendar")
+        self.date_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #27272A;
+                border: none;
                 font-family: {FONT_MONO};
                 font-size: 13.5px;
                 font-weight: 600;
-                padding-bottom: 2px;
+                padding: 4px 10px;
+                border-radius: 6px;
+            }}
+            QPushButton:hover {{
+                background-color: #F4F4F5;
+                color: #000000;
             }}
         """)
-        self.inner_layout.addWidget(self.date_label)
+        self.date_btn.clicked.connect(self._open_calendar)
+        date_header_layout.addWidget(self.date_btn)
+
+        self.next_day_btn = QPushButton(">")
+        self.next_day_btn.setFixedSize(26, 26)
+        self.next_day_btn.setToolTip("Next Day")
+        self.next_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.next_day_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: #71717A;
+                border: 1px solid #E4E4E7;
+                border-radius: 6px;
+                font-family: {FONT_MONO};
+                font-size: 12px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                color: #18181B;
+                background-color: #F4F4F5;
+                border-color: #D4D4D8;
+            }}
+        """)
+        self.next_day_btn.clicked.connect(self._on_next_day)
+        date_header_layout.addWidget(self.next_day_btn)
+
+        self.today_pill_btn = QPushButton("Today")
+        self.today_pill_btn.setFixedHeight(26)
+        self.today_pill_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.today_pill_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #18181B;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 6px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+                padding: 0 8px;
+            }}
+            QPushButton:hover {{
+                background-color: #3F3F46;
+            }}
+        """)
+        self.today_pill_btn.clicked.connect(self._on_today_clicked)
+        self.today_pill_btn.setVisible(False)
+        date_header_layout.addWidget(self.today_pill_btn)
+
+        date_header_layout.addStretch()
+        self.inner_layout.addLayout(date_header_layout)
+
+        # Initialize date display
+        self._update_date_display()
 
         # Stacked Widget for Tasks vs Quick Notes
         self.stack = QStackedWidget()
@@ -1331,27 +1523,16 @@ class QuickEntryDialog(QDialog):
         self.filter_bar.filter_changed.connect(self._on_filter_changed)
         tasks_page_layout.addWidget(self.filter_bar)
 
-        # 4. Scrollable Tasks Area
+        # 4. Scrollable Tasks Area (Without visible scrollbar)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll_area.setStyleSheet("""
             QScrollArea {
                 background: transparent;
                 border: none;
-            }
-            QScrollBar:vertical {
-                background: transparent;
-                width: 6px;
-                margin: 0px;
-            }
-            QScrollBar::handle:vertical {
-                background: #D4D4D8;
-                min-height: 20px;
-                border-radius: 3px;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
             }
         """)
 
@@ -1468,27 +1649,16 @@ class QuickEntryDialog(QDialog):
         """)
         notes_page_layout.addWidget(notes_hdr)
 
-        # Scrollable Notes Area
+        # Scrollable Notes Area (Without visible scrollbar)
         self.notes_scroll = QScrollArea()
         self.notes_scroll.setWidgetResizable(True)
         self.notes_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.notes_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.notes_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.notes_scroll.setStyleSheet("""
             QScrollArea {
                 background: transparent;
                 border: none;
-            }
-            QScrollBar:vertical {
-                background: transparent;
-                width: 6px;
-                margin: 0px;
-            }
-            QScrollBar::handle:vertical {
-                background: #D4D4D8;
-                min-height: 20px;
-                border-radius: 3px;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
             }
         """)
 
@@ -1756,15 +1926,49 @@ class QuickEntryDialog(QDialog):
         """Called when a segmented filter pill is clicked."""
         self.refresh_tasks()
 
+    def _update_date_display(self) -> None:
+        """Update date button label and 'Today' shortcut indicator."""
+        date_str = self.selected_date.strftime("%B %d, %A")
+        self.date_btn.setText(date_str)
+        is_today = (self.selected_date == date.today())
+        self.today_pill_btn.setVisible(not is_today)
+
+    def set_selected_date(self, target_date: date) -> None:
+        """Set the active view date and refresh tasks and notes."""
+        self.selected_date = target_date
+        self._update_date_display()
+        self.refresh_tasks()
+        self.refresh_notes()
+
+    def _on_prev_day(self) -> None:
+        """Navigate to previous day."""
+        self.set_selected_date(self.selected_date - timedelta(days=1))
+
+    def _on_next_day(self) -> None:
+        """Navigate to next day."""
+        self.set_selected_date(self.selected_date + timedelta(days=1))
+
+    def _on_today_clicked(self) -> None:
+        """Jump back to today."""
+        self.set_selected_date(date.today())
+
+    def _open_calendar(self) -> None:
+        """Open popup calendar picker."""
+        dlg = CalendarPopupDialog(self.selected_date, self)
+        btn_pos = self.date_btn.mapToGlobal(QPoint(0, self.date_btn.height() + 4))
+        dlg.move(btn_pos)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self.set_selected_date(dlg.selected_date)
+
     def refresh_tasks(self) -> None:
-        """Re-render the task list grouped by project under the current filter."""
+        """Re-render the task list for the selected date grouped by project under the current filter."""
         while self.content_layout.count() > 1:
             child = self.content_layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
 
         active_filter = self.filter_bar.current_filter
-        tasks = self.repo.get_task_hierarchy(status_filter=active_filter)
+        tasks = self.repo.get_task_hierarchy(target_date=self.selected_date, status_filter=active_filter)
 
         all_projects = [p.name for p in self.repo.get_all_projects()]
         if not all_projects:
@@ -1778,13 +1982,13 @@ class QuickEntryDialog(QDialog):
 
         if not grouped:
             if active_filter.lower() in ("task", "all"):
-                empty_msg = "No tasks found. Add a task below to get started!"
+                empty_msg = f"No tasks recorded for {self.selected_date.strftime('%B %d')}."
             elif active_filter.lower() == "in progress":
-                empty_msg = "No in progress tasks found."
+                empty_msg = f"No in progress tasks for {self.selected_date.strftime('%B %d')}."
             elif active_filter.lower() == "completed":
-                empty_msg = "No completed tasks found."
+                empty_msg = f"No completed tasks for {self.selected_date.strftime('%B %d')}."
             elif active_filter.lower() == "cancelled":
-                empty_msg = "No cancelled tasks found."
+                empty_msg = f"No cancelled tasks for {self.selected_date.strftime('%B %d')}."
             else:
                 empty_msg = f"No {active_filter.lower()} tasks found."
 
@@ -1819,19 +2023,19 @@ class QuickEntryDialog(QDialog):
             idx += 1
 
     def refresh_notes(self) -> None:
-        """Re-render the quick notes list for today."""
+        """Re-render the quick notes list for the selected date."""
         while self.notes_content_layout.count() > 1:
             child = self.notes_content_layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
 
-        notes = self.repo.get_notes_for_date(date.today())
+        notes = self.repo.get_notes_for_date(self.selected_date)
         all_projects = [p.name for p in self.repo.get_all_projects()]
         if not all_projects:
             all_projects = ["Work", "Personal Projects"]
 
         if not notes:
-            empty_label = QLabel("No work notes logged today yet.")
+            empty_label = QLabel(f"No notes logged for {self.selected_date.strftime('%B %d')}.")
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty_label.setStyleSheet(f"""
                 QLabel {{
@@ -1910,33 +2114,38 @@ class QuickEntryDialog(QDialog):
         self.refresh_notes()
 
     def _on_quick_add_task(self) -> None:
-        """Add a new task under the chosen section."""
+        """Submit quick task from bottom input bar."""
         title = self.add_input.text().strip()
         if not title:
             return
 
-        project = self.project_combo.currentText().strip()
-        if project == "+ Create Section..." or not project:
-            project = "Work"
+        proj = self.project_combo.currentText()
+        if proj == "+ Create Section..." or not proj:
+            proj = "Work"
 
-        task_id = self.repo.create_task(title, project_tag=project)
+        # If adding a task while viewing another date, switch to today so user sees their new task
+        if self.selected_date != date.today():
+            self.set_selected_date(date.today())
 
+        task_id = self.repo.create_task(title, project_tag=proj)
         self.add_input.clear()
         self.refresh_tasks()
         app_signals.task_created.emit(task_id)
 
     def _on_quick_add_note(self) -> None:
-        """Add a new quick work note."""
+        """Submit quick work note from bottom input bar."""
         content = self.note_input.text().strip()
         if not content:
             return
 
-        project = self.note_project_combo.currentText().strip()
-        if project == "+ Create Section..." or not project:
-            project = "Work"
+        proj = self.note_project_combo.currentText()
+        if proj == "+ Create Section..." or not proj:
+            proj = "Work"
 
-        note_id = self.repo.create_note(content, project_tag=project)
+        if self.selected_date != date.today():
+            self.set_selected_date(date.today())
 
+        note_id = self.repo.create_note(content, project_tag=proj)
         self.note_input.clear()
         self.refresh_notes()
         self.state_machine.trigger_working()

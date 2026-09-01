@@ -219,3 +219,50 @@ def test_task_row_inline_status_toggles(qapp, repo):
     assert row.task.status == "not_started"
 
     row.deleteLater()
+
+
+def test_calendar_date_navigation_and_day_isolation(qapp, repo, tmp_path):
+    """Test date navigation, day isolation for tasks/notes, and scrollbar removal."""
+    from datetime import timedelta
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    # 1. Verify scrollbars are off
+    assert dialog.scroll_area.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    assert dialog.notes_scroll.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+
+    # 2. Add task today
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+
+    t_today = repo.create_task("Today specific task", project_tag="Work")
+    t_yesterday = repo.create_task("Yesterday specific task", project_tag="Work")
+
+    # Update created_at timestamp for yesterday's task
+    with repo.db.cursor() as cur:
+        cur.execute("UPDATE tasks SET created_at = ? WHERE id = ?", (f"{yesterday.isoformat()}T10:00:00", t_yesterday))
+
+    # Viewing today: only today's task is shown
+    dialog.set_selected_date(today)
+    today_tasks = repo.get_task_hierarchy(target_date=today, status_filter="Task")
+    today_ids = [t.id for t in today_tasks]
+    assert t_today in today_ids
+    assert t_yesterday not in today_ids
+    assert dialog.today_pill_btn.isHidden()
+
+    # Navigate to yesterday via prev_day button
+    dialog._on_prev_day()
+    assert dialog.selected_date == yesterday
+    assert not dialog.today_pill_btn.isHidden()
+
+    yesterday_tasks = repo.get_task_hierarchy(target_date=yesterday, status_filter="Task")
+    yesterday_ids = [t.id for t in yesterday_tasks]
+    assert t_yesterday in yesterday_ids
+    assert t_today not in yesterday_ids
+
+    # Click 'Today' button to return to today
+    dialog._on_today_clicked()
+    assert dialog.selected_date == today
+    assert dialog.today_pill_btn.isHidden()
+
+    dialog.close()
