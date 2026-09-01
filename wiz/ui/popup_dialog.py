@@ -275,17 +275,14 @@ class CalendarPopupDialog(QDialog):
         self.calendar.setSelectedDate(QDate(current_date.year, current_date.month, current_date.day))
 
         # Format header days cleanly in muted grey
-        hdr_font = QFont("Segoe UI")
-        hdr_font.setPointSize(9)
-        hdr_font.setWeight(QFont.Weight.DemiBold)
+        hdr_font = QFont("Segoe UI", 9, QFont.Weight.DemiBold)
         hdr_fmt = QTextCharFormat()
         hdr_fmt.setForeground(QColor("#A1A1AA" if self.is_dark else "#71717A"))
         hdr_fmt.setFont(hdr_font)
         self.calendar.setHeaderTextFormat(hdr_fmt)
 
         # Neutralize weekend text to clean theme color
-        work_font = QFont("Segoe UI")
-        work_font.setPointSize(9)
+        work_font = QFont("Segoe UI", 9)
         work_fmt = QTextCharFormat()
         work_fmt.setForeground(QColor("#F4F4F5" if self.is_dark else "#18181B"))
         work_fmt.setFont(work_font)
