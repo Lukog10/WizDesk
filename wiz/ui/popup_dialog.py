@@ -2212,10 +2212,12 @@ class QuickEntryDialog(QDialog):
     def _on_task_status_toggled(self, task_id: int, new_status: str) -> None:
         """Handle task status change (In progress, Completed, Cancelled, etc.)."""
         self.repo.update_task_status(task_id, new_status)
-        if new_status in ("done", "completed"):
-            self.state_machine.trigger_complete(duration_ms=3000)
+        if new_status in ("done", "completed", "cancelled", "canceled"):
+            self.state_machine.trigger_complete(duration_ms=3500)
         elif new_status in ("in_progress", "pending", "ongoing"):
             self.state_machine.trigger_working()
+        else:
+            self.state_machine.revert_to_baseline()
 
         self.refresh_tasks()
 
@@ -2241,12 +2243,17 @@ class QuickEntryDialog(QDialog):
         """Add a subtask under a task."""
         self.repo.create_subtask(task_id, title)
         self.refresh_tasks()
+        self.state_machine.trigger_notify(duration_ms=3500)
 
     def _on_subtask_toggled(self, subtask_id: int, new_status: str) -> None:
         """Toggle subtask status."""
         self.repo.update_subtask_status(subtask_id, new_status)
-        if new_status == "done":
-            self.state_machine.trigger_complete(duration_ms=2000)
+        if new_status in ("done", "completed", "cancelled", "canceled"):
+            self.state_machine.trigger_complete(duration_ms=3500)
+        elif new_status in ("in_progress", "pending", "ongoing"):
+            self.state_machine.trigger_working()
+        else:
+            self.state_machine.revert_to_baseline()
         self.refresh_tasks()
 
     def _on_subtask_renamed(self, subtask_id: int, new_title: str) -> None:
@@ -2263,7 +2270,9 @@ class QuickEntryDialog(QDialog):
         """Toggle note completion status."""
         self.repo.toggle_note_completed(note_id, is_completed)
         if is_completed:
-            self.state_machine.trigger_complete(duration_ms=2000)
+            self.state_machine.trigger_complete(duration_ms=3500)
+        else:
+            self.state_machine.revert_to_baseline()
 
     def _on_note_deleted(self, note_id: int) -> None:
         """Delete a note."""
@@ -2287,6 +2296,7 @@ class QuickEntryDialog(QDialog):
         task_id = self.repo.create_task(title, project_tag=proj)
         self.add_input.clear()
         self.refresh_tasks()
+        self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.task_created.emit(task_id)
 
     def _on_quick_add_note(self) -> None:
@@ -2305,7 +2315,7 @@ class QuickEntryDialog(QDialog):
         note_id = self.repo.create_note(content, project_tag=proj)
         self.note_input.clear()
         self.refresh_notes()
-        self.state_machine.trigger_working()
+        self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.note_created.emit(note_id)
 
     def _toggle_maximize_restore(self) -> None:
