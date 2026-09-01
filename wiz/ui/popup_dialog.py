@@ -667,12 +667,12 @@ class SubtaskRowWidget(QWidget):
         self.label.setVisible(True)
 
     def _update_time_label(self, is_done: bool) -> None:
-        created_str = self.subtask.created_at.strftime("%I:%M %p") if self.subtask.created_at else ""
-        if is_done and self.subtask.completed_at:
-            comp_str = self.subtask.completed_at.strftime("%I:%M %p")
-            self.time_label.setText(f"{created_str} → {comp_str}")
+        created_str = self.subtask.created_at.strftime("%I:%M %p").lstrip("0") if self.subtask.created_at else ""
+        if is_done and self.subtask.completed_at and created_str:
+            comp_str = self.subtask.completed_at.strftime("%I:%M %p").lstrip("0")
+            self.time_label.setText(f"({created_str} - {comp_str})")
         elif created_str:
-            self.time_label.setText(created_str)
+            self.time_label.setText(f"({created_str})")
         else:
             self.time_label.setText("")
 
@@ -951,16 +951,13 @@ class TaskRowWidget(QWidget):
         is_cancelled = status in ("cancelled", "canceled")
         is_in_progress = status in ("in_progress", "pending", "ongoing")
 
-        # Time metadata display
-        created_str = self.task.created_at.strftime("%I:%M %p") if self.task.created_at else ""
-        if is_done and self.task.completed_at:
-            comp_str = self.task.completed_at.strftime("%I:%M %p")
-            self.time_label.setText(f"Created {created_str} • Completed {comp_str}")
-        elif is_cancelled and self.task.completed_at:
-            comp_str = self.task.completed_at.strftime("%I:%M %p")
-            self.time_label.setText(f"Created {created_str} • Cancelled {comp_str}")
+        # Time metadata display (e.g. (1:36 PM - 1:57 PM) or (1:36 PM))
+        created_str = self.task.created_at.strftime("%I:%M %p").lstrip("0") if self.task.created_at else ""
+        if (is_done or is_cancelled) and self.task.completed_at and created_str:
+            comp_str = self.task.completed_at.strftime("%I:%M %p").lstrip("0")
+            self.time_label.setText(f"({created_str} - {comp_str})")
         elif created_str:
-            self.time_label.setText(f"Created {created_str}")
+            self.time_label.setText(f"({created_str})")
         else:
             self.time_label.setText("")
 

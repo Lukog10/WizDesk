@@ -357,21 +357,22 @@ def test_task_and_subtask_time_display(qapp, repo):
 
     row = TaskRowWidget(task, all_projects=["Work"])
     
-    # Check uncompleted task time label
-    expected_created = created_dt.strftime("%I:%M %p")
-    assert f"Created {expected_created}" in row.time_label.text()
+    # Check uncompleted task time label: (1:36 PM)
+    expected_created = created_dt.strftime("%I:%M %p").lstrip("0")
+    assert f"({expected_created})" in row.time_label.text()
 
-    # Check uncompleted subtask time label
+    # Check uncompleted subtask time label: (1:36 PM)
     st_row = row.subtasks_layout.itemAt(0).widget()
+    assert f"({expected_created})" in st_row.time_label.text()
+
+    # Mark subtask done: (1:36 PM - 1:57 PM)
+    st_row.checkbox.setChecked(True)
+    assert " - " in st_row.time_label.text()
     assert expected_created in st_row.time_label.text()
 
-    # Mark subtask done
-    st_row.checkbox.setChecked(True)
-    assert "→" in st_row.time_label.text()
-
-    # Mark task done
+    # Mark task done: (1:36 PM - 1:57 PM)
     row.status_combo.setCurrentText("Completed")
-    assert "Completed" in row.time_label.text()
-    assert f"Created {expected_created}" in row.time_label.text()
+    assert " - " in row.time_label.text()
+    assert expected_created in row.time_label.text()
 
     row.deleteLater()
