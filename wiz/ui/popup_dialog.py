@@ -407,6 +407,7 @@ class RoundedCheckbox(QWidget):
         if self._checked != value:
             self._checked = value
             self.update()
+            self.toggled.emit(self._checked)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -584,8 +585,6 @@ class SubtaskRowWidget(QWidget):
         self.label.setToolTip("Double-click to rename")
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.label.double_clicked.connect(self.start_renaming)
-        self._update_label_style(is_done)
-        self.layout.addWidget(self.label, stretch=1)
 
         self.edit_input = InlineEditInput(subtask.title, self)
         self.edit_input.setFont(QFont("Segoe UI", 9))
@@ -603,7 +602,22 @@ class SubtaskRowWidget(QWidget):
         self.edit_input.setVisible(False)
         self.edit_input.returnPressed.connect(self._finish_renaming)
         self.edit_input.editing_cancelled.connect(self._cancel_renaming)
+
+        self.time_label = QLabel()
+        self.time_label.setStyleSheet(f"""
+            QLabel {{
+                color: #A1A1AA;
+                font-family: {FONT_SANS};
+                font-size: 10.5px;
+                font-weight: 500;
+            }}
+        """)
+
+        self._update_label_style(is_done)
+
+        self.layout.addWidget(self.label, stretch=1)
         self.layout.addWidget(self.edit_input, stretch=1)
+        self.layout.addWidget(self.time_label)
 
         del_btn = QPushButton("x")
         del_btn.setFixedSize(16, 16)
@@ -652,7 +666,18 @@ class SubtaskRowWidget(QWidget):
         self.edit_input.setVisible(False)
         self.label.setVisible(True)
 
+    def _update_time_label(self, is_done: bool) -> None:
+        created_str = self.subtask.created_at.strftime("%I:%M %p") if self.subtask.created_at else ""
+        if is_done and self.subtask.completed_at:
+            comp_str = self.subtask.completed_at.strftime("%I:%M %p")
+            self.time_label.setText(f"{created_str} → {comp_str}")
+        elif created_str:
+            self.time_label.setText(created_str)
+        else:
+            self.time_label.setText("")
+
     def _update_label_style(self, is_done: bool) -> None:
+        self._update_time_label(is_done)
         if is_done:
             self.label.setStyleSheet(f"""
                 QLabel {{
@@ -674,6 +699,11 @@ class SubtaskRowWidget(QWidget):
 
     def _on_toggled(self, checked: bool) -> None:
         new_status = "done" if checked else "not_started"
+        self.subtask.status = new_status
+        if checked:
+            self.subtask.completed_at = datetime.now()
+        else:
+            self.subtask.completed_at = None
         self._update_label_style(checked)
         self.status_toggled.emit(self.subtask_id, new_status)
 
@@ -766,11 +796,11 @@ class TaskRowWidget(QWidget):
 
         self.main_layout.addWidget(self.top_widget)
 
-        # Status dropdown directly below task title
+        # Status dropdown & time label directly below task title
         self.status_bar_widget = QWidget()
         status_bar_layout = QHBoxLayout(self.status_bar_widget)
         status_bar_layout.setContentsMargins(34, 0, 4, 3)
-        status_bar_layout.setSpacing(6)
+        status_bar_layout.setSpacing(10)
 
         self.status_combo = QComboBox()
         self.status_combo.setEditable(False)
@@ -778,6 +808,19 @@ class TaskRowWidget(QWidget):
         self.status_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.status_combo.currentIndexChanged.connect(self._on_status_combo_changed)
         status_bar_layout.addWidget(self.status_combo)
+
+        # Time metadata label
+        self.time_label = QLabel()
+        self.time_label.setStyleSheet(f"""
+            QLabel {{
+                color: #A1A1AA;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 500;
+            }}
+        """)
+        status_bar_layout.addWidget(self.time_label)
+
         status_bar_layout.addStretch()
         self.main_layout.addWidget(self.status_bar_widget)
 
@@ -874,12 +917,18 @@ class TaskRowWidget(QWidget):
         text = self.status_combo.currentText()
         if text == "In progress":
             new_status = "in_progress"
+            self.task.completed_at = None
         elif text == "Completed":
             new_status = "done"
+            if not self.task.completed_at:
+                self.task.completed_at = datetime.now()
         elif text == "Cancelled":
             new_status = "cancelled"
+            if not self.task.completed_at:
+                self.task.completed_at = datetime.now()
         else:
             new_status = "not_started"
+            self.task.completed_at = None
 
         self.task.status = new_status
         self._update_status_ui(new_status)
@@ -887,6 +936,11 @@ class TaskRowWidget(QWidget):
 
     def _on_checkbox_toggled(self, checked: bool) -> None:
         new_status = "done" if checked else "not_started"
+        if checked:
+            if not self.task.completed_at:
+                self.task.completed_at = datetime.now()
+        else:
+            self.task.completed_at = None
         self.task.status = new_status
         self._update_status_ui(new_status)
         self.status_toggled.emit(self.task_id, new_status)
@@ -896,6 +950,19 @@ class TaskRowWidget(QWidget):
         is_done = status in ("done", "completed")
         is_cancelled = status in ("cancelled", "canceled")
         is_in_progress = status in ("in_progress", "pending", "ongoing")
+
+        # Time metadata display
+        created_str = self.task.created_at.strftime("%I:%M %p") if self.task.created_at else ""
+        if is_done and self.task.completed_at:
+            comp_str = self.task.completed_at.strftime("%I:%M %p")
+            self.time_label.setText(f"Created {created_str} • Completed {comp_str}")
+        elif is_cancelled and self.task.completed_at:
+            comp_str = self.task.completed_at.strftime("%I:%M %p")
+            self.time_label.setText(f"Created {created_str} • Cancelled {comp_str}")
+        elif created_str:
+            self.time_label.setText(f"Created {created_str}")
+        else:
+            self.time_label.setText("")
 
         # Sync checkbox state without re-triggering signal
         self.checkbox.blockSignals(True)

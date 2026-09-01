@@ -327,3 +327,51 @@ def test_task_and_subtask_ui_renaming(qapp, repo):
     assert renamed_subtasks[-1] == (st_id, "Draw vector icons")
 
     row.deleteLater()
+
+
+def test_task_and_subtask_time_display(qapp, repo):
+    """Test that TaskRowWidget and SubtaskRowWidget display created and completed time labels."""
+    from wiz.ui.popup_dialog import TaskRowWidget
+    from wiz.storage.models import TaskRecord, SubtaskRecord
+    from datetime import datetime, timedelta
+
+    created_dt = datetime.now() - timedelta(minutes=45)
+    completed_dt = datetime.now()
+
+    task = TaskRecord(
+        id=99,
+        title="Timed Task",
+        project_tag="Work",
+        status="not_started",
+        created_at=created_dt,
+        subtasks=[
+            SubtaskRecord(
+                id=101,
+                task_id=99,
+                title="Timed Subtask",
+                status="not_started",
+                created_at=created_dt,
+            )
+        ]
+    )
+
+    row = TaskRowWidget(task, all_projects=["Work"])
+    
+    # Check uncompleted task time label
+    expected_created = created_dt.strftime("%I:%M %p")
+    assert f"Created {expected_created}" in row.time_label.text()
+
+    # Check uncompleted subtask time label
+    st_row = row.subtasks_layout.itemAt(0).widget()
+    assert expected_created in st_row.time_label.text()
+
+    # Mark subtask done
+    st_row.checkbox.setChecked(True)
+    assert "→" in st_row.time_label.text()
+
+    # Mark task done
+    row.status_combo.setCurrentText("Completed")
+    assert "Completed" in row.time_label.text()
+    assert f"Created {expected_created}" in row.time_label.text()
+
+    row.deleteLater()

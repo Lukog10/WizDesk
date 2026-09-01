@@ -239,8 +239,8 @@ class StorageRepository:
             return cur.lastrowid or 0
 
     def update_task_status(self, task_id: int, status: str) -> bool:
-        """Update status of a task ('not_started', 'in_progress', 'done')."""
-        completed_at = datetime.now().isoformat() if status == "done" else None
+        """Update status of a task ('not_started', 'in_progress', 'done', 'cancelled')."""
+        completed_at = datetime.now().isoformat() if status in ("done", "completed", "cancelled", "canceled") else None
         with self.db.cursor() as cur:
             cur.execute(
                 """
@@ -315,7 +315,7 @@ class StorageRepository:
 
     def update_subtask_status(self, subtask_id: int, status: str) -> bool:
         """Update status of a subtask without modifying parent task status."""
-        completed_at = datetime.now().isoformat() if status == "done" else None
+        completed_at = datetime.now().isoformat() if status in ("done", "completed", "cancelled", "canceled") else None
         with self.db.cursor() as cur:
             cur.execute(
                 """

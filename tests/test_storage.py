@@ -173,3 +173,28 @@ def test_task_and_subtask_renaming(repo):
     # Reject empty titles
     assert not repo.update_task_title(t_id, "   ")
     assert not repo.update_subtask_title(st_id, "")
+
+
+def test_task_and_subtask_timestamps(repo):
+    """Test task and subtask creation and completion timestamps."""
+    t_id = repo.create_task("Time Tracking Task", project_tag="Work")
+    st_id = repo.create_subtask(t_id, "Time Tracking Subtask")
+
+    tasks = repo.get_task_hierarchy(status_filter="Task")
+    t = [task for task in tasks if task.id == t_id][0]
+    assert t.created_at is not None
+    assert t.completed_at is None
+    assert t.subtasks[0].created_at is not None
+    assert t.subtasks[0].completed_at is None
+
+    # Complete subtask
+    repo.update_subtask_status(st_id, "done")
+    tasks = repo.get_task_hierarchy(status_filter="Task")
+    t = [task for task in tasks if task.id == t_id][0]
+    assert t.subtasks[0].completed_at is not None
+
+    # Complete task
+    repo.update_task_status(t_id, "done")
+    tasks_done = repo.get_task_hierarchy(status_filter="Completed")
+    t_done = [task for task in tasks_done if task.id == t_id][0]
+    assert t_done.completed_at is not None
