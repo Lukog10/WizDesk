@@ -11,7 +11,9 @@ from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
 from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox, CreateSectionDialog, TaskRowWidget, CalendarPopupDialog
+from wiz.ui.quick_bar_dialog import QuickBarPopup
 from wiz.ui.settings_dialog import SettingsDialog
+from wiz.ui.mascot_window import MascotWindow
 
 
 @pytest.fixture(scope="session")
@@ -429,4 +431,66 @@ def test_dark_mode_theme_toggle_and_dialog_styling(qapp, repo):
     cal_light.close()
     sec_dark.close()
     sec_light.close()
+
+
+def test_quick_bar_popup_and_multi_click_gestures(qapp, repo):
+    """Test QuickBarPopup for Task and Note creation, theme toggling, and multi-click gestures."""
+    from wiz.core.signals import app_signals
+    from PyQt6.QtCore import QRect
+
+    sm = StateMachine()
+    popup = QuickBarPopup(sm, repository=repo)
+
+    # 1. Test Task Mode
+    mascot_rect = QRect(200, 400, 80, 80)
+    popup.show_mode("task", mascot_rect=mascot_rect)
+    assert popup.mode == "task"
+    assert "Task" in popup.mode_badge.text()
+    assert popup.submit_btn.text() == "Add"
+
+    # Add task via quick bar
+    popup.input_field.setText("Quick Bar Created Task")
+    popup._on_submit()
+
+    tasks = repo.get_task_hierarchy(target_date=date.today())
+    assert any(t.title == "Quick Bar Created Task" for t in tasks)
+
+    # 2. Test Note Mode
+    popup.show_mode("note", mascot_rect=mascot_rect)
+    assert popup.mode == "note"
+    assert "Note" in popup.mode_badge.text()
+    assert popup.submit_btn.text() == "Log Note"
+
+    popup.input_field.setText("Quick Bar Logged Work Note")
+    popup._on_submit()
+
+    notes = repo.get_notes_for_date(date.today())
+    assert any(n.content == "Quick Bar Logged Work Note" for n in notes)
+
+    # 3. Test Theme Switching
+    popup.apply_theme("dark")
+    assert popup.is_dark
+    popup.apply_theme("light")
+    assert not popup.is_dark
+
+    # 4. Test Multi-Click Gestures on MascotWindow
+    mascot = MascotWindow(sm)
+    received_signals = []
+
+    app_signals.request_quick_task_bar.connect(lambda: received_signals.append("task_bar"))
+    app_signals.request_quick_note_bar.connect(lambda: received_signals.append("note_bar"))
+
+    # Simulate Double-click (2 clicks)
+    mascot._click_count = 2
+    mascot._on_click_timeout()
+    assert received_signals[-1] == "task_bar"
+
+    # Simulate Triple-click (3 clicks)
+    mascot._click_count = 3
+    mascot._on_click_timeout()
+    assert received_signals[-1] == "note_bar"
+
+    popup.close()
+    mascot.close()
+
 

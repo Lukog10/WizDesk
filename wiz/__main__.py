@@ -17,6 +17,7 @@ from wiz.storage.models import StorageRepository
 from wiz.ui.mascot_window import MascotWindow
 from wiz.ui.tray_icon import TrayIcon
 from wiz.ui.popup_dialog import QuickEntryDialog
+from wiz.ui.quick_bar_dialog import QuickBarPopup
 from wiz.ui.settings_dialog import SettingsDialog
 from wiz.ui.icons import get_app_icon
 from wiz.tracker.window_tracker import WindowTracker
@@ -46,6 +47,7 @@ class WizApplication:
         self.mascot_window = MascotWindow(self.state_machine)
         self.tray_icon = TrayIcon(self.state_machine)
         self._quick_entry_dialog: Optional[QuickEntryDialog] = None
+        self._quick_bar_dialog: Optional[QuickBarPopup] = None
         self._settings_dialog: Optional[SettingsDialog] = None
 
         # Background Services
@@ -58,6 +60,8 @@ class WizApplication:
     def _connect_signals(self) -> None:
         """Bind global signals to UI handlers and actions."""
         app_signals.request_quick_entry.connect(self.show_quick_entry)
+        app_signals.request_quick_task_bar.connect(self.show_quick_task_bar)
+        app_signals.request_quick_note_bar.connect(self.show_quick_note_bar)
         app_signals.request_settings.connect(self.show_settings)
         app_signals.request_sync.connect(self.trigger_sync)
         app_signals.sync_finished.connect(self._on_sync_finished)
@@ -79,12 +83,24 @@ class WizApplication:
             self.sync_engine.sync_date(date.today(), emit_signal=False)
 
     def show_quick_entry(self) -> None:
-        """Open or focus the Quick-Entry note and task dialog."""
+        """Open or focus the full Quick-Entry workspace dialog."""
         if self._quick_entry_dialog is None or not self._quick_entry_dialog.isVisible():
             self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo)
             self._quick_entry_dialog.show()
         self._quick_entry_dialog.raise_()
         self._quick_entry_dialog.activateWindow()
+
+    def show_quick_task_bar(self) -> None:
+        """Open the compact Quick Task bar positioned near the mascot (Double-click gesture)."""
+        if self._quick_bar_dialog is None:
+            self._quick_bar_dialog = QuickBarPopup(self.state_machine, self.repo)
+        self._quick_bar_dialog.show_mode("task", mascot_rect=self.mascot_window.geometry())
+
+    def show_quick_note_bar(self) -> None:
+        """Open the compact Quick Note bar positioned near the mascot (Triple-click gesture)."""
+        if self._quick_bar_dialog is None:
+            self._quick_bar_dialog = QuickBarPopup(self.state_machine, self.repo)
+        self._quick_bar_dialog.show_mode("note", mascot_rect=self.mascot_window.geometry())
 
     def show_settings(self) -> None:
         """Open or focus the settings dialog."""
@@ -138,11 +154,15 @@ def main() -> None:
     wiz_app = WizApplication()
     wiz_app.start()
 
-    # Connect app quit
-    app_signals.quit_application.connect(lambda: (wiz_app.shutdown(), app.quit()))
+    # Handle graceful exit on OS signals
+    import signal
+    signal.signal(signal.SIGINT, lambda *_: wiz_app.shutdown() or app.quit())
 
-    print("[WizDesk] Desktop Companion running.")
-    sys.exit(app.exec())
+    try:
+        sys.exit(app.exec())
+    except KeyboardInterrupt:
+        wiz_app.shutdown()
+        sys.exit(0)
 
 
 if __name__ == "__main__":

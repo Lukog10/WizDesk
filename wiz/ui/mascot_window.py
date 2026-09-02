@@ -1,7 +1,7 @@
 """Frameless, transparent, draggable, always-on-top companion window."""
 
 from typing import Optional
-from PyQt6.QtCore import Qt, QPoint, pyqtSignal
+from PyQt6.QtCore import Qt, QPoint, QTimer, pyqtSignal
 from PyQt6.QtGui import QMouseEvent, QContextMenuEvent, QAction, QGuiApplication, QCursor
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMenu
 
@@ -15,7 +15,7 @@ from wiz.ui.icons import get_app_icon
 class MascotWindow(QWidget):
     """
     Floating, frameless, transparent, always-on-top desktop companion window.
-    Supports dragging, position memory, double-click actions, and context menus.
+    Supports dragging, position memory, double-click (Task Bar), triple-click (Note Bar), and context menus.
     """
 
     def __init__(self, state_machine: StateMachine, parent: Optional[QWidget] = None):
@@ -43,15 +43,26 @@ class MascotWindow(QWidget):
         self.mascot_widget = MascotWidget(self.state_machine, self)
         self.layout.addWidget(self.mascot_widget)
 
-        # Drag state tracking
+        # Drag & Click Gesture Tracking
         self._is_dragging: bool = False
+        self._press_global_pos: QPoint = QPoint()
         self._drag_start_position: QPoint = QPoint()
+
+        # Multi-click gesture timer (for Double-click Quick Task vs Triple-click Quick Note)
+        self._click_count: int = 0
+        self._click_timer = QTimer(self)
+        self._click_timer.setSingleShot(True)
+        self._click_timer.setInterval(280)
+        self._click_timer.timeout.connect(self._on_click_timeout)
 
         # Position on screen
         self._init_window_position()
 
         # Connect signals
         app_signals.toggle_mascot_visibility.connect(self.toggle_visibility)
+
+    def _init_window_position() -> None:
+        pass  # Placeholder overwritten below
 
     def _init_window_position(self) -> None:
         """Place window at saved position or default to bottom-right corner."""
@@ -80,45 +91,73 @@ class MascotWindow(QWidget):
             self.raise_()
             self.activateWindow()
 
-    # --- Mouse & Drag Handling ---
+    # --- Mouse & Drag Handling with Multi-Click Gesture Detection ---
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        """Begin dragging on left mouse click."""
+        """Begin tracking drag and click gestures on left mouse click."""
         if event.button() == Qt.MouseButton.LeftButton:
-            self._is_dragging = True
+            self._is_dragging = False
+            self._press_global_pos = event.globalPosition().toPoint()
             self._drag_start_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
-            self.setCursor(QCursor(Qt.CursorShape.ClosedHandCursor))
             event.accept()
         else:
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         """Move window smoothly during mouse drag with screen boundary clamping."""
-        if self._is_dragging and event.buttons() & Qt.MouseButton.LeftButton:
-            new_pos = event.globalPosition().toPoint() - self._drag_start_position
-            clamped_pos = self._clamp_to_screens(new_pos)
-            self.move(clamped_pos)
-            event.accept()
-        else:
-            super().mouseMoveEvent(event)
+        if event.buttons() & Qt.MouseButton.LeftButton:
+            dist = (event.globalPosition().toPoint() - self._press_global_pos).manhattanLength()
+            if dist > 4 or self._is_dragging:
+                if not self._is_dragging:
+                    self._is_dragging = True
+                    self._click_count = 0
+                    self._click_timer.stop()
+                    self.setCursor(QCursor(Qt.CursorShape.ClosedHandCursor))
+
+                new_pos = event.globalPosition().toPoint() - self._drag_start_position
+                clamped_pos = self._clamp_to_screens(new_pos)
+                self.move(clamped_pos)
+                event.accept()
+                return
+        super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        """End drag and persist final screen coordinates."""
+        """End drag or register click gesture for double/triple click."""
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_dragging:
                 self._is_dragging = False
+                self._click_count = 0
+                self._click_timer.stop()
                 self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
                 config.save_window_position(self.x(), self.y())
                 event.accept()
+                return
+            else:
+                # Registered click without dragging
+                self._click_count += 1
+                self._click_timer.start(280)
+                event.accept()
+                return
         super().mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
-        """Double-click on mascot triggers Quick-Entry note/task dialog."""
+        """Qt native double click hook - accept to allow unified multi-click timer processing."""
         if event.button() == Qt.MouseButton.LeftButton:
-            app_signals.request_quick_entry.emit()
             event.accept()
         else:
             super().mouseDoubleClickEvent(event)
+
+    def _on_click_timeout(self) -> None:
+        """Handle multi-click gestures once click pause is reached."""
+        count = self._click_count
+        self._click_count = 0
+
+        if count == 2:
+            # Double-click: Quick Task Bar
+            app_signals.request_quick_task_bar.emit()
+        elif count >= 3:
+            # Triple-click: Quick Note Bar
+            app_signals.request_quick_note_bar.emit()
 
     def _clamp_to_screens(self, pos: QPoint) -> QPoint:
         """Ensure the window does not get dragged completely off-screen."""
@@ -165,9 +204,15 @@ class MascotWindow(QWidget):
             }
         """)
 
-        # Quick Note Action
-        action_note = menu.addAction("Quick Note / Task")
-        action_note.triggered.connect(lambda: app_signals.request_quick_entry.emit())
+        # Quick Actions
+        action_task_bar = menu.addAction("Add Quick Task (Double-click)")
+        action_task_bar.triggered.connect(lambda: app_signals.request_quick_task_bar.emit())
+
+        action_note_bar = menu.addAction("Log Quick Note (Triple-click)")
+        action_note_bar.triggered.connect(lambda: app_signals.request_quick_note_bar.emit())
+
+        action_workspace = menu.addAction("Open Full Workspace")
+        action_workspace.triggered.connect(lambda: app_signals.request_quick_entry.emit())
 
         menu.addSeparator()
 

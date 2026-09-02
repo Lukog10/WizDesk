@@ -9,6 +9,8 @@ class AppSignals(QObject):
     # UI / Mascot visibility & action signals
     toggle_mascot_visibility = pyqtSignal()
     request_quick_entry = pyqtSignal()
+    request_quick_task_bar = pyqtSignal()
+    request_quick_note_bar = pyqtSignal()
     request_settings = pyqtSignal()
     request_sync = pyqtSignal()
     quit_application = pyqtSignal()
