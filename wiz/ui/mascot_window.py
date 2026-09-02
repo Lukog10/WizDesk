@@ -204,15 +204,9 @@ class MascotWindow(QWidget):
             }
         """)
 
-        # Quick Actions
-        action_task_bar = menu.addAction("Add Quick Task (Double-click)")
-        action_task_bar.triggered.connect(lambda: app_signals.request_quick_task_bar.emit())
-
-        action_note_bar = menu.addAction("Log Quick Note (Triple-click)")
-        action_note_bar.triggered.connect(lambda: app_signals.request_quick_note_bar.emit())
-
-        action_workspace = menu.addAction("Open Full Workspace")
-        action_workspace.triggered.connect(lambda: app_signals.request_quick_entry.emit())
+        # Quick Note / Task Action
+        action_note = menu.addAction("Quick Note / Task")
+        action_note.triggered.connect(lambda: app_signals.request_quick_entry.emit())
 
         menu.addSeparator()
 
