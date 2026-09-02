@@ -68,6 +68,7 @@ class WizApplication:
         app_signals.session_polled.connect(self._on_session_polled)
         app_signals.task_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
         app_signals.note_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
+        app_signals.quit_application.connect(self.quit)
 
     def start(self) -> None:
         """Launch UI and background worker threads."""
@@ -134,6 +135,23 @@ class WizApplication:
         self.hotkey_listener.stop()
         self.sync_engine.sync_date(date.today(), emit_signal=False)
 
+    def quit(self) -> None:
+        """Gracefully shut down background services, hide tray, and exit application."""
+        self.shutdown()
+        if self.tray_icon:
+            self.tray_icon.hide()
+        if self.mascot_window:
+            self.mascot_window.close()
+        if self._quick_entry_dialog:
+            self._quick_entry_dialog.close()
+        if self._quick_bar_dialog:
+            self._quick_bar_dialog.close()
+        if self._settings_dialog:
+            self._settings_dialog.close()
+        app = QApplication.instance()
+        if app:
+            app.quit()
+
 
 def main() -> None:
     """Initialize and run the WizDesk companion application."""
@@ -156,12 +174,12 @@ def main() -> None:
 
     # Handle graceful exit on OS signals
     import signal
-    signal.signal(signal.SIGINT, lambda *_: wiz_app.shutdown() or app.quit())
+    signal.signal(signal.SIGINT, lambda *_: wiz_app.quit())
 
     try:
         sys.exit(app.exec())
     except KeyboardInterrupt:
-        wiz_app.shutdown()
+        wiz_app.quit()
         sys.exit(0)
 
 

@@ -141,3 +141,22 @@ def test_automated_idle_and_sleep_state_transitions(qapp):
     current_simulated_idle = 0.0
     sm._on_revert_timeout()
     assert sm.current_state == MascotState.WORKING
+
+
+def test_application_quit_signal(qapp):
+    """Test that quit_application signal triggers application shutdown and quit."""
+    from wiz.core.signals import app_signals
+    from wiz.__main__ import WizApplication
+
+    app_instance = WizApplication()
+    quit_called = []
+
+    def handle_quit():
+        quit_called.append(True)
+
+    app_signals.quit_application.connect(handle_quit)
+    app_signals.quit_application.emit()
+
+    assert len(quit_called) > 0
+    app_instance.shutdown()
+
