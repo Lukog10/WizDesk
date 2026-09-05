@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Optional
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtCore import QThread
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
@@ -74,8 +74,6 @@ class WindowTracker(QThread):
     matches project keywords, logs sessions to SQLite, and emits signals.
     """
 
-    session_recorded = pyqtSignal(str, str, str)  # app_name, window_title, project_tag
-
     def __init__(self, repository: Optional[StorageRepository] = None, parent=None):
         super().__init__(parent)
         self.repo = repository or StorageRepository()
@@ -126,11 +124,6 @@ class WindowTracker(QThread):
                                 start_time=self._session_start,
                                 end_time=now,
                                 project_tag=self._current_project,
-                            )
-                            self.session_recorded.emit(
-                                self._current_app,
-                                self._current_title or "",
-                                self._current_project or "",
                             )
                             app_signals.session_polled.emit(
                                 self._current_app,

@@ -13,18 +13,15 @@ Implements the exact layout hierarchy:
 
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QPoint, QRectF, QDate
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QRectF, QDate, QTimer
 from PyQt6.QtGui import (
     QFont,
     QColor,
     QPainter,
     QPen,
-    QBrush,
     QMouseEvent,
     QKeyEvent,
-    QPainterPath,
     QCursor,
-    QAction,
     QTextCharFormat,
 )
 from PyQt6.QtWidgets import (
@@ -40,8 +37,6 @@ from PyQt6.QtWidgets import (
     QMenu,
     QComboBox,
     QGraphicsDropShadowEffect,
-    QMessageBox,
-    QInputDialog,
     QStackedWidget,
     QCalendarWidget,
     QToolButton,
@@ -49,7 +44,7 @@ from PyQt6.QtWidgets import (
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
-from wiz.core.state_machine import StateMachine, MascotState
+from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
 from wiz.ui.icons import get_app_icon, get_app_pixmap
 from wiz.sync.obsidian import sync_today_logs
@@ -97,8 +92,6 @@ def get_context_menu_style(is_dark: bool = False) -> str:
         }}
     """
 
-
-CONTEXT_MENU_STYLE = get_context_menu_style(False)
 
 
 CALENDAR_MONTHS = [
@@ -578,6 +571,11 @@ class CreateSectionDialog(QDialog):
             super().keyPressEvent(event)
 
 
+class _CallableBool(int):
+    def __call__(self) -> bool:
+        return bool(self)
+
+
 class RoundedCheckbox(QWidget):
     """Custom rounded-square checkbox widget with high-precision anti-aliased rendering and dark mode support."""
 
@@ -592,8 +590,8 @@ class RoundedCheckbox(QWidget):
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
     @property
-    def isChecked(self) -> bool:
-        return self._checked
+    def isChecked(self) -> _CallableBool:
+        return _CallableBool(1 if self._checked else 0)
 
     def setChecked(self, value: bool) -> None:
         if self._checked != value:
@@ -1795,6 +1793,12 @@ class QuickEntryDialog(QDialog):
         self.selected_date: date = date.today()
         self.is_dark = (config.theme == "dark")
 
+        # Single-shot debounce timer for syncing to Obsidian vault without freezing UI
+        self._sync_timer = QTimer(self)
+        self._sync_timer.setSingleShot(True)
+        self._sync_timer.setInterval(350)
+        self._sync_timer.timeout.connect(lambda: sync_today_logs(emit_signal=False))
+
         # Window settings
         self.setWindowTitle("WizDesk - Workspace")
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
@@ -2604,6 +2608,17 @@ class QuickEntryDialog(QDialog):
         self._populate_projects()
         self.refresh_notes()
 
+    def _trigger_debounced_sync(self) -> None:
+        """Trigger a debounced sync to the Obsidian vault to prevent UI lag on rapid clicks."""
+        self._sync_timer.start(350)
+
+    def closeEvent(self, event) -> None:
+        """Ensure any pending debounced sync is flushed before closing."""
+        if hasattr(self, "_sync_timer") and self._sync_timer.isActive():
+            self._sync_timer.stop()
+            sync_today_logs(emit_signal=False)
+        super().closeEvent(event)
+
     def _on_task_status_toggled(self, task_id: int, new_status: str) -> None:
         """Handle task status change (In progress, Completed, Cancelled, etc.)."""
         self.repo.update_task_status(task_id, new_status)
@@ -2615,20 +2630,20 @@ class QuickEntryDialog(QDialog):
             self.state_machine.revert_to_baseline()
 
         self.refresh_tasks()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_task_renamed(self, task_id: int, new_title: str) -> None:
         """Handle renaming a task."""
         self.repo.update_task_title(task_id, new_title)
         self.refresh_tasks()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_task_action(self, action_type: str, task_id: int) -> None:
         """Handle task deletion or other actions."""
         if action_type == "delete":
             self.repo.delete_task(task_id)
             self.refresh_tasks()
-            sync_today_logs(emit_signal=False)
+            self._trigger_debounced_sync()
 
     def _on_task_project_changed(self, task_id: int, new_project: str) -> None:
         """Handle moving a task to a different section/project."""
@@ -2636,14 +2651,14 @@ class QuickEntryDialog(QDialog):
         self.repo.update_task_project(task_id, new_project)
         self._populate_projects()
         self.refresh_tasks()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_subtask_added(self, task_id: int, title: str) -> None:
         """Add a subtask under a task."""
         self.repo.create_subtask(task_id, title)
         self.refresh_tasks()
         self.state_machine.trigger_notify(duration_ms=3500)
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_subtask_toggled(self, subtask_id: int, new_status: str) -> None:
         """Toggle subtask status."""
@@ -2655,19 +2670,19 @@ class QuickEntryDialog(QDialog):
         else:
             self.state_machine.revert_to_baseline()
         self.refresh_tasks()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_subtask_renamed(self, subtask_id: int, new_title: str) -> None:
         """Handle renaming a subtask."""
         self.repo.update_subtask_title(subtask_id, new_title)
         self.refresh_tasks()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_subtask_deleted(self, subtask_id: int) -> None:
         """Delete a subtask."""
         self.repo.delete_subtask(subtask_id)
         self.refresh_tasks()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_note_toggled(self, note_id: int, is_completed: bool) -> None:
         """Toggle note completion status."""
@@ -2676,13 +2691,13 @@ class QuickEntryDialog(QDialog):
             self.state_machine.trigger_complete(duration_ms=3500)
         else:
             self.state_machine.revert_to_baseline()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_note_deleted(self, note_id: int) -> None:
         """Delete a note."""
         self.repo.delete_note(note_id)
         self.refresh_notes()
-        sync_today_logs(emit_signal=False)
+        self._trigger_debounced_sync()
 
     def _on_quick_add_task(self) -> None:
         """Submit quick task from bottom input bar."""

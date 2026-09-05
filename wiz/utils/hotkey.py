@@ -1,7 +1,7 @@
 """Global hotkey listener using pynput."""
 
 from typing import Optional
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
@@ -15,8 +15,6 @@ except ImportError:
 
 class GlobalHotkeyListener(QObject):
     """Listens for global shortcut triggers across the OS."""
-
-    triggered = pyqtSignal()
 
     def __init__(self, parent: Optional[QObject] = None):
         super().__init__(parent)
@@ -41,7 +39,6 @@ class GlobalHotkeyListener(QObject):
 
     def _on_hotkey_pressed(self) -> None:
         """Called when hotkey combo is pressed."""
-        self.triggered.emit()
         app_signals.request_quick_entry.emit()
 
     def stop(self) -> None:

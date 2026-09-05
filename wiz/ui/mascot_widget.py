@@ -2,7 +2,7 @@
 
 import math
 from typing import Dict, Optional
-from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtProperty, pyqtSignal, QPointF
+from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtProperty, QPointF
 from PyQt6.QtGui import QPainter, QPaintEvent, QPen, QColor
 from PyQt6.QtWidgets import QWidget
 from PyQt6.QtSvg import QSvgRenderer
@@ -16,9 +16,6 @@ class MascotWidget(QWidget):
     Renders the Wiz ghost mascot SVG with high-DPI scaling,
     smooth floating bob animation, and dynamic eye rotation in working state.
     """
-
-    clicked = pyqtSignal()
-    double_clicked = pyqtSignal()
 
     def __init__(self, state_machine: StateMachine, parent: Optional[QWidget] = None):
         super().__init__(parent)

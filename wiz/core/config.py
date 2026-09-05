@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -10,8 +11,11 @@ class Config:
     """Manages application paths, persistent settings, and configuration defaults."""
 
     def __init__(self, config_file: Optional[Path] = None):
-        # Base paths
-        self.root_dir = Path(__file__).resolve().parent.parent.parent
+        # Base paths (supports PyInstaller frozen bundles and standard execution)
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            self.root_dir = Path(sys._MEIPASS)
+        else:
+            self.root_dir = Path(__file__).resolve().parent.parent.parent
         self.assets_dir = self.root_dir / "assets"
         
         # User app data directory for persistent settings & storage

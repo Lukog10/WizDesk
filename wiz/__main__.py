@@ -1,18 +1,16 @@
 """Main application entry point for WizDesk desktop companion."""
 
 import sys
-import os
 import ctypes
 from typing import Optional
 from datetime import date
 
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 
 from wiz.core.config import config
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.core.signals import app_signals
-from wiz.storage.db import get_db
 from wiz.storage.models import StorageRepository
 from wiz.ui.mascot_window import MascotWindow
 from wiz.ui.tray_icon import TrayIcon

@@ -82,6 +82,7 @@ class StorageRepository:
 
     def __init__(self, db: Optional[Database] = None):
         self.db = db or get_db()
+        self._projects_cache: Optional[List[ProjectRecord]] = None
 
     # --- Session Operations ---
 
@@ -387,65 +388,73 @@ class StorageRepository:
             task_rows = cur.fetchall()
 
             tasks = []
+            if not task_rows:
+                return tasks
+
+            task_ids = [t_row["id"] for t_row in task_rows]
+            placeholders = ",".join("?" for _ in task_ids)
+
+            # Batch fetch all subtasks for matching tasks
+            cur.execute(
+                f"SELECT * FROM subtasks WHERE task_id IN ({placeholders}) ORDER BY created_at ASC",
+                task_ids,
+            )
+            subtask_rows = cur.fetchall()
+
+            # Batch fetch all logs for matching tasks
+            cur.execute(
+                f"SELECT * FROM task_logs WHERE task_id IN ({placeholders}) ORDER BY created_at ASC",
+                task_ids,
+            )
+            log_rows = cur.fetchall()
+
+            # Group logs by task_id and subtask_id
+            parent_logs_map: Dict[int, List[TaskLogRecord]] = {}
+            subtask_logs_map: Dict[int, List[TaskLogRecord]] = {}
+
+            for l_row in log_rows:
+                log_obj = TaskLogRecord(
+                    id=l_row["id"],
+                    task_id=l_row["task_id"],
+                    subtask_id=l_row["subtask_id"],
+                    content=l_row["content"],
+                    created_at=datetime.fromisoformat(l_row["created_at"]),
+                )
+                if l_row["subtask_id"] is None:
+                    parent_logs_map.setdefault(l_row["task_id"], []).append(log_obj)
+                else:
+                    subtask_logs_map.setdefault(l_row["subtask_id"], []).append(log_obj)
+
+            # Group subtasks by task_id
+            task_subtasks_map: Dict[int, List[SubtaskRecord]] = {}
+            for st_row in subtask_rows:
+                st_id = st_row["id"]
+                t_id = st_row["task_id"]
+                task_subtasks_map.setdefault(t_id, []).append(
+                    SubtaskRecord(
+                        id=st_id,
+                        task_id=t_id,
+                        title=st_row["title"],
+                        status=st_row["status"],
+                        created_at=datetime.fromisoformat(st_row["created_at"]),
+                        completed_at=datetime.fromisoformat(st_row["completed_at"]) if st_row["completed_at"] else None,
+                        logs=subtask_logs_map.get(st_id, []),
+                    )
+                )
+
+            # Assemble TaskRecord list
             for t_row in task_rows:
-                task_id = t_row["id"]
-
-                # Fetch subtasks
-                cur.execute(
-                    "SELECT * FROM subtasks WHERE task_id = ? ORDER BY created_at ASC",
-                    (task_id,),
-                )
-                subtask_rows = cur.fetchall()
-
-                # Fetch task logs
-                cur.execute(
-                    "SELECT * FROM task_logs WHERE task_id = ? ORDER BY created_at ASC",
-                    (task_id,),
-                )
-                log_rows = cur.fetchall()
-
-                # Group logs by subtask_id
-                parent_logs: List[TaskLogRecord] = []
-                subtask_logs_map: Dict[int, List[TaskLogRecord]] = {}
-
-                for l_row in log_rows:
-                    log_obj = TaskLogRecord(
-                        id=l_row["id"],
-                        task_id=l_row["task_id"],
-                        subtask_id=l_row["subtask_id"],
-                        content=l_row["content"],
-                        created_at=datetime.fromisoformat(l_row["created_at"]),
-                    )
-                    if l_row["subtask_id"] is None:
-                        parent_logs.append(log_obj)
-                    else:
-                        subtask_logs_map.setdefault(l_row["subtask_id"], []).append(log_obj)
-
-                subtasks: List[SubtaskRecord] = []
-                for st_row in subtask_rows:
-                    st_id = st_row["id"]
-                    subtasks.append(
-                        SubtaskRecord(
-                            id=st_id,
-                            task_id=task_id,
-                            title=st_row["title"],
-                            status=st_row["status"],
-                            created_at=datetime.fromisoformat(st_row["created_at"]),
-                            completed_at=datetime.fromisoformat(st_row["completed_at"]) if st_row["completed_at"] else None,
-                            logs=subtask_logs_map.get(st_id, []),
-                        )
-                    )
-
+                t_id = t_row["id"]
                 tasks.append(
                     TaskRecord(
-                        id=task_id,
+                        id=t_id,
                         title=t_row["title"],
                         project_tag=t_row["project_tag"],
                         status=t_row["status"],
                         created_at=datetime.fromisoformat(t_row["created_at"]),
                         completed_at=datetime.fromisoformat(t_row["completed_at"]) if t_row["completed_at"] else None,
-                        subtasks=subtasks,
-                        task_logs=parent_logs,
+                        subtasks=task_subtasks_map.get(t_id, []),
+                        task_logs=parent_logs_map.get(t_id, []),
                     )
                 )
 
@@ -455,6 +464,7 @@ class StorageRepository:
 
     def create_or_update_project(self, name: str, keywords: List[str]) -> int:
         """Create or update a project and its comma-separated keywords."""
+        self._projects_cache = None  # Invalidate in-memory cache
         kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()])
         with self.db.cursor() as cur:
             cur.execute(
@@ -467,12 +477,15 @@ class StorageRepository:
             )
             return cur.lastrowid or 0
 
-    def get_all_projects(self) -> List[ProjectRecord]:
-        """Fetch all configured projects."""
+    def get_all_projects(self, force_refresh: bool = False) -> List[ProjectRecord]:
+        """Fetch all configured projects with in-memory caching."""
+        if self._projects_cache is not None and not force_refresh:
+            return self._projects_cache
+
         with self.db.cursor() as cur:
             cur.execute("SELECT id, name, keywords FROM projects ORDER BY name ASC")
             rows = cur.fetchall()
-            return [
+            self._projects_cache = [
                 ProjectRecord(
                     id=row["id"],
                     name=row["name"],
@@ -480,6 +493,7 @@ class StorageRepository:
                 )
                 for row in rows
             ]
+            return self._projects_cache
 
     def match_project_tag(self, text_to_match: str) -> Optional[str]:
         """Match window title or app name against project keywords."""

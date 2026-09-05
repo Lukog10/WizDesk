@@ -198,3 +198,45 @@ def test_task_and_subtask_timestamps(repo):
     tasks_done = repo.get_task_hierarchy(status_filter="Completed")
     t_done = [task for task in tasks_done if task.id == t_id][0]
     assert t_done.completed_at is not None
+
+
+def test_project_cache_and_invalidation(repo):
+    """Test in-memory project caching and invalidation on project creation."""
+    assert repo._projects_cache is None
+
+    # First fetch populates cache
+    projects_1 = repo.get_all_projects()
+    assert repo._projects_cache is not None
+    assert repo._projects_cache is projects_1
+
+    # Second fetch returns cached reference without re-querying
+    projects_2 = repo.get_all_projects()
+    assert projects_2 is projects_1
+
+    # match_project_tag uses cache
+    repo.create_or_update_project("TurfLine", ["turf", "booking"])
+    assert repo._projects_cache is None  # Invalidated on update
+
+    matched = repo.match_project_tag("Booking Details - Chrome")
+    assert matched == "TurfLine"
+    assert repo._projects_cache is not None  # Repopulated
+
+
+def test_batch_task_hierarchy_performance(repo):
+    """Test batch querying subtasks and logs across multiple parent tasks."""
+    # Create 5 parent tasks, each with 2 subtasks and logs
+    for i in range(5):
+        t_id = repo.create_task(f"Parent Task {i}", project_tag="Work")
+        st1_id = repo.create_subtask(t_id, f"Subtask {i}.1")
+        st2_id = repo.create_subtask(t_id, f"Subtask {i}.2")
+        repo.add_task_log(t_id, f"Parent log {i}")
+        repo.add_task_log(t_id, f"Subtask log {i}.1", subtask_id=st1_id)
+
+    tasks = repo.get_task_hierarchy()
+    assert len(tasks) == 5
+    for t in tasks:
+        assert len(t.subtasks) == 2
+        assert len(t.task_logs) == 1
+        assert len(t.subtasks[0].logs) == 1
+        assert len(t.subtasks[1].logs) == 0
+

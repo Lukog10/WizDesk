@@ -1,7 +1,5 @@
 """Application icon and SVG asset helper utilities for WizDesk."""
 
-from pathlib import Path
-from typing import Optional
 from PyQt6.QtGui import QIcon, QPixmap, QPainter
 from PyQt6.QtCore import Qt
 from PyQt6.QtSvg import QSvgRenderer
@@ -11,13 +9,9 @@ from wiz.core.config import config
 
 def get_app_pixmap(size: int = 32, asset_name: str = "wiz-idle.svg") -> QPixmap:
     """Render a crisp QPixmap from the given SVG asset."""
-    # Support both wiz-idle.svg and idle.svg
-    asset_path = config.get_asset_path(asset_name)
-    if not asset_path.exists():
-        if asset_name == "idle.svg":
-            asset_path = config.get_asset_path("wiz-idle.svg")
-        elif asset_name == "wiz-idle.svg":
-            asset_path = config.get_asset_path("idle.svg")
+    # Map legacy alias idle.svg to wiz-idle.svg
+    resolved_name = "wiz-idle.svg" if asset_name == "idle.svg" else asset_name
+    asset_path = config.get_asset_path(resolved_name)
 
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)

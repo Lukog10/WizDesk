@@ -1,3 +1,11 @@
+---
+name: software-engineer
+description: >
+  Senior Software Engineer core workflow. Emphasizes upfront correctness, contract specification,
+  failure-mode checklists, and incremental verified execution before touching code.
+  Use when implementing complex features, diagnosing intricate bugs, or executing system refactors.
+---
+
 # Role Workflow: Senior Software Engineer
 
 ## 1. Role Definition

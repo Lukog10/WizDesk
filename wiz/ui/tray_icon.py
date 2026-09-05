@@ -1,14 +1,12 @@
 """System Tray Icon and tray menu management for WizDesk."""
 
 from typing import Optional
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon, QPixmap, QPainter, QAction
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QWidget
-from PyQt6.QtSvg import QSvgRenderer
 
-from wiz.core.config import config
 from wiz.core.state_machine import MascotState, StateMachine
 from wiz.core.signals import app_signals
+from wiz.ui.icons import get_app_icon
 
 
 class TrayIcon(QSystemTrayIcon):
@@ -32,27 +30,9 @@ class TrayIcon(QSystemTrayIcon):
         self.activated.connect(self._on_activated)
         self.state_machine.state_changed.connect(self._on_state_changed)
 
-    def _render_mascot_icon(self, state: MascotState, size: int = 64) -> QIcon:
-        """Render a crisp QIcon from the given MascotState SVG."""
-        asset_path = config.get_asset_path(state.asset_filename)
-        pixmap = QPixmap(size, size)
-        pixmap.fill(Qt.GlobalColor.transparent)
-
-        if asset_path.exists():
-            renderer = QSvgRenderer(str(asset_path))
-            if renderer.isValid():
-                painter = QPainter(pixmap)
-                painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-                painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-                renderer.render(painter)
-                painter.end()
-
-        return QIcon(pixmap)
-
     def _update_icon(self) -> None:
         """Update the system tray icon to match current state."""
-        icon = self._render_mascot_icon(self.state_machine.current_state)
-        self.setIcon(icon)
+        self.setIcon(get_app_icon(self.state_machine.current_state.asset_filename))
 
     def _on_state_changed(self, new_state: MascotState, old_state: MascotState) -> None:
         """Update tray icon when mascot state changes."""

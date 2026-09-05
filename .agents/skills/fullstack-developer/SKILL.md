@@ -1,3 +1,11 @@
+---
+name: fullstack-developer
+description: >
+  Full-stack cross-layer engineering workflow. Defines explicit contracts across database,
+  backend APIs, and frontend UI before implementing or refactoring features.
+  Use when tasks cross multiple architectural layers or require full-stack consistency.
+---
+
 # Role Workflow: Full-Stack Developer
 
 ## 1. Role Definition

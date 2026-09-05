@@ -1,8 +1,8 @@
 """Frameless, transparent, draggable, always-on-top companion window."""
 
 from typing import Optional
-from PyQt6.QtCore import Qt, QPoint, QTimer, pyqtSignal
-from PyQt6.QtGui import QMouseEvent, QContextMenuEvent, QAction, QGuiApplication, QCursor
+from PyQt6.QtCore import Qt, QPoint, QTimer
+from PyQt6.QtGui import QMouseEvent, QContextMenuEvent, QGuiApplication, QCursor
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMenu
 
 from wiz.core.config import config
@@ -60,9 +60,6 @@ class MascotWindow(QWidget):
 
         # Connect signals
         app_signals.toggle_mascot_visibility.connect(self.toggle_visibility)
-
-    def _init_window_position() -> None:
-        pass  # Placeholder overwritten below
 
     def _init_window_position(self) -> None:
         """Place window at saved position or default to bottom-right corner."""

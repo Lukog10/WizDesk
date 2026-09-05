@@ -1,9 +1,8 @@
 """Settings and preferences dialog for WizDesk with elevated card and frameless design."""
 
-from pathlib import Path
 from typing import Optional
-from PyQt6.QtCore import Qt, QPoint, pyqtSignal, QRectF
-from PyQt6.QtGui import QFont, QColor, QCursor, QPainter, QPen, QMouseEvent
+from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtGui import QFont, QColor, QCursor, QMouseEvent
 from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -18,93 +17,20 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QFrame,
     QGraphicsDropShadowEffect,
-    QInputDialog,
     QWidget,
 )
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.storage.models import StorageRepository
-from wiz.ui.icons import get_app_icon, get_app_pixmap
+from wiz.ui.icons import get_app_icon
+from wiz.ui.popup_dialog import RoundedCheckbox
 
 FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
 FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
 
-
-class SettingsCheckbox(QWidget):
-    """Custom rounded-square checkbox widget matching WizDesk design language and supporting dark mode."""
-
-    toggled = pyqtSignal(bool)
-
-    def __init__(self, checked: bool = False, size: int = 18, parent: Optional[QWidget] = None, is_dark: bool = False):
-        super().__init__(parent)
-        self._checked = checked
-        self._size = size
-        self.is_dark = is_dark
-        self.setFixedSize(size, size)
-        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-
-    def isChecked(self) -> bool:
-        return self._checked
-
-    def setChecked(self, value: bool) -> None:
-        if self._checked != value:
-            self._checked = value
-            self.update()
-            self.toggled.emit(self._checked)
-
-    def set_dark_mode(self, is_dark: bool) -> None:
-        if self.is_dark != is_dark:
-            self.is_dark = is_dark
-            self.update()
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._checked = not self._checked
-            self.update()
-            self.toggled.emit(self._checked)
-            event.accept()
-        else:
-            super().mousePressEvent(event)
-
-    def paintEvent(self, event) -> None:
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-
-        margin = 1.5
-        s = float(self._size) - (margin * 2)
-        rect = QRectF(margin, margin, s, s)
-        radius = 4.0
-
-        if self._checked:
-            # Filled rounded square with checkmark
-            bg_color = QColor("#FAFAFA") if self.is_dark else QColor("#18181B")
-            check_color = QColor("#18181B") if self.is_dark else QColor("#FFFFFF")
-
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(bg_color)
-            painter.drawRoundedRect(rect, radius, radius)
-
-            # Draw checkmark
-            scale = self._size / 18.0
-            pen = QPen(check_color, 1.8 * scale, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-            painter.setPen(pen)
-
-            p1 = QPoint(int(margin + 4.0 * scale), int(margin + 9.0 * scale))
-            p2 = QPoint(int(margin + 7.5 * scale), int(margin + 12.5 * scale))
-            p3 = QPoint(int(margin + 13.5 * scale), int(margin + 5.5 * scale))
-            painter.drawLine(p1, p2)
-            painter.drawLine(p2, p3)
-        else:
-            # Neutral outline with background fill
-            border_color = QColor("#52525B") if self.is_dark else QColor("#D4D4D8")
-            bg_color = QColor("#27272A") if self.is_dark else QColor("#FFFFFF")
-
-            painter.setBrush(bg_color)
-            painter.setPen(QPen(border_color, 1.5))
-            painter.drawRoundedRect(rect, radius, radius)
-
-        painter.end()
+# Backwards-compatible alias for RoundedCheckbox
+SettingsCheckbox = RoundedCheckbox
 
 
 class SettingsDialog(QDialog):

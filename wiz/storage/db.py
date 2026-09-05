@@ -67,12 +67,6 @@ CREATE TABLE IF NOT EXISTS projects (
     keywords TEXT NOT NULL  -- Comma-separated match hints
 );
 
--- App configuration / key-value store
-CREATE TABLE IF NOT EXISTS config (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
-
 -- Indices for rapid daily reporting and sync queries
 CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time);
 CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at);
