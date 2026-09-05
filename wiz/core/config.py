@@ -18,12 +18,19 @@ class Config:
             self.root_dir = Path(__file__).resolve().parent.parent.parent
         self.assets_dir = self.root_dir / "assets"
         
-        # User app data directory for persistent settings & storage
+        # User app data directory for persistent settings & storage (Windows & Linux ready)
         appdata = os.environ.get("APPDATA")
         if appdata:
             self.user_data_dir = Path(appdata) / "WizDesk"
         else:
-            self.user_data_dir = Path.home() / ".wizdesk"
+            # Linux / XDG Base Directory specification compliance
+            legacy_dir = Path.home() / ".wizdesk"
+            if legacy_dir.exists():
+                self.user_data_dir = legacy_dir
+            else:
+                xdg_data = os.environ.get("XDG_DATA_HOME")
+                base_data = Path(xdg_data) if xdg_data else (Path.home() / ".local" / "share")
+                self.user_data_dir = base_data / "WizDesk"
             
         self.user_data_dir.mkdir(parents=True, exist_ok=True)
 

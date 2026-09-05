@@ -16,7 +16,6 @@ __pycache__/
 # Distribution / PyInstaller
 dist/
 build/
-*.spec
 
 # OS files
 Thumbs.db

@@ -342,12 +342,47 @@ WizDesk/
 - [x] Multi-resolution SVG favicon and application icons
 - [ ] Dedicated **Log Activity** timeline view with historical heatmaps
 - [ ] Dedicated **Project Tracking** dashboard
-- [ ] Standalone single-file Windows executable packaging (`.exe`)
+- [x] Standalone Windows executable packaging (`dist/WizDesk/WizDesk.exe`)
+- [ ] Version 2: Native Linux support (X11/Wayland desktop companion & AppImage/package)
+- [ ] Dedicated **Log Activity** timeline view with historical heatmaps
+- [ ] Dedicated **Project Tracking** dashboard
+
+---
+
+## Standalone Windows Executable (.exe)
+
+WizDesk is fully configured for legal, secure, and production-grade standalone packaging using PyInstaller.
+
+### Building the Executable
+
+1. **Activate Virtual Environment & Install Build Dependencies:**
+   ```powershell
+   .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. **Run PyInstaller Build:**
+   ```powershell
+   pyinstaller wizdesk.spec --clean --noconfirm
+   ```
+
+3. **Output:**
+   The compiled application will be located in `dist/WizDesk/`:
+   * `WizDesk.exe`: Main standalone executable (runs silently in GUI mode without a black terminal window).
+   * `assets/`: Bundled vector SVGs and multi-layer application icons.
+   * `LICENSE`: GNU GPL v3 license agreement.
+   * `THIRD_PARTY_LICENSES.md`: Complete legal attribution for all bundled open-source dependencies.
+
+### Security & Integrity Features
+* **Antivirus Heuristic Protection**: UPX compression is explicitly disabled (`upx=False`) to avoid false-positive malware flags by Windows Defender and enterprise security tools.
+* **Windows PE Version Metadata**: Embedded `VSVersionInfo` resource declaring company name, file description, version (`1.0.0.0`), and product identity.
+* **Least Privilege Execution**: Configured with UAC execution level `asInvoker` (`uac_admin=False`), never requiring administrative elevation.
+* **User Data Isolation**: User databases and settings persist in `%APPDATA%\WizDesk` on Windows (and standard XDG directories on Linux).
 
 ---
 
 ## License & Credits
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Distributed under the **GNU General Public License v3 (GPL v3)**. See [LICENSE](LICENSE) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details.
 
 Created and designed by **Gokul R** &bull; [GitHub Profile](https://github.com/Lukog10)

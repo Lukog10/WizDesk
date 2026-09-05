@@ -11,3 +11,5 @@ PyQt6_sip==13.12.0
 pytest==9.1.1
 pywin32==312
 six==1.17.0
+pillow>=12.0.0
+pyinstaller>=6.10.0
