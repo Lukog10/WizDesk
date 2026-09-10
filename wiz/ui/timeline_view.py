@@ -331,33 +331,31 @@ class TimelineView(QWidget):
         main_layout.setContentsMargins(0, 4, 0, 0)
         main_layout.setSpacing(8)
 
-        # 1. Top Metrics Strip (compact capsule, hugs content)
-        metrics_row = QHBoxLayout()
-        metrics_row.setContentsMargins(0, 0, 0, 0)
-
+        # 1. Top Metrics Strip (individual badges)
         self.metrics_bar = QFrame(self)
         self.metrics_bar.setObjectName("MetricsBar")
         metrics_layout = QHBoxLayout(self.metrics_bar)
-        metrics_layout.setContentsMargins(12, 6, 12, 6)
-        metrics_layout.setSpacing(14)
+        metrics_layout.setContentsMargins(0, 0, 0, 0)
+        metrics_layout.setSpacing(8)
 
         self.lbl_metric_time = QLabel("Tracked: 0m", self.metrics_bar)
+        self.lbl_metric_time.setObjectName("MetricBadge")
         self.lbl_metric_time.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
 
         self.lbl_metric_tasks = QLabel("Completed: 0 tasks", self.metrics_bar)
+        self.lbl_metric_tasks.setObjectName("MetricBadge")
         self.lbl_metric_tasks.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
 
         self.lbl_metric_apps = QLabel("Apps: 0", self.metrics_bar)
+        self.lbl_metric_apps.setObjectName("MetricBadge")
         self.lbl_metric_apps.setFont(QFont("Segoe UI", 9))
 
         metrics_layout.addWidget(self.lbl_metric_time)
         metrics_layout.addWidget(self.lbl_metric_tasks)
         metrics_layout.addWidget(self.lbl_metric_apps)
+        metrics_layout.addStretch(1)
 
-        metrics_row.addWidget(self.metrics_bar)
-        metrics_row.addStretch(1)
-
-        main_layout.addLayout(metrics_row)
+        main_layout.addWidget(self.metrics_bar)
 
         # 2. Filter Bar (Category Chips + Project Dropdown)
         filter_bar = QHBoxLayout()
@@ -426,11 +424,18 @@ class TimelineView(QWidget):
             self.metrics_bar.setStyleSheet(
                 """
                 QFrame#MetricsBar {
+                    background: transparent;
+                    border: none;
+                }
+                QLabel#MetricBadge {
                     background-color: #242427;
+                    color: #E4E4E7;
                     border: 1px solid #333338;
                     border-radius: 6px;
+                    padding: 4px 10px;
+                    font-size: 11px;
+                    font-weight: 500;
                 }
-                QLabel { color: #E4E4E7; }
                 """
             )
             chip_style = """
@@ -480,11 +485,18 @@ class TimelineView(QWidget):
             self.metrics_bar.setStyleSheet(
                 """
                 QFrame#MetricsBar {
-                    background-color: #FFFFFF;
-                    border: 1px solid #E2DDD2;
-                    border-radius: 6px;
+                    background: transparent;
+                    border: none;
                 }
-                QLabel { color: #222220; }
+                QLabel#MetricBadge {
+                    background-color: #FFFFFF;
+                    color: #222220;
+                    border: 1px solid #DCD6CA;
+                    border-radius: 6px;
+                    padding: 4px 10px;
+                    font-size: 11px;
+                    font-weight: 500;
+                }
                 """
             )
             chip_style = """
