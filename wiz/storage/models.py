@@ -1,7 +1,7 @@
 """Data models and repository for SQLite storage in Wiz."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import List, Optional, Dict, Any
 
 from wiz.storage.db import Database, get_db
@@ -139,9 +139,14 @@ class StorageRepository:
 
     # --- Note Operations ---
 
-    def create_note(self, content: str, project_tag: Optional[str] = None) -> int:
+    def create_note(
+        self,
+        content: str,
+        project_tag: Optional[str] = None,
+        created_at: Optional[datetime] = None,
+    ) -> int:
         """Create a manual quick note."""
-        now = datetime.now()
+        now = created_at or datetime.now()
         with self.db.cursor() as cur:
             cur.execute(
                 """
@@ -239,9 +244,12 @@ class StorageRepository:
             )
             return cur.lastrowid or 0
 
-    def update_task_status(self, task_id: int, status: str) -> bool:
+    def update_task_status(self, task_id: int, status: str, completed_at: Optional[datetime] = None) -> bool:
         """Update status of a task ('not_started', 'in_progress', 'done', 'cancelled')."""
-        completed_at = datetime.now().isoformat() if status in ("done", "completed", "cancelled", "canceled") else None
+        if completed_at is not None:
+            comp_str = completed_at.isoformat()
+        else:
+            comp_str = datetime.now().isoformat() if status in ("done", "completed", "cancelled", "canceled") else None
         with self.db.cursor() as cur:
             cur.execute(
                 """
@@ -249,7 +257,7 @@ class StorageRepository:
                 SET status = ?, completed_at = ?
                 WHERE id = ?
                 """,
-                (status, completed_at, task_id),
+                (status, comp_str, task_id),
             )
             return cur.rowcount > 0
 
@@ -310,13 +318,16 @@ class StorageRepository:
                 (task_id, title.strip(), now.isoformat()),
             )
             subtask_id = cur.lastrowid or 0
-
-            # If task was not_started, optionally set to in_progress or leave as is
             return subtask_id
 
-    def update_subtask_status(self, subtask_id: int, status: str) -> bool:
+    add_subtask = create_subtask
+
+    def update_subtask_status(self, subtask_id: int, status: str, completed_at: Optional[datetime] = None) -> bool:
         """Update status of a subtask without modifying parent task status."""
-        completed_at = datetime.now().isoformat() if status in ("done", "completed", "cancelled", "canceled") else None
+        if completed_at is not None:
+            comp_str = completed_at.isoformat()
+        else:
+            comp_str = datetime.now().isoformat() if status in ("done", "completed", "cancelled", "canceled") else None
         with self.db.cursor() as cur:
             cur.execute(
                 """
@@ -324,7 +335,7 @@ class StorageRepository:
                 SET status = ?, completed_at = ?
                 WHERE id = ?
                 """,
-                (status, completed_at, subtask_id),
+                (status, comp_str, subtask_id),
             )
             return True
 
@@ -506,3 +517,211 @@ class StorageRepository:
                 if kw in text_lower:
                     return proj.name
         return None
+
+    # --- Timeline & Day Activity Operations ---
+
+    def get_day_sessions(self, date_str: str) -> List[SessionRecord]:
+        """Retrieve all tracked sessions starting on a given date (YYYY-MM-DD)."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, app_name, window_title, project_tag, start_time, end_time
+                FROM sessions
+                WHERE start_time LIKE ?
+                ORDER BY start_time ASC
+                """,
+                (f"{date_str}%",),
+            )
+            rows = cur.fetchall()
+            return [
+                SessionRecord(
+                    id=r["id"],
+                    app_name=r["app_name"],
+                    window_title=r["window_title"] or "",
+                    project_tag=r["project_tag"],
+                    start_time=datetime.fromisoformat(r["start_time"]),
+                    end_time=datetime.fromisoformat(r["end_time"]),
+                )
+                for r in rows
+            ]
+
+    def get_day_completed_tasks(self, date_str: str) -> List[Dict[str, Any]]:
+        """Retrieve all tasks and subtasks marked complete on a given date."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, title, project_tag, 'task' as item_type, NULL as parent_title, completed_at
+                FROM tasks
+                WHERE completed_at LIKE ?
+                UNION ALL
+                SELECT s.id, s.title, t.project_tag, 'subtask' as item_type, t.title as parent_title, s.completed_at
+                FROM subtasks s
+                JOIN tasks t ON s.task_id = t.id
+                WHERE s.completed_at LIKE ?
+                ORDER BY completed_at ASC
+                """,
+                (f"{date_str}%", f"{date_str}%"),
+            )
+            rows = cur.fetchall()
+            return [
+                {
+                    "id": r["id"],
+                    "title": r["title"],
+                    "project_tag": r["project_tag"],
+                    "item_type": r["item_type"],
+                    "parent_title": r["parent_title"],
+                    "completed_at": datetime.fromisoformat(r["completed_at"]),
+                }
+                for r in rows
+            ]
+
+    def get_day_notes(self, date_str: str) -> List[NoteRecord]:
+        """Retrieve all notes recorded on a given date."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, content, project_tag, created_at, is_completed
+                FROM notes
+                WHERE created_at LIKE ?
+                ORDER BY created_at ASC
+                """,
+                (f"{date_str}%",),
+            )
+            rows = cur.fetchall()
+            return [
+                NoteRecord(
+                    id=r["id"],
+                    content=r["content"],
+                    project_tag=r["project_tag"],
+                    created_at=datetime.fromisoformat(r["created_at"]),
+                    is_completed=bool(r["is_completed"]),
+                )
+                for r in rows
+            ]
+
+    def get_aggregated_day_sessions(self, date_str: str, max_gap_minutes: int = 5) -> List[Dict[str, Any]]:
+        """Fetch and aggregate day sessions into contiguous blocks."""
+        sessions = self.get_day_sessions(date_str)
+        return aggregate_sessions(sessions, max_gap_minutes=max_gap_minutes)
+
+    def get_day_timeline_events(self, date_str: str) -> List[Dict[str, Any]]:
+        """
+        Produce a unified chronological list of activity events for a date.
+        Combines aggregated app sessions, completed tasks, and notes.
+        """
+        raw_sessions = self.get_day_sessions(date_str)
+        aggregated = aggregate_sessions(raw_sessions)
+        completed_tasks = self.get_day_completed_tasks(date_str)
+        day_notes = self.get_day_notes(date_str)
+
+        events: List[Dict[str, Any]] = []
+
+        for sess in aggregated:
+            events.append({
+                "event_type": "session",
+                "timestamp": sess["start_time"],
+                "end_timestamp": sess["end_time"],
+                "duration_minutes": sess["duration_minutes"],
+                "title": sess["app_name"],
+                "subtitle": sess.get("window_title") or "",
+                "project_tag": sess.get("project_tag"),
+                "raw": sess,
+            })
+
+        for task in completed_tasks:
+            parent_info = f"Parent: {task['parent_title']}" if task["parent_title"] else ""
+            events.append({
+                "event_type": "task",
+                "timestamp": task["completed_at"],
+                "end_timestamp": None,
+                "duration_minutes": 0.0,
+                "title": task["title"],
+                "subtitle": parent_info,
+                "project_tag": task["project_tag"],
+                "item_type": task["item_type"],
+                "raw": task,
+            })
+
+        for note in day_notes:
+            events.append({
+                "event_type": "note",
+                "timestamp": note.created_at,
+                "end_timestamp": None,
+                "duration_minutes": 0.0,
+                "title": note.content,
+                "subtitle": "Quick Note",
+                "project_tag": note.project_tag,
+                "raw": note,
+            })
+
+        events.sort(key=lambda x: x["timestamp"])
+        return events
+
+    def get_day_metrics(self, date_str: str) -> Dict[str, Any]:
+        """Calculate total tracked time and counts for the day."""
+        raw_sessions = self.get_day_sessions(date_str)
+        total_minutes = sum(s.duration_minutes for s in raw_sessions)
+        completed_tasks = self.get_day_completed_tasks(date_str)
+        day_notes = self.get_day_notes(date_str)
+        unique_apps = len(set(s.app_name for s in raw_sessions))
+
+        return {
+            "total_tracked_minutes": round(total_minutes, 1),
+            "completed_tasks_count": len(completed_tasks),
+            "notes_count": len(day_notes),
+            "unique_apps_count": unique_apps,
+        }
+
+
+def aggregate_sessions(sessions: List[SessionRecord], max_gap_minutes: int = 5) -> List[Dict[str, Any]]:
+    """
+    Merge adjacent sessions sharing the same app_name and project_tag in linear O(N) time.
+    Sessions must be sorted by start_time.
+    """
+    if not sessions:
+        return []
+
+    merged: List[Dict[str, Any]] = []
+    current_block: Optional[Dict[str, Any]] = None
+
+    for session in sessions:
+        if current_block is None:
+            current_block = {
+                "app_name": session.app_name,
+                "project_tag": session.project_tag,
+                "start_time": session.start_time,
+                "end_time": session.end_time,
+                "window_title": session.window_title,
+                "session_count": 1,
+            }
+            continue
+
+        same_app = (session.app_name.lower() == current_block["app_name"].lower())
+        same_proj = (session.project_tag == current_block["project_tag"])
+        gap_minutes = (session.start_time - current_block["end_time"]).total_seconds() / 60.0
+
+        if same_app and same_proj and gap_minutes <= max_gap_minutes:
+            current_block["end_time"] = max(current_block["end_time"], session.end_time)
+            current_block["session_count"] += 1
+            if session.window_title and session.window_title != current_block["window_title"]:
+                current_block["window_title"] = session.window_title
+        else:
+            diff_secs = (current_block["end_time"] - current_block["start_time"]).total_seconds()
+            current_block["duration_minutes"] = max(1.0, round(diff_secs / 60.0, 1))
+            merged.append(current_block)
+            current_block = {
+                "app_name": session.app_name,
+                "project_tag": session.project_tag,
+                "start_time": session.start_time,
+                "end_time": session.end_time,
+                "window_title": session.window_title,
+                "session_count": 1,
+            }
+
+    if current_block is not None:
+        diff_secs = (current_block["end_time"] - current_block["start_time"]).total_seconds()
+        current_block["duration_minutes"] = max(1.0, round(diff_secs / 60.0, 1))
+        merged.append(current_block)
+
+    return merged
+

@@ -340,12 +340,10 @@ WizDesk/
 - [x] Quick progress notes with interactive section changing
 - [x] Custom frameless section modal dialog
 - [x] Multi-resolution SVG favicon and application icons
-- [ ] Dedicated **Log Activity** timeline view with historical heatmaps
+- [x] Dedicated **Log Activity** timeline view with daily metrics, category filters, and session aggregation
 - [ ] Dedicated **Project Tracking** dashboard
 - [x] Standalone Windows executable packaging (`dist/WizDesk/WizDesk.exe`)
 - [ ] Version 2: Native Linux support (X11/Wayland desktop companion & AppImage/package)
-- [ ] Dedicated **Log Activity** timeline view with historical heatmaps
-- [ ] Dedicated **Project Tracking** dashboard
 
 ---
 
