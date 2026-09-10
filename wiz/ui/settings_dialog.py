@@ -85,7 +85,7 @@ class SettingsDialog(QDialog):
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(6)
 
-        self.min_btn = QPushButton("—")
+        self.min_btn = QPushButton("-")
         self.min_btn.setFixedSize(22, 22)
         self.min_btn.setToolTip("Minimize")
         self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))

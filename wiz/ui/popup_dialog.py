@@ -23,6 +23,7 @@ from PyQt6.QtGui import (
     QKeyEvent,
     QCursor,
     QTextCharFormat,
+    QGuiApplication,
 )
 from PyQt6.QtWidgets import (
     QDialog,
@@ -1803,8 +1804,14 @@ class QuickEntryDialog(QDialog):
         # Window settings
         self.setWindowTitle("WizDesk - Workspace")
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
-        self.setMinimumSize(480, 600)
-        self.resize(520, 680)
+        screen = QGuiApplication.primaryScreen()
+        avail_geo = screen.availableGeometry() if screen else None
+        target_w = 640
+        target_h = 800
+        if avail_geo and avail_geo.height() < 860:
+            target_h = min(800, max(600, avail_geo.height() - 60))
+        self.setMinimumSize(500, min(640, target_h))
+        self.resize(target_w, target_h)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
 
@@ -1841,7 +1848,7 @@ class QuickEntryDialog(QDialog):
         top_bar.addWidget(self.brand_lbl)
         top_bar.addStretch()
 
-        # Window control buttons (Theme, —, □, x)
+        # Window control buttons (Theme, -, □, x)
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(6)
 
@@ -1852,7 +1859,7 @@ class QuickEntryDialog(QDialog):
         self.theme_btn.clicked.connect(self.toggle_theme)
         controls_layout.addWidget(self.theme_btn)
 
-        self.min_btn = QPushButton("—")
+        self.min_btn = QPushButton("-")
         self.min_btn.setFixedSize(22, 22)
         self.min_btn.setToolTip("Minimize")
         self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -2024,10 +2031,6 @@ class QuickEntryDialog(QDialog):
         notes_page_layout.setContentsMargins(0, 0, 0, 0)
         notes_page_layout.setSpacing(12)
 
-        # Notes subtitle / hint
-        self.notes_hdr = QLabel("Track work progress notes, thoughts, or blockers for today:")
-        notes_page_layout.addWidget(self.notes_hdr)
-
         # Scrollable Notes Area (Without visible scrollbar)
         self.notes_scroll = QScrollArea()
         self.notes_scroll.setWidgetResizable(True)
@@ -2137,7 +2140,6 @@ class QuickEntryDialog(QDialog):
         btn_action_bg = "#FAFAFA" if self.is_dark else "#18181B"
         btn_action_color = "#18181B" if self.is_dark else "#FFFFFF"
         btn_action_hover = "#E4E4E7" if self.is_dark else "#3F3F46"
-        notes_hdr_color = "#A1A1AA" if self.is_dark else "#71717A"
 
         # 1. Outer Frame & Inner Card
         self.outer_frame.setStyleSheet(f"""
@@ -2311,21 +2313,11 @@ class QuickEntryDialog(QDialog):
         self.add_task_btn.setStyleSheet(btn_action_qss)
         self.add_note_btn.setStyleSheet(btn_action_qss)
 
-        # 7. Notes Header
-        self.notes_hdr.setStyleSheet(f"""
-            QLabel {{
-                color: {notes_hdr_color};
-                font-family: {FONT_SANS};
-                font-size: 12.5px;
-                font-weight: 500;
-            }}
-        """)
-
-        # 8. Update timeline view theme
+        # 7. Update timeline view theme
         if hasattr(self, "timeline_view"):
             self.timeline_view.set_theme(self.is_dark)
 
-        # 9. Re-apply mode buttons
+        # 8. Re-apply mode buttons
         self._set_view_mode(self.current_view_mode)
 
     def _set_view_mode(self, mode: str) -> None:
