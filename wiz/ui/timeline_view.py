@@ -2,8 +2,8 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QSize, QPointF
+from PyQt6.QtGui import QFont, QPainter, QPolygonF, QColor, QBrush
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -35,23 +35,52 @@ def format_duration(minutes: float) -> str:
 
 
 class ResponsiveProjectCombo(QComboBox):
-    """Compact combobox badge that dynamically hugs its current text without unwanted empty space."""
+    """Compact combobox badge that dynamically hugs its current text with a crisp down arrow."""
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
+        self._is_dark: bool = True
         self.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
-        self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.currentIndexChanged.connect(lambda: self.updateGeometry())
+
+    def set_theme(self, is_dark: bool) -> None:
+        self._is_dark = is_dark
+        self.update()
 
     def sizeHint(self) -> QSize:
         base_hint = super().sizeHint()
         text_w = self.fontMetrics().horizontalAdvance(self.currentText())
-        # Snug content width: text width + 8px left pad + 18px right pad + 20px arrow space
-        w = max(90, text_w + 46)
+        # Snug content width: 10px left pad + text + 8px gap + 7px arrow + 10px right pad
+        w = max(76, text_w + 35)
         return QSize(w, base_hint.height())
 
     def minimumSizeHint(self) -> QSize:
         return self.sizeHint()
+
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        arrow_color = QColor("#A1A1AA") if self._is_dark else QColor("#71717A")
+
+        w = self.width()
+        h = self.height()
+        arrow_w = 7.0
+        arrow_h = 4.5
+        center_x = w - 11.0
+        center_y = h / 2.0
+
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(arrow_color))
+        poly = QPolygonF([
+            QPointF(center_x - arrow_w / 2.0, center_y - arrow_h / 2.0),
+            QPointF(center_x + arrow_w / 2.0, center_y - arrow_h / 2.0),
+            QPointF(center_x, center_y + arrow_h / 2.0),
+        ])
+        painter.drawPolygon(poly)
+        painter.end()
 
 
 class AppSessionCard(QFrame):
@@ -485,23 +514,13 @@ class TimelineView(QWidget):
                     color: #F4F4F6;
                     border: 1px solid #3F3F46;
                     border-radius: 6px;
-                    padding: 4px 18px 4px 8px;
+                    padding: 4px 20px 4px 10px;
                     font-size: 11px;
                     font-weight: 500;
                 }
                 QComboBox::drop-down {
-                    subcontrol-origin: padding;
-                    subcontrol-position: top right;
-                    width: 14px;
                     border: none;
-                }
-                QComboBox::down-arrow {
-                    width: 0;
-                    height: 0;
-                    border-left: 3px solid transparent;
-                    border-right: 3px solid transparent;
-                    border-top: 4px solid #A1A1AA;
-                    margin-right: 4px;
+                    width: 0px;
                 }
                 QComboBox QAbstractItemView {
                     background-color: #242427;
@@ -560,23 +579,13 @@ class TimelineView(QWidget):
                     color: #111111;
                     border: 1px solid #DCD6CA;
                     border-radius: 6px;
-                    padding: 4px 18px 4px 8px;
+                    padding: 4px 20px 4px 10px;
                     font-size: 11px;
                     font-weight: 500;
                 }
                 QComboBox::drop-down {
-                    subcontrol-origin: padding;
-                    subcontrol-position: top right;
-                    width: 14px;
                     border: none;
-                }
-                QComboBox::down-arrow {
-                    width: 0;
-                    height: 0;
-                    border-left: 3px solid transparent;
-                    border-right: 3px solid transparent;
-                    border-top: 4px solid #71717A;
-                    margin-right: 4px;
+                    width: 0px;
                 }
                 QComboBox QAbstractItemView {
                     background-color: #FFFFFF;
@@ -595,6 +604,7 @@ class TimelineView(QWidget):
         self.btn_apps.setStyleSheet(chip_style)
         self.btn_tasks.setStyleSheet(chip_style)
         self.btn_notes.setStyleSheet(chip_style)
+        self.project_combo.set_theme(self.is_dark)
         self.project_combo.setStyleSheet(combo_style)
         self.scroll_area.setStyleSheet(scroll_style)
 

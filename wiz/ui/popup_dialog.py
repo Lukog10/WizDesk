@@ -1814,7 +1814,7 @@ class QuickEntryDialog(QDialog):
         self.resize(target_w, target_h)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
-        self.setMouseTracking(True)
+        self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
 
         # Main Outer Container Layout
         self.outer_layout = QVBoxLayout(self)
@@ -2764,35 +2764,10 @@ class QuickEntryDialog(QDialog):
         painter.end()
         super().paintEvent(event)
 
-    # --- Mouse drag, resize & double click for frameless window ---
-
-    def _get_resize_edge(self, pos: QPoint) -> Optional[Qt.Edge]:
-        """Detect if cursor is near window edge/corner for native resizing."""
-        if self.isMaximized():
-            return None
-        margin = 14
-        rect = self.rect()
-        edge_val = 0
-
-        if pos.x() <= margin:
-            edge_val |= Qt.Edge.LeftEdge.value
-        elif pos.x() >= rect.width() - margin:
-            edge_val |= Qt.Edge.RightEdge.value
-
-        if pos.y() <= margin:
-            edge_val |= Qt.Edge.TopEdge.value
-        elif pos.y() >= rect.height() - margin:
-            edge_val |= Qt.Edge.BottomEdge.value
-
-        return Qt.Edge(edge_val) if edge_val != 0 else None
+    # --- Mouse drag & double click for frameless window movement & maximize ---
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            edge = self._get_resize_edge(event.pos())
-            if edge and self.windowHandle():
-                self.windowHandle().startSystemResize(edge)
-                event.accept()
-                return
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
         else:
@@ -2806,27 +2781,6 @@ class QuickEntryDialog(QDialog):
             super().mouseDoubleClickEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if not (event.buttons() & Qt.MouseButton.LeftButton):
-            edge = self._get_resize_edge(event.pos())
-            if edge:
-                val = edge.value
-                is_left = bool(val & Qt.Edge.LeftEdge.value)
-                is_right = bool(val & Qt.Edge.RightEdge.value)
-                is_top = bool(val & Qt.Edge.TopEdge.value)
-                is_bottom = bool(val & Qt.Edge.BottomEdge.value)
-
-                if (is_top and is_left) or (is_bottom and is_right):
-                    self.setCursor(QCursor(Qt.CursorShape.SizeFDiagCursor))
-                elif (is_top and is_right) or (is_bottom and is_left):
-                    self.setCursor(QCursor(Qt.CursorShape.SizeBDiagCursor))
-                elif is_left or is_right:
-                    self.setCursor(QCursor(Qt.CursorShape.SizeHorCursor))
-                elif is_top or is_bottom:
-                    self.setCursor(QCursor(Qt.CursorShape.SizeVerCursor))
-            else:
-                self.unsetCursor()
-            return
-
         if event.buttons() & Qt.MouseButton.LeftButton and not self._drag_pos.isNull() and not self.isMaximized():
             self.move(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
