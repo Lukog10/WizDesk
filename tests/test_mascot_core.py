@@ -3,11 +3,9 @@
 import sys
 import pytest
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QTimer
 
 from wiz.core.config import Config
 from wiz.core.state_machine import StateMachine, MascotState
-from wiz.ui.mascot_widget import MascotWidget
 from wiz.ui.mascot_window import MascotWindow
 from wiz.ui.tray_icon import TrayIcon
 

@@ -1,7 +1,6 @@
 """System Tray Icon and tray menu management for WizDesk."""
 
 from typing import Optional
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QWidget
 
 from wiz.core.state_machine import MascotState, StateMachine

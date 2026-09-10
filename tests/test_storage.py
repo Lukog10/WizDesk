@@ -4,7 +4,7 @@ from datetime import datetime, date, timedelta
 import pytest
 
 from wiz.storage.db import Database
-from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord
+from wiz.storage.models import StorageRepository
 
 
 @pytest.fixture

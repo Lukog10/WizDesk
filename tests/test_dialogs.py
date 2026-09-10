@@ -10,7 +10,7 @@ from wiz.core.config import config
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
-from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar, RoundedCheckbox, CreateSectionDialog, TaskRowWidget, CalendarPopupDialog
+from wiz.ui.popup_dialog import QuickEntryDialog, RoundedCheckbox, CreateSectionDialog, TaskRowWidget, CalendarPopupDialog
 from wiz.ui.quick_bar_dialog import QuickBarPopup
 from wiz.ui.settings_dialog import SettingsDialog
 from wiz.ui.mascot_window import MascotWindow

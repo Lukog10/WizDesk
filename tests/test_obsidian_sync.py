@@ -1,7 +1,6 @@
 """Unit tests for WizDesk Obsidian Sync Engine and Markdown formatting."""
 
-from datetime import datetime, date, timedelta
-from pathlib import Path
+from datetime import datetime, date
 import pytest
 
 from wiz.core.config import Config

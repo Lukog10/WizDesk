@@ -40,14 +40,13 @@ from PyQt6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QStackedWidget,
     QCalendarWidget,
-    QToolButton,
 )
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
-from wiz.ui.icons import get_app_icon, get_app_pixmap
+from wiz.ui.icons import get_app_icon
 from wiz.sync.obsidian import sync_today_logs
 from wiz.ui.timeline_view import TimelineView
 

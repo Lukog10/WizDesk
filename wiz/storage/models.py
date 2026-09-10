@@ -1,7 +1,7 @@
 """Data models and repository for SQLite storage in Wiz."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from typing import List, Optional, Dict, Any
 
 from wiz.storage.db import Database, get_db

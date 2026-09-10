@@ -1,12 +1,11 @@
 """Obsidian vault synchronization and structured Markdown daily log generation."""
 
-from datetime import date, datetime
-from pathlib import Path
+from datetime import date
 from typing import Optional, Tuple
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
-from wiz.storage.models import StorageRepository, TaskRecord, NoteRecord, SessionRecord
+from wiz.storage.models import StorageRepository
 
 
 class ObsidianSync:

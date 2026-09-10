@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from wiz.core.config import config
 
 

@@ -2,7 +2,7 @@
 
 from typing import Optional
 from PyQt6.QtCore import Qt, QPoint
-from PyQt6.QtGui import QFont, QColor, QCursor, QMouseEvent
+from PyQt6.QtGui import QFont, QColor, QCursor
 from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -17,7 +17,6 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QFrame,
     QGraphicsDropShadowEffect,
-    QWidget,
 )
 
 from wiz.core.config import config

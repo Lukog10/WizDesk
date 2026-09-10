@@ -3,8 +3,8 @@ Compact, floating quick-bar popups for rapid task and note entry.
 Triggered via Left Double-Click (Quick Task Bar) and Left Triple-Click (Quick Note Bar) on the Wiz Mascot.
 """
 
-from typing import Optional, List
-from PyQt6.QtCore import Qt, QRect, QPoint, pyqtSignal
+from typing import Optional
+from PyQt6.QtCore import Qt, QRect
 from PyQt6.QtGui import QFont, QColor, QCursor, QGuiApplication, QKeyEvent
 from PyQt6.QtWidgets import (
     QDialog,
