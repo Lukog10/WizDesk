@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget,
@@ -32,6 +32,26 @@ def format_duration(minutes: float) -> str:
     if hours > 0:
         return f"{hours}h"
     return f"{mins}m"
+
+
+class ResponsiveProjectCombo(QComboBox):
+    """Compact combobox badge that dynamically hugs its current text without unwanted empty space."""
+
+    def __init__(self, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.currentIndexChanged.connect(lambda: self.updateGeometry())
+
+    def sizeHint(self) -> QSize:
+        base_hint = super().sizeHint()
+        text_w = self.fontMetrics().horizontalAdvance(self.currentText())
+        # Snug content width: text width + 8px left pad + 18px right pad + 20px arrow space
+        w = max(90, text_w + 46)
+        return QSize(w, base_hint.height())
+
+    def minimumSizeHint(self) -> QSize:
+        return self.sizeHint()
 
 
 class AppSessionCard(QFrame):
@@ -385,7 +405,7 @@ class TimelineView(QWidget):
         filter_bar.addWidget(self.btn_notes)
         filter_bar.addStretch(1)
 
-        self.project_combo = QComboBox(self)
+        self.project_combo = ResponsiveProjectCombo(self)
         self.project_combo.addItem("All Projects")
         self.project_combo.currentIndexChanged.connect(self._on_project_filter_changed)
         filter_bar.addWidget(self.project_combo)
@@ -465,16 +485,30 @@ class TimelineView(QWidget):
                     color: #F4F4F6;
                     border: 1px solid #3F3F46;
                     border-radius: 6px;
-                    padding: 4px 10px;
+                    padding: 4px 18px 4px 8px;
                     font-size: 11px;
-                    min-width: 110px;
+                    font-weight: 500;
                 }
-                QComboBox::drop-down { border: none; }
+                QComboBox::drop-down {
+                    subcontrol-origin: padding;
+                    subcontrol-position: top right;
+                    width: 14px;
+                    border: none;
+                }
+                QComboBox::down-arrow {
+                    width: 0;
+                    height: 0;
+                    border-left: 3px solid transparent;
+                    border-right: 3px solid transparent;
+                    border-top: 4px solid #A1A1AA;
+                    margin-right: 4px;
+                }
                 QComboBox QAbstractItemView {
                     background-color: #242427;
                     color: #F4F4F6;
                     selection-background-color: #3F3F46;
                     border: 1px solid #3F3F46;
+                    min-width: 130px;
                 }
             """
             scroll_style = """
@@ -526,16 +560,30 @@ class TimelineView(QWidget):
                     color: #111111;
                     border: 1px solid #DCD6CA;
                     border-radius: 6px;
-                    padding: 4px 10px;
+                    padding: 4px 18px 4px 8px;
                     font-size: 11px;
-                    min-width: 110px;
+                    font-weight: 500;
                 }
-                QComboBox::drop-down { border: none; }
+                QComboBox::drop-down {
+                    subcontrol-origin: padding;
+                    subcontrol-position: top right;
+                    width: 14px;
+                    border: none;
+                }
+                QComboBox::down-arrow {
+                    width: 0;
+                    height: 0;
+                    border-left: 3px solid transparent;
+                    border-right: 3px solid transparent;
+                    border-top: 4px solid #71717A;
+                    margin-right: 4px;
+                }
                 QComboBox QAbstractItemView {
                     background-color: #FFFFFF;
                     color: #111111;
                     selection-background-color: #EBE6DC;
                     border: 1px solid #DCD6CA;
+                    min-width: 130px;
                 }
             """
             scroll_style = """
