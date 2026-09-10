@@ -173,11 +173,15 @@ def test_timeline_view_ui_filtering_and_theming(qapp, repo: StorageRepository):
     card = view.events_layout.itemAt(0).widget()
     assert isinstance(card, AppSessionCard)
 
-    # Filter to Tasks & Notes only
+    # Filter to Tasks only
     view.btn_tasks.click()
-    assert view.events_layout.count() == 2
-    for i in range(view.events_layout.count()):
-        assert isinstance(view.events_layout.itemAt(i).widget(), MilestoneCard)
+    assert view.events_layout.count() == 1
+    assert isinstance(view.events_layout.itemAt(0).widget(), MilestoneCard)
+
+    # Filter to Quick Notes only
+    view.btn_notes.click()
+    assert view.events_layout.count() == 1
+    assert isinstance(view.events_layout.itemAt(0).widget(), MilestoneCard)
 
     # Reset to All
     view.btn_all.click()

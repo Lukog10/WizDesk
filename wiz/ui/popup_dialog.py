@@ -1957,6 +1957,7 @@ class QuickEntryDialog(QDialog):
         date_header_layout.addWidget(self.today_pill_btn)
 
         date_header_layout.addStretch()
+        date_header_layout.setContentsMargins(0, 0, 0, 14)
         self.inner_layout.addLayout(date_header_layout)
 
         # Initialize date display
@@ -2028,7 +2029,7 @@ class QuickEntryDialog(QDialog):
         # ==========================================
         self.notes_page = QWidget()
         notes_page_layout = QVBoxLayout(self.notes_page)
-        notes_page_layout.setContentsMargins(0, 0, 0, 0)
+        notes_page_layout.setContentsMargins(0, 6, 0, 0)
         notes_page_layout.setSpacing(12)
 
         # Scrollable Notes Area (Without visible scrollbar)

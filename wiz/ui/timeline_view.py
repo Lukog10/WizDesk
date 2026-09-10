@@ -321,7 +321,7 @@ class TimelineView(QWidget):
         self.is_dark = is_dark
         self.current_date_str: str = datetime.now().strftime("%Y-%m-%d")
 
-        self._category_filter: str = "all"  # 'all' | 'apps' | 'tasks'
+        self._category_filter: str = "all"  # 'all' | 'apps' | 'tasks' | 'notes'
         self._project_filter: str = "all"   # 'all' | specific project tag | 'untagged'
 
         self._init_ui()
@@ -331,12 +331,15 @@ class TimelineView(QWidget):
         main_layout.setContentsMargins(0, 4, 0, 0)
         main_layout.setSpacing(8)
 
-        # 1. Top Metrics Strip
+        # 1. Top Metrics Strip (compact capsule, hugs content)
+        metrics_row = QHBoxLayout()
+        metrics_row.setContentsMargins(0, 0, 0, 0)
+
         self.metrics_bar = QFrame(self)
         self.metrics_bar.setObjectName("MetricsBar")
         metrics_layout = QHBoxLayout(self.metrics_bar)
-        metrics_layout.setContentsMargins(12, 8, 12, 8)
-        metrics_layout.setSpacing(16)
+        metrics_layout.setContentsMargins(12, 6, 12, 6)
+        metrics_layout.setSpacing(14)
 
         self.lbl_metric_time = QLabel("Tracked: 0m", self.metrics_bar)
         self.lbl_metric_time.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
@@ -350,9 +353,11 @@ class TimelineView(QWidget):
         metrics_layout.addWidget(self.lbl_metric_time)
         metrics_layout.addWidget(self.lbl_metric_tasks)
         metrics_layout.addWidget(self.lbl_metric_apps)
-        metrics_layout.addStretch(1)
 
-        main_layout.addWidget(self.metrics_bar)
+        metrics_row.addWidget(self.metrics_bar)
+        metrics_row.addStretch(1)
+
+        main_layout.addLayout(metrics_row)
 
         # 2. Filter Bar (Category Chips + Project Dropdown)
         filter_bar = QHBoxLayout()
@@ -368,13 +373,18 @@ class TimelineView(QWidget):
         self.btn_apps.setCheckable(True)
         self.btn_apps.clicked.connect(lambda: self._set_category_filter("apps"))
 
-        self.btn_tasks = QPushButton("Tasks & Notes", self)
+        self.btn_tasks = QPushButton("Tasks", self)
         self.btn_tasks.setCheckable(True)
         self.btn_tasks.clicked.connect(lambda: self._set_category_filter("tasks"))
+
+        self.btn_notes = QPushButton("Quick Notes", self)
+        self.btn_notes.setCheckable(True)
+        self.btn_notes.clicked.connect(lambda: self._set_category_filter("notes"))
 
         filter_bar.addWidget(self.btn_all)
         filter_bar.addWidget(self.btn_apps)
         filter_bar.addWidget(self.btn_tasks)
+        filter_bar.addWidget(self.btn_notes)
         filter_bar.addStretch(1)
 
         self.project_combo = QComboBox(self)
@@ -524,6 +534,7 @@ class TimelineView(QWidget):
         self.btn_all.setStyleSheet(chip_style)
         self.btn_apps.setStyleSheet(chip_style)
         self.btn_tasks.setStyleSheet(chip_style)
+        self.btn_notes.setStyleSheet(chip_style)
         self.project_combo.setStyleSheet(combo_style)
         self.scroll_area.setStyleSheet(scroll_style)
 
@@ -533,6 +544,7 @@ class TimelineView(QWidget):
         self.btn_all.setChecked(category == "all")
         self.btn_apps.setChecked(category == "apps")
         self.btn_tasks.setChecked(category == "tasks")
+        self.btn_notes.setChecked(category == "notes")
         self._render_timeline()
 
     def _on_project_filter_changed(self) -> None:
@@ -608,7 +620,9 @@ class TimelineView(QWidget):
             # Category filter
             if self._category_filter == "apps" and ev["event_type"] != "session":
                 continue
-            if self._category_filter == "tasks" and ev["event_type"] not in ("task", "note"):
+            if self._category_filter == "tasks" and ev["event_type"] != "task":
+                continue
+            if self._category_filter == "notes" and ev["event_type"] != "note":
                 continue
 
             # Project filter
