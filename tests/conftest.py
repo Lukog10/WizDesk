@@ -1,5 +1,16 @@
+import sys
 import pytest
+from PyQt6.QtWidgets import QApplication
 from wiz.core.config import config
+
+
+@pytest.fixture(scope="session")
+def qapp():
+    """Ensure QApplication instance is initialized for Qt tests."""
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    yield app
 
 
 @pytest.fixture(autouse=True)
@@ -16,3 +27,4 @@ def isolate_config(tmp_path, monkeypatch):
 
     config.config_file = orig_file
     config._data = orig_data
+

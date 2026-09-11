@@ -1,7 +1,7 @@
 """Data models and repository for SQLite storage in Wiz."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import List, Optional, Dict, Any
 
 from wiz.storage.db import Database, get_db
@@ -58,7 +58,7 @@ class SubtaskRecord:
 
 @dataclass
 class TaskRecord:
-    """Represents a parent task with subtasks and log trails."""
+    """Represents a parent task with nested subtasks."""
     id: Optional[int]
     title: str
     project_tag: Optional[str]
@@ -75,6 +75,8 @@ class ProjectRecord:
     id: Optional[int]
     name: str
     keywords: List[str]  # e.g. ["turfline", "booking"]
+    color: str = "#6366F1"
+    description: str = ""
 
 
 class StorageRepository:
@@ -357,11 +359,16 @@ class StorageRepository:
         target_date: Optional[date] = None,
         status_filter: Optional[str] = None,
         include_completed: bool = True,
+        project_tag: Optional[str] = None,
     ) -> List[TaskRecord]:
-        """Fetch all tasks with their nested subtasks and log entries, with optional status filtering."""
+        """Fetch all tasks with their nested subtasks and log entries, with optional status and project filtering."""
         with self.db.cursor() as cur:
             query = "SELECT * FROM tasks WHERE 1=1 "
             params: list = []
+
+            if project_tag is not None:
+                query += "AND project_tag = ? "
+                params.append(project_tag)
 
             if target_date is not None:
                 day_str = target_date.strftime("%Y-%m-%d")
@@ -473,20 +480,43 @@ class StorageRepository:
 
     # --- Project Keyword Mapping Operations ---
 
-    def create_or_update_project(self, name: str, keywords: List[str]) -> int:
-        """Create or update a project and its comma-separated keywords."""
+    def create_or_update_project(
+        self,
+        name: str,
+        keywords: List[str],
+        color: str = "#6366F1",
+        description: str = "",
+    ) -> int:
+        """Create or update a project and its comma-separated keywords, color, and description."""
         self._projects_cache = None  # Invalidate in-memory cache
         kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()])
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO projects (name, keywords)
-                VALUES (?, ?)
-                ON CONFLICT(name) DO UPDATE SET keywords = excluded.keywords
+                INSERT INTO projects (name, keywords, color, description)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(name) DO UPDATE SET
+                    keywords = excluded.keywords,
+                    color = excluded.color,
+                    description = excluded.description
                 """,
-                (name.strip(), kw_str),
+                (name.strip(), kw_str, color.strip(), description.strip()),
             )
             return cur.lastrowid or 0
+
+    def delete_project(self, project_id: int) -> bool:
+        """Delete a project by its database ID."""
+        self._projects_cache = None
+        with self.db.cursor() as cur:
+            cur.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+            return cur.rowcount > 0
+
+    def delete_project_by_name(self, name: str) -> bool:
+        """Delete a project by its unique name."""
+        self._projects_cache = None
+        with self.db.cursor() as cur:
+            cur.execute("DELETE FROM projects WHERE name = ?", (name.strip(),))
+            return cur.rowcount > 0
 
     def get_all_projects(self, force_refresh: bool = False) -> List[ProjectRecord]:
         """Fetch all configured projects with in-memory caching."""
@@ -494,13 +524,15 @@ class StorageRepository:
             return self._projects_cache
 
         with self.db.cursor() as cur:
-            cur.execute("SELECT id, name, keywords FROM projects ORDER BY name ASC")
+            cur.execute("SELECT id, name, keywords, color, description FROM projects ORDER BY name ASC")
             rows = cur.fetchall()
             self._projects_cache = [
                 ProjectRecord(
                     id=row["id"],
                     name=row["name"],
-                    keywords=[k.strip() for k in row["keywords"].split(",") if k.strip()],
+                    keywords=[k.strip() for k in (row["keywords"] or "").split(",") if k.strip()],
+                    color=row["color"] or "#6366F1",
+                    description=row["description"] or "",
                 )
                 for row in rows
             ]
@@ -517,6 +549,190 @@ class StorageRepository:
                 if kw in text_lower:
                     return proj.name
         return None
+
+    def _get_timeframe_bounds(self, timeframe: str) -> Optional[datetime]:
+        """Return start datetime for the given timeframe (or None for all_time)."""
+        now = datetime.now()
+        tf = timeframe.lower().replace(" ", "_")
+        if tf == "today":
+            return datetime(now.year, now.month, now.day, 0, 0, 0)
+        elif tf in ("this_week", "week"):
+            start_of_week = now - timedelta(days=now.weekday())
+            return datetime(start_of_week.year, start_of_week.month, start_of_week.day, 0, 0, 0)
+        elif tf in ("this_month", "month"):
+            return datetime(now.year, now.month, 1, 0, 0, 0)
+        return None
+
+    def get_projects_overview_metrics(self, timeframe: str = "all_time") -> List[Dict[str, Any]]:
+        """
+        Aggregate project metrics (tracked minutes, task counts, completion rate, top apps)
+        for all configured projects within the specified timeframe.
+        """
+        projects = self.get_all_projects(force_refresh=True)
+        start_bound = self._get_timeframe_bounds(timeframe)
+        start_iso = start_bound.isoformat() if start_bound else None
+
+        results = []
+        with self.db.cursor() as cur:
+            for proj in projects:
+                # 1. Sessions & Top Apps
+                if start_iso:
+                    cur.execute(
+                        """
+                        SELECT app_name, start_time, end_time
+                        FROM sessions
+                        WHERE project_tag = ? AND start_time >= ?
+                        """,
+                        (proj.name, start_iso),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT app_name, start_time, end_time
+                        FROM sessions
+                        WHERE project_tag = ?
+                        """,
+                        (proj.name,),
+                    )
+                sess_rows = cur.fetchall()
+
+                total_minutes = 0.0
+                app_durations: Dict[str, float] = {}
+                for r in sess_rows:
+                    try:
+                        st = datetime.fromisoformat(r["start_time"])
+                        et = datetime.fromisoformat(r["end_time"])
+                        dur = max(0.0, (et - st).total_seconds() / 60.0)
+                    except Exception:
+                        dur = 0.0
+                    total_minutes += dur
+                    app_name = r["app_name"] or "Unknown"
+                    app_durations[app_name] = app_durations.get(app_name, 0.0) + dur
+
+                sorted_apps = sorted(app_durations.items(), key=lambda x: x[1], reverse=True)
+                top_apps = [(app, round(mins, 1)) for app, mins in sorted_apps[:3]]
+
+                # 2. Tasks & Completion
+                if start_iso:
+                    cur.execute(
+                        """
+                        SELECT id, status
+                        FROM tasks
+                        WHERE project_tag = ? AND (created_at >= ? OR (completed_at IS NOT NULL AND completed_at >= ?))
+                        """,
+                        (proj.name, start_iso, start_iso),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT id, status
+                        FROM tasks
+                        WHERE project_tag = ?
+                        """,
+                        (proj.name,),
+                    )
+                task_rows = cur.fetchall()
+                total_tasks = len(task_rows)
+                completed_tasks = sum(1 for t in task_rows if t["status"] in ("done", "completed"))
+                completion_rate = (completed_tasks / total_tasks) if total_tasks > 0 else 0.0
+
+                results.append({
+                    "id": proj.id,
+                    "name": proj.name,
+                    "color": proj.color,
+                    "description": proj.description,
+                    "keywords": proj.keywords,
+                    "tracked_minutes": round(total_minutes, 1),
+                    "total_tasks": total_tasks,
+                    "completed_tasks": completed_tasks,
+                    "completion_rate": round(completion_rate, 2),
+                    "top_apps": top_apps,
+                })
+
+        return results
+
+    def get_project_detail(self, project_name: str, timeframe: str = "all_time") -> Dict[str, Any]:
+        """Fetch full metrics, tasks, and application breakdown for a specific project."""
+        projects = self.get_all_projects()
+        target_proj = next((p for p in projects if p.name.lower() == project_name.lower()), None)
+        if target_proj is None:
+            target_proj = ProjectRecord(id=None, name=project_name, keywords=[], color="#6366F1", description="")
+
+        start_bound = self._get_timeframe_bounds(timeframe)
+        start_iso = start_bound.isoformat() if start_bound else None
+
+        with self.db.cursor() as cur:
+            # 1. Sessions & App breakdown
+            if start_iso:
+                cur.execute(
+                    """
+                    SELECT app_name, window_title, start_time, end_time
+                    FROM sessions
+                    WHERE project_tag = ? AND start_time >= ?
+                    ORDER BY start_time DESC
+                    """,
+                    (target_proj.name, start_iso),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT app_name, window_title, start_time, end_time
+                    FROM sessions
+                    WHERE project_tag = ?
+                    ORDER BY start_time DESC
+                    """,
+                    (target_proj.name,),
+                )
+            sess_rows = cur.fetchall()
+
+            total_minutes = 0.0
+            app_durations: Dict[str, float] = {}
+            for r in sess_rows:
+                try:
+                    st = datetime.fromisoformat(r["start_time"])
+                    et = datetime.fromisoformat(r["end_time"])
+                    dur = max(0.0, (et - st).total_seconds() / 60.0)
+                except Exception:
+                    dur = 0.0
+                total_minutes += dur
+                app_name = r["app_name"] or "Unknown"
+                app_durations[app_name] = app_durations.get(app_name, 0.0) + dur
+
+            apps_breakdown = []
+            for app_name, mins in sorted(app_durations.items(), key=lambda x: x[1], reverse=True):
+                pct = round((mins / total_minutes * 100), 1) if total_minutes > 0 else 0.0
+                apps_breakdown.append({
+                    "app_name": app_name,
+                    "minutes": round(mins, 1),
+                    "percentage": pct,
+                })
+
+            # 2. Tasks with subtasks
+            tasks = self.get_task_hierarchy(project_tag=target_proj.name)
+            if start_iso:
+                # Filter tasks created or completed in timeframe
+                tasks = [
+                    t for t in tasks
+                    if t.created_at >= start_bound or (t.completed_at and t.completed_at >= start_bound)
+                ]
+
+            total_tasks = len(tasks)
+            completed_tasks = sum(1 for t in tasks if t.status in ("done", "completed"))
+            in_progress_tasks = sum(1 for t in tasks if t.status in ("in_progress", "pending", "ongoing"))
+            open_tasks = total_tasks - completed_tasks
+
+            return {
+                "project": target_proj,
+                "tracked_minutes": round(total_minutes, 1),
+                "total_tasks": total_tasks,
+                "completed_tasks": completed_tasks,
+                "in_progress_tasks": in_progress_tasks,
+                "open_tasks": open_tasks,
+                "completion_rate": round((completed_tasks / total_tasks), 2) if total_tasks > 0 else 0.0,
+                "apps_breakdown": apps_breakdown,
+                "tasks": tasks,
+                "total_sessions": len(sess_rows),
+            }
 
     # --- Timeline & Day Activity Operations ---
 

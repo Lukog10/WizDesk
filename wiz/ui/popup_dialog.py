@@ -49,6 +49,7 @@ from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, Not
 from wiz.ui.icons import get_app_icon
 from wiz.sync.obsidian import sync_today_logs
 from wiz.ui.timeline_view import TimelineView
+from wiz.ui.project_dashboard_view import ProjectDashboardView
 
 
 # Professional Typography Stacks
@@ -1919,13 +1920,20 @@ class QuickEntryDialog(QDialog):
         self.activity_mode_btn.clicked.connect(lambda: self._set_view_mode("activity"))
         mode_layout.addWidget(self.activity_mode_btn)
 
+        self.projects_mode_btn = QPushButton("Projects")
+        self.projects_mode_btn.setFixedHeight(30)
+        self.projects_mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.projects_mode_btn.clicked.connect(lambda: self._set_view_mode("projects"))
+        mode_layout.addWidget(self.projects_mode_btn)
+
         page_header_layout.addWidget(self.mode_capsule)
         page_header_layout.addStretch()
         self.inner_layout.addLayout(page_header_layout)
 
         # 2. Date Header with Navigation & Interactive Calendar Picker
-        date_header_layout = QHBoxLayout()
-        date_header_layout.setContentsMargins(0, 0, 0, 0)
+        self.date_header_container = QWidget()
+        date_header_layout = QHBoxLayout(self.date_header_container)
+        date_header_layout.setContentsMargins(0, 0, 0, 14)
         date_header_layout.setSpacing(6)
         date_header_layout.addStretch()
 
@@ -1957,8 +1965,7 @@ class QuickEntryDialog(QDialog):
         date_header_layout.addWidget(self.today_pill_btn)
 
         date_header_layout.addStretch()
-        date_header_layout.setContentsMargins(0, 0, 0, 14)
-        self.inner_layout.addLayout(date_header_layout)
+        self.inner_layout.addWidget(self.date_header_container)
 
         # Initialize date display
         self._update_date_display()
@@ -2080,6 +2087,11 @@ class QuickEntryDialog(QDialog):
         # 3. Activity Timeline Page
         self.timeline_view = TimelineView(self.repo, is_dark=self.is_dark, parent=self.stack)
         self.stack.addWidget(self.timeline_view)
+
+        # 4. Projects Dashboard Page
+        self.project_dashboard_view = ProjectDashboardView(self.repo, parent=self.stack, is_dark=self.is_dark)
+        self.project_dashboard_view.project_changed.connect(self._populate_projects)
+        self.stack.addWidget(self.project_dashboard_view)
 
         self.inner_layout.addWidget(self.stack, stretch=1)
         self.frame_layout.addWidget(self.inner_card, stretch=1)
@@ -2314,9 +2326,11 @@ class QuickEntryDialog(QDialog):
         self.add_task_btn.setStyleSheet(btn_action_qss)
         self.add_note_btn.setStyleSheet(btn_action_qss)
 
-        # 7. Update timeline view theme
+        # 7. Update timeline view & project dashboard view themes
         if hasattr(self, "timeline_view"):
             self.timeline_view.set_theme(self.is_dark)
+        if hasattr(self, "project_dashboard_view"):
+            self.project_dashboard_view.set_theme(self.is_dark)
 
         # 8. Re-apply mode buttons
         self._set_view_mode(self.current_view_mode)
@@ -2363,6 +2377,11 @@ class QuickEntryDialog(QDialog):
         self.notes_mode_btn.setStyleSheet(get_btn_style(mode == "notes"))
         if hasattr(self, "activity_mode_btn"):
             self.activity_mode_btn.setStyleSheet(get_btn_style(mode == "activity"))
+        if hasattr(self, "projects_mode_btn"):
+            self.projects_mode_btn.setStyleSheet(get_btn_style(mode == "projects"))
+
+        if hasattr(self, "date_header_container"):
+            self.date_header_container.setVisible(mode != "projects")
 
         if mode == "tasks":
             self.stack.setCurrentWidget(self.tasks_page)
@@ -2373,6 +2392,9 @@ class QuickEntryDialog(QDialog):
         elif mode == "activity" and hasattr(self, "timeline_view"):
             self.stack.setCurrentWidget(self.timeline_view)
             self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
+        elif mode == "projects" and hasattr(self, "project_dashboard_view"):
+            self.stack.setCurrentWidget(self.project_dashboard_view)
+            self.project_dashboard_view.load_data()
 
     def _seed_initial_data_if_empty(self) -> None:
         """Seed default project categories if database has no projects."""
@@ -2465,6 +2487,8 @@ class QuickEntryDialog(QDialog):
         self.refresh_notes()
         if hasattr(self, "timeline_view"):
             self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
+        if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
+            self.project_dashboard_view.load_data()
 
     def _on_prev_day(self) -> None:
         """Navigate to previous day."""

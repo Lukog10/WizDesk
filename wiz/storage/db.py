@@ -64,7 +64,9 @@ CREATE TABLE IF NOT EXISTS task_logs (
 CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
-    keywords TEXT NOT NULL  -- Comma-separated match hints
+    keywords TEXT NOT NULL,  -- Comma-separated match hints
+    color TEXT DEFAULT '#6366F1',
+    description TEXT DEFAULT ''
 );
 
 -- Indices for rapid daily reporting and sync queries
@@ -110,6 +112,15 @@ class Database:
         conn = self.get_connection()
         try:
             conn.executescript(SCHEMA_SQL)
+            # Safe migrations for projects table extensions
+            try:
+                conn.execute("ALTER TABLE projects ADD COLUMN color TEXT DEFAULT '#6366F1'")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE projects ADD COLUMN description TEXT DEFAULT ''")
+            except sqlite3.OperationalError:
+                pass
             conn.commit()
         finally:
             conn.close()
