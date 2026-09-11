@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
+    QGridLayout,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -26,6 +27,11 @@ from PyQt6.QtWidgets import (
 )
 
 from wiz.storage.models import StorageRepository, ProjectRecord, TaskRecord
+from wiz.ui.chart_widgets import (
+    KpiStatCard,
+    ProjectComparisonChartWidget,
+    AppUsageAnalyticsWidget,
+)
 
 
 PRESET_COLORS = [
@@ -415,7 +421,7 @@ class ProjectSummaryCard(QFrame):
 
 
 class ProjectsOverviewPage(QWidget):
-    """Overview feed of all projects with timeframe filters and summary metrics."""
+    """Visual Executive Dashboard and Overview feed of all projects."""
 
     project_selected = pyqtSignal(str)
     new_project_clicked = pyqtSignal()
@@ -430,7 +436,7 @@ class ProjectsOverviewPage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
-        # 1. Action Toolbar: Title, Timeframe Chips, + New Project Button
+        # 1. Action Toolbar: Timeframe Chips, + New Project Button
         toolbar = QHBoxLayout()
         toolbar.setSpacing(8)
 
@@ -463,41 +469,70 @@ class ProjectsOverviewPage(QWidget):
 
         layout.addLayout(toolbar)
 
-        # 2. Global Metrics Strip
-        self.metrics_bar = QFrame(self)
-        self.metrics_bar.setObjectName("MetricsBar")
-        metrics_layout = QHBoxLayout(self.metrics_bar)
-        metrics_layout.setContentsMargins(0, 0, 0, 4)
-        metrics_layout.setSpacing(8)
-
+        # Labels preserved for backward compatibility
         self.lbl_metric_projects = QLabel("Projects: 0")
-        self.lbl_metric_projects.setObjectName("MetricBadge")
         self.lbl_metric_time = QLabel("Tracked: 0m")
-        self.lbl_metric_time.setObjectName("MetricBadge")
         self.lbl_metric_tasks = QLabel("Tasks: 0 / 0")
-        self.lbl_metric_tasks.setObjectName("MetricBadge")
 
-        metrics_layout.addWidget(self.lbl_metric_projects)
-        metrics_layout.addWidget(self.lbl_metric_time)
-        metrics_layout.addWidget(self.lbl_metric_tasks)
-        metrics_layout.addStretch()
-
-        layout.addWidget(self.metrics_bar)
-
-        # 3. Scrollable Project Cards
+        # 2. Main Scroll Area for Executive Dashboard & Project Cards
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setObjectName("ProjectsScrollArea")
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
 
         self.scroll_content = QWidget()
         self.scroll_content.setObjectName("ScrollContent")
-        self.cards_layout = QVBoxLayout(self.scroll_content)
-        self.cards_layout.setContentsMargins(0, 4, 4, 12)
+        self.content_layout = QVBoxLayout(self.scroll_content)
+        self.content_layout.setContentsMargins(0, 4, 4, 16)
+        self.content_layout.setSpacing(14)
+
+        # Section 1: Executive KPI Cards (2x2 Grid for generous card width & readability)
+        self.kpi_grid = QGridLayout()
+        self.kpi_grid.setSpacing(10)
+
+        self.kpi_hero = KpiStatCard("Total Tracked Time", "0h", "", is_hero=True, is_dark=self.is_dark, parent=self.scroll_content)
+        self.kpi_projects = KpiStatCard("Active Projects", "0", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
+        self.kpi_top_app = KpiStatCard("Top Application", "None", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
+        self.kpi_tasks = KpiStatCard("Tasks Completed", "0 / 0", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
+
+        self.kpi_grid.addWidget(self.kpi_hero, 0, 0)
+        self.kpi_grid.addWidget(self.kpi_projects, 0, 1)
+        self.kpi_grid.addWidget(self.kpi_top_app, 1, 0)
+        self.kpi_grid.addWidget(self.kpi_tasks, 1, 1)
+        self.content_layout.addLayout(self.kpi_grid)
+
+        # Section 2: Visual Comparison Chart
+        self.chart_widget = ProjectComparisonChartWidget(is_dark=self.is_dark, parent=self.scroll_content)
+        self.content_layout.addWidget(self.chart_widget)
+
+        # Section 3: Visual Application Usage Analytics
+        self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, parent=self.scroll_content)
+        self.content_layout.addWidget(self.apps_widget)
+
+        # Section 3: Projects Directory Header & Cards
+        dir_header = QHBoxLayout()
+        dir_header.setSpacing(8)
+
+        self.lbl_directory_title = QLabel("Projects Directory")
+        self.lbl_directory_title.setFont(QFont("Inter", 12, QFont.Weight.DemiBold))
+        dir_header.addWidget(self.lbl_directory_title)
+
+        self.lbl_directory_count = QLabel("0 Projects")
+        self.lbl_directory_count.setObjectName("DirectoryBadge")
+        self.lbl_directory_count.setFont(QFont("Inter", 9, QFont.Weight.Medium))
+        dir_header.addWidget(self.lbl_directory_count)
+        dir_header.addStretch()
+
+        self.content_layout.addLayout(dir_header)
+
+        self.cards_container = QWidget(self.scroll_content)
+        self.cards_layout = QVBoxLayout(self.cards_container)
+        self.cards_layout.setContentsMargins(0, 0, 0, 0)
         self.cards_layout.setSpacing(10)
         self.cards_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.content_layout.addWidget(self.cards_container)
 
         self.scroll_area.setWidget(self.scroll_content)
         layout.addWidget(self.scroll_area, 1)
@@ -514,7 +549,7 @@ class ProjectsOverviewPage(QWidget):
         self.refresh()
 
     def refresh(self) -> None:
-        """Fetch updated project metrics and re-render project cards."""
+        """Fetch updated project metrics and re-render charts, stats, and project cards."""
         while self.cards_layout.count() > 0:
             item = self.cards_layout.takeAt(0)
             widget = item.widget()
@@ -522,23 +557,54 @@ class ProjectsOverviewPage(QWidget):
                 widget.setParent(None)
                 widget.deleteLater()
 
+        # 1. Fetch high-level analytics
+        analytics = self.repo.get_dashboard_analytics(timeframe=self.active_timeframe)
+
+        tot_mins = analytics.get("total_tracked_minutes", 0.0)
+        tot_hrs = analytics.get("total_tracked_hours", 0.0)
+        chg_pct = analytics.get("change_percentage", 0.0)
+        chg_str = f"+{chg_pct}%" if chg_pct > 0 else (f"{chg_pct}%" if chg_pct < 0 else "")
+        self.kpi_hero.update_data(f"{tot_hrs}h", chg_str)
+
+        active_cnt = analytics.get("active_projects_count", 0)
+        self.kpi_projects.update_data(str(active_cnt), "Active")
+
+        top_app = analytics.get("top_app")
+        if top_app:
+            self.kpi_top_app.update_data(top_app["app_name"], f"{top_app.get('hours', 0.0)}h")
+        else:
+            self.kpi_top_app.update_data("None", "")
+
+        completed_tasks = analytics.get("completed_tasks_count", 0)
+        open_tasks = analytics.get("open_tasks_count", 0)
+        tot_tasks = completed_tasks + open_tasks
+        task_pct = f"{round(completed_tasks / tot_tasks * 100)}%" if tot_tasks > 0 else ""
+        self.kpi_tasks.update_data(f"{completed_tasks} / {tot_tasks}", task_pct)
+
+        # Update legacy labels
+        self.lbl_metric_projects.setText(f"Projects: {active_cnt}")
+        self.lbl_metric_time.setText(f"Tracked: {format_duration(tot_mins)}")
+        self.lbl_metric_tasks.setText(f"Tasks: {completed_tasks} / {tot_tasks}")
+
+        # 2. Update Visual Charts
+        self.chart_widget.set_data(
+            analytics.get("chart_project_series", []),
+            analytics.get("chart_bucket_labels", []),
+        )
+        self.apps_widget.set_data(
+            analytics.get("apps_breakdown", []),
+            tot_hrs,
+        )
+
+        # 3. Fetch project overview metrics for drilldown cards
         metrics_list = self.repo.get_projects_overview_metrics(timeframe=self.active_timeframe)
-
-        # Update global metric badges
-        total_projects = len(metrics_list)
-        total_minutes = sum(m.get("tracked_minutes", 0.0) for m in metrics_list)
-        total_tasks = sum(m.get("total_tasks", 0) for m in metrics_list)
-        completed_tasks = sum(m.get("completed_tasks", 0) for m in metrics_list)
-
-        self.lbl_metric_projects.setText(f"Projects: {total_projects}")
-        self.lbl_metric_time.setText(f"Tracked: {format_duration(total_minutes)}")
-        self.lbl_metric_tasks.setText(f"Tasks: {completed_tasks} / {total_tasks}")
+        self.lbl_directory_count.setText(f"{len(metrics_list)} Projects")
 
         if not metrics_list:
             empty_card = QFrame()
             empty_card.setObjectName("EmptyCard")
             empty_layout = QVBoxLayout(empty_card)
-            empty_layout.setContentsMargins(20, 36, 20, 36)
+            empty_layout.setContentsMargins(20, 32, 20, 32)
             empty_layout.setSpacing(8)
             empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -562,6 +628,12 @@ class ProjectsOverviewPage(QWidget):
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
+        self.kpi_hero.set_theme(is_dark)
+        self.kpi_projects.set_theme(is_dark)
+        self.kpi_top_app.set_theme(is_dark)
+        self.kpi_tasks.set_theme(is_dark)
+        self.chart_widget.set_theme(is_dark)
+        self.apps_widget.set_theme(is_dark)
         self.apply_theme()
         self.refresh()
 
@@ -604,15 +676,13 @@ class ProjectsOverviewPage(QWidget):
                 }
             """
             badge_style = """
-                QFrame#MetricsBar { background: transparent; border: none; }
-                QLabel#MetricBadge {
+                QLabel#DirectoryBadge {
                     background-color: #242427;
-                    color: #E4E4E7;
+                    color: #A1A1AA;
                     border: 1px solid #333338;
                     border-radius: 6px;
-                    padding: 4px 10px;
-                    font-size: 11px;
-                    font-weight: 500;
+                    padding: 2px 8px;
+                    font-size: 10px;
                 }
                 QFrame#EmptyCard {
                     background-color: #242427;
@@ -621,6 +691,7 @@ class ProjectsOverviewPage(QWidget):
                 }
                 QFrame#EmptyCard QLabel { color: #A1A1AA; }
             """
+            dir_title_color = "#F4F4F6"
         else:
             chip_style = """
                 QPushButton {
@@ -658,15 +729,13 @@ class ProjectsOverviewPage(QWidget):
                 }
             """
             badge_style = """
-                QFrame#MetricsBar { background: transparent; border: none; }
-                QLabel#MetricBadge {
+                QLabel#DirectoryBadge {
                     background-color: #FFFFFF;
-                    color: #222220;
-                    border: 1px solid #DCD6CA;
+                    color: #71717A;
+                    border: 1px solid #E5E0D8;
                     border-radius: 6px;
-                    padding: 4px 10px;
-                    font-size: 11px;
-                    font-weight: 500;
+                    padding: 2px 8px;
+                    font-size: 10px;
                 }
                 QFrame#EmptyCard {
                     background-color: #FFFFFF;
@@ -675,14 +744,44 @@ class ProjectsOverviewPage(QWidget):
                 }
                 QFrame#EmptyCard QLabel { color: #666660; }
             """
+            dir_title_color = "#111111"
 
         self.btn_tf_today.setStyleSheet(chip_style)
         self.btn_tf_week.setStyleSheet(chip_style)
         self.btn_tf_month.setStyleSheet(chip_style)
         self.btn_tf_all.setStyleSheet(chip_style)
         self.btn_new_project.setStyleSheet(btn_new_style)
-        self.metrics_bar.setStyleSheet(badge_style)
-        self.scroll_area.setStyleSheet("background: transparent;")
+        self.lbl_directory_title.setStyleSheet(f"color: {dir_title_color};")
+        self.setStyleSheet(badge_style)
+
+        scrollbar_color = "rgba(255, 255, 255, 0.15)" if self.is_dark else "rgba(0, 0, 0, 0.15)"
+        scrollbar_hover = "rgba(255, 255, 255, 0.3)" if self.is_dark else "rgba(0, 0, 0, 0.3)"
+        scroll_style = f"""
+            QScrollArea {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 6px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {scrollbar_color};
+                min-height: 24px;
+                border-radius: 3px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background: {scrollbar_hover};
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: transparent;
+            }}
+        """
+        self.scroll_area.setStyleSheet(scroll_style)
         self.scroll_content.setStyleSheet("background: transparent;")
 
 

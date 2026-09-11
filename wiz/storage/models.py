@@ -734,6 +734,226 @@ class StorageRepository:
                 "total_sessions": len(sess_rows),
             }
 
+    def get_dashboard_analytics(self, timeframe: str = "this_week") -> Dict[str, Any]:
+        """
+        Aggregate high-level analytics for visual dashboard:
+        - KPI summary metrics (total hours, change %, active projects, tasks completed, top app)
+        - Time-series buckets for project comparison (Bar / Area charts)
+        - Application usage ranking with durations and percentages (Ring / Bar charts)
+        """
+        now = datetime.now()
+        tf = timeframe.lower().replace(" ", "_")
+
+        # 1. Determine date boundaries for current and previous periods
+        if tf == "today":
+            start_curr = datetime(now.year, now.month, now.day, 0, 0, 0)
+            end_curr = now
+            start_prev = start_curr - timedelta(days=1)
+            end_prev = start_curr
+            bucket_labels = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00+"]
+        elif tf in ("this_week", "week"):
+            start_curr = datetime(now.year, now.month, now.day, 0, 0, 0) - timedelta(days=now.weekday())
+            end_curr = now
+            start_prev = start_curr - timedelta(days=7)
+            end_prev = start_curr
+            bucket_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        elif tf in ("this_month", "month"):
+            start_curr = datetime(now.year, now.month, 1, 0, 0, 0)
+            end_curr = now
+            first_day_prev = (start_curr - timedelta(days=1)).replace(day=1)
+            start_prev = first_day_prev
+            end_prev = start_curr
+            bucket_labels = ["Week 1", "Week 2", "Week 3", "Week 4"]
+        else:
+            start_curr = None
+            end_curr = None
+            start_prev = None
+            end_prev = None
+            bucket_labels = []
+
+        all_projects = self.get_all_projects(force_refresh=True)
+        proj_colors: Dict[str, str] = {p.name: (p.color or "#6366F1") for p in all_projects}
+
+        with self.db.cursor() as cur:
+            # 2. Fetch current period sessions
+            if start_curr:
+                cur.execute(
+                    """
+                    SELECT app_name, project_tag, start_time, end_time
+                    FROM sessions
+                    WHERE start_time >= ? AND start_time <= ?
+                    ORDER BY start_time ASC
+                    """,
+                    (start_curr.isoformat(), end_curr.isoformat()),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT app_name, project_tag, start_time, end_time
+                    FROM sessions
+                    ORDER BY start_time ASC
+                    """
+                )
+            curr_rows = cur.fetchall()
+
+            # 3. Fetch previous period sessions for change % calculation
+            prev_minutes = 0.0
+            if start_prev and end_prev:
+                cur.execute(
+                    """
+                    SELECT start_time, end_time
+                    FROM sessions
+                    WHERE start_time >= ? AND start_time < ?
+                    """,
+                    (start_prev.isoformat(), end_prev.isoformat()),
+                )
+                prev_rows = cur.fetchall()
+                for r in prev_rows:
+                    try:
+                        st = datetime.fromisoformat(r["start_time"])
+                        et = datetime.fromisoformat(r["end_time"])
+                        prev_minutes += max(0.0, (et - st).total_seconds() / 60.0)
+                    except Exception:
+                        pass
+
+            # 4. Fetch tasks in current period
+            if start_curr:
+                cur.execute(
+                    """
+                    SELECT id, status, project_tag
+                    FROM tasks
+                    WHERE created_at >= ? OR (completed_at IS NOT NULL AND completed_at >= ?)
+                    """,
+                    (start_curr.isoformat(), start_curr.isoformat()),
+                )
+            else:
+                cur.execute("SELECT id, status, project_tag FROM tasks")
+            task_rows = cur.fetchall()
+            completed_tasks = sum(1 for t in task_rows if t["status"] in ("done", "completed"))
+            open_tasks = len(task_rows) - completed_tasks
+
+            # 5. Process current sessions
+            total_minutes = 0.0
+            app_durations: Dict[str, float] = {}
+            project_durations: Dict[str, float] = {}
+
+            if tf == "all_time":
+                if all_projects:
+                    bucket_labels = [p.name for p in all_projects]
+                else:
+                    bucket_labels = ["General"]
+
+            num_buckets = len(bucket_labels) if bucket_labels else 1
+            project_bucket_mins: Dict[str, List[float]] = {}
+
+            for r in curr_rows:
+                try:
+                    st = datetime.fromisoformat(r["start_time"])
+                    et = datetime.fromisoformat(r["end_time"])
+                    dur = max(0.0, (et - st).total_seconds() / 60.0)
+                except Exception:
+                    dur = 0.0
+
+                total_minutes += dur
+                app_name = r["app_name"] or "Unknown"
+                app_durations[app_name] = app_durations.get(app_name, 0.0) + dur
+
+                proj_name = r["project_tag"] or "Untagged"
+                project_durations[proj_name] = project_durations.get(proj_name, 0.0) + dur
+
+                if proj_name not in project_bucket_mins:
+                    project_bucket_mins[proj_name] = [0.0] * num_buckets
+
+                if tf == "today":
+                    h = st.hour
+                    if h < 10:
+                        b_idx = 0
+                    elif h < 12:
+                        b_idx = 1
+                    elif h < 14:
+                        b_idx = 2
+                    elif h < 16:
+                        b_idx = 3
+                    elif h < 18:
+                        b_idx = 4
+                    else:
+                        b_idx = 5
+                elif tf in ("this_week", "week") and start_curr:
+                    diff_days = (st.date() - start_curr.date()).days
+                    b_idx = max(0, min(6, diff_days))
+                elif tf in ("this_month", "month"):
+                    day = st.day
+                    if day <= 7:
+                        b_idx = 0
+                    elif day <= 14:
+                        b_idx = 1
+                    elif day <= 21:
+                        b_idx = 2
+                    else:
+                        b_idx = 3
+                elif tf == "all_time":
+                    if proj_name in bucket_labels:
+                        b_idx = bucket_labels.index(proj_name)
+                    else:
+                        b_idx = 0
+                else:
+                    b_idx = 0
+
+                if 0 <= b_idx < num_buckets:
+                    project_bucket_mins[proj_name][b_idx] += dur
+
+            # Build app breakdown list
+            APP_PALETTE = ["#3B82F6", "#10B981", "#F59E0B", "#EC4899", "#8B5CF6", "#06B6D4", "#F43F5E", "#64748B"]
+            apps_list = []
+            for idx, (app_name, mins) in enumerate(sorted(app_durations.items(), key=lambda x: x[1], reverse=True)):
+                pct = round((mins / total_minutes * 100), 1) if total_minutes > 0 else 0.0
+                color = APP_PALETTE[idx % len(APP_PALETTE)]
+                apps_list.append({
+                    "app_name": app_name,
+                    "minutes": round(mins, 1),
+                    "hours": round(mins / 60.0, 1),
+                    "percentage": pct,
+                    "color": color,
+                })
+
+            top_app = apps_list[0] if apps_list else None
+
+            if prev_minutes > 0:
+                change_pct = round(((total_minutes - prev_minutes) / prev_minutes) * 100, 1)
+            else:
+                change_pct = 0.0
+
+            project_series = []
+            for proj_name, bucket_vals in project_bucket_mins.items():
+                hours_vals = [round(m / 60.0, 2) for m in bucket_vals]
+                color = proj_colors.get(proj_name, "#6366F1")
+                project_series.append({
+                    "name": proj_name,
+                    "color": color,
+                    "hours": hours_vals,
+                    "total_hours": round(sum(hours_vals), 2),
+                })
+            project_series.sort(key=lambda s: s["total_hours"], reverse=True)
+
+            active_projects = set(project_durations.keys()) | {t["project_tag"] for t in task_rows if t["project_tag"]}
+            active_projects.discard(None)
+
+            return {
+                "timeframe": tf,
+                "total_tracked_minutes": round(total_minutes, 1),
+                "total_tracked_hours": round(total_minutes / 60.0, 1),
+                "previous_period_minutes": round(prev_minutes, 1),
+                "change_percentage": change_pct,
+                "active_projects_count": max(len(active_projects), len(all_projects)),
+                "completed_tasks_count": completed_tasks,
+                "open_tasks_count": open_tasks,
+                "top_app": top_app,
+                "apps_breakdown": apps_list,
+                "chart_bucket_labels": bucket_labels,
+                "chart_project_series": project_series,
+            }
+
+
     # --- Timeline & Day Activity Operations ---
 
     def get_day_sessions(self, date_str: str) -> List[SessionRecord]:

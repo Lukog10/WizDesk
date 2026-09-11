@@ -18,6 +18,15 @@ from wiz.ui.project_dashboard_view import (
     format_duration,
 )
 from wiz.ui.popup_dialog import QuickEntryDialog
+from wiz.ui.chart_widgets import (
+    KpiStatCard,
+    ProjectComparisonChartWidget,
+    AppUsageAnalyticsWidget,
+    ProjectComparisonCanvas,
+    AppUsageRingCanvas,
+)
+from PyQt6.QtCore import Qt, QPoint, QPointF
+from PyQt6.QtGui import QMouseEvent
 
 
 @pytest.fixture
@@ -290,3 +299,207 @@ def test_quick_entry_dialog_projects_mode(qapp, repo: StorageRepository):
     dialog.notes_mode_btn.click()
     assert dialog.current_view_mode == "notes"
     assert not dialog.date_header_container.isHidden()
+
+
+def test_get_dashboard_analytics_aggregation(repo: StorageRepository):
+    """Test get_dashboard_analytics across timeframes, buckets, and ranking."""
+    now = datetime.now()
+
+    # 1. Setup two projects
+    repo.create_or_update_project("WizCore", ["core"], color="#6366F1", description="Core backend")
+    repo.create_or_update_project("WizUI", ["ui"], color="#10B981", description="Desktop interface")
+
+    # 2. Add tasks
+    t1 = repo.create_task("Implement charts", project_tag="WizUI")
+    repo.update_task_status(t1, "done")
+    t2 = repo.create_task("Fix query optimization", project_tag="WizCore")
+
+    # 3. Add sessions
+    s1 = now - timedelta(hours=2)
+    s2 = now - timedelta(hours=1)
+    repo.log_session("VS Code", "models.py", s1, s2, project_tag="WizCore")
+
+    s3 = now - timedelta(minutes=45)
+    repo.log_session("Chrome", "Dashboard Reference", s3, now, project_tag="WizUI")
+
+    # Test "today"
+    data_today = repo.get_dashboard_analytics("today")
+    assert data_today["timeframe"] == "today"
+    assert len(data_today["chart_bucket_labels"]) == 6
+    assert data_today["total_tracked_hours"] >= 1.5
+    assert data_today["completed_tasks_count"] == 1
+    assert data_today["open_tasks_count"] == 1
+    assert len(data_today["apps_breakdown"]) == 2
+    assert data_today["top_app"] is not None
+    assert len(data_today["chart_project_series"]) >= 2
+
+    # Test "this_week"
+    data_week = repo.get_dashboard_analytics("this_week")
+    assert data_week["timeframe"] == "this_week"
+    assert len(data_week["chart_bucket_labels"]) == 7
+    assert data_week["chart_bucket_labels"] == ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    assert data_week["total_tracked_hours"] >= 1.5
+
+    # Test "this_month"
+    data_month = repo.get_dashboard_analytics("this_month")
+    assert data_month["timeframe"] == "this_month"
+    assert len(data_month["chart_bucket_labels"]) == 4
+
+    # Test "all_time"
+    data_all = repo.get_dashboard_analytics("all_time")
+    assert data_all["timeframe"] == "all_time"
+    assert len(data_all["chart_bucket_labels"]) >= 2
+    assert "WizCore" in data_all["chart_bucket_labels"]
+
+
+def test_kpi_stat_card_ui(qapp):
+    """Test KpiStatCard rendering, data updates, and theme toggling."""
+    # Hero Card
+    hero_card = KpiStatCard("Total Tracked Time", "18.5h", "+12.4%", is_hero=True, is_dark=True)
+    assert hero_card.is_hero is True
+    assert hero_card.lbl_value.text() == "18.5h"
+    assert hero_card.lbl_change.text() == "+12.4%"
+
+    hero_card.update_data("22.0h", "+18.0%")
+    assert hero_card.lbl_value.text() == "22.0h"
+    assert hero_card.lbl_change.text() == "+18.0%"
+
+    hero_card.set_theme(is_dark=False)
+    assert hero_card.is_dark is False
+    hero_card.set_theme(is_dark=True)
+    assert hero_card.is_dark is True
+
+    # Standard Stat Card
+    stat_card = KpiStatCard("Active Projects", "4", "", is_hero=False, is_dark=True)
+    assert stat_card.is_hero is False
+    assert stat_card.lbl_value.text() == "4"
+    assert stat_card.lbl_change.isHidden()
+
+    stat_card.update_data("5", "Active")
+    assert stat_card.lbl_value.text() == "5"
+    assert stat_card.lbl_change.text() == "Active"
+    assert not stat_card.lbl_change.isHidden()
+
+
+def test_project_comparison_chart_widget_ui(qapp):
+    """Test ProjectComparisonChartWidget mode switching (Bar/Area), series rendering, and hover."""
+    widget = ProjectComparisonChartWidget(is_dark=True)
+    assert widget.canvas.chart_mode == "bar"
+
+    series = [
+        {"name": "WizCore", "color": "#6366F1", "hours": [1.0, 2.0, 1.5, 0.5, 2.5, 1.0, 0.0], "total_hours": 8.5},
+        {"name": "WizUI", "color": "#10B981", "hours": [0.5, 1.0, 0.5, 1.5, 0.5, 2.0, 0.0], "total_hours": 6.0},
+    ]
+    bucket_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    widget.set_data(series, bucket_labels)
+    assert widget.canvas.series == series
+    assert widget.canvas.bucket_labels == bucket_labels
+    assert widget.legend_layout.count() >= 2
+
+    # Switch to Area mode
+    widget.btn_area.click()
+    assert widget.canvas.chart_mode == "area"
+
+    # Switch back to Bar mode
+    widget.btn_bar.click()
+    assert widget.canvas.chart_mode == "bar"
+
+    # Simulate mouse hover on canvas
+    hover_event = QMouseEvent(
+        QMouseEvent.Type.MouseMove,
+        QPointF(60.0, 50.0),
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    widget.canvas.mouseMoveEvent(hover_event)
+    assert widget.canvas.hover_bucket_idx is not None
+
+    widget.canvas.leaveEvent(None)
+    assert widget.canvas.hover_bucket_idx is None
+
+    # Theme toggle
+    widget.set_theme(is_dark=False)
+    assert widget.is_dark is False
+    widget.set_theme(is_dark=True)
+    assert widget.is_dark is True
+
+
+def test_app_usage_analytics_widget_ui(qapp):
+    """Test AppUsageAnalyticsWidget mode switching (Ring/Bar) and data rendering."""
+    widget = AppUsageAnalyticsWidget(is_dark=True)
+    assert widget.active_mode == "ring"
+    assert widget.stack.currentWidget() == widget.ring_page
+
+    apps = [
+        {"app_name": "Cursor", "hours": 6.5, "percentage": 65.0, "color": "#3B82F6"},
+        {"app_name": "Chrome", "hours": 2.5, "percentage": 25.0, "color": "#10B981"},
+        {"app_name": "Terminal", "hours": 1.0, "percentage": 10.0, "color": "#F59E0B"},
+    ]
+    widget.set_data(apps, 10.0)
+    assert widget.ring_canvas.total_hours == 10.0
+    assert len(widget.ring_canvas.apps_data) == 3
+    assert widget.ring_list_layout.count() == 3
+
+    # Switch to Bar mode (user requested option)
+    widget.btn_bar.click()
+    assert widget.active_mode == "bar"
+    assert widget.stack.currentWidget() == widget.bar_page
+    assert widget.bar_page_layout.count() >= 3
+
+    # Switch back to Ring mode
+    widget.btn_ring.click()
+    assert widget.active_mode == "ring"
+    assert widget.stack.currentWidget() == widget.ring_page
+
+    # Theme toggle
+    widget.set_theme(is_dark=False)
+    assert widget.is_dark is False
+    widget.set_theme(is_dark=True)
+    assert widget.is_dark is True
+
+
+def test_projects_overview_dashboard_full_integration(qapp, repo: StorageRepository):
+    """Test full integration of visual dashboard: KPI cards, charts, and drilldown cards."""
+    now = datetime.now()
+
+    repo.create_or_update_project("DealDeck", ["deal"], color="#6366F1", description="Sales CRM")
+    t1 = repo.create_task("Pipeline View", project_tag="DealDeck")
+    repo.update_task_status(t1, "done")
+    repo.log_session("Cursor", "dealdeck.ts", now - timedelta(hours=2), now, project_tag="DealDeck")
+
+    overview = ProjectsOverviewPage(repo, is_dark=True)
+
+    # Check KPI cards populated
+    assert overview.kpi_hero.value_text != "0h"
+    assert overview.kpi_projects.value_text == "1"
+    assert overview.kpi_top_app.value_text == "Cursor"
+    assert "1 / 1" in overview.kpi_tasks.value_text
+
+    # Check charts populated
+    assert len(overview.chart_widget.canvas.series) >= 1
+    assert len(overview.apps_widget.apps_data) >= 1
+
+    # Test timeframe switching
+    overview.btn_tf_today.click()
+    assert overview.active_timeframe == "today"
+    assert len(overview.chart_widget.canvas.bucket_labels) == 6
+
+    overview.btn_tf_week.click()
+    assert overview.active_timeframe == "this_week"
+    assert len(overview.chart_widget.canvas.bucket_labels) == 7
+
+    overview.btn_tf_month.click()
+    assert overview.active_timeframe == "this_month"
+    assert len(overview.chart_widget.canvas.bucket_labels) == 4
+
+    overview.btn_tf_all.click()
+    assert overview.active_timeframe == "all_time"
+
+    # Theme toggle
+    overview.set_theme(is_dark=False)
+    assert overview.is_dark is False
+    overview.set_theme(is_dark=True)
+    assert overview.is_dark is True
+
