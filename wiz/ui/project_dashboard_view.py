@@ -564,22 +564,43 @@ class ProjectsOverviewPage(QWidget):
         tot_hrs = analytics.get("total_tracked_hours", 0.0)
         chg_pct = analytics.get("change_percentage", 0.0)
         chg_str = f"+{chg_pct}%" if chg_pct > 0 else (f"{chg_pct}%" if chg_pct < 0 else "")
-        self.kpi_hero.update_data(f"{tot_hrs}h", chg_str)
+
+        # Compute bucket totals for hero sparkline
+        num_buckets = len(analytics.get("chart_bucket_labels", []))
+        sparkline_totals = [0.0] * num_buckets
+        for s in analytics.get("chart_project_series", []):
+            for b_i, val in enumerate(s.get("hours", [])):
+                if b_i < num_buckets:
+                    sparkline_totals[b_i] += val
+
+        self.kpi_hero.set_sparkline_data(sparkline_totals)
+        self.kpi_hero.update_data(f"{tot_hrs}h", chg_str, subtitle="vs previous period")
 
         active_cnt = analytics.get("active_projects_count", 0)
-        self.kpi_projects.update_data(str(active_cnt), "Active")
+        self.kpi_projects.update_data(str(active_cnt), "Active", subtitle=f"{active_cnt} active this period")
 
         top_app = analytics.get("top_app")
         if top_app:
-            self.kpi_top_app.update_data(top_app["app_name"], f"{top_app.get('hours', 0.0)}h")
+            pct_share = top_app.get("percentage", 0)
+            self.kpi_top_app.update_data(
+                top_app["app_name"],
+                f"{top_app.get('hours', 0.0)}h",
+                subtitle=f"{pct_share}% of tracked time",
+            )
         else:
-            self.kpi_top_app.update_data("None", "")
+            self.kpi_top_app.update_data("None", "", subtitle="No app activity")
 
         completed_tasks = analytics.get("completed_tasks_count", 0)
         open_tasks = analytics.get("open_tasks_count", 0)
         tot_tasks = completed_tasks + open_tasks
-        task_pct = f"{round(completed_tasks / tot_tasks * 100)}%" if tot_tasks > 0 else ""
-        self.kpi_tasks.update_data(f"{completed_tasks} / {tot_tasks}", task_pct)
+        task_pct_int = round(completed_tasks / tot_tasks * 100) if tot_tasks > 0 else 0
+        task_pct_str = f"{task_pct_int}%" if tot_tasks > 0 else ""
+        self.kpi_tasks.update_data(
+            f"{completed_tasks} / {tot_tasks}",
+            task_pct_str,
+            subtitle=f"{task_pct_int}% completed" if tot_tasks > 0 else "No tasks scheduled",
+            progress_pct=task_pct_int if tot_tasks > 0 else None,
+        )
 
         # Update legacy labels
         self.lbl_metric_projects.setText(f"Projects: {active_cnt}")

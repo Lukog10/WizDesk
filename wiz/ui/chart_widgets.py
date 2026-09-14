@@ -36,14 +36,80 @@ FONT_SANS = "'Inter', 'Segoe UI', -apple-system, sans-serif"
 FONT_MONO = "'JetBrains Mono', 'Consolas', monospace"
 
 
+class MicroSparklineCanvas(QWidget):
+    """Mini antialiased trend curve drawn inside KpiHeroCard."""
+
+    def __init__(self, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.values: List[float] = []
+        self.setFixedHeight(26)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def set_data(self, values: List[float]) -> None:
+        self.values = values
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        if not self.values or len(self.values) < 2:
+            return
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        w = float(self.width())
+        h = float(self.height())
+        max_val = max(max(self.values), 0.1)
+
+        points = []
+        step = w / (len(self.values) - 1)
+        for i, val in enumerate(self.values):
+            px = i * step
+            py = (h - 3.0) - (val / max_val * (h - 6.0))
+            points.append(QPointF(px, py))
+
+        path = QPainterPath()
+        path.moveTo(points[0])
+        for i in range(len(points) - 1):
+            p0 = points[i]
+            p1 = points[i + 1]
+            ctrl1 = QPointF(p0.x() + (p1.x() - p0.x()) / 2.0, p0.y())
+            ctrl2 = QPointF(p0.x() + (p1.x() - p0.x()) / 2.0, p1.y())
+            path.cubicTo(ctrl1, ctrl2, p1)
+
+        # Gradient area under curve
+        area_path = QPainterPath(path)
+        area_path.lineTo(w, h)
+        area_path.lineTo(0.0, h)
+        area_path.closeSubpath()
+
+        grad = QLinearGradient(0, 0, 0, h)
+        grad.setColorAt(0.0, QColor(255, 255, 255, 60))
+        grad.setColorAt(1.0, QColor(255, 255, 255, 4))
+        painter.fillPath(area_path, grad)
+
+        # Line stroke
+        pen = QPen(QColor(255, 255, 255, 220), 1.8)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.strokePath(path, pen)
+
+        # End node
+        if points:
+            last_pt = points[-1]
+            painter.setBrush(QColor("#FFFFFF"))
+            painter.setPen(QPen(QColor("#4F46E5"), 1.5))
+            painter.drawEllipse(last_pt, 2.5, 2.5)
+
+
 class KpiStatCard(QFrame):
-    """Executive KPI card with large numerical value, title, and percentage change indicator."""
+    """Executive KPI card with numerical value, title, status pill, subtitle, and micro sparkline."""
 
     def __init__(
         self,
         title: str,
         value: str,
         change_text: str = "",
+        subtitle: str = "",
         is_hero: bool = False,
         is_dark: bool = True,
         parent: Optional[QWidget] = None,
@@ -52,12 +118,13 @@ class KpiStatCard(QFrame):
         self.title_text = title
         self.value_text = value
         self.change_text = change_text
+        self.subtitle_text = subtitle
         self.is_hero = is_hero
         self.is_dark = is_dark
         self.setObjectName("KpiHeroCard" if self.is_hero else "KpiStatCard")
 
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.setMinimumHeight(78)
+        self.setMinimumHeight(84)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 10, 14, 10)
@@ -83,16 +150,58 @@ class KpiStatCard(QFrame):
         self.lbl_value = QLabel(value)
         self.lbl_value.setFont(QFont("Inter", 19, QFont.Weight.Bold))
         layout.addWidget(self.lbl_value)
-        layout.addStretch()
 
+        # Subtitle row
+        self.lbl_subtitle = QLabel(subtitle)
+        self.lbl_subtitle.setFont(QFont("Inter", 9, QFont.Weight.Normal))
+        self.lbl_subtitle.setVisible(bool(subtitle))
+        layout.addWidget(self.lbl_subtitle)
+
+        # Mini Progress Bar for tasks
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setFixedHeight(4)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setTextVisible(False)
+        self.progress_bar.setVisible(False)
+        layout.addWidget(self.progress_bar)
+
+        # Micro-sparkline for hero card
+        if self.is_hero:
+            self.sparkline = MicroSparklineCanvas(self)
+            layout.addWidget(self.sparkline)
+        else:
+            self.sparkline = None
+
+        layout.addStretch()
         self.apply_theme()
 
-    def update_data(self, value: str, change_text: str = "") -> None:
+    def set_sparkline_data(self, values: List[float]) -> None:
+        if self.sparkline:
+            self.sparkline.set_data(values)
+
+    def update_data(
+        self,
+        value: str,
+        change_text: str = "",
+        subtitle: str = "",
+        progress_pct: Optional[int] = None,
+    ) -> None:
         self.value_text = value
         self.change_text = change_text
+        self.subtitle_text = subtitle
         self.lbl_value.setText(value)
         self.lbl_change.setText(change_text)
         self.lbl_change.setVisible(bool(change_text))
+        self.lbl_subtitle.setText(subtitle)
+        self.lbl_subtitle.setVisible(bool(subtitle))
+
+        if progress_pct is not None:
+            self.progress_bar.setValue(max(0, min(100, progress_pct)))
+            self.progress_bar.setVisible(True)
+        else:
+            self.progress_bar.setVisible(False)
+
+        self.apply_theme()
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
@@ -102,7 +211,7 @@ class KpiStatCard(QFrame):
         if self.is_hero:
             self.setStyleSheet("""
                 QFrame#KpiHeroCard {
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4F46E5, stop:1 #4338CA);
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4F46E5, stop:1 #3730A3);
                     border: 1px solid #6366F1;
                     border-radius: 12px;
                 }
@@ -113,6 +222,7 @@ class KpiStatCard(QFrame):
             """)
             self.lbl_title.setStyleSheet("color: rgba(255, 255, 255, 0.85); border: none; background: transparent;")
             self.lbl_value.setStyleSheet("color: #FFFFFF; font-size: 22px; font-weight: bold; border: none; background: transparent;")
+            self.lbl_subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-size: 10px;")
             self.lbl_change.setStyleSheet("""
                 background-color: rgba(255, 255, 255, 0.2);
                 color: #FFFFFF;
@@ -128,6 +238,8 @@ class KpiStatCard(QFrame):
                 sub_color = "#A1A1AA"
                 badge_bg = "#2A2A2E"
                 badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#A1A1AA")
+                prog_bg = "#333338"
+                prog_chunk = "#10B981"
             else:
                 bg = "#FFFFFF"
                 border = "#E5E0D8"
@@ -135,6 +247,8 @@ class KpiStatCard(QFrame):
                 sub_color = "#71717A"
                 badge_bg = "#F4F4F5"
                 badge_color = "#059669" if "+" in self.change_text else ("#E11D48" if "-" in self.change_text else "#71717A")
+                prog_bg = "#E5E0D8"
+                prog_chunk = "#059669"
 
             self.setStyleSheet(f"""
                 QFrame#KpiStatCard {{
@@ -146,9 +260,19 @@ class KpiStatCard(QFrame):
                     border: none;
                     background: transparent;
                 }}
+                QProgressBar {{
+                    background-color: {prog_bg};
+                    border: none;
+                    border-radius: 2px;
+                }}
+                QProgressBar::chunk {{
+                    background-color: {prog_chunk};
+                    border-radius: 2px;
+                }}
             """)
             self.lbl_title.setStyleSheet(f"color: {sub_color}; border: none; background: transparent;")
             self.lbl_value.setStyleSheet(f"color: {text_color}; border: none; background: transparent; font-size: 20px;")
+            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 10px;")
             self.lbl_change.setStyleSheet(f"""
                 background-color: {badge_bg};
                 color: {badge_color};
@@ -156,6 +280,7 @@ class KpiStatCard(QFrame):
                 border-radius: 9px;
                 padding: 2px 8px;
             """)
+
 
 
 class ProjectComparisonCanvas(QWidget):
@@ -171,7 +296,7 @@ class ProjectComparisonCanvas(QWidget):
         self.hover_pos: Optional[QPoint] = None
 
         self.setMouseTracking(True)
-        self.setMinimumHeight(160)
+        self.setMinimumHeight(175)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def set_data(self, series: List[Dict[str, Any]], bucket_labels: List[str]) -> None:
@@ -281,10 +406,30 @@ class ProjectComparisonCanvas(QWidget):
         for i, label in enumerate(self.bucket_labels):
             bx = margin_left + i * b_width
             rect = QRectF(bx, margin_top + plot_h + 4, b_width, 18)
-            painter.setPen(text_color)
+            is_hovered_label = (self.hover_bucket_idx == i)
+            if is_hovered_label:
+                painter.setPen(QColor("#FFFFFF" if self.is_dark else "#111111"))
+                painter.setFont(QFont("Inter", 8, QFont.Weight.Bold))
+            else:
+                painter.setPen(text_color)
+                painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, label)
 
-        # 4. Render Data (Bar Mode or Area Mode)
+        # 4. Hover Crosshair & Shaded Column Highlight
+        if self.hover_bucket_idx is not None and self.hover_bucket_idx < num_b:
+            col_x = margin_left + self.hover_bucket_idx * b_width
+            center_x = margin_left + (self.hover_bucket_idx + 0.5) * b_width
+
+            # Soft column highlight
+            h_col = QColor(99, 102, 241, 14 if self.is_dark else 22)
+            painter.fillRect(QRectF(col_x, margin_top, b_width, plot_h), h_col)
+
+            # Vertical dashed crosshair line
+            crosshair_pen = QPen(QColor("#6366F1" if self.is_dark else "#818CF8"), 1.2, Qt.PenStyle.DashLine)
+            painter.setPen(crosshair_pen)
+            painter.drawLine(QPointF(center_x, margin_top), QPointF(center_x, margin_top + plot_h))
+
+        # 5. Render Data (Bar Mode or Area Mode)
         if self.series and num_b > 0:
             active_series = [s for s in self.series if sum(s.get("hours", [])) > 0]
             if not active_series:
@@ -300,11 +445,7 @@ class ProjectComparisonCanvas(QWidget):
                 for b_idx in range(num_b):
                     center_x = margin_left + (b_idx + 0.5) * b_width
                     start_x = center_x - (total_bar_w / 2.0)
-
-                    # Highlight background if hovered
-                    if self.hover_bucket_idx == b_idx:
-                        h_bg = QColor(255, 255, 255, 12 if self.is_dark else 20)
-                        painter.fillRect(QRectF(margin_left + b_idx * b_width, margin_top, b_width, plot_h), h_bg)
+                    is_bucket_hovered = (self.hover_bucket_idx == b_idx)
 
                     for s_idx, s in enumerate(active_series):
                         hours_list = s.get("hours", [])
@@ -315,11 +456,21 @@ class ProjectComparisonCanvas(QWidget):
                         by = margin_top + plot_h - bar_h
 
                         bar_color = QColor(s.get("color", "#6366F1"))
+                        if is_bucket_hovered:
+                            # Brighten hovered bars
+                            bar_color = bar_color.lighter(115)
+                        elif self.hover_bucket_idx is not None:
+                            # Dim non-hovered bars slightly
+                            bar_color.setAlpha(170)
+
                         if val > 0:
                             path = QPainterPath()
                             radius = min(4.0, individual_w / 2.0)
                             path.addRoundedRect(QRectF(bx, by, individual_w, bar_h), radius, radius)
                             painter.fillPath(path, bar_color)
+                            if is_bucket_hovered:
+                                stroke_pen = QPen(QColor(255, 255, 255, 140), 1.0)
+                                painter.strokePath(path, stroke_pen)
             else:
                 # Area / Line Mode: Smooth Bezier Splines
                 for s in reversed(active_series):
@@ -367,48 +518,118 @@ class ProjectComparisonCanvas(QWidget):
                         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
                         painter.strokePath(path, pen)
 
-                        # Draw vertices
-                        for pt in points:
-                            painter.setBrush(QColor("#FFFFFF" if not self.is_dark else "#18181B"))
-                            painter.setPen(QPen(color, 2.0))
-                            painter.drawEllipse(pt, 3.5, 3.5)
+                        # Draw vertices with hover halo rings
+                        for b_i, pt in enumerate(points):
+                            is_node_hovered = (self.hover_bucket_idx == b_i)
+                            if is_node_hovered:
+                                # Outer glowing halo ring
+                                halo_color = QColor(color)
+                                halo_color.setAlpha(60)
+                                painter.setBrush(halo_color)
+                                painter.setPen(Qt.PenStyle.NoPen)
+                                painter.drawEllipse(pt, 7.5, 7.5)
 
-        # 5. Render Hover Tooltip
+                                # Core node
+                                painter.setBrush(QColor("#FFFFFF"))
+                                painter.setPen(QPen(color, 2.5))
+                                painter.drawEllipse(pt, 4.0, 4.0)
+                            else:
+                                painter.setBrush(QColor("#FFFFFF" if not self.is_dark else "#18181B"))
+                                painter.setPen(QPen(color, 2.0))
+                                painter.drawEllipse(pt, 3.2, 3.2)
+
+        # 6. Render Executive Glassmorphic Tooltip Card
         if self.hover_bucket_idx is not None and self.hover_bucket_idx < len(self.bucket_labels) and self.hover_pos:
             b_name = self.bucket_labels[self.hover_bucket_idx]
-            lines = [f"{b_name}"]
+
+            # Gather active project rows for this bucket
+            active_rows = []
+            total_b_hours = 0.0
             for s in self.series:
                 h_list = s.get("hours", [])
-                h_val = h_list[self.hover_bucket_idx] if self.hover_bucket_idx < len(h_list) else 0.0
-                if h_val > 0 or len(self.series) <= 3:
-                    lines.append(f"{s['name']}: {h_val}h")
+                val = h_list[self.hover_bucket_idx] if self.hover_bucket_idx < len(h_list) else 0.0
+                total_b_hours += val
+                if val > 0 or len(self.series) <= 3:
+                    active_rows.append((s.get("color", "#6366F1"), s.get("name", "Project"), val))
 
-            if len(lines) > 1:
-                painter.setFont(QFont("Inter", 9, QFont.Weight.Medium))
-                fm = painter.fontMetrics()
-                tip_w = max(fm.horizontalAdvance(line) for line in lines) + 20
-                tip_h = len(lines) * 16 + 10
+            if active_rows:
+                painter.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
+                title_text = f"{b_name}"
+                total_badge_text = f"{total_b_hours:.1f}h total"
 
-                tip_x = min(w - tip_w - 10, max(10, self.hover_pos.x() - tip_w // 2))
-                tip_y = max(6, self.hover_pos.y() - tip_h - 12)
+                painter.setFont(QFont("Inter", 8, QFont.Weight.Normal))
+                fm_sub = painter.fontMetrics()
+                max_name_w = 0
+                for _, name, h_val in active_rows:
+                    row_w = fm_sub.horizontalAdvance(f"{name}  {h_val:.1f}h") + 30
+                    if row_w > max_name_w:
+                        max_name_w = row_w
 
-                tip_rect = QRectF(tip_x, tip_y, tip_w, tip_h)
-                tip_bg = QColor("#18181B" if self.is_dark else "#FFFFFF")
-                tip_border = QColor("#3F3F46" if self.is_dark else "#D4D4D8")
+                card_w = max(145.0, float(max_name_w + 24))
+                header_h = 24.0
+                row_h = 17.0
+                card_h = header_h + 8.0 + (len(active_rows) * row_h) + 6.0
 
-                path = QPainterPath()
-                path.addRoundedRect(tip_rect, 6, 6)
-                painter.fillPath(path, tip_bg)
-                painter.strokePath(path, QPen(tip_border, 1))
+                # Intelligent positioning
+                raw_x = float(self.hover_pos.x())
+                raw_y = float(self.hover_pos.y())
 
-                painter.setPen(QColor("#FAFAFA" if self.is_dark else "#18181B"))
-                for idx, line in enumerate(lines):
-                    ly = tip_y + 8 + idx * 16
-                    if idx == 0:
-                        painter.setFont(QFont("Inter", 9, QFont.Weight.Bold))
-                    else:
-                        painter.setFont(QFont("Inter", 8, QFont.Weight.Normal))
-                    painter.drawText(QRectF(tip_x + 10, ly - 6, tip_w - 20, 16), Qt.AlignmentFlag.AlignLeft, line)
+                if raw_x + card_w + 16 <= w - margin_right:
+                    card_x = raw_x + 14.0
+                elif raw_x - card_w - 16 >= margin_left:
+                    card_x = raw_x - card_w - 14.0
+                else:
+                    card_x = max(margin_left + 4, min(w - margin_right - card_w - 4, raw_x - card_w / 2.0))
+
+                card_y = max(4.0, min(h - card_h - 4.0, raw_y - card_h / 2.0))
+
+                card_rect = QRectF(card_x, card_y, card_w, card_h)
+
+                card_bg = QColor("#18181B" if self.is_dark else "#FFFFFF")
+                card_border = QColor("#3F3F46" if self.is_dark else "#D4D4D8")
+
+                card_path = QPainterPath()
+                card_path.addRoundedRect(card_rect, 8.0, 8.0)
+
+                # Soft shadow
+                shadow_color = QColor(0, 0, 0, 80 if self.is_dark else 28)
+                painter.fillPath(card_path.translated(0, 2), shadow_color)
+
+                painter.fillPath(card_path, card_bg)
+                painter.strokePath(card_path, QPen(card_border, 1.0))
+
+                # Header text
+                painter.setFont(QFont("Inter", 9, QFont.Weight.Bold))
+                painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
+                painter.drawText(QRectF(card_x + 10, card_y + 5, card_w - 65, 16), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, title_text)
+
+                # Total badge
+                painter.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
+                painter.setPen(QColor("#818CF8" if self.is_dark else "#4F46E5"))
+                painter.drawText(QRectF(card_x + card_w - 62, card_y + 5, 52, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, total_badge_text)
+
+                # Divider
+                painter.setPen(QPen(QColor("#27272A" if self.is_dark else "#E5E5E7"), 1.0))
+                painter.drawLine(QPointF(card_x + 8, card_y + 23), QPointF(card_x + card_w - 8, card_y + 23))
+
+                # Project rows
+                curr_y = card_y + 27
+                painter.setFont(QFont("Inter", 8, QFont.Weight.Normal))
+                for color_hex, name, h_val in active_rows:
+                    # Color dot
+                    painter.setBrush(QColor(color_hex))
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    painter.drawEllipse(QPointF(card_x + 14, curr_y + 7), 3.2, 3.2)
+
+                    # Project name
+                    painter.setPen(QColor("#A1A1AA" if self.is_dark else "#52525B"))
+                    painter.drawText(QRectF(card_x + 22, curr_y, card_w - 68, 15), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, name)
+
+                    # Hours
+                    painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
+                    painter.drawText(QRectF(card_x + card_w - 44, curr_y, 34, 15), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, f"{h_val:.1f}h")
+
+                    curr_y += row_h
 
 
 class ProjectComparisonChartWidget(QFrame):

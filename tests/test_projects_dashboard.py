@@ -503,3 +503,81 @@ def test_projects_overview_dashboard_full_integration(qapp, repo: StorageReposit
     overview.set_theme(is_dark=True)
     assert overview.is_dark is True
 
+
+def test_project_comparison_canvas_hover_and_crosshair(qapp):
+    """Test interactive mouse tracking, crosshair positioning, and tooltip generation."""
+    from PyQt6.QtGui import QMouseEvent
+    from PyQt6.QtCore import QEvent, QPointF
+    from wiz.ui.chart_widgets import ProjectComparisonCanvas
+
+    canvas = ProjectComparisonCanvas(is_dark=True)
+    canvas.resize(400, 200)
+
+    series = [
+        {"name": "WizDesk Core", "color": "#6366F1", "hours": [2.5, 4.0, 1.5, 3.0, 2.0, 0.0, 0.0]},
+        {"name": "Client Portal", "color": "#10B981", "hours": [1.0, 2.5, 0.0, 1.5, 4.0, 0.0, 0.0]},
+    ]
+    bucket_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    canvas.set_data(series, bucket_labels)
+
+    # Initial state has no hover
+    assert canvas.hover_bucket_idx is None
+
+    # Simulate mouse move over Tuesday (index 1)
+    # Total plot_w = 400 - 34 - 14 = 352. b_w = 352 / 7 = 50.28.
+    # Bucket 1 center = 34 + 1.5 * 50.28 = ~109.4
+    move_ev = QMouseEvent(
+        QEvent.Type.MouseMove,
+        QPointF(110.0, 80.0),
+        QPointF(110.0, 80.0),
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mouseMoveEvent(move_ev)
+    assert canvas.hover_bucket_idx == 1
+    assert canvas.hover_pos == QPoint(110, 80)
+
+    # Repaint with hover active to verify crosshair and glassmorphic card rendering
+    canvas.repaint()
+
+    # Switch to Area mode and repaint
+    canvas.set_chart_mode("area")
+    assert canvas.chart_mode == "area"
+    canvas.repaint()
+
+    # Simulate mouse leaving canvas
+    leave_ev = QEvent(QEvent.Type.Leave)
+    canvas.leaveEvent(leave_ev)
+    assert canvas.hover_bucket_idx is None
+    assert canvas.hover_pos is None
+
+
+def test_kpi_card_sparkline_and_progress(qapp):
+    """Test micro-sparkline canvas rendering and mini task progress bars."""
+    from wiz.ui.chart_widgets import KpiStatCard
+
+    # Hero card with sparkline
+    hero = KpiStatCard("Total Tracked Time", "18.8h", "+368%", is_hero=True, is_dark=True)
+    hero.resize(200, 90)
+    assert hero.sparkline is not None
+
+    sparkline_vals = [2.5, 4.0, 3.2, 1.8, 2.5, 0.0, 0.0]
+    hero.set_sparkline_data(sparkline_vals)
+    assert hero.sparkline.values == sparkline_vals
+    hero.repaint()
+
+    # Standard card with subtitle and task progress
+    task_card = KpiStatCard("Tasks Completed", "0 / 0", is_hero=False, is_dark=True)
+    task_card.resize(200, 90)
+    assert task_card.sparkline is None
+
+    task_card.update_data("3 / 4", "75%", subtitle="75% completed", progress_pct=75)
+    assert task_card.value_text == "3 / 4"
+    assert task_card.change_text == "75%"
+    assert task_card.subtitle_text == "75% completed"
+    assert not task_card.progress_bar.isHidden()
+    assert task_card.progress_bar.value() == 75
+    task_card.repaint()
+
+

@@ -753,13 +753,16 @@ class StorageRepository:
             bucket_labels = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00+"]
         elif tf in ("this_week", "week"):
             start_curr = datetime(now.year, now.month, now.day, 0, 0, 0) - timedelta(days=now.weekday())
-            end_curr = now
+            end_curr = start_curr + timedelta(days=7)
             start_prev = start_curr - timedelta(days=7)
             end_prev = start_curr
             bucket_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         elif tf in ("this_month", "month"):
             start_curr = datetime(now.year, now.month, 1, 0, 0, 0)
-            end_curr = now
+            if now.month == 12:
+                end_curr = datetime(now.year + 1, 1, 1, 0, 0, 0)
+            else:
+                end_curr = datetime(now.year, now.month + 1, 1, 0, 0, 0)
             first_day_prev = (start_curr - timedelta(days=1)).replace(day=1)
             start_prev = first_day_prev
             end_prev = start_curr
