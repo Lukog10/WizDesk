@@ -581,3 +581,116 @@ def test_kpi_card_sparkline_and_progress(qapp):
     task_card.repaint()
 
 
+def test_kpi_card_hover_and_cursor(qapp):
+    """Test pointing hand cursor and hover state triggers on KPI cards."""
+    from wiz.ui.chart_widgets import KpiStatCard
+    from PyQt6.QtCore import QEvent
+
+    hero = KpiStatCard("Total Tracked Time", "18.8h", "+368%", is_hero=True, is_dark=True)
+    assert hero.cursor().shape() == Qt.CursorShape.PointingHandCursor
+    assert hero.sparkline is not None
+    assert hero.sparkline.is_hovered is False
+
+    # Simulate mouse enter
+    enter_ev = QEvent(QEvent.Type.Enter)
+    hero.enterEvent(enter_ev)
+    assert hero.sparkline.is_hovered is True
+
+    # Simulate mouse leave
+    leave_ev = QEvent(QEvent.Type.Leave)
+    hero.leaveEvent(leave_ev)
+    assert hero.sparkline.is_hovered is False
+
+    # Standard card has pointing hand cursor too
+    card = KpiStatCard("Active Projects", "3", is_hero=False, is_dark=True)
+    assert card.cursor().shape() == Qt.CursorShape.PointingHandCursor
+
+
+def test_project_comparison_canvas_spotlight(qapp):
+    """Test crosshair cursor and series spotlighting on comparison chart canvas."""
+    from wiz.ui.chart_widgets import ProjectComparisonCanvas
+
+    canvas = ProjectComparisonCanvas(is_dark=True)
+    canvas.resize(400, 200)
+    assert canvas.cursor().shape() == Qt.CursorShape.CrossCursor
+    assert canvas.spotlight_series is None
+
+    series = [
+        {"name": "Alpha", "color": "#6366F1", "hours": [1.0, 2.0, 3.0]},
+        {"name": "Beta", "color": "#10B981", "hours": [0.5, 1.5, 2.5]},
+    ]
+    canvas.set_data(series, ["Mon", "Tue", "Wed"])
+
+    canvas.set_spotlight_series("Alpha")
+    assert canvas.spotlight_series == "Alpha"
+    canvas.repaint()
+
+    canvas.set_chart_mode("area")
+    canvas.repaint()
+
+    canvas.set_spotlight_series(None)
+    assert canvas.spotlight_series is None
+    canvas.repaint()
+
+
+def test_app_usage_ring_canvas_hover(qapp):
+    """Test mouse tracking, hovered ring detection, and center text morphing on AppUsageRingCanvas."""
+    from wiz.ui.chart_widgets import AppUsageRingCanvas
+    from PyQt6.QtGui import QMouseEvent
+    from PyQt6.QtCore import QPointF, QEvent
+
+    canvas = AppUsageRingCanvas(is_dark=True)
+    assert canvas.hasMouseTracking() is True
+
+    apps_data = [
+        {"app_name": "VS Code", "hours": 8.0, "percentage": 50, "color": "#3B82F6"},
+        {"app_name": "Chrome", "hours": 4.0, "percentage": 25, "color": "#10B981"},
+        {"app_name": "Terminal", "hours": 2.0, "percentage": 12, "color": "#F59E0B"},
+    ]
+    canvas.set_data(apps_data, 14.0)
+
+    # Initial state
+    assert canvas.hovered_ring_idx is None
+
+    # Center is (70, 70). Outer ring radius = 70 - 10 = 60.
+    # Point at (70, 10) is dx=0, dy=-60 (top of ring, angle = 90 deg, inside arc).
+    move_ev = QMouseEvent(
+        QEvent.Type.MouseMove,
+        QPointF(70.0, 10.0),
+        QPointF(70.0, 10.0),
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mouseMoveEvent(move_ev)
+    assert canvas.hovered_ring_idx == 0
+    assert canvas.cursor().shape() == Qt.CursorShape.PointingHandCursor
+    canvas.repaint()
+
+    # Second ring radius = 60 - (7 + 5) = 48.
+    # Point at (70, 70 - 48) = (70, 22).
+    move_ev2 = QMouseEvent(
+        QEvent.Type.MouseMove,
+        QPointF(70.0, 22.0),
+        QPointF(70.0, 22.0),
+        Qt.MouseButton.NoButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    canvas.mouseMoveEvent(move_ev2)
+    assert canvas.hovered_ring_idx == 1
+    canvas.repaint()
+
+    # Programmatic hover setter
+    canvas.set_hovered_ring(2)
+    assert canvas.hovered_ring_idx == 2
+    canvas.repaint()
+
+    # Mouse leave resets hover
+    leave_ev = QEvent(QEvent.Type.Leave)
+    canvas.leaveEvent(leave_ev)
+    assert canvas.hovered_ring_idx is None
+    assert canvas.cursor().shape() == Qt.CursorShape.ArrowCursor
+    canvas.repaint()
+
+

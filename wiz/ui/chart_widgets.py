@@ -42,12 +42,18 @@ class MicroSparklineCanvas(QWidget):
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.values: List[float] = []
+        self.is_hovered: bool = False
         self.setFixedHeight(26)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def set_data(self, values: List[float]) -> None:
         self.values = values
         self.update()
+
+    def set_hovered(self, hovered: bool) -> None:
+        if self.is_hovered != hovered:
+            self.is_hovered = hovered
+            self.update()
 
     def paintEvent(self, event) -> None:
         if not self.values or len(self.values) < 2:
@@ -83,12 +89,14 @@ class MicroSparklineCanvas(QWidget):
         area_path.closeSubpath()
 
         grad = QLinearGradient(0, 0, 0, h)
-        grad.setColorAt(0.0, QColor(255, 255, 255, 60))
+        top_alpha = 90 if self.is_hovered else 60
+        grad.setColorAt(0.0, QColor(255, 255, 255, top_alpha))
         grad.setColorAt(1.0, QColor(255, 255, 255, 4))
         painter.fillPath(area_path, grad)
 
         # Line stroke
-        pen = QPen(QColor(255, 255, 255, 220), 1.8)
+        stroke_width = 2.2 if self.is_hovered else 1.8
+        pen = QPen(QColor(255, 255, 255, 255 if self.is_hovered else 220), stroke_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.strokePath(path, pen)
@@ -96,9 +104,18 @@ class MicroSparklineCanvas(QWidget):
         # End node
         if points:
             last_pt = points[-1]
-            painter.setBrush(QColor("#FFFFFF"))
-            painter.setPen(QPen(QColor("#4F46E5"), 1.5))
-            painter.drawEllipse(last_pt, 2.5, 2.5)
+            if self.is_hovered:
+                # Glowing outer halo
+                painter.setBrush(QColor(255, 255, 255, 75))
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.drawEllipse(last_pt, 6.0, 6.0)
+                painter.setBrush(QColor("#FFFFFF"))
+                painter.setPen(QPen(QColor("#3730A3"), 1.8))
+                painter.drawEllipse(last_pt, 3.0, 3.0)
+            else:
+                painter.setBrush(QColor("#FFFFFF"))
+                painter.setPen(QPen(QColor("#4F46E5"), 1.5))
+                painter.drawEllipse(last_pt, 2.5, 2.5)
 
 
 class KpiStatCard(QFrame):
@@ -123,6 +140,7 @@ class KpiStatCard(QFrame):
         self.is_dark = is_dark
         self.setObjectName("KpiHeroCard" if self.is_hero else "KpiStatCard")
 
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.setMinimumHeight(84)
 
@@ -140,6 +158,7 @@ class KpiStatCard(QFrame):
         top_row.addStretch()
 
         self.lbl_change = QLabel(change_text)
+        self.lbl_change.setObjectName("KpiChangeBadge")
         self.lbl_change.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
         self.lbl_change.setVisible(bool(change_text))
         top_row.addWidget(self.lbl_change)
@@ -148,6 +167,7 @@ class KpiStatCard(QFrame):
 
         # Value row
         self.lbl_value = QLabel(value)
+        self.lbl_value.setObjectName("KpiValue")
         self.lbl_value.setFont(QFont("Inter", 19, QFont.Weight.Bold))
         layout.addWidget(self.lbl_value)
 
@@ -174,6 +194,22 @@ class KpiStatCard(QFrame):
 
         layout.addStretch()
         self.apply_theme()
+
+    def enterEvent(self, event) -> None:
+        if self.is_hero and self.sparkline:
+            self.sparkline.set_hovered(True)
+        try:
+            super().enterEvent(event)
+        except TypeError:
+            pass
+
+    def leaveEvent(self, event) -> None:
+        if self.is_hero and self.sparkline:
+            self.sparkline.set_hovered(False)
+        try:
+            super().leaveEvent(event)
+        except TypeError:
+            pass
 
     def set_sparkline_data(self, values: List[float]) -> None:
         if self.sparkline:
@@ -215,6 +251,10 @@ class KpiStatCard(QFrame):
                     border: 1px solid #6366F1;
                     border-radius: 12px;
                 }
+                QFrame#KpiHeroCard:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5B52F2, stop:1 #4338CA);
+                    border: 1px solid #818CF8;
+                }
                 QLabel {
                     border: none;
                     background: transparent;
@@ -224,31 +264,42 @@ class KpiStatCard(QFrame):
             self.lbl_value.setStyleSheet("color: #FFFFFF; font-size: 22px; font-weight: bold; border: none; background: transparent;")
             self.lbl_subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-size: 10px;")
             self.lbl_change.setStyleSheet("""
-                background-color: rgba(255, 255, 255, 0.2);
-                color: #FFFFFF;
-                border: none;
-                border-radius: 9px;
-                padding: 2px 8px;
+                QLabel#KpiChangeBadge {
+                    background-color: rgba(255, 255, 255, 0.2);
+                    color: #FFFFFF;
+                    border: none;
+                    border-radius: 9px;
+                    padding: 2px 8px;
+                }
+                QFrame#KpiHeroCard:hover QLabel#KpiChangeBadge {
+                    background-color: rgba(255, 255, 255, 0.3);
+                }
             """)
         else:
             if self.is_dark:
                 bg = "#242427"
                 border = "#333338"
+                hover_bg = "#2A2A2F"
+                hover_border = "#4F46E5"
                 text_color = "#F4F4F6"
                 sub_color = "#A1A1AA"
                 badge_bg = "#2A2A2E"
                 badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#A1A1AA")
                 prog_bg = "#333338"
                 prog_chunk = "#10B981"
+                prog_chunk_hover = "#34D399"
             else:
                 bg = "#FFFFFF"
                 border = "#E5E0D8"
+                hover_bg = "#FAF9F6"
+                hover_border = "#6366F1"
                 text_color = "#111111"
                 sub_color = "#71717A"
                 badge_bg = "#F4F4F5"
                 badge_color = "#059669" if "+" in self.change_text else ("#E11D48" if "-" in self.change_text else "#71717A")
                 prog_bg = "#E5E0D8"
                 prog_chunk = "#059669"
+                prog_chunk_hover = "#10B981"
 
             self.setStyleSheet(f"""
                 QFrame#KpiStatCard {{
@@ -256,9 +307,16 @@ class KpiStatCard(QFrame):
                     border: 1px solid {border};
                     border-radius: 12px;
                 }}
+                QFrame#KpiStatCard:hover {{
+                    background-color: {hover_bg};
+                    border: 1px solid {hover_border};
+                }}
                 QLabel {{
                     border: none;
                     background: transparent;
+                }}
+                QFrame#KpiStatCard:hover QLabel#KpiValue {{
+                    color: {"#FFFFFF" if self.is_dark else "#000000"};
                 }}
                 QProgressBar {{
                     background-color: {prog_bg};
@@ -269,16 +327,24 @@ class KpiStatCard(QFrame):
                     background-color: {prog_chunk};
                     border-radius: 2px;
                 }}
+                QFrame#KpiStatCard:hover QProgressBar::chunk {{
+                    background-color: {prog_chunk_hover};
+                }}
             """)
             self.lbl_title.setStyleSheet(f"color: {sub_color}; border: none; background: transparent;")
             self.lbl_value.setStyleSheet(f"color: {text_color}; border: none; background: transparent; font-size: 20px;")
             self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 10px;")
             self.lbl_change.setStyleSheet(f"""
-                background-color: {badge_bg};
-                color: {badge_color};
-                border: 1px solid {border};
-                border-radius: 9px;
-                padding: 2px 8px;
+                QLabel#KpiChangeBadge {{
+                    background-color: {badge_bg};
+                    color: {badge_color};
+                    border: 1px solid {border};
+                    border-radius: 9px;
+                    padding: 2px 8px;
+                }}
+                QFrame#KpiStatCard:hover QLabel#KpiChangeBadge {{
+                    border-color: {hover_border};
+                }}
             """)
 
 
@@ -294,10 +360,17 @@ class ProjectComparisonCanvas(QWidget):
         self.bucket_labels: List[str] = []
         self.hover_bucket_idx: Optional[int] = None
         self.hover_pos: Optional[QPoint] = None
+        self.spotlight_series: Optional[str] = None
 
         self.setMouseTracking(True)
+        self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
         self.setMinimumHeight(175)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def set_spotlight_series(self, name: Optional[str]) -> None:
+        if self.spotlight_series != name:
+            self.spotlight_series = name
+            self.update()
 
     def set_data(self, series: List[Dict[str, Any]], bucket_labels: List[str]) -> None:
         self.series = series
@@ -455,8 +528,15 @@ class ProjectComparisonCanvas(QWidget):
                         bx = start_x + s_idx * (individual_w + bar_gap)
                         by = margin_top + plot_h - bar_h
 
+                        is_spotlighted = (self.spotlight_series == s.get("name"))
+                        is_dimmed = (self.spotlight_series is not None and not is_spotlighted)
+
                         bar_color = QColor(s.get("color", "#6366F1"))
-                        if is_bucket_hovered:
+                        if is_spotlighted:
+                            bar_color = bar_color.lighter(125)
+                        elif is_dimmed:
+                            bar_color.setAlpha(60)
+                        elif is_bucket_hovered:
                             # Brighten hovered bars
                             bar_color = bar_color.lighter(115)
                         elif self.hover_bucket_idx is not None:
@@ -468,14 +548,19 @@ class ProjectComparisonCanvas(QWidget):
                             radius = min(4.0, individual_w / 2.0)
                             path.addRoundedRect(QRectF(bx, by, individual_w, bar_h), radius, radius)
                             painter.fillPath(path, bar_color)
-                            if is_bucket_hovered:
-                                stroke_pen = QPen(QColor(255, 255, 255, 140), 1.0)
+                            if is_bucket_hovered or is_spotlighted:
+                                stroke_pen = QPen(QColor(255, 255, 255, 180 if is_spotlighted else 140), 1.2 if is_spotlighted else 1.0)
                                 painter.strokePath(path, stroke_pen)
             else:
                 # Area / Line Mode: Smooth Bezier Splines
                 for s in reversed(active_series):
                     color = QColor(s.get("color", "#6366F1"))
                     hours_list = s.get("hours", [])
+
+                    is_spotlighted = (self.spotlight_series == s.get("name"))
+                    is_dimmed = (self.spotlight_series is not None and not is_spotlighted)
+                    if is_dimmed:
+                        color.setAlpha(60)
 
                     points: List[QPointF] = []
                     for b_idx in range(num_b):
@@ -504,16 +589,16 @@ class ProjectComparisonCanvas(QWidget):
 
                         gradient = QLinearGradient(0, margin_top, 0, margin_top + plot_h)
                         grad_color_top = QColor(color)
-                        grad_color_top.setAlpha(80 if self.is_dark else 70)
+                        grad_color_top.setAlpha(20 if is_dimmed else (80 if self.is_dark else 70))
                         grad_color_bot = QColor(color)
-                        grad_color_bot.setAlpha(6)
+                        grad_color_bot.setAlpha(2 if is_dimmed else 6)
                         gradient.setColorAt(0.0, grad_color_top)
                         gradient.setColorAt(1.0, grad_color_bot)
 
                         painter.fillPath(area_path, gradient)
 
                         # Draw the line curve
-                        pen = QPen(color, 2.5)
+                        pen = QPen(color, 3.2 if is_spotlighted else 2.5)
                         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
                         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
                         painter.strokePath(path, pen)
@@ -521,18 +606,18 @@ class ProjectComparisonCanvas(QWidget):
                         # Draw vertices with hover halo rings
                         for b_i, pt in enumerate(points):
                             is_node_hovered = (self.hover_bucket_idx == b_i)
-                            if is_node_hovered:
+                            if is_node_hovered or is_spotlighted:
                                 # Outer glowing halo ring
                                 halo_color = QColor(color)
-                                halo_color.setAlpha(60)
+                                halo_color.setAlpha(70 if is_spotlighted else 60)
                                 painter.setBrush(halo_color)
                                 painter.setPen(Qt.PenStyle.NoPen)
-                                painter.drawEllipse(pt, 7.5, 7.5)
+                                painter.drawEllipse(pt, 8.5 if is_spotlighted else 7.5, 8.5 if is_spotlighted else 7.5)
 
                                 # Core node
                                 painter.setBrush(QColor("#FFFFFF"))
                                 painter.setPen(QPen(color, 2.5))
-                                painter.drawEllipse(pt, 4.0, 4.0)
+                                painter.drawEllipse(pt, 4.2 if is_spotlighted else 4.0, 4.2 if is_spotlighted else 4.0)
                             else:
                                 painter.setBrush(QColor("#FFFFFF" if not self.is_dark else "#18181B"))
                                 painter.setPen(QPen(color, 2.0))
@@ -705,16 +790,29 @@ class ProjectComparisonChartWidget(QFrame):
                 w.deleteLater()
 
         for s in series[:5]:
+            pill = QFrame()
+            pill.setObjectName("LegendPill")
+            pill.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            pill_layout = QHBoxLayout(pill)
+            pill_layout.setContentsMargins(6, 2, 6, 2)
+            pill_layout.setSpacing(6)
+
             dot = QFrame()
             dot.setFixedSize(8, 8)
             dot.setStyleSheet(f"background-color: {s.get('color', '#6366F1')}; border-radius: 4px;")
-            self.legend_layout.addWidget(dot)
+            pill_layout.addWidget(dot)
 
             name_lbl = QLabel(f"{s['name']} ({s.get('total_hours', 0)}h)")
             name_lbl.setFont(QFont("Inter", 9, QFont.Weight.Medium))
             name_lbl.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #71717A;")
-            self.legend_layout.addWidget(name_lbl)
-            self.legend_layout.addSpacing(6)
+            pill_layout.addWidget(name_lbl)
+
+            s_name = s.get("name", "")
+            pill.enterEvent = lambda event, name=s_name: self.canvas.set_spotlight_series(name)
+            pill.leaveEvent = lambda event: self.canvas.set_spotlight_series(None)
+
+            self.legend_layout.addWidget(pill)
+            self.legend_layout.addSpacing(2)
 
         self.legend_layout.addStretch()
 
@@ -746,6 +844,7 @@ class ProjectComparisonChartWidget(QFrame):
     def apply_theme(self) -> None:
         bg = "#242427" if self.is_dark else "#FFFFFF"
         border = "#333338" if self.is_dark else "#E5E0D8"
+        hover_border = "#4A4A54" if self.is_dark else "#D4CEBF"
         capsule_bg = "#1E1E22" if self.is_dark else "#ECECF0"
         title_color = "#F4F4F6" if self.is_dark else "#111111"
 
@@ -755,6 +854,9 @@ class ProjectComparisonChartWidget(QFrame):
                 border: 1px solid {border};
                 border-radius: 14px;
             }}
+            QFrame#ChartCard:hover {{
+                border: 1px solid {hover_border};
+            }}
             QFrame#ToggleCapsule {{
                 background-color: {capsule_bg};
                 border-radius: 6px;
@@ -762,18 +864,32 @@ class ProjectComparisonChartWidget(QFrame):
             QLabel {{
                 color: {title_color};
             }}
+            QFrame#LegendPill {{
+                background: transparent;
+                border: 1px solid transparent;
+                border-radius: 6px;
+            }}
+            QFrame#LegendPill:hover {{
+                background-color: {"#2A2A2E" if self.is_dark else "#F4F4F5"};
+                border: 1px solid {"#3F3F46" if self.is_dark else "#E5E0D8"};
+            }}
         """)
 
 
 class AppUsageRingCanvas(QWidget):
-    """Custom QPainter canvas rendering multi-arc concentric rings matching the reference image."""
+    """Custom QPainter canvas rendering multi-arc concentric rings with hover tracking matching the reference image."""
+
+    ring_hovered = pyqtSignal(int)
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
         self.apps_data: List[Dict[str, Any]] = []
         self.total_hours: float = 0.0
+        self.hovered_ring_idx: Optional[int] = None
+        self.hover_pos: Optional[QPoint] = None
 
+        self.setMouseTracking(True)
         self.setFixedSize(140, 140)
 
     def set_data(self, apps_data: List[Dict[str, Any]], total_hours: float) -> None:
@@ -784,6 +900,54 @@ class AppUsageRingCanvas(QWidget):
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
         self.update()
+
+    def set_hovered_ring(self, idx: Optional[int]) -> None:
+        if self.hovered_ring_idx != idx:
+            self.hovered_ring_idx = idx
+            self.update()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        pos = event.position()
+        cx = self.width() / 2.0
+        cy = self.height() / 2.0
+        dx = pos.x() - cx
+        dy = pos.y() - cy
+        d = math.hypot(dx, dy)
+
+        base_radius = min(cx, cy) - 10.0
+        ring_thickness = 7.0
+        ring_gap = 5.0
+        top_apps = self.apps_data[:3]
+
+        found_idx = None
+        if top_apps:
+            deg = math.degrees(math.atan2(-dy, dx)) % 360.0
+            is_in_arc_angle = not (235.0 <= deg <= 305.0)
+
+            if is_in_arc_angle:
+                for idx in range(len(top_apps)):
+                    r = base_radius - idx * (ring_thickness + ring_gap)
+                    if r > 8 and abs(d - r) <= (ring_thickness / 2.0 + 3.0):
+                        found_idx = idx
+                        break
+
+        if found_idx != self.hovered_ring_idx:
+            self.hovered_ring_idx = found_idx
+            self.hover_pos = pos.toPoint() if found_idx is not None else None
+            self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor if found_idx is not None else Qt.CursorShape.ArrowCursor))
+            self.ring_hovered.emit(found_idx if found_idx is not None else -1)
+            self.update()
+        elif found_idx is not None:
+            self.hover_pos = pos.toPoint()
+            self.update()
+
+    def leaveEvent(self, event) -> None:
+        if self.hovered_ring_idx is not None:
+            self.hovered_ring_idx = None
+            self.hover_pos = None
+            self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+            self.ring_hovered.emit(-1)
+            self.update()
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -808,10 +972,13 @@ class AppUsageRingCanvas(QWidget):
             if r <= 8:
                 break
 
+            is_ring_hovered = (self.hovered_ring_idx == idx)
+            draw_thickness = ring_thickness + 2.5 if is_ring_hovered else ring_thickness
+
             arc_rect = QRectF(cx - r, cy - r, r * 2, r * 2)
 
             # Draw background track
-            track_pen = QPen(track_color, ring_thickness, Qt.PenStyle.SolidLine)
+            track_pen = QPen(track_color, draw_thickness, Qt.PenStyle.SolidLine)
             track_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(track_pen)
             painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -822,22 +989,46 @@ class AppUsageRingCanvas(QWidget):
             active_span = int(- (pct / 100.0) * 270.0 * 16.0)
             if active_span != 0:
                 app_color = QColor(app.get("color", "#3B82F6"))
-                active_pen = QPen(app_color, ring_thickness, Qt.PenStyle.SolidLine)
+                if is_ring_hovered:
+                    app_color = app_color.lighter(125)
+                    glow_pen = QPen(QColor(app_color.red(), app_color.green(), app_color.blue(), 70), draw_thickness + 4.0)
+                    glow_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                    painter.setPen(glow_pen)
+                    painter.drawArc(arc_rect, 225 * 16, active_span)
+
+                active_pen = QPen(app_color, draw_thickness, Qt.PenStyle.SolidLine)
                 active_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
                 painter.setPen(active_pen)
                 painter.drawArc(arc_rect, 225 * 16, active_span)
 
-        # 2. Draw Center Text (Total Hours)
-        hours_str = f"{self.total_hours}h"
-        painter.setFont(QFont("Inter", 15, QFont.Weight.Bold))
-        painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
-        text_rect = QRectF(cx - 50, cy - 14, 100, 20)
-        painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
+        # 2. Draw Center Text (Dynamic: Total Hours or Hovered App breakdown)
+        if self.hovered_ring_idx is not None and self.hovered_ring_idx < len(top_apps):
+            app = top_apps[self.hovered_ring_idx]
+            app_name = app.get("app_name", "App")
+            if len(app_name) > 11:
+                app_name = app_name[:10] + "…"
+            hours = app.get("hours", 0.0)
+            pct = app.get("percentage", 0)
+            app_color = QColor(app.get("color", "#3B82F6")).lighter(120 if self.is_dark else 100)
 
-        painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
-        painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
-        sub_rect = QRectF(cx - 50, cy + 6, 100, 16)
-        painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
+            painter.setFont(QFont("Inter", 11, QFont.Weight.Bold))
+            painter.setPen(app_color)
+            painter.drawText(QRectF(cx - 50, cy - 16, 100, 18), Qt.AlignmentFlag.AlignCenter, app_name)
+
+            painter.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
+            painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
+            painter.drawText(QRectF(cx - 50, cy + 4, 100, 16), Qt.AlignmentFlag.AlignCenter, f"{hours}h ({pct}%)")
+        else:
+            hours_str = f"{self.total_hours}h"
+            painter.setFont(QFont("Inter", 15, QFont.Weight.Bold))
+            painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
+            text_rect = QRectF(cx - 50, cy - 14, 100, 20)
+            painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
+
+            painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+            painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
+            sub_rect = QRectF(cx - 50, cy + 6, 100, 16)
+            painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
 
 
 class AppUsageAnalyticsWidget(QFrame):
@@ -904,7 +1095,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
         self.ring_list_layout = QVBoxLayout()
         self.ring_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.ring_list_layout.setSpacing(8)
+        self.ring_list_layout.setSpacing(6)
         self.ring_list_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         ring_page_layout.addLayout(self.ring_list_layout, 1)
 
@@ -914,7 +1105,7 @@ class AppUsageAnalyticsWidget(QFrame):
         self.bar_page = QWidget()
         self.bar_page_layout = QVBoxLayout(self.bar_page)
         self.bar_page_layout.setContentsMargins(0, 4, 0, 0)
-        self.bar_page_layout.setSpacing(8)
+        self.bar_page_layout.setSpacing(6)
         self.stack.addWidget(self.bar_page)
 
         layout.addWidget(self.stack)
@@ -953,10 +1144,12 @@ class AppUsageAnalyticsWidget(QFrame):
             self.ring_list_layout.addWidget(empty)
             return
 
-        for app in apps[:4]:
-            row_widget = QWidget()
-            row = QHBoxLayout(row_widget)
-            row.setContentsMargins(0, 2, 0, 2)
+        for idx, app in enumerate(apps[:4]):
+            row_frame = QFrame()
+            row_frame.setObjectName("AppRingRow")
+            row_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            row = QHBoxLayout(row_frame)
+            row.setContentsMargins(6, 3, 6, 3)
             row.setSpacing(6)
 
             dot = QFrame()
@@ -981,7 +1174,10 @@ class AppUsageAnalyticsWidget(QFrame):
             pct_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             row.addWidget(pct_lbl)
 
-            self.ring_list_layout.addWidget(row_widget)
+            row_frame.enterEvent = lambda event, i=idx: self.ring_canvas.set_hovered_ring(i)
+            row_frame.leaveEvent = lambda event: self.ring_canvas.set_hovered_ring(None)
+
+            self.ring_list_layout.addWidget(row_frame)
 
     def _render_bar_app_list(self, apps: List[Dict[str, Any]]) -> None:
         # Clear bar layout
@@ -1002,8 +1198,10 @@ class AppUsageAnalyticsWidget(QFrame):
 
         for app in apps[:5]:
             item_frame = QFrame()
+            item_frame.setObjectName("AppUsageBarItem")
+            item_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             item_layout = QVBoxLayout(item_frame)
-            item_layout.setContentsMargins(0, 3, 0, 3)
+            item_layout.setContentsMargins(8, 4, 8, 4)
             item_layout.setSpacing(3)
 
             row = QHBoxLayout()
@@ -1080,6 +1278,7 @@ class AppUsageAnalyticsWidget(QFrame):
     def apply_theme(self) -> None:
         bg = "#242427" if self.is_dark else "#FFFFFF"
         border = "#333338" if self.is_dark else "#E5E0D8"
+        hover_border = "#4A4A54" if self.is_dark else "#D4CEBF"
         capsule_bg = "#1E1E22" if self.is_dark else "#ECECF0"
         title_color = "#F4F4F6" if self.is_dark else "#111111"
 
@@ -1089,11 +1288,32 @@ class AppUsageAnalyticsWidget(QFrame):
                 border: 1px solid {border};
                 border-radius: 14px;
             }}
+            QFrame#AppUsageCard:hover {{
+                border: 1px solid {hover_border};
+            }}
             QFrame#ToggleCapsule {{
                 background-color: {capsule_bg};
                 border-radius: 6px;
             }}
             QLabel {{
                 color: {title_color};
+            }}
+            QFrame#AppRingRow {{
+                background: transparent;
+                border: 1px solid transparent;
+                border-radius: 6px;
+            }}
+            QFrame#AppRingRow:hover {{
+                background-color: {"#2E2E33" if self.is_dark else "#F4F4F5"};
+                border: 1px solid {"#3F3F46" if self.is_dark else "#E5E0D8"};
+            }}
+            QFrame#AppUsageBarItem {{
+                background: transparent;
+                border: 1px solid transparent;
+                border-radius: 8px;
+            }}
+            QFrame#AppUsageBarItem:hover {{
+                background-color: {"#2A2A2E" if self.is_dark else "#FAF8F5"};
+                border: 1px solid {"#3F3F46" if self.is_dark else "#E5E0D8"};
             }}
         """)

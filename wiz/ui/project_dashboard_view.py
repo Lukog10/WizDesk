@@ -350,8 +350,8 @@ class ProjectSummaryCard(QFrame):
                     border-radius: 8px;
                 }}
                 QFrame#ProjectSummaryCard:hover {{
-                    border-color: #4A4A52;
-                    background-color: #2A2A2E;
+                    border: 1px solid #6366F1;
+                    background-color: #2A2A2F;
                 }}
                 QLabel {{ color: #F4F4F6; }}
                 QLabel#TimeBadge {{
@@ -361,6 +361,10 @@ class ProjectSummaryCard(QFrame):
                     border-radius: 6px;
                     padding: 3px 8px;
                 }}
+                QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {{
+                    border-color: #6366F1;
+                    color: #FFFFFF;
+                }}
                 QLabel#DescLabel {{ color: #A1A1AA; }}
                 QLabel#ProgressText {{ color: #71717A; }}
                 QLabel#AppChip {{
@@ -369,6 +373,11 @@ class ProjectSummaryCard(QFrame):
                     border: 1px solid #333338;
                     border-radius: 4px;
                     padding: 2px 6px;
+                }}
+                QLabel#AppChip:hover {{
+                    border-color: #4F46E5;
+                    background-color: #2E2E33;
+                    color: #FFFFFF;
                 }}
                 QProgressBar {{
                     background-color: #333338;
@@ -388,7 +397,7 @@ class ProjectSummaryCard(QFrame):
                     border-radius: 8px;
                 }}
                 QFrame#ProjectSummaryCard:hover {{
-                    border-color: #C8C0B2;
+                    border: 1px solid #6366F1;
                     background-color: #FAF8F5;
                 }}
                 QLabel {{ color: #111111; }}
@@ -399,6 +408,10 @@ class ProjectSummaryCard(QFrame):
                     border-radius: 6px;
                     padding: 3px 8px;
                 }}
+                QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {{
+                    border-color: #6366F1;
+                    color: #111111;
+                }}
                 QLabel#DescLabel {{ color: #666660; }}
                 QLabel#ProgressText {{ color: #888880; }}
                 QLabel#AppChip {{
@@ -407,6 +420,10 @@ class ProjectSummaryCard(QFrame):
                     border: 1px solid #E5E0D8;
                     border-radius: 4px;
                     padding: 2px 6px;
+                }}
+                QLabel#AppChip:hover {{
+                    border-color: #6366F1;
+                    background-color: #F0EDEB;
                 }}
                 QProgressBar {{
                     background-color: #EBE6DC;
@@ -678,6 +695,7 @@ class ProjectsOverviewPage(QWidget):
                 }
                 QPushButton:hover:!checked {
                     background-color: #2E2E33;
+                    border-color: #6366F1;
                     color: #FFFFFF;
                 }
             """
@@ -704,6 +722,10 @@ class ProjectsOverviewPage(QWidget):
                     border-radius: 6px;
                     padding: 2px 8px;
                     font-size: 10px;
+                }
+                QLabel#DirectoryBadge:hover {
+                    border-color: #6366F1;
+                    color: #F4F4F6;
                 }
                 QFrame#EmptyCard {
                     background-color: #242427;
@@ -732,6 +754,7 @@ class ProjectsOverviewPage(QWidget):
                 }
                 QPushButton:hover:!checked {
                     background-color: #F2ECE1;
+                    border-color: #6366F1;
                     color: #111111;
                 }
             """
