@@ -349,6 +349,20 @@ class KpiStatCard(QFrame):
 
 
 
+COMPARISON_PALETTE = [
+    "#6366F1",  # Indigo
+    "#10B981",  # Emerald
+    "#F59E0B",  # Amber
+    "#EC4899",  # Rose
+    "#06B6D4",  # Cyan
+    "#8B5CF6",  # Violet
+    "#F43F5E",  # Coral
+    "#3B82F6",  # Electric Blue
+    "#14B8A6",  # Teal
+    "#EAB308",  # Gold
+]
+
+
 class ProjectComparisonCanvas(QWidget):
     """Custom QPainter canvas rendering vertical bar or smooth bezier spline area charts."""
 
@@ -373,7 +387,38 @@ class ProjectComparisonCanvas(QWidget):
             self.update()
 
     def set_data(self, series: List[Dict[str, Any]], bucket_labels: List[str]) -> None:
-        self.series = series
+        # Guarantee distinct colors across all compared series
+        used_colors = set()
+        sanitized_series = []
+        palette_idx = 0
+
+        # First pass: preserve unique explicit colors for named projects
+        pre_assigned = []
+        for s in series:
+            s_copy = dict(s)
+            c = s_copy.get("color")
+            name = s_copy.get("name", "")
+            if name != "Untagged" and c and c not in used_colors:
+                used_colors.add(c)
+                pre_assigned.append((s_copy, c))
+            else:
+                pre_assigned.append((s_copy, None))
+
+        # Second pass: assign distinct palette colors for untagged or duplicate projects
+        for s_copy, c in pre_assigned:
+            if not c:
+                while palette_idx < len(COMPARISON_PALETTE) and COMPARISON_PALETTE[palette_idx] in used_colors:
+                    palette_idx += 1
+                if palette_idx < len(COMPARISON_PALETTE):
+                    c = COMPARISON_PALETTE[palette_idx]
+                    palette_idx += 1
+                else:
+                    c = COMPARISON_PALETTE[len(used_colors) % len(COMPARISON_PALETTE)]
+                used_colors.add(c)
+            s_copy["color"] = c
+            sanitized_series.append(s_copy)
+
+        self.series = sanitized_series
         self.bucket_labels = bucket_labels
         self.hover_bucket_idx = None
         self.update()
@@ -488,19 +533,13 @@ class ProjectComparisonCanvas(QWidget):
                 painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, label)
 
-        # 4. Hover Crosshair & Shaded Column Highlight
+        # 4. Hover Shaded Column Highlight (clean translucent focus without vertical crosshair line)
         if self.hover_bucket_idx is not None and self.hover_bucket_idx < num_b:
             col_x = margin_left + self.hover_bucket_idx * b_width
-            center_x = margin_left + (self.hover_bucket_idx + 0.5) * b_width
 
             # Soft column highlight
             h_col = QColor(99, 102, 241, 14 if self.is_dark else 22)
             painter.fillRect(QRectF(col_x, margin_top, b_width, plot_h), h_col)
-
-            # Vertical dashed crosshair line
-            crosshair_pen = QPen(QColor("#6366F1" if self.is_dark else "#818CF8"), 1.2, Qt.PenStyle.DashLine)
-            painter.setPen(crosshair_pen)
-            painter.drawLine(QPointF(center_x, margin_top), QPointF(center_x, margin_top + plot_h))
 
         # 5. Render Data (Bar Mode or Area Mode)
         if self.series and num_b > 0:
@@ -774,7 +813,7 @@ class ProjectComparisonChartWidget(QFrame):
 
     def set_data(self, series: List[Dict[str, Any]], bucket_labels: List[str]) -> None:
         self.canvas.set_data(series, bucket_labels)
-        self._render_legend(series)
+        self._render_legend(self.canvas.series)
 
     def _set_mode(self, mode: str) -> None:
         self.canvas.set_chart_mode(mode)

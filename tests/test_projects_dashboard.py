@@ -694,3 +694,59 @@ def test_app_usage_ring_canvas_hover(qapp):
     canvas.repaint()
 
 
+def test_get_dashboard_analytics_distinct_colors_for_duplicate_and_untagged(repo: StorageRepository):
+    """Ensure projects with default colors and untagged work receive distinct colors."""
+    now = datetime.now()
+
+    # Create two projects that both have the same default color #6366F1
+    repo.create_or_update_project("Project1", ["p1"], color="#6366F1")
+    repo.create_or_update_project("Project2", ["p2"], color="#6366F1")
+
+    # Log sessions for Project1, Project2, and Untagged
+    s1 = now - timedelta(hours=3)
+    s2 = now - timedelta(hours=2)
+    s3 = now - timedelta(hours=1)
+    repo.log_session("VS Code", "p1.py", s1, s2, project_tag="Project1")
+    repo.log_session("PyCharm", "p2.py", s2, s3, project_tag="Project2")
+    repo.log_session("Chrome", "untagged.html", s3, now, project_tag=None)
+
+    data = repo.get_dashboard_analytics("today")
+    series = data["chart_project_series"]
+    assert len(series) >= 3
+
+    colors = [s["color"] for s in series]
+    # Verify all assigned colors are strictly unique
+    assert len(colors) == len(set(colors))
+
+    # Verify Project1, Project2, and Untagged each have unique colors
+    p1_s = next(s for s in series if s["name"] == "Project1")
+    p2_s = next(s for s in series if s["name"] == "Project2")
+    untagged_s = next(s for s in series if s["name"] == "Untagged")
+
+    assert p1_s["color"] != p2_s["color"]
+    assert p1_s["color"] != untagged_s["color"]
+    assert p2_s["color"] != untagged_s["color"]
+
+
+def test_project_comparison_canvas_distinct_colors_sanitization(qapp):
+    """Ensure ProjectComparisonCanvas and ChartWidget enforce distinct colors across series."""
+    canvas = ProjectComparisonCanvas(is_dark=True)
+    duplicate_series = [
+        {"name": "Alpha", "color": "#6366F1", "hours": [1.0, 2.0]},
+        {"name": "Beta", "color": "#6366F1", "hours": [2.0, 1.0]},
+        {"name": "Untagged", "color": "#6366F1", "hours": [0.5, 0.5]},
+    ]
+    canvas.set_data(duplicate_series, ["10:00", "12:00"])
+
+    colors = [s["color"] for s in canvas.series]
+    assert len(colors) == len(set(colors))
+    assert canvas.series[0]["color"] != canvas.series[1]["color"]
+    assert canvas.series[1]["color"] != canvas.series[2]["color"]
+
+    # Test widget legend sync
+    widget = ProjectComparisonChartWidget(is_dark=True)
+    widget.set_data(duplicate_series, ["10:00", "12:00"])
+    assert widget.canvas.series[0]["color"] != widget.canvas.series[1]["color"]
+
+
+

@@ -926,16 +926,61 @@ class StorageRepository:
             else:
                 change_pct = 0.0
 
-            project_series = []
-            for proj_name, bucket_vals in project_bucket_mins.items():
+            # Ensure distinct colors across all compared project series
+            PROJECT_COMPARISON_PALETTE = [
+                "#6366F1",  # Indigo
+                "#10B981",  # Emerald
+                "#F59E0B",  # Amber
+                "#EC4899",  # Rose
+                "#06B6D4",  # Cyan
+                "#8B5CF6",  # Violet
+                "#F43F5E",  # Coral
+                "#3B82F6",  # Blue
+                "#14B8A6",  # Teal
+                "#EAB308",  # Gold
+            ]
+
+            sorted_proj_buckets = sorted(
+                project_bucket_mins.items(),
+                key=lambda item: sum(item[1]),
+                reverse=True,
+            )
+
+            used_colors: set[str] = set()
+            palette_idx = 0
+            series_pre = []
+
+            # First pass: assign explicit unique colors for named projects
+            for proj_name, bucket_vals in sorted_proj_buckets:
                 hours_vals = [round(m / 60.0, 2) for m in bucket_vals]
-                color = proj_colors.get(proj_name, "#6366F1")
+                tot_h = round(sum(hours_vals), 2)
+                raw_color = proj_colors.get(proj_name)
+                if proj_name != "Untagged" and raw_color and raw_color not in used_colors:
+                    used_colors.add(raw_color)
+                    series_pre.append((proj_name, hours_vals, tot_h, raw_color))
+                else:
+                    series_pre.append((proj_name, hours_vals, tot_h, None))
+
+            # Second pass: assign distinct palette colors to untagged or colliding projects
+            project_series = []
+            for proj_name, hours_vals, tot_h, assigned_color in series_pre:
+                if not assigned_color:
+                    while palette_idx < len(PROJECT_COMPARISON_PALETTE) and PROJECT_COMPARISON_PALETTE[palette_idx] in used_colors:
+                        palette_idx += 1
+                    if palette_idx < len(PROJECT_COMPARISON_PALETTE):
+                        assigned_color = PROJECT_COMPARISON_PALETTE[palette_idx]
+                        palette_idx += 1
+                    else:
+                        assigned_color = PROJECT_COMPARISON_PALETTE[len(used_colors) % len(PROJECT_COMPARISON_PALETTE)]
+                    used_colors.add(assigned_color)
+
                 project_series.append({
                     "name": proj_name,
-                    "color": color,
+                    "color": assigned_color,
                     "hours": hours_vals,
-                    "total_hours": round(sum(hours_vals), 2),
+                    "total_hours": tot_h,
                 })
+
             project_series.sort(key=lambda s: s["total_hours"], reverse=True)
 
             active_projects = set(project_durations.keys()) | {t["project_tag"] for t in task_rows if t["project_tag"]}
