@@ -2,7 +2,7 @@
 High-performance, antialiased custom vector chart widgets for WizDesk visual analytics.
 Rendered purely via PyQt6 QPainter:
 1. ProjectComparisonChartWidget: Dual-mode (Bar Chart & Line/Area Chart) comparing project hours over time.
-2. AppUsageAnalyticsWidget: Dual-mode (Concentric Ring Gauge & Horizontal Bar Chart) visualizing app hours.
+2. AppUsageAnalyticsWidget: Dual-mode (Donut Chart & Horizontal Bar Chart) visualizing app hours.
 3. KpiStatCard: Executive metric card with hero accent and change indicators.
 """
 
@@ -11,6 +11,7 @@ import math
 from PyQt6.QtCore import Qt, QPoint, QPointF, QRect, QRectF, pyqtSignal, QSize
 from PyQt6.QtGui import (
     QFont,
+    QFontMetrics,
     QColor,
     QPainter,
     QPen,
@@ -915,21 +916,49 @@ class ProjectComparisonChartWidget(QFrame):
         """)
 
 
-class AppUsageRingCanvas(QWidget):
-    """Custom QPainter canvas rendering multi-arc concentric rings with hover tracking matching the reference image."""
+class AppUsageDonutCanvas(QWidget):
+    """
+    Custom QPainter canvas rendering an executive segmented Donut Chart for application usage statistics.
+    Features:
+    - Clean proportional donut segments with subtle separator gaps between slices.
+    - Outer track fallback for empty / 0h states.
+    - Smooth interactive hover tracking with radial popout expansion and luminous halo on the active slice.
+    - Dynamic center text morphing: total tracked hours vs. hovered app name, duration, and percentage share.
+    - Full two-way hover synchronization with ranked application list.
+    """
 
-    ring_hovered = pyqtSignal(int)
+    donut_hovered = pyqtSignal(int)
+    ring_hovered = donut_hovered  # Backwards compatibility alias
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
         self.apps_data: List[Dict[str, Any]] = []
         self.total_hours: float = 0.0
-        self.hovered_ring_idx: Optional[int] = None
+        self.hovered_segment_idx: Optional[int] = None
         self.hover_pos: Optional[QPoint] = None
 
         self.setMouseTracking(True)
         self.setFixedSize(140, 140)
+
+    @property
+    def hovered_ring_idx(self) -> Optional[int]:
+        """Backward compatibility getter."""
+        return self.hovered_segment_idx
+
+    @hovered_ring_idx.setter
+    def hovered_ring_idx(self, val: Optional[int]) -> None:
+        """Backward compatibility setter."""
+        self.hovered_segment_idx = val
+
+    def set_hovered_ring(self, idx: Optional[int]) -> None:
+        """Backward compatibility alias for set_hovered_segment."""
+        self.set_hovered_segment(idx)
+
+    def set_hovered_segment(self, idx: Optional[int]) -> None:
+        if self.hovered_segment_idx != idx:
+            self.hovered_segment_idx = idx
+            self.update()
 
     def set_data(self, apps_data: List[Dict[str, Any]], total_hours: float) -> None:
         self.apps_data = apps_data
@@ -940,10 +969,34 @@ class AppUsageRingCanvas(QWidget):
         self.is_dark = is_dark
         self.update()
 
-    def set_hovered_ring(self, idx: Optional[int]) -> None:
-        if self.hovered_ring_idx != idx:
-            self.hovered_ring_idx = idx
-            self.update()
+    def _get_active_apps(self) -> List[Dict[str, Any]]:
+        """Return up to top 5 applications with tracked time or percentage."""
+        apps = [a for a in self.apps_data if a.get("hours", 0.0) > 0 or a.get("percentage", 0.0) > 0]
+        if not apps and self.apps_data:
+            apps = self.apps_data[:5]
+        return apps[:5]
+
+    def _compute_slices(self) -> List[Tuple[float, float]]:
+        """Compute (start_deg, span_deg) clockwise from 12 o'clock (0.0 to 360.0)."""
+        apps = self._get_active_apps()
+        if not apps:
+            return []
+
+        tot_val = sum(a.get("hours", 0.0) for a in apps)
+        if tot_val <= 0:
+            tot_val = sum(a.get("percentage", 0.0) for a in apps)
+        if tot_val <= 0:
+            tot_val = 1.0
+
+        slices: List[Tuple[float, float]] = []
+        cur_angle = 0.0
+        for i, a in enumerate(apps):
+            val = a.get("hours", 0.0) if sum(x.get("hours", 0.0) for x in apps) > 0 else a.get("percentage", 0.0)
+            span = (val / tot_val) * 360.0
+            slices.append((cur_angle, span))
+            cur_angle += span
+
+        return slices
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         pos = event.position()
@@ -953,39 +1006,37 @@ class AppUsageRingCanvas(QWidget):
         dy = pos.y() - cy
         d = math.hypot(dx, dy)
 
-        base_radius = min(cx, cy) - 10.0
-        ring_thickness = 7.0
-        ring_gap = 5.0
-        top_apps = self.apps_data[:3]
+        inner_r = 34.0
+        outer_r = 65.0
+        apps = self._get_active_apps()
 
         found_idx = None
-        if top_apps:
-            deg = math.degrees(math.atan2(-dy, dx)) % 360.0
-            is_in_arc_angle = not (235.0 <= deg <= 305.0)
+        if inner_r <= d <= outer_r and apps:
+            # Angle in degrees clockwise from 12 o'clock (0 to 360)
+            angle_cw = (math.degrees(math.atan2(dx, -dy))) % 360.0
+            slices = self._compute_slices()
+            for idx, (s_start, s_span) in enumerate(slices):
+                s_end = s_start + s_span
+                if s_start <= angle_cw < s_end or (idx == len(slices) - 1 and angle_cw >= s_start):
+                    found_idx = idx
+                    break
 
-            if is_in_arc_angle:
-                for idx in range(len(top_apps)):
-                    r = base_radius - idx * (ring_thickness + ring_gap)
-                    if r > 8 and abs(d - r) <= (ring_thickness / 2.0 + 3.0):
-                        found_idx = idx
-                        break
-
-        if found_idx != self.hovered_ring_idx:
-            self.hovered_ring_idx = found_idx
+        if found_idx != self.hovered_segment_idx:
+            self.hovered_segment_idx = found_idx
             self.hover_pos = pos.toPoint() if found_idx is not None else None
             self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor if found_idx is not None else Qt.CursorShape.ArrowCursor))
-            self.ring_hovered.emit(found_idx if found_idx is not None else -1)
+            self.donut_hovered.emit(found_idx if found_idx is not None else -1)
             self.update()
         elif found_idx is not None:
             self.hover_pos = pos.toPoint()
             self.update()
 
     def leaveEvent(self, event) -> None:
-        if self.hovered_ring_idx is not None:
-            self.hovered_ring_idx = None
+        if self.hovered_segment_idx is not None:
+            self.hovered_segment_idx = None
             self.hover_pos = None
             self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
-            self.ring_hovered.emit(-1)
+            self.donut_hovered.emit(-1)
             self.update()
 
     def paintEvent(self, event) -> None:
@@ -998,89 +1049,140 @@ class AppUsageRingCanvas(QWidget):
         cx = w / 2.0
         cy = h / 2.0
 
-        base_radius = min(cx, cy) - 10.0
-        ring_thickness = 7.0
-        ring_gap = 5.0
-
-        top_apps = self.apps_data[:3]
+        base_outer_r = 60.0
+        base_inner_r = 36.0
         track_color = QColor("#333338" if self.is_dark else "#ECECF0")
 
-        # 1. Draw concentric arcs for up to top 3 applications
-        for idx, app in enumerate(top_apps):
-            r = base_radius - idx * (ring_thickness + ring_gap)
-            if r <= 8:
-                break
+        apps = self._get_active_apps()
+        slices = self._compute_slices()
 
-            is_ring_hovered = (self.hovered_ring_idx == idx)
-            draw_thickness = ring_thickness + 2.5 if is_ring_hovered else ring_thickness
+        # If no active apps or 0 total hours, draw neutral background donut
+        if not apps or not slices:
+            path = QPainterPath()
+            path.setFillRule(Qt.FillRule.OddEvenFill)
+            path.addEllipse(QRectF(cx - base_outer_r, cy - base_outer_r, base_outer_r * 2, base_outer_r * 2))
+            path.addEllipse(QRectF(cx - base_inner_r, cy - base_inner_r, base_inner_r * 2, base_inner_r * 2))
+            painter.fillPath(path, track_color)
+        else:
+            num_slices = len(slices)
+            gap_deg = 2.5 if num_slices > 1 else 0.0
 
-            arc_rect = QRectF(cx - r, cy - r, r * 2, r * 2)
+            for idx, (app, (start_deg, span_deg)) in enumerate(zip(apps, slices)):
+                is_hovered = (self.hovered_segment_idx == idx)
 
-            # Draw background track
-            track_pen = QPen(track_color, draw_thickness, Qt.PenStyle.SolidLine)
-            track_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            painter.setPen(track_pen)
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawArc(arc_rect, 225 * 16, -270 * 16)
+                # Angular slice adjustment for separator gaps
+                if num_slices > 1:
+                    actual_span = max(1.2, span_deg - gap_deg)
+                    draw_start = start_deg + gap_deg / 2.0
+                else:
+                    actual_span = span_deg
+                    draw_start = start_deg
 
-            # Draw colored active percentage arc
-            pct = min(100.0, max(0.0, app.get("percentage", 0.0)))
-            active_span = int(- (pct / 100.0) * 270.0 * 16.0)
-            if active_span != 0:
+                # Hover radial popout
+                if is_hovered:
+                    popout = 3.0
+                    cur_outer_r = base_outer_r + 3.5
+                    cur_inner_r = base_inner_r - 1.0
+                    mid_deg = draw_start + actual_span / 2.0
+                    mid_rad = math.radians(90.0 - mid_deg)
+                    sec_cx = cx + popout * math.cos(mid_rad)
+                    sec_cy = cy - popout * math.sin(mid_rad)
+                else:
+                    cur_outer_r = base_outer_r
+                    cur_inner_r = base_inner_r
+                    sec_cx = cx
+                    sec_cy = cy
+
                 app_color = QColor(app.get("color", "#3B82F6"))
-                if is_ring_hovered:
-                    app_color = app_color.lighter(125)
-                    glow_pen = QPen(QColor(app_color.red(), app_color.green(), app_color.blue(), 70), draw_thickness + 4.0)
-                    glow_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-                    painter.setPen(glow_pen)
-                    painter.drawArc(arc_rect, 225 * 16, active_span)
+                if is_hovered:
+                    app_color = app_color.lighter(118)
+                elif self.hovered_segment_idx is not None:
+                    app_color.setAlpha(170)
 
-                active_pen = QPen(app_color, draw_thickness, Qt.PenStyle.SolidLine)
-                active_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-                painter.setPen(active_pen)
-                painter.drawArc(arc_rect, 225 * 16, active_span)
+                outer_rect = QRectF(sec_cx - cur_outer_r, sec_cy - cur_outer_r, cur_outer_r * 2, cur_outer_r * 2)
+                inner_rect = QRectF(sec_cx - cur_inner_r, sec_cy - cur_inner_r, cur_inner_r * 2, cur_inner_r * 2)
 
-        # 2. Draw Center Text (Dynamic: Total Hours or Hovered App breakdown)
-        if self.hovered_ring_idx is not None and self.hovered_ring_idx < len(top_apps):
-            app = top_apps[self.hovered_ring_idx]
+                # Convert clockwise-from-12 to Qt counter-clockwise angles
+                qt_start = 90.0 - draw_start
+                qt_span = -actual_span
+
+                path = QPainterPath()
+                if actual_span >= 359.5:
+                    path.setFillRule(Qt.FillRule.OddEvenFill)
+                    path.addEllipse(outer_rect)
+                    path.addEllipse(inner_rect)
+                else:
+                    path.arcMoveTo(outer_rect, qt_start)
+                    path.arcTo(outer_rect, qt_start, qt_span)
+                    path.arcTo(inner_rect, qt_start + qt_span, -qt_span)
+                    path.closeSubpath()
+
+                # Draw luminous glow halo on hover
+                if is_hovered:
+                    glow_pen = QPen(QColor(app_color.red(), app_color.green(), app_color.blue(), 75), 3.0)
+                    painter.strokePath(path, glow_pen)
+
+                painter.fillPath(path, app_color)
+
+                # Thin subtle inner stroke for slice separation
+                stroke_pen = QPen(QColor(255, 255, 255, 140 if is_hovered else 30), 1.0)
+                painter.strokePath(path, stroke_pen)
+
+        # Draw Center Hole Text
+        if self.hovered_segment_idx is not None and self.hovered_segment_idx < len(apps):
+            app = apps[self.hovered_segment_idx]
             app_name = app.get("app_name", "App")
             if len(app_name) > 11:
                 app_name = app_name[:10] + "…"
             hours = app.get("hours", 0.0)
             pct = app.get("percentage", 0)
+            pct_str = f"{int(round(pct))}%" if (isinstance(pct, (int, float)) and pct == int(pct)) else f"{pct}%"
             app_color = QColor(app.get("color", "#3B82F6")).lighter(120 if self.is_dark else 100)
 
-            painter.setFont(QFont("Inter", 11, QFont.Weight.Bold))
+            font_title = QFont("Inter", 9, QFont.Weight.Bold)
+            fm_t = QFontMetrics(font_title)
+            if fm_t.horizontalAdvance(app_name) > 66:
+                font_title.setPointSize(8)
+            painter.setFont(font_title)
             painter.setPen(app_color)
-            painter.drawText(QRectF(cx - 50, cy - 16, 100, 18), Qt.AlignmentFlag.AlignCenter, app_name)
+            painter.drawText(QRectF(cx - 35, cy - 14, 70, 16), Qt.AlignmentFlag.AlignCenter, app_name)
 
-            painter.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
+            stat_text = f"{hours}h ({pct_str})"
+            font_stat = QFont("Inter", 8, QFont.Weight.DemiBold)
+            fm_s = QFontMetrics(font_stat)
+            if fm_s.horizontalAdvance(stat_text) > 66:
+                font_stat.setPointSize(7)
+            painter.setFont(font_stat)
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
-            painter.drawText(QRectF(cx - 50, cy + 4, 100, 16), Qt.AlignmentFlag.AlignCenter, f"{hours}h ({pct}%)")
+            painter.drawText(QRectF(cx - 35, cy + 2, 70, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
         else:
             hours_str = f"{self.total_hours}h"
-            painter.setFont(QFont("Inter", 15, QFont.Weight.Bold))
+            painter.setFont(QFont("Inter", 14, QFont.Weight.Bold))
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
-            text_rect = QRectF(cx - 50, cy - 14, 100, 20)
+            text_rect = QRectF(cx - 35, cy - 12, 70, 18)
             painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
 
             painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
-            sub_rect = QRectF(cx - 50, cy + 6, 100, 16)
+            sub_rect = QRectF(cx - 35, cy + 6, 70, 14)
             painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
+
+
+# Backward compatibility alias
+AppUsageRingCanvas = AppUsageDonutCanvas
 
 
 class AppUsageAnalyticsWidget(QFrame):
     """
     Application Statistics card supporting both:
-    1. Ring / Radial Gauge Mode (Concentric arcs like reference image).
+    1. Segmented Donut Chart Mode (Proportional angular slices with interactive hover).
     2. Horizontal Comparative Bar Chart Mode (Hours per app with percentage bars).
     """
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
-        self.active_mode = "ring"  # 'ring' or 'bar'
+        self.active_mode = "donut"  # 'donut' or 'bar'
         self.apps_data: List[Dict[str, Any]] = []
         self.setObjectName("AppUsageCard")
 
@@ -1097,18 +1199,21 @@ class AppUsageAnalyticsWidget(QFrame):
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
 
-        # Capsule Switcher: Ring vs Bar
+        # Capsule Switcher: Donut vs Bar
         self.capsule = QFrame()
         self.capsule.setObjectName("ToggleCapsule")
         capsule_layout = QHBoxLayout(self.capsule)
         capsule_layout.setContentsMargins(2, 2, 2, 2)
         capsule_layout.setSpacing(2)
 
-        self.btn_ring = QPushButton("Ring")
-        self.btn_ring.setFixedHeight(22)
-        self.btn_ring.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_ring.clicked.connect(lambda: self._set_mode("ring"))
-        capsule_layout.addWidget(self.btn_ring)
+        self.btn_donut = QPushButton("Donut")
+        self.btn_donut.setFixedHeight(22)
+        self.btn_donut.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_donut.clicked.connect(lambda: self._set_mode("donut"))
+        capsule_layout.addWidget(self.btn_donut)
+
+        # Backward compatibility alias
+        self.btn_ring = self.btn_donut
 
         self.btn_bar = QPushButton("Bar")
         self.btn_bar.setFixedHeight(22)
@@ -1119,26 +1224,33 @@ class AppUsageAnalyticsWidget(QFrame):
         header_row.addWidget(self.capsule)
         layout.addLayout(header_row)
 
-        # Stacked Views (Ring vs Bar)
+        # Stacked Views (Donut vs Bar)
         self.stack = QStackedWidget(self)
 
-        # 1. Ring View Container (Side-by-side: Ring Gauge on left, Ranked Breakdown on right)
-        self.ring_page = QWidget()
-        self.ring_page.setMinimumHeight(150)
-        ring_page_layout = QHBoxLayout(self.ring_page)
-        ring_page_layout.setContentsMargins(0, 4, 0, 4)
-        ring_page_layout.setSpacing(16)
+        # 1. Donut View Container (Side-by-side: Donut Chart on left, Ranked Breakdown on right)
+        self.donut_page = QWidget()
+        self.donut_page.setMinimumHeight(150)
+        donut_page_layout = QHBoxLayout(self.donut_page)
+        donut_page_layout.setContentsMargins(0, 4, 0, 4)
+        donut_page_layout.setSpacing(16)
 
-        self.ring_canvas = AppUsageRingCanvas(is_dark=self.is_dark, parent=self.ring_page)
-        ring_page_layout.addWidget(self.ring_canvas)
+        self.donut_canvas = AppUsageDonutCanvas(is_dark=self.is_dark, parent=self.donut_page)
+        donut_page_layout.addWidget(self.donut_canvas)
 
-        self.ring_list_layout = QVBoxLayout()
-        self.ring_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.ring_list_layout.setSpacing(6)
-        self.ring_list_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-        ring_page_layout.addLayout(self.ring_list_layout, 1)
+        # Backward compatibility alias
+        self.ring_page = self.donut_page
+        self.ring_canvas = self.donut_canvas
 
-        self.stack.addWidget(self.ring_page)
+        self.donut_list_layout = QVBoxLayout()
+        self.donut_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.donut_list_layout.setSpacing(6)
+        self.donut_list_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        donut_page_layout.addLayout(self.donut_list_layout, 1)
+
+        # Backward compatibility alias
+        self.ring_list_layout = self.donut_list_layout
+
+        self.stack.addWidget(self.donut_page)
 
         # 2. Bar View Container
         self.bar_page = QWidget()
@@ -1154,22 +1266,23 @@ class AppUsageAnalyticsWidget(QFrame):
 
     def set_data(self, apps_data: List[Dict[str, Any]], total_hours: float) -> None:
         self.apps_data = apps_data
-        self.ring_canvas.set_data(apps_data, total_hours)
-        self._render_ring_app_list(apps_data)
+        self.donut_canvas.set_data(apps_data, total_hours)
+        self._render_donut_app_list(apps_data)
         self._render_bar_app_list(apps_data)
 
     def _set_mode(self, mode: str) -> None:
-        self.active_mode = mode
-        if mode == "ring":
-            self.stack.setCurrentWidget(self.ring_page)
+        if mode in ("donut", "ring"):
+            self.active_mode = "donut"
+            self.stack.setCurrentWidget(self.donut_page)
         else:
+            self.active_mode = "bar"
             self.stack.setCurrentWidget(self.bar_page)
         self._update_toggle_styles()
 
-    def _render_ring_app_list(self, apps: List[Dict[str, Any]]) -> None:
+    def _render_donut_app_list(self, apps: List[Dict[str, Any]]) -> None:
         # Clear list
-        while self.ring_list_layout.count() > 0:
-            item = self.ring_list_layout.takeAt(0)
+        while self.donut_list_layout.count() > 0:
+            item = self.donut_list_layout.takeAt(0)
             w = item.widget()
             if w:
                 w.setParent(None)
@@ -1180,12 +1293,12 @@ class AppUsageAnalyticsWidget(QFrame):
             empty.setFont(QFont("Inter", 10))
             empty.setStyleSheet("color: #71717A; padding: 12px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.ring_list_layout.addWidget(empty)
+            self.donut_list_layout.addWidget(empty)
             return
 
         for idx, app in enumerate(apps[:4]):
             row_frame = QFrame()
-            row_frame.setObjectName("AppRingRow")
+            row_frame.setObjectName("AppDonutRow")
             row_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             row = QHBoxLayout(row_frame)
             row.setContentsMargins(6, 3, 6, 3)
@@ -1213,10 +1326,13 @@ class AppUsageAnalyticsWidget(QFrame):
             pct_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
             row.addWidget(pct_lbl)
 
-            row_frame.enterEvent = lambda event, i=idx: self.ring_canvas.set_hovered_ring(i)
-            row_frame.leaveEvent = lambda event: self.ring_canvas.set_hovered_ring(None)
+            row_frame.enterEvent = lambda event, i=idx: self.donut_canvas.set_hovered_segment(i)
+            row_frame.leaveEvent = lambda event: self.donut_canvas.set_hovered_segment(None)
 
-            self.ring_list_layout.addWidget(row_frame)
+            self.donut_list_layout.addWidget(row_frame)
+
+    # Backward compatibility alias
+    _render_ring_app_list = _render_donut_app_list
 
     def _render_bar_app_list(self, apps: List[Dict[str, Any]]) -> None:
         # Clear bar layout
@@ -1289,10 +1405,10 @@ class AppUsageAnalyticsWidget(QFrame):
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.ring_canvas.set_theme(is_dark)
+        self.donut_canvas.set_theme(is_dark)
         self.apply_theme()
         self._update_toggle_styles()
-        self._render_ring_app_list(self.apps_data)
+        self._render_donut_app_list(self.apps_data)
         self._render_bar_app_list(self.apps_data)
 
     def _update_toggle_styles(self) -> None:
@@ -1311,7 +1427,7 @@ class AppUsageAnalyticsWidget(QFrame):
                 padding: 0 8px;
             }}
         """
-        self.btn_ring.setStyleSheet(btn_base + (f"background-color: {active_bg}; color: {active_color};" if mode == "ring" else f"background: transparent; color: {inactive_color};"))
+        self.btn_donut.setStyleSheet(btn_base + (f"background-color: {active_bg}; color: {active_color};" if mode in ("donut", "ring") else f"background: transparent; color: {inactive_color};"))
         self.btn_bar.setStyleSheet(btn_base + (f"background-color: {active_bg}; color: {active_color};" if mode == "bar" else f"background: transparent; color: {inactive_color};"))
 
     def apply_theme(self) -> None:
@@ -1337,12 +1453,12 @@ class AppUsageAnalyticsWidget(QFrame):
             QLabel {{
                 color: {title_color};
             }}
-            QFrame#AppRingRow {{
+            QFrame#AppDonutRow, QFrame#AppRingRow {{
                 background: transparent;
                 border: 1px solid transparent;
                 border-radius: 6px;
             }}
-            QFrame#AppRingRow:hover {{
+            QFrame#AppDonutRow:hover, QFrame#AppRingRow:hover {{
                 background-color: {"#2E2E33" if self.is_dark else "#F4F4F5"};
                 border: 1px solid {"#3F3F46" if self.is_dark else "#E5E0D8"};
             }}
@@ -1356,3 +1472,4 @@ class AppUsageAnalyticsWidget(QFrame):
                 border: 1px solid {"#3F3F46" if self.is_dark else "#E5E0D8"};
             }}
         """)
+

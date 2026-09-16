@@ -427,10 +427,10 @@ def test_project_comparison_chart_widget_ui(qapp):
 
 
 def test_app_usage_analytics_widget_ui(qapp):
-    """Test AppUsageAnalyticsWidget mode switching (Ring/Bar) and data rendering."""
+    """Test AppUsageAnalyticsWidget mode switching (Donut/Bar) and data rendering."""
     widget = AppUsageAnalyticsWidget(is_dark=True)
-    assert widget.active_mode == "ring"
-    assert widget.stack.currentWidget() == widget.ring_page
+    assert widget.active_mode in ("donut", "ring")
+    assert widget.stack.currentWidget() == widget.donut_page
 
     apps = [
         {"app_name": "Cursor", "hours": 6.5, "percentage": 65.0, "color": "#3B82F6"},
@@ -448,10 +448,10 @@ def test_app_usage_analytics_widget_ui(qapp):
     assert widget.stack.currentWidget() == widget.bar_page
     assert widget.bar_page_layout.count() >= 3
 
-    # Switch back to Ring mode
-    widget.btn_ring.click()
-    assert widget.active_mode == "ring"
-    assert widget.stack.currentWidget() == widget.ring_page
+    # Switch back to Donut mode
+    widget.btn_donut.click()
+    assert widget.active_mode in ("donut", "ring")
+    assert widget.stack.currentWidget() == widget.donut_page
 
     # Theme toggle
     widget.set_theme(is_dark=False)
@@ -634,12 +634,12 @@ def test_project_comparison_canvas_spotlight(qapp):
 
 
 def test_app_usage_ring_canvas_hover(qapp):
-    """Test mouse tracking, hovered ring detection, and center text morphing on AppUsageRingCanvas."""
-    from wiz.ui.chart_widgets import AppUsageRingCanvas
+    """Test mouse tracking, hovered segment detection, and center text morphing on AppUsageDonutCanvas."""
+    from wiz.ui.chart_widgets import AppUsageRingCanvas, AppUsageDonutCanvas
     from PyQt6.QtGui import QMouseEvent
     from PyQt6.QtCore import QPointF, QEvent
 
-    canvas = AppUsageRingCanvas(is_dark=True)
+    canvas = AppUsageDonutCanvas(is_dark=True)
     assert canvas.hasMouseTracking() is True
 
     apps_data = [
@@ -650,46 +650,53 @@ def test_app_usage_ring_canvas_hover(qapp):
     canvas.set_data(apps_data, 14.0)
 
     # Initial state
-    assert canvas.hovered_ring_idx is None
+    assert canvas.hovered_segment_idx is None
 
-    # Center is (70, 70). Outer ring radius = 70 - 10 = 60.
-    # Point at (70, 10) is dx=0, dy=-60 (top of ring, angle = 90 deg, inside arc).
+    # Center is (70, 70).
+    # Total val = 8 + 4 + 2 = 14.0
+    # Slice 0 (VS Code): 8/14 = 57.1% (from 0° to 205.7° clockwise from 12 o'clock)
+    # Point at (70, 15) is dx=0, dy=-55 (12 o'clock, radius=55) -> Slice 0
     move_ev = QMouseEvent(
         QEvent.Type.MouseMove,
-        QPointF(70.0, 10.0),
-        QPointF(70.0, 10.0),
+        QPointF(70.0, 15.0),
+        QPointF(70.0, 15.0),
         Qt.MouseButton.NoButton,
         Qt.MouseButton.NoButton,
         Qt.KeyboardModifier.NoModifier,
     )
     canvas.mouseMoveEvent(move_ev)
     assert canvas.hovered_ring_idx == 0
+    assert canvas.hovered_segment_idx == 0
     assert canvas.cursor().shape() == Qt.CursorShape.PointingHandCursor
     canvas.repaint()
 
-    # Second ring radius = 60 - (7 + 5) = 48.
-    # Point at (70, 70 - 48) = (70, 22).
+    # Slice 1 (Chrome): 4/14 = 28.6% (from 205.7° to 308.6°)
+    # Point at (20, 70) is dx=-50, dy=0 (9 o'clock, angle=270°) -> Slice 1
     move_ev2 = QMouseEvent(
         QEvent.Type.MouseMove,
-        QPointF(70.0, 22.0),
-        QPointF(70.0, 22.0),
+        QPointF(20.0, 70.0),
+        QPointF(20.0, 70.0),
         Qt.MouseButton.NoButton,
         Qt.MouseButton.NoButton,
         Qt.KeyboardModifier.NoModifier,
     )
     canvas.mouseMoveEvent(move_ev2)
     assert canvas.hovered_ring_idx == 1
+    assert canvas.hovered_segment_idx == 1
+    assert canvas.cursor().shape() == Qt.CursorShape.PointingHandCursor
     canvas.repaint()
 
     # Programmatic hover setter
-    canvas.set_hovered_ring(2)
+    canvas.set_hovered_segment(2)
     assert canvas.hovered_ring_idx == 2
+    assert canvas.hovered_segment_idx == 2
     canvas.repaint()
 
     # Mouse leave resets hover
     leave_ev = QEvent(QEvent.Type.Leave)
     canvas.leaveEvent(leave_ev)
     assert canvas.hovered_ring_idx is None
+    assert canvas.hovered_segment_idx is None
     assert canvas.cursor().shape() == Qt.CursorShape.ArrowCursor
     canvas.repaint()
 
