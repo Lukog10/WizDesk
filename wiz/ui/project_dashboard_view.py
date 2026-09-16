@@ -496,60 +496,56 @@ class ProjectsOverviewPage(QWidget):
         self.scroll_area.setObjectName("ProjectsScrollArea")
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
 
         self.scroll_content = QWidget()
         self.scroll_content.setObjectName("ScrollContent")
         self.content_layout = QVBoxLayout(self.scroll_content)
-        self.content_layout.setContentsMargins(0, 4, 4, 16)
-        self.content_layout.setSpacing(14)
+        self.content_layout.setContentsMargins(0, 2, 2, 2)
+        self.content_layout.setSpacing(8)
 
-        # Section 1: Executive KPI Cards (2x2 Grid for generous card width & readability)
-        self.kpi_grid = QGridLayout()
-        self.kpi_grid.setSpacing(10)
+        # Section 1: Executive KPI Cards (4-column horizontal strip)
+        self.kpi_layout = QHBoxLayout()
+        self.kpi_layout.setSpacing(6)
 
-        self.kpi_hero = KpiStatCard("Total Tracked Time", "0h", "", is_hero=True, is_dark=self.is_dark, parent=self.scroll_content)
+        self.kpi_hero = KpiStatCard("Tracked Time", "0h", "", is_hero=True, is_dark=self.is_dark, parent=self.scroll_content)
         self.kpi_projects = KpiStatCard("Active Projects", "0", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
         self.kpi_top_app = KpiStatCard("Top Application", "None", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
         self.kpi_tasks = KpiStatCard("Tasks Completed", "0 / 0", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
 
-        self.kpi_grid.addWidget(self.kpi_hero, 0, 0)
-        self.kpi_grid.addWidget(self.kpi_projects, 0, 1)
-        self.kpi_grid.addWidget(self.kpi_top_app, 1, 0)
-        self.kpi_grid.addWidget(self.kpi_tasks, 1, 1)
-        self.content_layout.addLayout(self.kpi_grid)
+        self.kpi_layout.addWidget(self.kpi_hero)
+        self.kpi_layout.addWidget(self.kpi_projects)
+        self.kpi_layout.addWidget(self.kpi_top_app)
+        self.kpi_layout.addWidget(self.kpi_tasks)
+        self.content_layout.addLayout(self.kpi_layout)
 
-        # Section 2: Visual Comparison Chart
+        # Backward compatibility alias
+        self.kpi_grid = self.kpi_layout
+
+        # Section 2: Main 2-Column Side-by-Side Analytics & Breakdown Cards
+        self.columns_layout = QHBoxLayout()
+        self.columns_layout.setSpacing(8)
+
+        # Left Column: Statistics (Project Comparison Chart with Bar/Area toggle)
         self.chart_widget = ProjectComparisonChartWidget(is_dark=self.is_dark, parent=self.scroll_content)
-        self.content_layout.addWidget(self.chart_widget)
+        self.columns_layout.addWidget(self.chart_widget, 3)
 
-        # Section 3: Visual Application Usage Analytics
+        # Right Column: Distribution & Projects Breakdown (Donut + Project Target Bars)
         self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, parent=self.scroll_content)
-        self.content_layout.addWidget(self.apps_widget)
+        self.apps_widget.project_selected.connect(self.project_selected.emit)
+        self.apps_widget.new_project_clicked.connect(self.new_project_clicked.emit)
+        self.columns_layout.addWidget(self.apps_widget, 2)
 
-        # Section 3: Projects Directory Header & Cards
-        dir_header = QHBoxLayout()
-        dir_header.setSpacing(8)
+        self.content_layout.addLayout(self.columns_layout)
 
+        # Legacy directory labels and container for backwards compatibility
         self.lbl_directory_title = QLabel("Projects Directory")
-        self.lbl_directory_title.setFont(QFont("Inter", 12, QFont.Weight.DemiBold))
-        dir_header.addWidget(self.lbl_directory_title)
-
         self.lbl_directory_count = QLabel("0 Projects")
-        self.lbl_directory_count.setObjectName("DirectoryBadge")
-        self.lbl_directory_count.setFont(QFont("Inter", 9, QFont.Weight.Medium))
-        dir_header.addWidget(self.lbl_directory_count)
-        dir_header.addStretch()
-
-        self.content_layout.addLayout(dir_header)
-
-        self.cards_container = QWidget(self.scroll_content)
+        self.cards_container = QWidget()
         self.cards_layout = QVBoxLayout(self.cards_container)
         self.cards_layout.setContentsMargins(0, 0, 0, 0)
-        self.cards_layout.setSpacing(10)
-        self.cards_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.content_layout.addWidget(self.cards_container)
+        self.cards_layout.setSpacing(6)
 
         self.scroll_area.setWidget(self.scroll_content)
         layout.addWidget(self.scroll_area, 1)
@@ -566,7 +562,7 @@ class ProjectsOverviewPage(QWidget):
         self.refresh()
 
     def refresh(self) -> None:
-        """Fetch updated project metrics and re-render charts, stats, and project cards."""
+        """Fetch updated project metrics and re-render charts, stats, and project targets."""
         while self.cards_layout.count() > 0:
             item = self.cards_layout.takeAt(0)
             widget = item.widget()
@@ -591,7 +587,7 @@ class ProjectsOverviewPage(QWidget):
                     sparkline_totals[b_i] += val
 
         self.kpi_hero.set_sparkline_data(sparkline_totals)
-        self.kpi_hero.update_data(f"{tot_hrs}h", chg_str, subtitle="vs previous period")
+        self.kpi_hero.update_data(f"{tot_hrs}h", chg_str, subtitle="vs prev period")
 
         active_cnt = analytics.get("active_projects_count", 0)
         self.kpi_projects.update_data(str(active_cnt), "Active", subtitle=f"{active_cnt} active this period")
@@ -602,7 +598,7 @@ class ProjectsOverviewPage(QWidget):
             self.kpi_top_app.update_data(
                 top_app["app_name"],
                 f"{top_app.get('hours', 0.0)}h",
-                subtitle=f"{pct_share}% of tracked time",
+                subtitle=f"{pct_share}% of time",
             )
         else:
             self.kpi_top_app.update_data("None", "", subtitle="No app activity")
@@ -624,45 +620,28 @@ class ProjectsOverviewPage(QWidget):
         self.lbl_metric_time.setText(f"Tracked: {format_duration(tot_mins)}")
         self.lbl_metric_tasks.setText(f"Tasks: {completed_tasks} / {tot_tasks}")
 
-        # 2. Update Visual Charts
+        # 2. Update Visual Charts with submetrics
         self.chart_widget.set_data(
             analytics.get("chart_project_series", []),
             analytics.get("chart_bucket_labels", []),
+            total_hours=tot_hrs,
+            change_pct=chg_pct,
         )
         self.apps_widget.set_data(
             analytics.get("apps_breakdown", []),
             tot_hrs,
         )
 
-        # 3. Fetch project overview metrics for drilldown cards
+        # 3. Fetch project overview metrics for project target progress tracks
         metrics_list = self.repo.get_projects_overview_metrics(timeframe=self.active_timeframe)
         self.lbl_directory_count.setText(f"{len(metrics_list)} Projects")
+        self.apps_widget.set_project_targets(metrics_list, tot_hrs)
 
-        if not metrics_list:
-            empty_card = QFrame()
-            empty_card.setObjectName("EmptyCard")
-            empty_layout = QVBoxLayout(empty_card)
-            empty_layout.setContentsMargins(20, 32, 20, 32)
-            empty_layout.setSpacing(8)
-            empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-            title = QLabel("No projects configured")
-            title.setFont(QFont("Inter", 13, QFont.Weight.DemiBold))
-            title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-            sub = QLabel("Click '+ New Project' to define project names, colors, and keyword matching rules.")
-            sub.setFont(QFont("Inter", 11))
-            sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            sub.setWordWrap(True)
-
-            empty_layout.addWidget(title)
-            empty_layout.addWidget(sub)
-            self.cards_layout.addWidget(empty_card)
-        else:
-            for data in metrics_list:
-                card = ProjectSummaryCard(data, is_dark=self.is_dark)
-                card.clicked.connect(self.project_selected.emit)
-                self.cards_layout.addWidget(card)
+        # Populate legacy cards container
+        for data in metrics_list:
+            card = ProjectSummaryCard(data, is_dark=self.is_dark)
+            card.clicked.connect(self.project_selected.emit)
+            self.cards_layout.addWidget(card)
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark

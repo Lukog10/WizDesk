@@ -24,6 +24,7 @@ from wiz.ui.chart_widgets import (
     AppUsageAnalyticsWidget,
     ProjectComparisonCanvas,
     AppUsageRingCanvas,
+    ProjectTargetRow,
 )
 from PyQt6.QtCore import Qt, QPoint, QPointF
 from PyQt6.QtGui import QMouseEvent
@@ -754,6 +755,85 @@ def test_project_comparison_canvas_distinct_colors_sanitization(qapp):
     widget = ProjectComparisonChartWidget(is_dark=True)
     widget.set_data(duplicate_series, ["10:00", "12:00"])
     assert widget.canvas.series[0]["color"] != widget.canvas.series[1]["color"]
+
+
+def test_project_target_row_ui_and_click(qapp):
+    """Test ProjectTargetRow initialization, theme switching, and click-to-drilldown signal."""
+    row = ProjectTargetRow(
+        project_name="WizDesk Core",
+        color="#6366F1",
+        hours=8.5,
+        pct=45,
+        is_dark=True,
+    )
+    assert row.project_name == "WizDesk Core"
+    assert row.color == "#6366F1"
+    assert row.hours == 8.5
+    assert row.pct == 45
+    assert "WizDesk Core" in row.lbl_name.text()
+    assert "8.5h" in row.lbl_stat.text()
+    assert "45%" in row.lbl_stat.text()
+    assert row.prog.value() == 45
+
+    # Test click signal
+    clicked_name = []
+    row.clicked.connect(lambda name: clicked_name.append(name))
+
+    # Simulate mouse press
+    ev = QMouseEvent(
+        QMouseEvent.Type.MouseButtonPress,
+        QPointF(10.0, 10.0),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    row.mousePressEvent(ev)
+    assert clicked_name == ["WizDesk Core"]
+
+    # Test theme toggle
+    row.set_theme(is_dark=False)
+    assert not row.is_dark
+
+
+def test_app_usage_analytics_widget_project_targets(qapp):
+    """Verify AppUsageAnalyticsWidget renders project targets and propagates selection signal."""
+    widget = AppUsageAnalyticsWidget(is_dark=True)
+    selected_projects = []
+    widget.project_selected.connect(lambda name: selected_projects.append(name))
+
+    sample_projects = [
+        {"name": "Client Portal", "color": "#10B981", "tracked_minutes": 180.0, "total_tasks": 3, "completion_rate": 0.67},
+        {"name": "Infrastructure", "color": "#F59E0B", "tracked_minutes": 60.0, "total_tasks": 2, "completion_rate": 0.50},
+        {"name": "WizDesk Core", "color": "#6366F1", "tracked_minutes": 240.0, "total_tasks": 5, "completion_rate": 0.80},
+    ]
+
+    widget.set_project_targets(sample_projects, total_hours=8.0)
+    assert widget.targets_layout.count() == 3
+
+    # Click first target row and check signal
+    target_row = widget.targets_layout.itemAt(0).widget()
+    assert isinstance(target_row, ProjectTargetRow)
+    target_row.clicked.emit(target_row.project_name)
+    assert len(selected_projects) == 1
+    assert selected_projects[0] == target_row.project_name
+
+
+def test_projects_overview_fixed_layout_and_zero_scroll(repo: StorageRepository, qapp):
+    """Verify ProjectsOverviewPage uses 4-across KPI layout, 2-column cards, and zero scroll policy."""
+    overview = ProjectsOverviewPage(repo, is_dark=True)
+
+    # 1. KPI row has 4 horizontal cards
+    assert overview.kpi_layout.count() == 4
+
+    # 2. Columns layout has 2 side-by-side cards
+    assert overview.columns_layout.count() == 2
+    assert overview.columns_layout.itemAt(0).widget() is overview.chart_widget
+    assert overview.columns_layout.itemAt(1).widget() is overview.apps_widget
+
+    # 3. Scroll area policies enforce zero-scroll mode
+    assert overview.scroll_area.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    assert overview.scroll_area.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+
 
 
 

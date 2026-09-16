@@ -25,6 +25,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
+    QGridLayout,
     QLabel,
     QPushButton,
     QFrame,
@@ -44,7 +45,7 @@ class MicroSparklineCanvas(QWidget):
         super().__init__(parent)
         self.values: List[float] = []
         self.is_hovered: bool = False
-        self.setFixedHeight(26)
+        self.setFixedHeight(18)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def set_data(self, values: List[float]) -> None:
@@ -71,7 +72,7 @@ class MicroSparklineCanvas(QWidget):
         step = w / (len(self.values) - 1)
         for i, val in enumerate(self.values):
             px = i * step
-            py = (h - 3.0) - (val / max_val * (h - 6.0))
+            py = (h - 2.0) - (val / max_val * (h - 4.0))
             points.append(QPointF(px, py))
 
         path = QPainterPath()
@@ -96,7 +97,7 @@ class MicroSparklineCanvas(QWidget):
         painter.fillPath(area_path, grad)
 
         # Line stroke
-        stroke_width = 2.2 if self.is_hovered else 1.8
+        stroke_width = 2.0 if self.is_hovered else 1.6
         pen = QPen(QColor(255, 255, 255, 255 if self.is_hovered else 220), stroke_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -109,18 +110,22 @@ class MicroSparklineCanvas(QWidget):
                 # Glowing outer halo
                 painter.setBrush(QColor(255, 255, 255, 75))
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.drawEllipse(last_pt, 6.0, 6.0)
+                painter.drawEllipse(last_pt, 5.0, 5.0)
                 painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#3730A3"), 1.8))
-                painter.drawEllipse(last_pt, 3.0, 3.0)
+                painter.setPen(QPen(QColor("#3730A3"), 1.6))
+                painter.drawEllipse(last_pt, 2.5, 2.5)
             else:
                 painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#4F46E5"), 1.5))
-                painter.drawEllipse(last_pt, 2.5, 2.5)
+                painter.setPen(QPen(QColor("#4F46E5"), 1.4))
+                painter.drawEllipse(last_pt, 2.0, 2.0)
 
 
 class KpiStatCard(QFrame):
-    """Executive KPI card with numerical value, title, status pill, subtitle, and micro sparkline."""
+    """
+    Compact executive KPI card with numerical value, title, circular arrow badge,
+    subtitle, and micro sparkline or progress bar.
+    Designed for a non-scrolling 4-column horizontal strip.
+    """
 
     def __init__(
         self,
@@ -142,45 +147,84 @@ class KpiStatCard(QFrame):
         self.setObjectName("KpiHeroCard" if self.is_hero else "KpiStatCard")
 
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.setMinimumHeight(84)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setMinimumHeight(66)
+        self.setMaximumHeight(72)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 10, 14, 10)
-        layout.setSpacing(4)
+        layout.setContentsMargins(8, 5, 8, 5)
+        layout.setSpacing(1)
 
-        # Top row: Title and Change Badge
+        # Top row: Icon Badge on left, Circular Arrow Badge on right
         top_row = QHBoxLayout()
-        top_row.setSpacing(6)
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(4)
 
-        self.lbl_title = QLabel(title)
-        self.lbl_title.setFont(QFont("Inter", 10, QFont.Weight.Medium))
-        top_row.addWidget(self.lbl_title)
+        self.badge_icon = QLabel()
+        self.badge_icon.setObjectName("KpiIconBadge")
+        self.badge_icon.setFixedSize(16, 16)
+        self.badge_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.badge_icon.setFont(QFont("Segoe UI Symbol", 8, QFont.Weight.Bold))
+
+        # Pick appropriate symbol
+        if self.is_hero or "Tracked" in title or "Time" in title:
+            self.badge_icon.setText("⏱")
+        elif "Project" in title:
+            self.badge_icon.setText("❖")
+        elif "App" in title:
+            self.badge_icon.setText("✦")
+        elif "Task" in title:
+            self.badge_icon.setText("✓")
+        else:
+            self.badge_icon.setText("•")
+
+        top_row.addWidget(self.badge_icon)
         top_row.addStretch()
 
-        self.lbl_change = QLabel(change_text)
-        self.lbl_change.setObjectName("KpiChangeBadge")
-        self.lbl_change.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
-        self.lbl_change.setVisible(bool(change_text))
-        top_row.addWidget(self.lbl_change)
+        self.badge_arrow = QLabel("↗")
+        self.badge_arrow.setObjectName("KpiArrowBadge")
+        self.badge_arrow.setFixedSize(14, 14)
+        self.badge_arrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.badge_arrow.setFont(QFont("Inter", 7, QFont.Weight.Bold))
+        top_row.addWidget(self.badge_arrow)
 
         layout.addLayout(top_row)
 
-        # Value row
+        # Value row: Value with inline change badge next to it matching reference image
+        val_row = QHBoxLayout()
+        val_row.setContentsMargins(0, 0, 0, 0)
+        val_row.setSpacing(4)
+
         self.lbl_value = QLabel(value)
         self.lbl_value.setObjectName("KpiValue")
-        self.lbl_value.setFont(QFont("Inter", 19, QFont.Weight.Bold))
-        layout.addWidget(self.lbl_value)
+        initial_size = 12 if len(value) > 7 else 14
+        self.lbl_value.setFont(QFont("Inter", initial_size, QFont.Weight.Bold))
+        val_row.addWidget(self.lbl_value)
 
-        # Subtitle row
+        self.lbl_change = QLabel(change_text)
+        self.lbl_change.setObjectName("KpiChangeBadge")
+        self.lbl_change.setFont(QFont("Inter", 7, QFont.Weight.DemiBold))
+        self.lbl_change.setVisible(bool(change_text))
+        val_row.addWidget(self.lbl_change)
+        val_row.addStretch()
+
+        layout.addLayout(val_row)
+
+        # Title row
+        self.lbl_title = QLabel(title)
+        self.lbl_title.setObjectName("KpiTitle")
+        self.lbl_title.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        layout.addWidget(self.lbl_title)
+
+        # Subtitle preserved for backward compatibility
         self.lbl_subtitle = QLabel(subtitle)
-        self.lbl_subtitle.setFont(QFont("Inter", 9, QFont.Weight.Normal))
-        self.lbl_subtitle.setVisible(bool(subtitle))
+        self.lbl_subtitle.setObjectName("KpiSubtitle")
+        self.lbl_subtitle.setVisible(False)
         layout.addWidget(self.lbl_subtitle)
 
         # Mini Progress Bar for tasks
         self.progress_bar = QProgressBar(self)
-        self.progress_bar.setFixedHeight(4)
+        self.progress_bar.setFixedHeight(3)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setVisible(False)
@@ -227,10 +271,18 @@ class KpiStatCard(QFrame):
         self.change_text = change_text
         self.subtitle_text = subtitle
         self.lbl_value.setText(value)
+
+        # Auto-adjust font size to avoid wrapping in compact ~138px card width
+        font_size = 15
+        if len(value) > 10:
+            font_size = 11
+        elif len(value) > 7:
+            font_size = 13
+        self.lbl_value.setFont(QFont("Inter", font_size, QFont.Weight.Bold))
+
         self.lbl_change.setText(change_text)
         self.lbl_change.setVisible(bool(change_text))
         self.lbl_subtitle.setText(subtitle)
-        self.lbl_subtitle.setVisible(bool(subtitle))
 
         if progress_pct is not None:
             self.progress_bar.setValue(max(0, min(100, progress_pct)))
@@ -260,17 +312,34 @@ class KpiStatCard(QFrame):
                     border: none;
                     background: transparent;
                 }
+                QLabel#KpiIconBadge {
+                    background-color: rgba(255, 255, 255, 0.2);
+                    color: #FFFFFF;
+                    border: none;
+                    border-radius: 9px;
+                }
+                QLabel#KpiArrowBadge {
+                    background-color: rgba(255, 255, 255, 0.2);
+                    color: #FFFFFF;
+                    border: none;
+                    border-radius: 8px;
+                }
+                QFrame#KpiHeroCard:hover QLabel#KpiArrowBadge {
+                    background-color: rgba(255, 255, 255, 0.35);
+                }
             """)
-            self.lbl_title.setStyleSheet("color: rgba(255, 255, 255, 0.85); border: none; background: transparent;")
-            self.lbl_value.setStyleSheet("color: #FFFFFF; font-size: 22px; font-weight: bold; border: none; background: transparent;")
-            self.lbl_subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-size: 10px;")
+            self.lbl_title.setStyleSheet("color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-size: 8px;")
+            val_font_size = "13px" if len(self.value_text) > 7 else "15px"
+            self.lbl_value.setStyleSheet(f"color: #FFFFFF; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
+            self.lbl_subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-size: 8px;")
             self.lbl_change.setStyleSheet("""
                 QLabel#KpiChangeBadge {
                     background-color: rgba(255, 255, 255, 0.2);
                     color: #FFFFFF;
                     border: none;
-                    border-radius: 9px;
-                    padding: 2px 8px;
+                    border-radius: 6px;
+                    padding: 0px 4px;
+                    font-size: 7.5px;
                 }
                 QFrame#KpiHeroCard:hover QLabel#KpiChangeBadge {
                     background-color: rgba(255, 255, 255, 0.3);
@@ -289,6 +358,12 @@ class KpiStatCard(QFrame):
                 prog_bg = "#333338"
                 prog_chunk = "#10B981"
                 prog_chunk_hover = "#34D399"
+                arrow_bg = "#1F1F22"
+                arrow_border = "#333338"
+                arrow_color = "#A1A1AA"
+                icon_bg = "#1F1F22"
+                icon_border = "#333338"
+                icon_color = "#A1A1AA"
             else:
                 bg = "#FFFFFF"
                 border = "#E5E0D8"
@@ -301,6 +376,12 @@ class KpiStatCard(QFrame):
                 prog_bg = "#E5E0D8"
                 prog_chunk = "#059669"
                 prog_chunk_hover = "#10B981"
+                arrow_bg = "#F4F4F5"
+                arrow_border = "#E5E0D8"
+                arrow_color = "#71717A"
+                icon_bg = "#F4F4F5"
+                icon_border = "#E5E0D8"
+                icon_color = "#71717A"
 
             self.setStyleSheet(f"""
                 QFrame#KpiStatCard {{
@@ -316,32 +397,55 @@ class KpiStatCard(QFrame):
                     border: none;
                     background: transparent;
                 }}
-                QFrame#KpiStatCard:hover QLabel#KpiValue {{
-                    color: {"#FFFFFF" if self.is_dark else "#000000"};
+                QLabel#KpiIconBadge {{
+                    background-color: {icon_bg};
+                    color: {icon_color};
+                    border: 1px solid {icon_border};
+                    border-radius: 9px;
+                }}
+                QLabel#KpiArrowBadge {{
+                    background-color: {arrow_bg};
+                    color: {arrow_color};
+                    border: 1px solid {arrow_border};
+                    border-radius: 8px;
+                }}
+                QFrame#KpiStatCard:hover QLabel#KpiArrowBadge {{
+                    border-color: {hover_border};
+                    color: {"#FFFFFF" if self.is_dark else "#18181B"};
+                }}
+                QLabel#KpiTitle {{
+                    color: {sub_color};
+                }}
+                QLabel#KpiChangeBadge {{
+                    background-color: {badge_bg};
+                    color: {badge_color};
+                    border-radius: 6px;
+                    padding: 0px 4px;
                 }}
                 QProgressBar {{
                     background-color: {prog_bg};
                     border: none;
-                    border-radius: 2px;
+                    border-radius: 1.5px;
                 }}
                 QProgressBar::chunk {{
                     background-color: {prog_chunk};
-                    border-radius: 2px;
+                    border-radius: 1.5px;
                 }}
                 QFrame#KpiStatCard:hover QProgressBar::chunk {{
                     background-color: {prog_chunk_hover};
                 }}
             """)
-            self.lbl_title.setStyleSheet(f"color: {sub_color}; border: none; background: transparent;")
-            self.lbl_value.setStyleSheet(f"color: {text_color}; border: none; background: transparent; font-size: 20px;")
-            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 10px;")
+            val_font_size = "13px" if len(self.value_text) > 7 else "15px"
+            self.lbl_value.setStyleSheet(f"color: {text_color}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
+            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 8.5px;")
             self.lbl_change.setStyleSheet(f"""
                 QLabel#KpiChangeBadge {{
                     background-color: {badge_bg};
                     color: {badge_color};
                     border: 1px solid {border};
-                    border-radius: 9px;
-                    padding: 2px 8px;
+                    border-radius: 7px;
+                    padding: 1px 5px;
+                    font-size: 8px;
                 }}
                 QFrame#KpiStatCard:hover QLabel#KpiChangeBadge {{
                     border-color: {hover_border};
@@ -379,8 +483,8 @@ class ProjectComparisonCanvas(QWidget):
 
         self.setMouseTracking(True)
         self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
-        self.setMinimumHeight(175)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setMinimumHeight(180)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def set_spotlight_series(self, name: Optional[str]) -> None:
         if self.spotlight_series != name:
@@ -487,22 +591,26 @@ class ProjectComparisonCanvas(QWidget):
                 if val > max_val:
                     max_val = val
 
-        # Round max_val up to clean increment (1, 2, 4, 8, 12, etc.)
+        # Round max_val up to clean increment with tight headroom (filling 75-90% of chart)
         if max_val <= 1.0:
             y_max = 1.0
             ticks = [0.0, 0.5, 1.0]
-        elif max_val <= 3.0:
-            y_max = 3.0
-            ticks = [0.0, 1.0, 2.0, 3.0]
+        elif max_val <= 2.5:
+            y_max = 2.5
+            ticks = [0.0, 1.0, 2.0, 2.5]
+        elif max_val <= 4.0:
+            y_max = 4.0
+            ticks = [0.0, 1.0, 2.0, 3.0, 4.0]
         elif max_val <= 6.0:
-            y_max = 6.0
+            y_max = 6.5
             ticks = [0.0, 2.0, 4.0, 6.0]
-        elif max_val <= 12.0:
-            y_max = 12.0
-            ticks = [0.0, 4.0, 8.0, 12.0]
+        elif max_val <= 8.0:
+            y_max = 8.5
+            ticks = [0.0, 2.0, 4.0, 6.0, 8.0]
         else:
-            y_max = math.ceil(max_val / 5.0) * 5.0
-            ticks = [0.0, round(y_max * 0.33, 1), round(y_max * 0.66, 1), y_max]
+            step = math.ceil(max_val / 4.0)
+            y_max = float(step * 4)
+            ticks = [float(i * step) for i in range(5)]
 
         # 2. Draw horizontal grid lines & Y-axis labels
         painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
@@ -534,12 +642,18 @@ class ProjectComparisonCanvas(QWidget):
                 painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, label)
 
-        # 4. Hover Shaded Column Highlight (clean translucent focus without vertical crosshair line)
+        # 4. Draw Day Background Slots & Hover Shaded Column Highlight
+        slot_w = min(b_width * 0.72, 24.0)
+        slot_color = QColor(255, 255, 255, 6 if self.is_dark else 10)
+        for b_i in range(num_b):
+            cx_b = margin_left + (b_i + 0.5) * b_width
+            slot_path = QPainterPath()
+            slot_path.addRoundedRect(QRectF(cx_b - slot_w / 2.0, margin_top + 4, slot_w, plot_h - 4), 4.0, 4.0)
+            painter.fillPath(slot_path, slot_color)
+
         if self.hover_bucket_idx is not None and self.hover_bucket_idx < num_b:
             col_x = margin_left + self.hover_bucket_idx * b_width
-
-            # Soft column highlight
-            h_col = QColor(99, 102, 241, 14 if self.is_dark else 22)
+            h_col = QColor(99, 102, 241, 16 if self.is_dark else 24)
             painter.fillRect(QRectF(col_x, margin_top, b_width, plot_h), h_col)
 
         # 5. Render Data (Bar Mode or Area Mode)
@@ -549,23 +663,41 @@ class ProjectComparisonCanvas(QWidget):
                 active_series = self.series[:1]  # Draw baseline if empty
 
             if self.chart_mode == "bar":
-                # Render vertical grouped bars
-                num_s = len(active_series)
-                bar_gap = 2.0
-                total_bar_w = min(b_width * 0.72, num_s * 14.0)
-                individual_w = max(4.0, (total_bar_w - (num_s - 1) * bar_gap) / num_s)
-
+                # Render vertical grouped bars with dynamic active-series packing
                 for b_idx in range(num_b):
                     center_x = margin_left + (b_idx + 0.5) * b_width
-                    start_x = center_x - (total_bar_w / 2.0)
                     is_bucket_hovered = (self.hover_bucket_idx == b_idx)
 
-                    for s_idx, s in enumerate(active_series):
+                    # Dynamic packing: only render projects with tracked hours for this bucket
+                    day_series = []
+                    for s in active_series:
                         hours_list = s.get("hours", [])
                         val = hours_list[b_idx] if b_idx < len(hours_list) else 0.0
-                        bar_h = max(2.0, (val / y_max) * plot_h) if val > 0 else 0.0
+                        if val > 0.01:
+                            day_series.append((s, val))
 
-                        bx = start_x + s_idx * (individual_w + bar_gap)
+                    day_cnt = len(day_series)
+                    if day_cnt == 0:
+                        continue
+
+                    if day_cnt == 1:
+                        ind_w = min(b_width * 0.50, 20.0)
+                        gap = 0.0
+                        tot_w = ind_w
+                    elif day_cnt == 2:
+                        gap = 2.5
+                        ind_w = min((b_width * 0.72 - gap) / 2.0, 15.0)
+                        tot_w = ind_w * 2 + gap
+                    else:
+                        gap = 2.0
+                        tot_w = min(b_width * 0.85, day_cnt * 13.0)
+                        ind_w = max(4.0, (tot_w - (day_cnt - 1) * gap) / day_cnt)
+
+                    start_x = center_x - (tot_w / 2.0)
+
+                    for d_idx, (s, val) in enumerate(day_series):
+                        bar_h = max(3.0, (val / y_max) * plot_h)
+                        bx = start_x + d_idx * (ind_w + gap)
                         by = margin_top + plot_h - bar_h
 
                         is_spotlighted = (self.spotlight_series == s.get("name"))
@@ -577,20 +709,24 @@ class ProjectComparisonCanvas(QWidget):
                         elif is_dimmed:
                             bar_color.setAlpha(60)
                         elif is_bucket_hovered:
-                            # Brighten hovered bars
                             bar_color = bar_color.lighter(115)
                         elif self.hover_bucket_idx is not None:
-                            # Dim non-hovered bars slightly
                             bar_color.setAlpha(170)
 
-                        if val > 0:
-                            path = QPainterPath()
-                            radius = min(4.0, individual_w / 2.0)
-                            path.addRoundedRect(QRectF(bx, by, individual_w, bar_h), radius, radius)
-                            painter.fillPath(path, bar_color)
-                            if is_bucket_hovered or is_spotlighted:
-                                stroke_pen = QPen(QColor(255, 255, 255, 180 if is_spotlighted else 140), 1.2 if is_spotlighted else 1.0)
-                                painter.strokePath(path, stroke_pen)
+                        path = QPainterPath()
+                        r = min(4.5, ind_w / 2.0, bar_h)
+                        path.moveTo(bx, by + bar_h)
+                        path.lineTo(bx, by + r)
+                        path.arcTo(bx, by, r * 2, r * 2, 180, -90)
+                        path.lineTo(bx + ind_w - r, by)
+                        path.arcTo(bx + ind_w - r * 2, by, r * 2, r * 2, 90, -90)
+                        path.lineTo(bx + ind_w, by + bar_h)
+                        path.closeSubpath()
+
+                        painter.fillPath(path, bar_color)
+                        if is_bucket_hovered or is_spotlighted:
+                            stroke_pen = QPen(QColor(255, 255, 255, 200 if is_spotlighted else 150), 1.2 if is_spotlighted else 1.0)
+                            painter.strokePath(path, stroke_pen)
             else:
                 # Area / Line Mode: Smooth Bezier Splines
                 for s in reversed(active_series):
@@ -629,7 +765,7 @@ class ProjectComparisonCanvas(QWidget):
 
                         gradient = QLinearGradient(0, margin_top, 0, margin_top + plot_h)
                         grad_color_top = QColor(color)
-                        grad_color_top.setAlpha(20 if is_dimmed else (80 if self.is_dark else 70))
+                        grad_color_top.setAlpha(30 if is_dimmed else (115 if self.is_dark else 95))
                         grad_color_bot = QColor(color)
                         grad_color_bot.setAlpha(2 if is_dimmed else 6)
                         gradient.setColorAt(0.0, grad_color_top)
@@ -643,9 +779,13 @@ class ProjectComparisonCanvas(QWidget):
                         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
                         painter.strokePath(path, pen)
 
-                        # Draw vertices with hover halo rings
+                        # Draw vertices with hover halo rings (skip zero dots on inactive days)
                         for b_i, pt in enumerate(points):
+                            val = hours_list[b_i] if b_i < len(hours_list) else 0.0
                             is_node_hovered = (self.hover_bucket_idx == b_i)
+                            if val <= 0.01 and not is_spotlighted and not is_node_hovered:
+                                continue
+
                             if is_node_hovered or is_spotlighted:
                                 # Outer glowing halo ring
                                 halo_color = QColor(color)
@@ -758,7 +898,7 @@ class ProjectComparisonCanvas(QWidget):
 
 
 class ProjectComparisonChartWidget(QFrame):
-    """Card containing ProjectComparisonCanvas, title, Bar/Area toggle, and color legend."""
+    """Card containing ProjectComparisonCanvas, title, submetrics, Bar/Area toggle, and color legend."""
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -766,55 +906,120 @@ class ProjectComparisonChartWidget(QFrame):
         self.setObjectName("ChartCard")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 12, 14, 10)
-        layout.setSpacing(8)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(6)
 
         # Header Row: Title and Mode Switcher
         header_row = QHBoxLayout()
         header_row.setSpacing(8)
 
-        self.lbl_title = QLabel("Project Comparison")
-        self.lbl_title.setFont(QFont("Inter", 12, QFont.Weight.DemiBold))
+        self.lbl_title = QLabel("Statistics")
+        self.lbl_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
 
-        # Bar vs Area toggle buttons
+        # Bar vs Area toggle buttons (Fixed height and width to prevent stretching)
         self.capsule = QFrame()
         self.capsule.setObjectName("ToggleCapsule")
+        self.capsule.setFixedHeight(24)
+        self.capsule.setFixedWidth(78)
         capsule_layout = QHBoxLayout(self.capsule)
         capsule_layout.setContentsMargins(2, 2, 2, 2)
         capsule_layout.setSpacing(2)
 
         self.btn_bar = QPushButton("Bar")
-        self.btn_bar.setFixedHeight(22)
+        self.btn_bar.setFixedSize(36, 20)
         self.btn_bar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_bar.clicked.connect(lambda: self._set_mode("bar"))
         capsule_layout.addWidget(self.btn_bar)
 
         self.btn_area = QPushButton("Area")
-        self.btn_area.setFixedHeight(22)
+        self.btn_area.setFixedSize(36, 20)
         self.btn_area.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_area.clicked.connect(lambda: self._set_mode("area"))
         capsule_layout.addWidget(self.btn_area)
 
-        header_row.addWidget(self.capsule)
+        header_row.addWidget(self.capsule, 0, Qt.AlignmentFlag.AlignVCenter)
         layout.addLayout(header_row)
 
-        # Canvas
-        self.canvas = ProjectComparisonCanvas(is_dark=self.is_dark, parent=self)
-        layout.addWidget(self.canvas)
+        # Sub-metrics row matching reference design
+        self.submetrics_row = QHBoxLayout()
+        self.submetrics_row.setSpacing(14)
 
-        # Legend Row
-        self.legend_layout = QHBoxLayout()
-        self.legend_layout.setSpacing(10)
+        m1_col = QVBoxLayout()
+        m1_col.setSpacing(1)
+        self.lbl_sub1_title = QLabel("Tracked Hours")
+        self.lbl_sub1_title.setObjectName("SubmetricTitle")
+        self.lbl_sub1_title.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_sub1_val = QLabel("0.0h")
+        self.lbl_sub1_val.setObjectName("SubmetricVal")
+        self.lbl_sub1_val.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+        m1_col.addWidget(self.lbl_sub1_title)
+        m1_col.addWidget(self.lbl_sub1_val)
+        self.submetrics_row.addLayout(m1_col)
+
+        # Subtle vertical separator line matching reference image
+        self.submetric_sep = QFrame()
+        self.submetric_sep.setFrameShape(QFrame.Shape.VLine)
+        self.submetric_sep.setFixedHeight(26)
+        self.submetrics_row.addWidget(self.submetric_sep)
+
+        m2_col = QVBoxLayout()
+        m2_col.setSpacing(1)
+        self.lbl_sub2_title = QLabel("Peak Period")
+        self.lbl_sub2_title.setObjectName("SubmetricTitle")
+        self.lbl_sub2_title.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_sub2_val = QLabel("0.0h")
+        self.lbl_sub2_val.setObjectName("SubmetricVal")
+        self.lbl_sub2_val.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+        m2_col.addWidget(self.lbl_sub2_title)
+        m2_col.addWidget(self.lbl_sub2_val)
+        self.submetrics_row.addLayout(m2_col)
+
+        self.submetrics_row.addStretch()
+        layout.addLayout(self.submetrics_row)
+
+        # Canvas (Expands to absorb remaining card height)
+        self.canvas = ProjectComparisonCanvas(is_dark=self.is_dark, parent=self)
+        layout.addWidget(self.canvas, 1)
+
+        # Legend Grid (2-column compact layout to fit within 280-320px width)
+        self.legend_layout = QGridLayout()
+        self.legend_layout.setContentsMargins(0, 0, 0, 0)
+        self.legend_layout.setHorizontalSpacing(8)
+        self.legend_layout.setVerticalSpacing(3)
         layout.addLayout(self.legend_layout)
 
         self.apply_theme()
         self._update_toggle_styles()
 
-    def set_data(self, series: List[Dict[str, Any]], bucket_labels: List[str]) -> None:
+    def set_data(
+        self,
+        series: List[Dict[str, Any]],
+        bucket_labels: List[str],
+        total_hours: Optional[float] = None,
+        change_pct: Optional[float] = None,
+    ) -> None:
         self.canvas.set_data(series, bucket_labels)
         self._render_legend(self.canvas.series)
+
+        # Update submetrics
+        tot = total_hours if total_hours is not None else sum(s.get("total_hours", 0.0) for s in series)
+        self.lbl_sub1_val.setText(f"{tot:.1f}h")
+
+        # Find peak bucket
+        peak_h = 0.0
+        peak_lbl = ""
+        num_b = len(bucket_labels)
+        for b_idx in range(num_b):
+            b_tot = sum(s.get("hours", [])[b_idx] for s in series if b_idx < len(s.get("hours", [])))
+            if b_tot > peak_h:
+                peak_h = b_tot
+                peak_lbl = bucket_labels[b_idx]
+        if peak_h > 0:
+            self.lbl_sub2_val.setText(f"{peak_h:.1f}h ({peak_lbl})")
+        else:
+            self.lbl_sub2_val.setText("0.0h")
 
     def _set_mode(self, mode: str) -> None:
         self.canvas.set_chart_mode(mode)
@@ -829,21 +1034,24 @@ class ProjectComparisonChartWidget(QFrame):
                 w.setParent(None)
                 w.deleteLater()
 
-        for s in series[:5]:
+        for idx, s in enumerate(series[:4]):
             pill = QFrame()
             pill.setObjectName("LegendPill")
             pill.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             pill_layout = QHBoxLayout(pill)
-            pill_layout.setContentsMargins(6, 2, 6, 2)
-            pill_layout.setSpacing(6)
+            pill_layout.setContentsMargins(4, 2, 4, 2)
+            pill_layout.setSpacing(4)
 
             dot = QFrame()
-            dot.setFixedSize(8, 8)
-            dot.setStyleSheet(f"background-color: {s.get('color', '#6366F1')}; border-radius: 4px;")
+            dot.setFixedSize(6, 6)
+            dot.setStyleSheet(f"background-color: {s.get('color', '#6366F1')}; border-radius: 3px;")
             pill_layout.addWidget(dot)
 
-            name_lbl = QLabel(f"{s['name']} ({s.get('total_hours', 0)}h)")
-            name_lbl.setFont(QFont("Inter", 9, QFont.Weight.Medium))
+            name = s['name']
+            if len(name) > 12:
+                name = name[:11] + "…"
+            name_lbl = QLabel(f"{name} ({s.get('total_hours', 0):.1f}h)")
+            name_lbl.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             name_lbl.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #71717A;")
             pill_layout.addWidget(name_lbl)
 
@@ -851,10 +1059,9 @@ class ProjectComparisonChartWidget(QFrame):
             pill.enterEvent = lambda event, name=s_name: self.canvas.set_spotlight_series(name)
             pill.leaveEvent = lambda event: self.canvas.set_spotlight_series(None)
 
-            self.legend_layout.addWidget(pill)
-            self.legend_layout.addSpacing(2)
-
-        self.legend_layout.addStretch()
+            row = idx // 2
+            col = idx % 2
+            self.legend_layout.addWidget(pill, row, col)
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
@@ -939,7 +1146,7 @@ class AppUsageDonutCanvas(QWidget):
         self.hover_pos: Optional[QPoint] = None
 
         self.setMouseTracking(True)
-        self.setFixedSize(140, 140)
+        self.setFixedSize(116, 116)
 
     @property
     def hovered_ring_idx(self) -> Optional[int]:
@@ -1006,8 +1213,8 @@ class AppUsageDonutCanvas(QWidget):
         dy = pos.y() - cy
         d = math.hypot(dx, dy)
 
-        inner_r = 34.0
-        outer_r = 65.0
+        inner_r = 26.0
+        outer_r = 49.0
         apps = self._get_active_apps()
 
         found_idx = None
@@ -1049,8 +1256,8 @@ class AppUsageDonutCanvas(QWidget):
         cx = w / 2.0
         cy = h / 2.0
 
-        base_outer_r = 60.0
-        base_inner_r = 36.0
+        base_outer_r = 46.0
+        base_inner_r = 28.0
         track_color = QColor("#333338" if self.is_dark else "#ECECF0")
 
         apps = self._get_active_apps()
@@ -1080,8 +1287,8 @@ class AppUsageDonutCanvas(QWidget):
 
                 # Hover radial popout
                 if is_hovered:
-                    popout = 3.0
-                    cur_outer_r = base_outer_r + 3.5
+                    popout = 2.5
+                    cur_outer_r = base_outer_r + 3.0
                     cur_inner_r = base_inner_r - 1.0
                     mid_deg = draw_start + actual_span / 2.0
                     mid_rad = math.radians(90.0 - mid_deg)
@@ -1157,14 +1364,14 @@ class AppUsageDonutCanvas(QWidget):
             painter.drawText(QRectF(cx - 35, cy + 2, 70, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
         else:
             hours_str = f"{self.total_hours}h"
-            painter.setFont(QFont("Inter", 14, QFont.Weight.Bold))
+            painter.setFont(QFont("Inter", 13, QFont.Weight.Bold))
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
             text_rect = QRectF(cx - 35, cy - 12, 70, 18)
             painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
 
             painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
-            sub_rect = QRectF(cx - 35, cy + 6, 70, 14)
+            sub_rect = QRectF(cx - 35, cy + 5, 70, 14)
             painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
 
 
@@ -1172,42 +1379,158 @@ class AppUsageDonutCanvas(QWidget):
 AppUsageRingCanvas = AppUsageDonutCanvas
 
 
+class ProjectTargetRow(QFrame):
+    """
+    Catchy, minimalist project target row matching modern executive dashboard references.
+    Displays:
+    - Project color dot + name
+    - Hours tracked + percentage share
+    - Sleek rounded horizontal progress track filled with project's signature color
+    - Interactive hover elevation and click-to-drilldown
+    """
+
+    clicked = pyqtSignal(str)
+
+    def __init__(
+        self,
+        project_name: str,
+        color: str,
+        hours: float,
+        pct: int,
+        is_dark: bool = True,
+        parent: Optional[QWidget] = None,
+    ):
+        super().__init__(parent)
+        self.project_name = project_name
+        self.color = color
+        self.hours = hours
+        self.pct = max(0, min(100, pct))
+        self.is_dark = is_dark
+        self.setObjectName("ProjectTargetRow")
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(6, 3, 6, 3)
+        layout.setSpacing(3)
+
+        # Line 1: Dot + Name, Right: Hours & %
+        header = QHBoxLayout()
+        header.setSpacing(6)
+
+        dot = QFrame()
+        dot.setFixedSize(6, 6)
+        dot.setStyleSheet(f"background-color: {self.color}; border-radius: 3px;")
+        header.addWidget(dot)
+
+        self.lbl_name = QLabel(self.project_name)
+        self.lbl_name.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
+        header.addWidget(self.lbl_name, 1)
+
+        stat_str = f"{self.hours:.1f}h ({self.pct}%)" if self.hours > 0 else f"{self.pct}%"
+        self.lbl_stat = QLabel(stat_str)
+        self.lbl_stat.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_stat.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        header.addWidget(self.lbl_stat)
+
+        layout.addLayout(header)
+
+        # Line 2: Rounded Progress Track
+        self.prog = QProgressBar(self)
+        self.prog.setFixedHeight(5)
+        self.prog.setRange(0, 100)
+        self.prog.setValue(self.pct)
+        self.prog.setTextVisible(False)
+        layout.addWidget(self.prog)
+
+        self.apply_theme()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit(self.project_name)
+        super().mousePressEvent(event)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.apply_theme()
+
+    def apply_theme(self) -> None:
+        bg_hover = "#2A2A2F" if self.is_dark else "#F4F4F5"
+        border_hover = "#3F3F46" if self.is_dark else "#E5E0D8"
+        text_color = "#F4F4F6" if self.is_dark else "#18181B"
+        stat_color = "#A1A1AA" if self.is_dark else "#71717A"
+        prog_bg = "#333338" if self.is_dark else "#E5E0D8"
+
+        self.setStyleSheet(f"""
+            QFrame#ProjectTargetRow {{
+                background: transparent;
+                border: 1px solid transparent;
+                border-radius: 6px;
+            }}
+            QFrame#ProjectTargetRow:hover {{
+                background-color: {bg_hover};
+                border: 1px solid {border_hover};
+            }}
+            QLabel {{
+                border: none;
+                background: transparent;
+            }}
+            QProgressBar {{
+                background-color: {prog_bg};
+                border: none;
+                border-radius: 2.5px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {self.color};
+                border-radius: 2.5px;
+            }}
+        """)
+        self.lbl_name.setStyleSheet(f"color: {text_color};")
+        self.lbl_stat.setStyleSheet(f"color: {stat_color};")
+
+
 class AppUsageAnalyticsWidget(QFrame):
     """
-    Application Statistics card supporting both:
-    1. Segmented Donut Chart Mode (Proportional angular slices with interactive hover).
-    2. Horizontal Comparative Bar Chart Mode (Hours per app with percentage bars).
+    Combined Application Distribution & Project Targets Card matching reference design.
+    Upper Section: Application Distribution (Donut Chart or Bar Chart).
+    Lower Section: Catchy, minimalist Project Targets with colored progress tracks.
     """
+
+    project_selected = pyqtSignal(str)
+    new_project_clicked = pyqtSignal()
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
         self.active_mode = "donut"  # 'donut' or 'bar'
         self.apps_data: List[Dict[str, Any]] = []
+        self.projects_data: List[Dict[str, Any]] = []
+        self.total_hours: float = 0.0
         self.setObjectName("AppUsageCard")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(6)
 
         # Header Row: Title & Toggle
         header_row = QHBoxLayout()
         header_row.setSpacing(6)
 
-        self.lbl_title = QLabel("App Statistics")
-        self.lbl_title.setFont(QFont("Inter", 12, QFont.Weight.DemiBold))
+        self.lbl_title = QLabel("Distribution")
+        self.lbl_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
 
-        # Capsule Switcher: Donut vs Bar
+        # Capsule Switcher: Donut vs Bar (properly sized to prevent text truncation)
         self.capsule = QFrame()
         self.capsule.setObjectName("ToggleCapsule")
+        self.capsule.setFixedHeight(24)
+        self.capsule.setFixedWidth(88)
         capsule_layout = QHBoxLayout(self.capsule)
         capsule_layout.setContentsMargins(2, 2, 2, 2)
         capsule_layout.setSpacing(2)
 
         self.btn_donut = QPushButton("Donut")
-        self.btn_donut.setFixedHeight(22)
+        self.btn_donut.setFixedSize(42, 20)
         self.btn_donut.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_donut.clicked.connect(lambda: self._set_mode("donut"))
         capsule_layout.addWidget(self.btn_donut)
@@ -1216,36 +1539,43 @@ class AppUsageAnalyticsWidget(QFrame):
         self.btn_ring = self.btn_donut
 
         self.btn_bar = QPushButton("Bar")
-        self.btn_bar.setFixedHeight(22)
+        self.btn_bar.setFixedSize(38, 20)
         self.btn_bar.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_bar.clicked.connect(lambda: self._set_mode("bar"))
         capsule_layout.addWidget(self.btn_bar)
 
-        header_row.addWidget(self.capsule)
+        header_row.addWidget(self.capsule, 0, Qt.AlignmentFlag.AlignVCenter)
         layout.addLayout(header_row)
 
-        # Stacked Views (Donut vs Bar)
+        # Upper Section: Stacked Views (Donut vs Bar)
         self.stack = QStackedWidget(self)
 
-        # 1. Donut View Container (Side-by-side: Donut Chart on left, Ranked Breakdown on right)
+        # 1. Donut View Container
         self.donut_page = QWidget()
-        self.donut_page.setMinimumHeight(150)
-        donut_page_layout = QHBoxLayout(self.donut_page)
-        donut_page_layout.setContentsMargins(0, 4, 0, 4)
-        donut_page_layout.setSpacing(16)
+        donut_page_layout = QVBoxLayout(self.donut_page)
+        donut_page_layout.setContentsMargins(0, 0, 0, 0)
+        donut_page_layout.setSpacing(3)
+        donut_page_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        # Donut Canvas centered
+        donut_center_row = QHBoxLayout()
+        donut_center_row.setContentsMargins(0, 0, 0, 0)
+        donut_center_row.addStretch()
         self.donut_canvas = AppUsageDonutCanvas(is_dark=self.is_dark, parent=self.donut_page)
-        donut_page_layout.addWidget(self.donut_canvas)
+        donut_center_row.addWidget(self.donut_canvas)
+        donut_center_row.addStretch()
+        donut_page_layout.addLayout(donut_center_row)
 
         # Backward compatibility alias
         self.ring_page = self.donut_page
         self.ring_canvas = self.donut_canvas
 
-        self.donut_list_layout = QVBoxLayout()
+        # Compact 2-column micro legend for top apps
+        self.donut_list_layout = QGridLayout()
         self.donut_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.donut_list_layout.setSpacing(6)
-        self.donut_list_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-        donut_page_layout.addLayout(self.donut_list_layout, 1)
+        self.donut_list_layout.setHorizontalSpacing(6)
+        self.donut_list_layout.setVerticalSpacing(2)
+        donut_page_layout.addLayout(self.donut_list_layout)
 
         # Backward compatibility alias
         self.ring_list_layout = self.donut_list_layout
@@ -1255,20 +1585,91 @@ class AppUsageAnalyticsWidget(QFrame):
         # 2. Bar View Container
         self.bar_page = QWidget()
         self.bar_page_layout = QVBoxLayout(self.bar_page)
-        self.bar_page_layout.setContentsMargins(0, 4, 0, 0)
-        self.bar_page_layout.setSpacing(6)
+        self.bar_page_layout.setContentsMargins(0, 2, 0, 2)
+        self.bar_page_layout.setSpacing(4)
         self.stack.addWidget(self.bar_page)
 
         layout.addWidget(self.stack)
+
+        # Divider between Apps and Projects
+        self.divider = QFrame()
+        self.divider.setFixedHeight(1)
+        self.divider.setObjectName("SectionDivider")
+        layout.addWidget(self.divider)
+
+        # Lower Section: Project Targets
+        targets_header = QHBoxLayout()
+        targets_header.setSpacing(6)
+
+        self.lbl_targets_title = QLabel("Project Targets")
+        self.lbl_targets_title.setFont(QFont("Inter", 10, QFont.Weight.DemiBold))
+        targets_header.addWidget(self.lbl_targets_title)
+        targets_header.addStretch()
+
+        self.lbl_targets_count = QLabel("0 Active")
+        self.lbl_targets_count.setObjectName("TargetsBadge")
+        self.lbl_targets_count.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        targets_header.addWidget(self.lbl_targets_count)
+        layout.addLayout(targets_header)
+
+        self.targets_container = QWidget()
+        self.targets_layout = QVBoxLayout(self.targets_container)
+        self.targets_layout.setContentsMargins(0, 0, 0, 0)
+        self.targets_layout.setSpacing(4)
+        layout.addWidget(self.targets_container)
 
         self.apply_theme()
         self._update_toggle_styles()
 
     def set_data(self, apps_data: List[Dict[str, Any]], total_hours: float) -> None:
         self.apps_data = apps_data
+        self.total_hours = total_hours
         self.donut_canvas.set_data(apps_data, total_hours)
         self._render_donut_app_list(apps_data)
         self._render_bar_app_list(apps_data)
+
+    def set_project_targets(self, projects: List[Dict[str, Any]], total_hours: float) -> None:
+        """Render catchy minimalist project progress targets matching reference design."""
+        self.projects_data = projects
+        self.total_hours = total_hours
+
+        # Clear existing rows
+        while self.targets_layout.count() > 0:
+            item = self.targets_layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.setParent(None)
+                w.deleteLater()
+
+        active_projects = [p for p in projects if p.get("tracked_minutes", 0) > 0 or p.get("total_tasks", 0) > 0]
+        if not active_projects and projects:
+            active_projects = projects[:3]
+        display_projects = active_projects[:3] if active_projects else projects[:3]
+
+        self.lbl_targets_count.setText(f"{len(projects)} Active")
+
+        if not display_projects:
+            empty = QLabel("No active projects. Click '+ New Project' to start.")
+            empty.setFont(QFont("Inter", 8))
+            empty.setStyleSheet("color: #71717A; padding: 6px 0;")
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.targets_layout.addWidget(empty)
+            return
+
+        for p in display_projects:
+            mins = p.get("tracked_minutes", 0.0)
+            h = mins / 60.0
+            pct = int(round((h / total_hours * 100))) if total_hours > 0 else int(round(p.get("completion_rate", 0.0) * 100))
+            row = ProjectTargetRow(
+                project_name=p["name"],
+                color=p.get("color", "#6366F1"),
+                hours=h,
+                pct=pct,
+                is_dark=self.is_dark,
+                parent=self.targets_container,
+            )
+            row.clicked.connect(self.project_selected.emit)
+            self.targets_layout.addWidget(row)
 
     def _set_mode(self, mode: str) -> None:
         if mode in ("donut", "ring"):
@@ -1280,7 +1681,6 @@ class AppUsageAnalyticsWidget(QFrame):
         self._update_toggle_styles()
 
     def _render_donut_app_list(self, apps: List[Dict[str, Any]]) -> None:
-        # Clear list
         while self.donut_list_layout.count() > 0:
             item = self.donut_list_layout.takeAt(0)
             w = item.widget()
@@ -1289,53 +1689,51 @@ class AppUsageAnalyticsWidget(QFrame):
                 w.deleteLater()
 
         if not apps:
-            empty = QLabel("No application activity recorded.")
-            empty.setFont(QFont("Inter", 10))
-            empty.setStyleSheet("color: #71717A; padding: 12px 0;")
+            empty = QLabel("No app activity")
+            empty.setFont(QFont("Inter", 8))
+            empty.setStyleSheet("color: #71717A; padding: 2px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.donut_list_layout.addWidget(empty)
             return
 
-        for idx, app in enumerate(apps[:4]):
+        for idx, app in enumerate(apps[:3]):
             row_frame = QFrame()
             row_frame.setObjectName("AppDonutRow")
             row_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             row = QHBoxLayout(row_frame)
-            row.setContentsMargins(6, 3, 6, 3)
-            row.setSpacing(6)
+            row.setContentsMargins(4, 2, 4, 2)
+            row.setSpacing(3)
 
             dot = QFrame()
-            dot.setFixedSize(8, 8)
-            dot.setStyleSheet(f"background-color: {app.get('color', '#3B82F6')}; border-radius: 4px;")
+            dot.setFixedSize(6, 6)
+            dot.setStyleSheet(f"background-color: {app.get('color', '#3B82F6')}; border-radius: 3px;")
             row.addWidget(dot)
 
-            name_lbl = QLabel(app["app_name"])
-            name_lbl.setFont(QFont("Inter", 10, QFont.Weight.Medium))
-            row.addWidget(name_lbl, 1)
+            app_name = app["app_name"]
+            if len(app_name) > 8:
+                app_name = app_name[:7] + "…"
+            name_lbl = QLabel(app_name)
+            name_lbl.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+            row.addWidget(name_lbl)
 
-            hours_lbl = QLabel(f"{app.get('hours', 0.0)}h")
-            hours_lbl.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
-            hours_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            row.addWidget(hours_lbl)
-
-            pct_lbl = QLabel(f"+{app.get('percentage', 0)}%" if app.get('percentage', 0) > 0 else "0%")
-            pct_lbl.setFont(QFont("Inter", 9, QFont.Weight.Medium))
-            pct_bg = "#2A2A2E" if self.is_dark else "#F4F4F5"
+            pct_lbl = QLabel(f"{int(round(app.get('percentage', 0)))}%")
+            pct_lbl.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
             pct_color = "#10B981" if self.is_dark else "#059669"
-            pct_lbl.setStyleSheet(f"background-color: {pct_bg}; color: {pct_color}; border-radius: 6px; padding: 2px 6px;")
-            pct_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            pct_lbl.setStyleSheet(f"color: {pct_color};")
             row.addWidget(pct_lbl)
 
             row_frame.enterEvent = lambda event, i=idx: self.donut_canvas.set_hovered_segment(i)
             row_frame.leaveEvent = lambda event: self.donut_canvas.set_hovered_segment(None)
 
-            self.donut_list_layout.addWidget(row_frame)
+            if idx == 2:
+                self.donut_list_layout.addWidget(row_frame, 1, 0, 1, 2, Qt.AlignmentFlag.AlignCenter)
+            else:
+                self.donut_list_layout.addWidget(row_frame, 0, idx)
 
     # Backward compatibility alias
     _render_ring_app_list = _render_donut_app_list
 
     def _render_bar_app_list(self, apps: List[Dict[str, Any]]) -> None:
-        # Clear bar layout
         while self.bar_page_layout.count() > 0:
             item = self.bar_page_layout.takeAt(0)
             w = item.widget()
@@ -1345,34 +1743,34 @@ class AppUsageAnalyticsWidget(QFrame):
 
         if not apps:
             empty = QLabel("No application activity recorded.")
-            empty.setFont(QFont("Inter", 10))
-            empty.setStyleSheet("color: #71717A; padding: 20px 0;")
+            empty.setFont(QFont("Inter", 8))
+            empty.setStyleSheet("color: #71717A; padding: 10px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.bar_page_layout.addWidget(empty)
             return
 
-        for app in apps[:5]:
+        for app in apps[:3]:
             item_frame = QFrame()
             item_frame.setObjectName("AppUsageBarItem")
             item_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             item_layout = QVBoxLayout(item_frame)
-            item_layout.setContentsMargins(8, 4, 8, 4)
-            item_layout.setSpacing(3)
+            item_layout.setContentsMargins(6, 2, 6, 2)
+            item_layout.setSpacing(2)
 
             row = QHBoxLayout()
-            row.setSpacing(6)
+            row.setSpacing(5)
 
             dot = QFrame()
-            dot.setFixedSize(8, 8)
-            dot.setStyleSheet(f"background-color: {app.get('color', '#3B82F6')}; border-radius: 4px;")
+            dot.setFixedSize(6, 6)
+            dot.setStyleSheet(f"background-color: {app.get('color', '#3B82F6')}; border-radius: 3px;")
             row.addWidget(dot)
 
             name_lbl = QLabel(app["app_name"])
-            name_lbl.setFont(QFont("Inter", 10, QFont.Weight.Medium))
+            name_lbl.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             row.addWidget(name_lbl, 1)
 
             stat_lbl = QLabel(f"{app.get('hours', 0.0)}h ({app.get('percentage', 0)}%)")
-            stat_lbl.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
+            stat_lbl.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
             stat_lbl.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #71717A;")
             stat_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             row.addWidget(stat_lbl)
@@ -1383,7 +1781,7 @@ class AppUsageAnalyticsWidget(QFrame):
             bar.setRange(0, 100)
             bar.setValue(int(round(app.get("percentage", 0.0))))
             bar.setTextVisible(False)
-            bar.setFixedHeight(6)
+            bar.setFixedHeight(5)
 
             bar_bg = "#333338" if self.is_dark else "#E5E0D8"
             bar_color = app.get("color", "#3B82F6")
@@ -1391,11 +1789,11 @@ class AppUsageAnalyticsWidget(QFrame):
                 QProgressBar {{
                     background-color: {bar_bg};
                     border: none;
-                    border-radius: 3px;
+                    border-radius: 2.5px;
                 }}
                 QProgressBar::chunk {{
                     background-color: {bar_color};
-                    border-radius: 3px;
+                    border-radius: 2.5px;
                 }}
             """)
             item_layout.addWidget(bar)
@@ -1410,6 +1808,8 @@ class AppUsageAnalyticsWidget(QFrame):
         self._update_toggle_styles()
         self._render_donut_app_list(self.apps_data)
         self._render_bar_app_list(self.apps_data)
+        if hasattr(self, "projects_data"):
+            self.set_project_targets(self.projects_data, self.total_hours)
 
     def _update_toggle_styles(self) -> None:
         mode = self.active_mode
@@ -1436,6 +1836,10 @@ class AppUsageAnalyticsWidget(QFrame):
         hover_border = "#4A4A54" if self.is_dark else "#D4CEBF"
         capsule_bg = "#1E1E22" if self.is_dark else "#ECECF0"
         title_color = "#F4F4F6" if self.is_dark else "#111111"
+        divider_color = "#333338" if self.is_dark else "#E5E0D8"
+        badge_bg = "#1F1F22" if self.is_dark else "#F4F4F5"
+        badge_border = "#333338" if self.is_dark else "#E5E0D8"
+        badge_color = "#A1A1AA" if self.is_dark else "#71717A"
 
         self.setStyleSheet(f"""
             QFrame#AppUsageCard {{
@@ -1450,8 +1854,19 @@ class AppUsageAnalyticsWidget(QFrame):
                 background-color: {capsule_bg};
                 border-radius: 6px;
             }}
+            QFrame#SectionDivider {{
+                background-color: {divider_color};
+                border: none;
+            }}
             QLabel {{
                 color: {title_color};
+            }}
+            QLabel#TargetsBadge {{
+                background-color: {badge_bg};
+                color: {badge_color};
+                border: 1px solid {badge_border};
+                border-radius: 6px;
+                padding: 1px 6px;
             }}
             QFrame#AppDonutRow, QFrame#AppRingRow {{
                 background: transparent;
@@ -1465,11 +1880,12 @@ class AppUsageAnalyticsWidget(QFrame):
             QFrame#AppUsageBarItem {{
                 background: transparent;
                 border: 1px solid transparent;
-                border-radius: 8px;
+                border-radius: 6px;
             }}
             QFrame#AppUsageBarItem:hover {{
                 background-color: {"#2A2A2E" if self.is_dark else "#FAF8F5"};
                 border: 1px solid {"#3F3F46" if self.is_dark else "#E5E0D8"};
             }}
         """)
+
 
