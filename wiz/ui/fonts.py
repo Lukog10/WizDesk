@@ -72,7 +72,6 @@ def get_font(
         init_fonts()
     font = QFont()
     font.setFamilies(MONO_FAMILIES if mono else SANS_FAMILIES)
-    if size > 0:
-        font.setPointSize(size)
+    font.setPointSize(max(1, int(size)) if size and size > 0 else 10)
     font.setWeight(weight)
     return font
