@@ -180,24 +180,26 @@ class ProjectDialog(QDialog):
 
     def _apply_dialog_theme(self) -> None:
         if self.is_dark:
-            self.setStyleSheet("""
-                QDialog { background-color: #1E1E21; color: #F4F4F6; }
-                QLabel { color: #E4E4E7; font-size: 11px; font-weight: 500; }
-                QLineEdit {
+            self.setStyleSheet(f"""
+                QDialog {{ background-color: #1E1E21; color: #F4F4F6; }}
+                QLabel {{ color: #E4E4E7; font-family: {FONT_SANS}; font-size: 11px; font-weight: 500; }}
+                QLineEdit {{
                     background-color: #28282C;
                     color: #F4F4F6;
                     border: 1px solid #3F3F46;
                     border-radius: 6px;
                     padding: 6px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 12px;
-                }
-                QLineEdit:focus { border: 1px solid #6366F1; }
-                QPushButton {
+                }}
+                QLineEdit:focus {{ border: 1px solid #6366F1; }}
+                QPushButton {{
                     padding: 6px 14px;
                     border-radius: 6px;
+                    font-family: {FONT_SANS};
                     font-size: 12px;
                     font-weight: 500;
-                }
+                }}
             """)
             self.cancel_btn.setStyleSheet("""
                 background-color: #28282C;
@@ -211,24 +213,26 @@ class ProjectDialog(QDialog):
                 font-weight: 600;
             """)
         else:
-            self.setStyleSheet("""
-                QDialog { background-color: #FFFFFF; color: #111111; }
-                QLabel { color: #4B4B46; font-size: 11px; font-weight: 500; }
-                QLineEdit {
+            self.setStyleSheet(f"""
+                QDialog {{ background-color: #FFFFFF; color: #111111; }}
+                QLabel {{ color: #4B4B46; font-family: {FONT_SANS}; font-size: 11px; font-weight: 500; }}
+                QLineEdit {{
                     background-color: #FAFAF8;
                     color: #111111;
                     border: 1px solid #DCD6CA;
                     border-radius: 6px;
                     padding: 6px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 12px;
-                }
-                QLineEdit:focus { border: 1px solid #6366F1; }
-                QPushButton {
+                }}
+                QLineEdit:focus {{ border: 1px solid #6366F1; }}
+                QPushButton {{
                     padding: 6px 14px;
                     border-radius: 6px;
+                    font-family: {FONT_SANS};
                     font-size: 12px;
                     font-weight: 500;
-                }
+                }}
             """)
             self.cancel_btn.setStyleSheet("""
                 background-color: #F2ECE1;
@@ -706,116 +710,122 @@ class ProjectsOverviewPage(QWidget):
 
     def apply_theme(self) -> None:
         if self.is_dark:
-            chip_style = """
-                QPushButton {
+            chip_style = f"""
+                QPushButton {{
                     background-color: #242427;
                     color: #A1A1AA;
                     border: 1px solid #3F3F46;
                     border-radius: 12px;
                     padding: 4px 12px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:checked {
+                }}
+                QPushButton:checked {{
                     background-color: #F4F4F6;
                     color: #18181B;
                     border: 1px solid #F4F4F6;
                     font-weight: 600;
-                }
-                QPushButton:hover:!checked {
+                }}
+                QPushButton:hover:!checked {{
                     background-color: #2E2E33;
                     border-color: #6366F1;
                     color: #FFFFFF;
-                }
+                }}
             """
-            btn_new_style = """
-                QPushButton {
+            btn_new_style = f"""
+                QPushButton {{
                     background-color: #2E2E33;
                     color: #F4F4F6;
                     border: 1px solid #4A4A52;
                     border-radius: 12px;
                     padding: 4px 14px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 600;
-                }
-                QPushButton:hover {
+                }}
+                QPushButton:hover {{
                     background-color: #383840;
                     border-color: #6366F1;
-                }
+                }}
             """
-            badge_style = """
-                QLabel#DirectoryBadge {
+            badge_style = f"""
+                QLabel#DirectoryBadge {{
                     background-color: #242427;
                     color: #A1A1AA;
                     border: 1px solid #333338;
                     border-radius: 6px;
                     padding: 2px 8px;
+                    font-family: {FONT_SANS};
                     font-size: 10px;
-                }
-                QLabel#DirectoryBadge:hover {
+                }}
+                QLabel#DirectoryBadge:hover {{
                     border-color: #6366F1;
                     color: #F4F4F6;
-                }
-                QFrame#EmptyCard {
+                }}
+                QFrame#EmptyCard {{
                     background-color: #242427;
                     border: 1px dashed #3F3F46;
                     border-radius: 8px;
-                }
-                QFrame#EmptyCard QLabel { color: #A1A1AA; }
+                }}
+                QFrame#EmptyCard QLabel {{ color: #A1A1AA; }}
             """
             dir_title_color = "#F4F4F6"
         else:
-            chip_style = """
-                QPushButton {
+            chip_style = f"""
+                QPushButton {{
                     background-color: #FFFFFF;
                     color: #666660;
                     border: 1px solid #DCD6CA;
                     border-radius: 12px;
                     padding: 4px 12px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:checked {
+                }}
+                QPushButton:checked {{
                     background-color: #111111;
                     color: #FFFFFF;
                     border: 1px solid #111111;
                     font-weight: 600;
-                }
-                QPushButton:hover:!checked {
+                }}
+                QPushButton:hover:!checked {{
                     background-color: #F2ECE1;
                     border-color: #6366F1;
                     color: #111111;
-                }
+                }}
             """
-            btn_new_style = """
-                QPushButton {
+            btn_new_style = f"""
+                QPushButton {{
                     background-color: #111111;
                     color: #FFFFFF;
                     border: 1px solid #111111;
                     border-radius: 12px;
                     padding: 4px 14px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 600;
-                }
-                QPushButton:hover {
+                }}
+                QPushButton:hover {{
                     background-color: #2E2E33;
-                }
+                }}
             """
-            badge_style = """
-                QLabel#DirectoryBadge {
+            badge_style = f"""
+                QLabel#DirectoryBadge {{
                     background-color: #FFFFFF;
                     color: #71717A;
                     border: 1px solid #E5E0D8;
                     border-radius: 6px;
                     padding: 2px 8px;
+                    font-family: {FONT_SANS};
                     font-size: 10px;
-                }
-                QFrame#EmptyCard {
+                }}
+                QFrame#EmptyCard {{
                     background-color: #FFFFFF;
                     border: 1px dashed #DCD6CA;
                     border-radius: 8px;
-                }
-                QFrame#EmptyCard QLabel { color: #666660; }
+                }}
+                QFrame#EmptyCard QLabel {{ color: #666660; }}
             """
             dir_title_color = "#111111"
 
@@ -1360,41 +1370,43 @@ class ProjectDetailPage(QWidget):
 
     def apply_theme(self) -> None:
         if self.is_dark:
-            btn_style = """
-                QPushButton {
+            btn_style = f"""
+                QPushButton {{
                     background-color: #242427;
                     color: #A1A1AA;
                     border: 1px solid #3F3F46;
                     border-radius: 6px;
                     padding: 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:hover {
+                }}
+                QPushButton:hover {{
                     background-color: #2E2E33;
                     color: #FFFFFF;
-                }
+                }}
             """
-            chip_style = """
-                QPushButton {
+            chip_style = f"""
+                QPushButton {{
                     background-color: #242427;
                     color: #A1A1AA;
                     border: 1px solid #3F3F46;
                     border-radius: 12px;
                     padding: 4px 12px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:checked {
+                }}
+                QPushButton:checked {{
                     background-color: #F4F4F6;
                     color: #18181B;
                     border: 1px solid #F4F4F6;
                     font-weight: 600;
-                }
-                QPushButton:hover:!checked {
+                }}
+                QPushButton:hover:!checked {{
                     background-color: #2E2E33;
                     color: #FFFFFF;
-                }
+                }}
             """
             card_style = """
                 QFrame#DetailItemCard {
@@ -1420,54 +1432,57 @@ class ProjectDetailPage(QWidget):
                     border-radius: 3px;
                 }
             """
-            badge_style = """
-                QFrame#MetricsBar { background: transparent; border: none; }
-                QLabel#MetricBadge {
+            badge_style = f"""
+                QFrame#MetricsBar {{ background: transparent; border: none; }}
+                QLabel#MetricBadge {{
                     background-color: #242427;
                     color: #E4E4E7;
                     border: 1px solid #333338;
                     border-radius: 6px;
                     padding: 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
+                }}
             """
         else:
-            btn_style = """
-                QPushButton {
+            btn_style = f"""
+                QPushButton {{
                     background-color: #FFFFFF;
                     color: #555550;
                     border: 1px solid #DCD6CA;
                     border-radius: 6px;
                     padding: 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:hover {
+                }}
+                QPushButton:hover {{
                     background-color: #F2ECE1;
                     color: #111111;
-                }
+                }}
             """
-            chip_style = """
-                QPushButton {
+            chip_style = f"""
+                QPushButton {{
                     background-color: #FFFFFF;
                     color: #666660;
                     border: 1px solid #DCD6CA;
                     border-radius: 12px;
                     padding: 4px 12px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:checked {
+                }}
+                QPushButton:checked {{
                     background-color: #111111;
                     color: #FFFFFF;
                     border: 1px solid #111111;
                     font-weight: 600;
-                }
-                QPushButton:hover:!checked {
+                }}
+                QPushButton:hover:!checked {{
                     background-color: #F2ECE1;
                     color: #111111;
-                }
+                }}
             """
             card_style = """
                 QFrame#DetailItemCard {
@@ -1493,17 +1508,18 @@ class ProjectDetailPage(QWidget):
                     border-radius: 3px;
                 }
             """
-            badge_style = """
-                QFrame#MetricsBar { background: transparent; border: none; }
-                QLabel#MetricBadge {
+            badge_style = f"""
+                QFrame#MetricsBar {{ background: transparent; border: none; }}
+                QLabel#MetricBadge {{
                     background-color: #FFFFFF;
                     color: #222220;
                     border: 1px solid #DCD6CA;
                     border-radius: 6px;
                     padding: 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
+                }}
             """
 
         self.btn_back.setStyleSheet(btn_style)

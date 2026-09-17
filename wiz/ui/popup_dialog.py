@@ -2206,7 +2206,7 @@ class QuickEntryDialog(QDialog):
                 color: {day_btn_color};
                 border: 1px solid {day_btn_border};
                 border-radius: 6px;
-                font-family: {FONT_MONO};
+                font-family: {FONT_SANS};
                 font-size: 12px;
                 font-weight: bold;
             }}
@@ -2224,7 +2224,7 @@ class QuickEntryDialog(QDialog):
                 background: transparent;
                 color: {date_btn_color};
                 border: none;
-                font-family: {FONT_MONO};
+                font-family: {FONT_SANS};
                 font-size: 13px;
                 font-weight: 600;
                 padding: 4px 10px;

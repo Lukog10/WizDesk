@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
 from wiz.storage.models import StorageRepository
 from wiz.ui.icons import get_app_pixmap
 from wiz.ui.arrow_combo import ArrowComboBox
-from wiz.ui.fonts import get_font
+from wiz.ui.fonts import FONT_SANS, get_font
 
 
 def format_duration(minutes: float) -> str:
@@ -456,64 +456,67 @@ class TimelineView(QWidget):
         """Apply styles for Light or Dark theme."""
         if self.is_dark:
             self.metrics_bar.setStyleSheet(
-                """
-                QFrame#MetricsBar {
+                f"""
+                QFrame#MetricsBar {{
                     background: transparent;
                     border: none;
-                }
-                QLabel#MetricBadge {
+                }}
+                QLabel#MetricBadge {{
                     background-color: #242427;
                     color: #E4E4E7;
                     border: 1px solid #333338;
                     border-radius: 6px;
                     padding: 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
+                }}
                 """
             )
-            chip_style = """
-                QPushButton {
+            chip_style = f"""
+                QPushButton {{
                     background-color: #242427;
                     color: #A1A1AA;
                     border: 1px solid #3F3F46;
                     border-radius: 12px;
                     padding: 4px 12px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:checked {
+                }}
+                QPushButton:checked {{
                     background-color: #F4F4F6;
                     color: #18181B;
                     border: 1px solid #F4F4F6;
                     font-weight: 600;
-                }
-                QPushButton:hover:!checked {
+                }}
+                QPushButton:hover:!checked {{
                     background-color: #2E2E33;
                     color: #FFFFFF;
-                }
+                }}
             """
-            combo_style = """
-                QComboBox {
+            combo_style = f"""
+                QComboBox {{
                     background-color: #242427;
                     color: #F4F4F6;
                     border: 1px solid #3F3F46;
                     border-radius: 6px;
                     padding: 4px 20px 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QComboBox::drop-down {
+                }}
+                QComboBox::drop-down {{
                     border: none;
                     width: 0px;
-                }
-                QComboBox QAbstractItemView {
+                }}
+                QComboBox QAbstractItemView {{
                     background-color: #242427;
                     color: #F4F4F6;
                     selection-background-color: #3F3F46;
                     border: 1px solid #3F3F46;
                     min-width: 130px;
-                }
+                }}
             """
             scroll_style = """
                 QScrollArea#TimelineScrollArea { background: transparent; }
@@ -521,64 +524,67 @@ class TimelineView(QWidget):
             """
         else:
             self.metrics_bar.setStyleSheet(
-                """
-                QFrame#MetricsBar {
+                f"""
+                QFrame#MetricsBar {{
                     background: transparent;
                     border: none;
-                }
-                QLabel#MetricBadge {
+                }}
+                QLabel#MetricBadge {{
                     background-color: #FFFFFF;
                     color: #222220;
                     border: 1px solid #DCD6CA;
                     border-radius: 6px;
                     padding: 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
+                }}
                 """
             )
-            chip_style = """
-                QPushButton {
+            chip_style = f"""
+                QPushButton {{
                     background-color: #FFFFFF;
                     color: #666660;
                     border: 1px solid #DCD6CA;
                     border-radius: 12px;
                     padding: 4px 12px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QPushButton:checked {
+                }}
+                QPushButton:checked {{
                     background-color: #111111;
                     color: #FFFFFF;
                     border: 1px solid #111111;
                     font-weight: 600;
-                }
-                QPushButton:hover:!checked {
+                }}
+                QPushButton:hover:!checked {{
                     background-color: #F2ECE1;
                     color: #111111;
-                }
+                }}
             """
-            combo_style = """
-                QComboBox {
+            combo_style = f"""
+                QComboBox {{
                     background-color: #FFFFFF;
                     color: #111111;
                     border: 1px solid #DCD6CA;
                     border-radius: 6px;
                     padding: 4px 20px 4px 10px;
+                    font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
-                }
-                QComboBox::drop-down {
+                }}
+                QComboBox::drop-down {{
                     border: none;
                     width: 0px;
-                }
-                QComboBox QAbstractItemView {
+                }}
+                QComboBox QAbstractItemView {{
                     background-color: #FFFFFF;
                     color: #111111;
                     selection-background-color: #EBE6DC;
                     border: 1px solid #DCD6CA;
                     min-width: 130px;
-                }
+                }}
             """
             scroll_style = """
                 QScrollArea#TimelineScrollArea { background: transparent; }

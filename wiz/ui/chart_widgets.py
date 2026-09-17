@@ -284,22 +284,23 @@ class KpiStatCard(QFrame):
                     background: transparent;
                 }
             """)
-            self.lbl_title.setStyleSheet("color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-size: 9px;")
+            self.lbl_title.setStyleSheet(f"color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-family: {FONT_SANS}; font-size: 9px;")
             val_font_size = "15px" if len(self.value_text) > 7 else "18px"
-            self.lbl_value.setStyleSheet(f"color: #FFFFFF; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
-            self.lbl_subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-size: 8px;")
-            self.lbl_change.setStyleSheet("""
-                QLabel#KpiChangeBadge {
+            self.lbl_value.setStyleSheet(f"color: #FFFFFF; font-family: {FONT_SANS}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
+            self.lbl_subtitle.setStyleSheet(f"color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-family: {FONT_SANS}; font-size: 8px;")
+            self.lbl_change.setStyleSheet(f"""
+                QLabel#KpiChangeBadge {{
                     background-color: rgba(255, 255, 255, 0.2);
                     color: #FFFFFF;
                     border: none;
                     border-radius: 6px;
                     padding: 0px 4px;
+                    font-family: {FONT_SANS};
                     font-size: 8px;
-                }
-                QFrame#KpiHeroCard:hover QLabel#KpiChangeBadge {
+                }}
+                QFrame#KpiHeroCard:hover QLabel#KpiChangeBadge {{
                     background-color: rgba(255, 255, 255, 0.3);
-                }
+                }}
             """)
         else:
             if self.is_dark:
@@ -359,6 +360,7 @@ class KpiStatCard(QFrame):
                 }}
                 QLabel#KpiTitle {{
                     color: {sub_color};
+                    font-family: {FONT_SANS};
                     font-size: 9px;
                 }}
                 QLabel#KpiChangeBadge {{
@@ -381,8 +383,8 @@ class KpiStatCard(QFrame):
                 }}
             """)
             val_font_size = "15px" if len(self.value_text) > 7 else "18px"
-            self.lbl_value.setStyleSheet(f"color: {text_color}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
-            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 9px;")
+            self.lbl_value.setStyleSheet(f"color: {text_color}; font-family: {FONT_SANS}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
+            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-family: {FONT_SANS}; font-size: 9px;")
             self.lbl_change.setStyleSheet(f"""
                 QLabel#KpiChangeBadge {{
                     background-color: {badge_bg};
@@ -390,6 +392,7 @@ class KpiStatCard(QFrame):
                     border: 1px solid {border};
                     border-radius: 7px;
                     padding: 1px 5px;
+                    font-family: {FONT_SANS};
                     font-size: 8px;
                 }}
                 QFrame#KpiStatCard:hover QLabel#KpiChangeBadge {{

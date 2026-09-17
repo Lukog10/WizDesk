@@ -452,7 +452,7 @@ class SettingsView(QWidget):
         # Update feedback status
         self.status_pill.setText("Settings saved successfully")
         self.status_pill.setStyleSheet(
-            "color: #10B981; font-weight: 600; font-size: 12px;"
+            f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
         )
         QTimer.singleShot(
             2500,
@@ -464,7 +464,7 @@ class SettingsView(QWidget):
 
     def _refresh_status_pill_style(self) -> None:
         color = "#71717A" if self.is_dark else "#94A3B8"
-        self.status_pill.setStyleSheet(f"color: {color}; font-size: 12px;")
+        self.status_pill.setStyleSheet(f"color: {color}; font-family: {FONT_SANS}; font-size: 12px;")
 
     def set_theme(self, is_dark: bool) -> None:
         """Apply dark or light theme with WizDesk brand colors."""

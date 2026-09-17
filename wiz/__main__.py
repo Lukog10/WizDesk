@@ -18,6 +18,7 @@ from wiz.ui.popup_dialog import QuickEntryDialog
 from wiz.ui.quick_bar_dialog import QuickBarPopup
 from wiz.ui.settings_dialog import SettingsDialog
 from wiz.ui.icons import get_app_icon
+from wiz.ui.fonts import init_fonts, get_font, FONT_SANS
 from wiz.tracker.window_tracker import WindowTracker
 from wiz.sync.obsidian import ObsidianSync
 from wiz.utils.hotkey import GlobalHotkeyListener
@@ -162,6 +163,11 @@ def main() -> None:
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
 
     app = QApplication(sys.argv)
+    init_fonts()
+    app.setFont(get_font(10))
+    # Global stylesheet: ensures font-family cascades to every widget,
+    # even if individual stylesheets set only font-size (which resets family in Qt).
+    app.setStyleSheet(f"* {{ font-family: {FONT_SANS}; }}")
     app.setApplicationName("WizDesk")
     app.setApplicationDisplayName("WizDesk")
     app.setWindowIcon(get_app_icon("wiz-idle.svg"))
