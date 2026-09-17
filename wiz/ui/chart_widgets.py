@@ -168,7 +168,9 @@ class KpiStatCard(QFrame):
         self.lbl_value = QLabel(value)
         self.lbl_value.setObjectName("KpiValue")
         self.lbl_value.setMinimumWidth(0)
-        initial_size = 15 if len(value) > 7 else 18
+        self.lbl_value.setWordWrap(False)
+        self.lbl_value.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        initial_size = 14 if len(value) > 7 else 18
         self.lbl_value.setFont(get_font(initial_size, QFont.Weight.Bold))
         val_row.addWidget(self.lbl_value)
 
@@ -181,10 +183,12 @@ class KpiStatCard(QFrame):
 
         layout.addLayout(val_row)
 
-        # Title row
+        # Title row (Secondary text)
         self.lbl_title = QLabel(title)
         self.lbl_title.setObjectName("KpiTitle")
-        self.lbl_title.setFont(get_font(9, QFont.Weight.Medium))
+        self.lbl_title.setFont(get_font(10, QFont.Weight.Medium))
+        self.lbl_title.setWordWrap(False)
+        self.lbl_title.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.lbl_title)
 
         # Subtitle preserved for backward compatibility
@@ -250,8 +254,8 @@ class KpiStatCard(QFrame):
 
         # Auto-elide if text is long to maintain fixed static card size
         display_val = value
-        if len(value) > 13:
-            display_val = value[:11] + "…"
+        if len(value) > 10:
+            display_val = value[:9] + "…"
             self.lbl_value.setToolTip(value)
             self.setToolTip(f"{self.title_text}: {value}")
         else:
@@ -261,9 +265,9 @@ class KpiStatCard(QFrame):
 
         # Auto-adjust font size to avoid wrapping in compact card width
         font_size = 18
-        if len(display_val) > 12:
+        if len(display_val) > 8:
             font_size = 13
-        elif len(display_val) > 8:
+        elif len(display_val) > 5:
             font_size = 15
         self.lbl_value.setFont(get_font(font_size, QFont.Weight.Bold))
 
@@ -300,8 +304,8 @@ class KpiStatCard(QFrame):
                     background: transparent;
                 }
             """)
-            self.lbl_title.setStyleSheet(f"color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-family: {FONT_SANS}; font-size: 9px;")
-            val_font_size = "15px" if len(self.value_text) > 7 else "18px"
+            self.lbl_title.setStyleSheet(f"color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-family: {FONT_SANS}; font-size: 11px; font-weight: 500;")
+            val_font_size = "13px" if len(self.lbl_value.text()) > 8 else ("15px" if len(self.lbl_value.text()) > 5 else "18px")
             self.lbl_value.setStyleSheet(f"color: #FFFFFF; font-family: {FONT_SANS}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
             self.lbl_subtitle.setStyleSheet(f"color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-family: {FONT_SANS}; font-size: 8px;")
             self.lbl_change.setStyleSheet(f"""
@@ -377,7 +381,8 @@ class KpiStatCard(QFrame):
                 QLabel#KpiTitle {{
                     color: {sub_color};
                     font-family: {FONT_SANS};
-                    font-size: 9px;
+                    font-size: 11px;
+                    font-weight: 500;
                 }}
                 QLabel#KpiChangeBadge {{
                     background-color: {badge_bg};
@@ -398,7 +403,7 @@ class KpiStatCard(QFrame):
                     background-color: {prog_chunk_hover};
                 }}
             """)
-            val_font_size = "15px" if len(self.value_text) > 7 else "18px"
+            val_font_size = "13px" if len(self.lbl_value.text()) > 8 else ("15px" if len(self.lbl_value.text()) > 5 else "18px")
             self.lbl_value.setStyleSheet(f"color: {text_color}; font-family: {FONT_SANS}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
             self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-family: {FONT_SANS}; font-size: 9px;")
             self.lbl_change.setStyleSheet(f"""
@@ -877,7 +882,7 @@ class ProjectComparisonChartWidget(QFrame):
         header_row = QHBoxLayout()
         header_row.setSpacing(8)
 
-        self.lbl_title = QLabel("Statistics")
+        self.lbl_title = QLabel("Project Comparison")
         self.lbl_title.setFont(get_font(11, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
@@ -909,16 +914,17 @@ class ProjectComparisonChartWidget(QFrame):
 
         # Sub-metrics row matching reference design
         self.submetrics_row = QHBoxLayout()
-        self.submetrics_row.setSpacing(24)
+        self.submetrics_row.setSpacing(28)
 
         m1_col = QVBoxLayout()
-        m1_col.setSpacing(1)
+        m1_col.setContentsMargins(0, 0, 0, 0)
+        m1_col.setSpacing(2)
         self.lbl_sub1_title = QLabel("Tracked Hours")
         self.lbl_sub1_title.setObjectName("SubmetricTitle")
-        self.lbl_sub1_title.setFont(get_font(8, QFont.Weight.Medium))
+        self.lbl_sub1_title.setFont(get_font(10, QFont.Weight.Medium))
         self.lbl_sub1_val = QLabel("0.0h")
         self.lbl_sub1_val.setObjectName("SubmetricVal")
-        self.lbl_sub1_val.setFont(get_font(13, QFont.Weight.Bold))
+        self.lbl_sub1_val.setFont(get_font(11, QFont.Weight.Bold))
         m1_col.addWidget(self.lbl_sub1_title)
         m1_col.addWidget(self.lbl_sub1_val)
         self.submetrics_row.addLayout(m1_col)
@@ -928,13 +934,14 @@ class ProjectComparisonChartWidget(QFrame):
         self.submetric_sep.hide()
 
         m2_col = QVBoxLayout()
-        m2_col.setSpacing(1)
+        m2_col.setContentsMargins(0, 0, 0, 0)
+        m2_col.setSpacing(2)
         self.lbl_sub2_title = QLabel("Peak Period")
         self.lbl_sub2_title.setObjectName("SubmetricTitle")
-        self.lbl_sub2_title.setFont(get_font(8, QFont.Weight.Medium))
+        self.lbl_sub2_title.setFont(get_font(10, QFont.Weight.Medium))
         self.lbl_sub2_val = QLabel("0.0h")
         self.lbl_sub2_val.setObjectName("SubmetricVal")
-        self.lbl_sub2_val.setFont(get_font(13, QFont.Weight.Bold))
+        self.lbl_sub2_val.setFont(get_font(11, QFont.Weight.Bold))
         m2_col.addWidget(self.lbl_sub2_title)
         m2_col.addWidget(self.lbl_sub2_val)
         self.submetrics_row.addLayout(m2_col)
@@ -1084,6 +1091,18 @@ class ProjectComparisonChartWidget(QFrame):
             }}
             QLabel {{
                 color: {title_color};
+            }}
+            QLabel#SubmetricTitle {{
+                color: {"#A1A1AA" if self.is_dark else "#71717A"};
+                font-family: {FONT_SANS};
+                font-size: 10px;
+                font-weight: 500;
+            }}
+            QLabel#SubmetricVal {{
+                color: {title_color};
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: bold;
             }}
             QFrame#LegendPill {{
                 background: transparent;
@@ -1338,12 +1357,12 @@ class AppUsageDonutCanvas(QWidget):
             painter.drawText(QRectF(cx - 36, cy + 3, 72, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
         else:
             hours_str = f"{self.total_hours}h"
-            painter.setFont(get_font(15, QFont.Weight.Bold))
+            painter.setFont(get_font(14, QFont.Weight.Bold))
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
             text_rect = QRectF(cx - 36, cy - 14, 72, 18)
             painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
 
-            painter.setFont(get_font(7, QFont.Weight.Medium))
+            painter.setFont(get_font(8, QFont.Weight.Medium))
             painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
             sub_rect = QRectF(cx - 36, cy + 5, 72, 12)
             painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
@@ -1510,7 +1529,7 @@ class ProjectTrackingWidget(QFrame):
         layout.addLayout(header_row)
 
         self.lbl_subtitle = QLabel("Target vs Actual progress")
-        self.lbl_subtitle.setFont(get_font(8))
+        self.lbl_subtitle.setFont(get_font(9, QFont.Weight.Medium))
         layout.addWidget(self.lbl_subtitle)
 
         # Scroll Area for Target Rows
@@ -1689,7 +1708,7 @@ class AppUsageAnalyticsWidget(QFrame):
         header_row = QHBoxLayout()
         header_row.setSpacing(6)
 
-        self.lbl_title = QLabel("Distribution")
+        self.lbl_title = QLabel("App Distribution")
         self.lbl_title.setFont(get_font(11, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
