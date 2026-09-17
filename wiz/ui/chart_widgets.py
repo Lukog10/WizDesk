@@ -32,6 +32,7 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
     QProgressBar,
     QSizePolicy,
+    QScrollArea,
 )
 
 FONT_SANS = "'Inter', 'Segoe UI', -apple-system, sans-serif"
@@ -45,7 +46,7 @@ class MicroSparklineCanvas(QWidget):
         super().__init__(parent)
         self.values: List[float] = []
         self.is_hovered: bool = False
-        self.setFixedHeight(18)
+        self.setFixedHeight(22)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def set_data(self, values: List[float]) -> None:
@@ -148,12 +149,12 @@ class KpiStatCard(QFrame):
 
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.setMinimumHeight(66)
-        self.setMaximumHeight(72)
+        self.setMinimumHeight(86)
+        self.setMaximumHeight(96)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(2)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(3)
 
         # Backward compatibility placeholders (hidden per user request)
         self.badge_icon = QLabel()
@@ -168,7 +169,7 @@ class KpiStatCard(QFrame):
 
         self.lbl_value = QLabel(value)
         self.lbl_value.setObjectName("KpiValue")
-        initial_size = 13 if len(value) > 7 else 15
+        initial_size = 15 if len(value) > 7 else 18
         self.lbl_value.setFont(QFont("Inter", initial_size, QFont.Weight.Bold))
         val_row.addWidget(self.lbl_value)
 
@@ -195,7 +196,7 @@ class KpiStatCard(QFrame):
 
         # Mini Progress Bar for tasks
         self.progress_bar = QProgressBar(self)
-        self.progress_bar.setFixedHeight(3)
+        self.progress_bar.setFixedHeight(5)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setTextVisible(False)
         self.progress_bar.setVisible(False)
@@ -243,12 +244,12 @@ class KpiStatCard(QFrame):
         self.subtitle_text = subtitle
         self.lbl_value.setText(value)
 
-        # Auto-adjust font size to avoid wrapping in compact ~138px card width
-        font_size = 15
-        if len(value) > 10:
-            font_size = 11
-        elif len(value) > 7:
+        # Auto-adjust font size to avoid wrapping in compact card width
+        font_size = 18
+        if len(value) > 12:
             font_size = 13
+        elif len(value) > 8:
+            font_size = 15
         self.lbl_value.setFont(QFont("Inter", font_size, QFont.Weight.Bold))
 
         self.lbl_change.setText(change_text)
@@ -283,24 +284,9 @@ class KpiStatCard(QFrame):
                     border: none;
                     background: transparent;
                 }
-                QLabel#KpiIconBadge {
-                    background-color: rgba(255, 255, 255, 0.2);
-                    color: #FFFFFF;
-                    border: none;
-                    border-radius: 9px;
-                }
-                QLabel#KpiArrowBadge {
-                    background-color: rgba(255, 255, 255, 0.2);
-                    color: #FFFFFF;
-                    border: none;
-                    border-radius: 8px;
-                }
-                QFrame#KpiHeroCard:hover QLabel#KpiArrowBadge {
-                    background-color: rgba(255, 255, 255, 0.35);
-                }
             """)
-            self.lbl_title.setStyleSheet("color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-size: 8px;")
-            val_font_size = "13px" if len(self.value_text) > 7 else "15px"
+            self.lbl_title.setStyleSheet("color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-size: 9px;")
+            val_font_size = "15px" if len(self.value_text) > 7 else "18px"
             self.lbl_value.setStyleSheet(f"color: #FFFFFF; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
             self.lbl_subtitle.setStyleSheet("color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-size: 8px;")
             self.lbl_change.setStyleSheet("""
@@ -371,21 +357,10 @@ class KpiStatCard(QFrame):
                 QLabel#KpiIconBadge {{
                     background-color: {icon_bg};
                     color: {icon_color};
-                    border: 1px solid {icon_border};
-                    border-radius: 9px;
-                }}
-                QLabel#KpiArrowBadge {{
-                    background-color: {arrow_bg};
-                    color: {arrow_color};
-                    border: 1px solid {arrow_border};
-                    border-radius: 8px;
-                }}
-                QFrame#KpiStatCard:hover QLabel#KpiArrowBadge {{
-                    border-color: {hover_border};
-                    color: {"#FFFFFF" if self.is_dark else "#18181B"};
                 }}
                 QLabel#KpiTitle {{
                     color: {sub_color};
+                    font-size: 9px;
                 }}
                 QLabel#KpiChangeBadge {{
                     background-color: {badge_bg};
@@ -396,17 +371,17 @@ class KpiStatCard(QFrame):
                 QProgressBar {{
                     background-color: {prog_bg};
                     border: none;
-                    border-radius: 1.5px;
+                    border-radius: 2.5px;
                 }}
                 QProgressBar::chunk {{
                     background-color: {prog_chunk};
-                    border-radius: 1.5px;
+                    border-radius: 2.5px;
                 }}
                 QFrame#KpiStatCard:hover QProgressBar::chunk {{
                     background-color: {prog_chunk_hover};
                 }}
             """)
-            val_font_size = "13px" if len(self.value_text) > 7 else "15px"
+            val_font_size = "15px" if len(self.value_text) > 7 else "18px"
             self.lbl_value.setStyleSheet(f"color: {text_color}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
             self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 8.5px;")
             self.lbl_change.setStyleSheet(f"""
@@ -454,7 +429,7 @@ class ProjectComparisonCanvas(QWidget):
 
         self.setMouseTracking(True)
         self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
-        self.setMinimumHeight(180)
+        self.setMinimumHeight(130)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def set_spotlight_series(self, name: Optional[str]) -> None:
@@ -1115,7 +1090,7 @@ class AppUsageDonutCanvas(QWidget):
         self.hover_pos: Optional[QPoint] = None
 
         self.setMouseTracking(True)
-        self.setFixedSize(116, 116)
+        self.setFixedSize(136, 136)
 
     @property
     def hovered_ring_idx(self) -> Optional[int]:
@@ -1182,8 +1157,8 @@ class AppUsageDonutCanvas(QWidget):
         dy = pos.y() - cy
         d = math.hypot(dx, dy)
 
-        inner_r = 26.0
-        outer_r = 49.0
+        inner_r = 31.0
+        outer_r = 57.0
         apps = self._get_active_apps()
 
         found_idx = None
@@ -1225,8 +1200,8 @@ class AppUsageDonutCanvas(QWidget):
         cx = w / 2.0
         cy = h / 2.0
 
-        base_outer_r = 46.0
-        base_inner_r = 28.0
+        base_outer_r = 54.0
+        base_inner_r = 33.0
         track_color = QColor("#333338" if self.is_dark else "#ECECF0")
 
         apps = self._get_active_apps()
@@ -1256,8 +1231,8 @@ class AppUsageDonutCanvas(QWidget):
 
                 # Hover radial popout
                 if is_hovered:
-                    popout = 2.5
-                    cur_outer_r = base_outer_r + 3.0
+                    popout = 3.0
+                    cur_outer_r = base_outer_r + 3.5
                     cur_inner_r = base_inner_r - 1.0
                     mid_deg = draw_start + actual_span / 2.0
                     mid_rad = math.radians(90.0 - mid_deg)
@@ -1308,39 +1283,39 @@ class AppUsageDonutCanvas(QWidget):
         if self.hovered_segment_idx is not None and self.hovered_segment_idx < len(apps):
             app = apps[self.hovered_segment_idx]
             app_name = app.get("app_name", "App")
-            if len(app_name) > 11:
-                app_name = app_name[:10] + "…"
+            if len(app_name) > 12:
+                app_name = app_name[:11] + "…"
             hours = app.get("hours", 0.0)
             pct = app.get("percentage", 0)
             pct_str = f"{int(round(pct))}%" if (isinstance(pct, (int, float)) and pct == int(pct)) else f"{pct}%"
             app_color = QColor(app.get("color", "#3B82F6")).lighter(120 if self.is_dark else 100)
 
-            font_title = QFont("Inter", 9, QFont.Weight.Bold)
+            font_title = QFont("Inter", 10, QFont.Weight.Bold)
             fm_t = QFontMetrics(font_title)
-            if fm_t.horizontalAdvance(app_name) > 66:
+            if fm_t.horizontalAdvance(app_name) > 74:
                 font_title.setPointSize(8)
             painter.setFont(font_title)
             painter.setPen(app_color)
-            painter.drawText(QRectF(cx - 35, cy - 14, 70, 16), Qt.AlignmentFlag.AlignCenter, app_name)
+            painter.drawText(QRectF(cx - 40, cy - 15, 80, 16), Qt.AlignmentFlag.AlignCenter, app_name)
 
             stat_text = f"{hours}h ({pct_str})"
             font_stat = QFont("Inter", 8, QFont.Weight.DemiBold)
             fm_s = QFontMetrics(font_stat)
-            if fm_s.horizontalAdvance(stat_text) > 66:
+            if fm_s.horizontalAdvance(stat_text) > 74:
                 font_stat.setPointSize(7)
             painter.setFont(font_stat)
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
-            painter.drawText(QRectF(cx - 35, cy + 2, 70, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
+            painter.drawText(QRectF(cx - 40, cy + 2, 80, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
         else:
             hours_str = f"{self.total_hours}h"
-            painter.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+            painter.setFont(QFont("Inter", 14, QFont.Weight.Bold))
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
-            text_rect = QRectF(cx - 35, cy - 12, 70, 18)
+            text_rect = QRectF(cx - 40, cy - 13, 80, 18)
             painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
 
             painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
             painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
-            sub_rect = QRectF(cx - 35, cy + 5, 70, 14)
+            sub_rect = QRectF(cx - 40, cy + 6, 80, 14)
             painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
 
 
@@ -1501,14 +1476,23 @@ class ProjectTrackingWidget(QFrame):
         self.lbl_subtitle.setFont(QFont("Inter", 8))
         layout.addWidget(self.lbl_subtitle)
 
-        # Container for target rows
-        self.targets_container = QWidget()
-        self.targets_layout = QVBoxLayout(self.targets_container)
-        self.targets_layout.setContentsMargins(0, 2, 0, 2)
-        self.targets_layout.setSpacing(5)
-        layout.addWidget(self.targets_container)
+        # Scroll Area for Target Rows
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setObjectName("ProjectTrackingScrollArea")
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
-        layout.addStretch()
+        # Container inside Scroll Area
+        self.targets_container = QWidget()
+        self.targets_container.setObjectName("ProjectTrackingContainer")
+        self.targets_layout = QVBoxLayout(self.targets_container)
+        self.targets_layout.setContentsMargins(0, 0, 4, 0)
+        self.targets_layout.setSpacing(4)
+        self.scroll_area.setWidget(self.targets_container)
+
+        layout.addWidget(self.scroll_area, 1)
 
         self.apply_theme()
 
@@ -1526,9 +1510,7 @@ class ProjectTrackingWidget(QFrame):
                 w.deleteLater()
 
         active_projects = [p for p in projects if p.get("tracked_minutes", 0) > 0 or p.get("total_tasks", 0) > 0]
-        if not active_projects and projects:
-            active_projects = projects[:3]
-        display_projects = active_projects[:3] if active_projects else projects[:3]
+        display_projects = active_projects if active_projects else projects
 
         self.lbl_targets_count.setText(f"{len(projects)} Active")
 
@@ -1538,6 +1520,7 @@ class ProjectTrackingWidget(QFrame):
             empty.setStyleSheet("color: #71717A; padding: 6px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.targets_layout.addWidget(empty)
+            self.targets_layout.addStretch()
             return
 
         for p in display_projects:
@@ -1555,6 +1538,8 @@ class ProjectTrackingWidget(QFrame):
             row.clicked.connect(self.project_selected.emit)
             self.targets_layout.addWidget(row)
 
+        self.targets_layout.addStretch()
+
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
         self.apply_theme()
@@ -1570,6 +1555,8 @@ class ProjectTrackingWidget(QFrame):
         badge_bg = "#1F1F22" if self.is_dark else "#F4F4F5"
         badge_border = "#333338" if self.is_dark else "#E5E0D8"
         badge_color = "#A1A1AA" if self.is_dark else "#71717A"
+        scrollbar_thumb = "#3F3F46" if self.is_dark else "#D4CEBF"
+        scrollbar_thumb_hover = "#52525B" if self.is_dark else "#A1A1AA"
 
         self.lbl_subtitle.setStyleSheet(f"color: {sub_color};")
         self.setStyleSheet(f"""
@@ -1590,6 +1577,35 @@ class ProjectTrackingWidget(QFrame):
                 border: 1px solid {badge_border};
                 border-radius: 6px;
                 padding: 1px 6px;
+            }}
+            QScrollArea#ProjectTrackingScrollArea {{
+                background: transparent;
+                border: none;
+            }}
+            QWidget#ProjectTrackingContainer {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                border: none;
+                background: transparent;
+                width: 5px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {scrollbar_thumb};
+                min-height: 20px;
+                border-radius: 2.5px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background-color: {scrollbar_thumb_hover};
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+                background: transparent;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: transparent;
             }}
         """)
 

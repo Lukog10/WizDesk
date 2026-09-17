@@ -551,13 +551,13 @@ class ProjectsOverviewPage(QWidget):
         self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, show_targets=False, parent=self.scroll_content)
         self.apps_widget.project_selected.connect(self.project_selected.emit)
         self.apps_widget.new_project_clicked.connect(self.new_project_clicked.emit)
-        self.right_column.addWidget(self.apps_widget, 1)
+        self.right_column.addWidget(self.apps_widget, 60)
 
         # Project Tracking Progress Track Card
         self.projects_widget = ProjectTrackingWidget(is_dark=self.is_dark, parent=self.scroll_content)
         self.projects_widget.project_selected.connect(self.project_selected.emit)
         self.projects_widget.new_project_clicked.connect(self.new_project_clicked.emit)
-        self.right_column.addWidget(self.projects_widget, 1)
+        self.right_column.addWidget(self.projects_widget, 40)
 
         self.columns_layout.addLayout(self.right_column, 42)
 

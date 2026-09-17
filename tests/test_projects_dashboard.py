@@ -848,10 +848,15 @@ def test_projects_overview_fixed_layout_and_zero_scroll(repo: StorageRepository,
 
 
 def test_project_tracking_widget_standalone_card(qapp):
-    """Verify ProjectTrackingWidget standalone card renders targets and fires selection."""
+    """Verify ProjectTrackingWidget standalone card renders targets inside scroll area and handles >3 projects."""
     widget = ProjectTrackingWidget(is_dark=True)
     selected = []
     widget.project_selected.connect(lambda name: selected.append(name))
+
+    # Check scroll area configuration
+    assert widget.scroll_area is not None
+    assert widget.scroll_area.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    assert widget.scroll_area.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAsNeeded
 
     sample_projects = [
         {"name": "Client Portal", "color": "#10B981", "tracked_minutes": 180.0, "total_tasks": 3, "completion_rate": 0.67},
@@ -860,15 +865,34 @@ def test_project_tracking_widget_standalone_card(qapp):
     ]
 
     widget.set_project_targets(sample_projects, total_hours=8.0)
-    assert widget.targets_layout.count() == 3
+    rows = [
+        widget.targets_layout.itemAt(i).widget()
+        for i in range(widget.targets_layout.count())
+        if isinstance(widget.targets_layout.itemAt(i).widget(), ProjectTargetRow)
+    ]
+    assert len(rows) == 3
     assert "3 Active" in widget.lbl_targets_count.text()
 
     # Click first target row and check signal
-    target_row = widget.targets_layout.itemAt(0).widget()
+    target_row = rows[0]
     assert isinstance(target_row, ProjectTargetRow)
     target_row.clicked.emit(target_row.project_name)
     assert len(selected) == 1
     assert selected[0] == target_row.project_name
+
+    # Test scrollable list with >3 projects (e.g. 5 projects)
+    five_projects = sample_projects + [
+        {"name": "Design System", "color": "#EC4899", "tracked_minutes": 90.0, "total_tasks": 2, "completion_rate": 0.50},
+        {"name": "API Docs", "color": "#06B6D4", "tracked_minutes": 45.0, "total_tasks": 1, "completion_rate": 1.0},
+    ]
+    widget.set_project_targets(five_projects, total_hours=10.0)
+    rows_five = [
+        widget.targets_layout.itemAt(i).widget()
+        for i in range(widget.targets_layout.count())
+        if isinstance(widget.targets_layout.itemAt(i).widget(), ProjectTargetRow)
+    ]
+    assert len(rows_five) == 5
+    assert "5 Active" in widget.lbl_targets_count.text()
 
     # Switch theme
     widget.set_theme(is_dark=False)
