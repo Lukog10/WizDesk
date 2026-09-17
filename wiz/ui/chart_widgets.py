@@ -152,58 +152,29 @@ class KpiStatCard(QFrame):
         self.setMaximumHeight(72)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 5, 8, 5)
-        layout.setSpacing(1)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(2)
 
-        # Top row: Icon Badge on left, Circular Arrow Badge on right
-        top_row = QHBoxLayout()
-        top_row.setContentsMargins(0, 0, 0, 0)
-        top_row.setSpacing(4)
-
+        # Backward compatibility placeholders (hidden per user request)
         self.badge_icon = QLabel()
-        self.badge_icon.setObjectName("KpiIconBadge")
-        self.badge_icon.setFixedSize(16, 16)
-        self.badge_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.badge_icon.setFont(QFont("Segoe UI Symbol", 8, QFont.Weight.Bold))
-
-        # Pick appropriate symbol
-        if self.is_hero or "Tracked" in title or "Time" in title:
-            self.badge_icon.setText("⏱")
-        elif "Project" in title:
-            self.badge_icon.setText("❖")
-        elif "App" in title:
-            self.badge_icon.setText("✦")
-        elif "Task" in title:
-            self.badge_icon.setText("✓")
-        else:
-            self.badge_icon.setText("•")
-
-        top_row.addWidget(self.badge_icon)
-        top_row.addStretch()
-
-        self.badge_arrow = QLabel("↗")
-        self.badge_arrow.setObjectName("KpiArrowBadge")
-        self.badge_arrow.setFixedSize(14, 14)
-        self.badge_arrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.badge_arrow.setFont(QFont("Inter", 7, QFont.Weight.Bold))
-        top_row.addWidget(self.badge_arrow)
-
-        layout.addLayout(top_row)
+        self.badge_icon.hide()
+        self.badge_arrow = QLabel()
+        self.badge_arrow.hide()
 
         # Value row: Value with inline change badge next to it matching reference image
         val_row = QHBoxLayout()
         val_row.setContentsMargins(0, 0, 0, 0)
-        val_row.setSpacing(4)
+        val_row.setSpacing(6)
 
         self.lbl_value = QLabel(value)
         self.lbl_value.setObjectName("KpiValue")
-        initial_size = 12 if len(value) > 7 else 14
+        initial_size = 13 if len(value) > 7 else 15
         self.lbl_value.setFont(QFont("Inter", initial_size, QFont.Weight.Bold))
         val_row.addWidget(self.lbl_value)
 
         self.lbl_change = QLabel(change_text)
         self.lbl_change.setObjectName("KpiChangeBadge")
-        self.lbl_change.setFont(QFont("Inter", 7, QFont.Weight.DemiBold))
+        self.lbl_change.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
         self.lbl_change.setVisible(bool(change_text))
         val_row.addWidget(self.lbl_change)
         val_row.addStretch()
@@ -213,7 +184,7 @@ class KpiStatCard(QFrame):
         # Title row
         self.lbl_title = QLabel(title)
         self.lbl_title.setObjectName("KpiTitle")
-        self.lbl_title.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_title.setFont(QFont("Inter", 9, QFont.Weight.Medium))
         layout.addWidget(self.lbl_title)
 
         # Subtitle preserved for backward compatibility
@@ -944,7 +915,7 @@ class ProjectComparisonChartWidget(QFrame):
 
         # Sub-metrics row matching reference design
         self.submetrics_row = QHBoxLayout()
-        self.submetrics_row.setSpacing(14)
+        self.submetrics_row.setSpacing(24)
 
         m1_col = QVBoxLayout()
         m1_col.setSpacing(1)
@@ -958,11 +929,9 @@ class ProjectComparisonChartWidget(QFrame):
         m1_col.addWidget(self.lbl_sub1_val)
         self.submetrics_row.addLayout(m1_col)
 
-        # Subtle vertical separator line matching reference image
+        # Backward compatibility placeholder (hidden per user request)
         self.submetric_sep = QFrame()
-        self.submetric_sep.setFrameShape(QFrame.Shape.VLine)
-        self.submetric_sep.setFixedHeight(26)
-        self.submetrics_row.addWidget(self.submetric_sep)
+        self.submetric_sep.hide()
 
         m2_col = QVBoxLayout()
         m2_col.setSpacing(1)
