@@ -28,6 +28,8 @@ from PyQt6.QtWidgets import (
 )
 
 from wiz.storage.models import StorageRepository, ProjectRecord, TaskRecord
+from wiz.ui.icons import get_app_pixmap
+from wiz.ui.arrow_combo import ArrowComboBox
 from wiz.ui.chart_widgets import (
     KpiStatCard,
     ProjectComparisonChartWidget,
@@ -459,10 +461,10 @@ class ProjectsOverviewPage(QWidget):
         toolbar = QHBoxLayout()
         toolbar.setSpacing(8)
 
-        self.combo_timeframe = QComboBox(self)
+        self.combo_timeframe = ArrowComboBox(self, is_dark=self.is_dark)
         self.combo_timeframe.setObjectName("TimeframeDropdown")
         self.combo_timeframe.setFixedHeight(28)
-        self.combo_timeframe.setFixedWidth(112)
+        self.combo_timeframe.setFixedWidth(114)
         self.combo_timeframe.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.combo_timeframe.addItem("Today", "today")
         self.combo_timeframe.addItem("This Week", "this_week")
@@ -832,6 +834,7 @@ class ProjectsOverviewPage(QWidget):
         combo_popup_border = "#3F3F46" if self.is_dark else "#D4CEBF"
         combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#F4F4F5"
 
+        self.combo_timeframe.set_theme(self.is_dark)
         self.combo_timeframe.setStyleSheet(f"""
             QComboBox#TimeframeDropdown {{
                 background-color: {combo_bg};
@@ -841,7 +844,7 @@ class ProjectsOverviewPage(QWidget):
                 font-family: 'Inter', -apple-system, sans-serif;
                 font-size: 11px;
                 font-weight: 500;
-                padding: 2px 20px 2px 10px;
+                padding: 2px 24px 2px 10px;
                 min-height: 22px;
             }}
             QComboBox#TimeframeDropdown:hover {{
@@ -849,7 +852,7 @@ class ProjectsOverviewPage(QWidget):
             }}
             QComboBox#TimeframeDropdown::drop-down {{
                 border: none;
-                width: 18px;
+                width: 0px;
             }}
             QComboBox#TimeframeDropdown QAbstractItemView {{
                 background-color: {combo_popup_bg};
@@ -948,10 +951,10 @@ class ProjectDetailPage(QWidget):
         tf_row = QHBoxLayout()
         tf_row.setSpacing(8)
 
-        self.combo_timeframe = QComboBox(self)
+        self.combo_timeframe = ArrowComboBox(self, is_dark=self.is_dark)
         self.combo_timeframe.setObjectName("DetailTimeframeDropdown")
         self.combo_timeframe.setFixedHeight(28)
-        self.combo_timeframe.setFixedWidth(112)
+        self.combo_timeframe.setFixedWidth(114)
         self.combo_timeframe.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.combo_timeframe.addItem("Today", "today")
         self.combo_timeframe.addItem("This Week", "this_week")
@@ -1519,6 +1522,7 @@ class ProjectDetailPage(QWidget):
         combo_popup_border = "#3F3F46" if self.is_dark else "#D4CEBF"
         combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#F4F4F5"
 
+        self.combo_timeframe.set_theme(self.is_dark)
         self.combo_timeframe.setStyleSheet(f"""
             QComboBox#DetailTimeframeDropdown {{
                 background-color: {combo_bg};
@@ -1528,7 +1532,7 @@ class ProjectDetailPage(QWidget):
                 font-family: 'Inter', -apple-system, sans-serif;
                 font-size: 11px;
                 font-weight: 500;
-                padding: 2px 20px 2px 10px;
+                padding: 2px 24px 2px 10px;
                 min-height: 22px;
             }}
             QComboBox#DetailTimeframeDropdown:hover {{
@@ -1536,7 +1540,7 @@ class ProjectDetailPage(QWidget):
             }}
             QComboBox#DetailTimeframeDropdown::drop-down {{
                 border: none;
-                width: 18px;
+                width: 0px;
             }}
             QComboBox#DetailTimeframeDropdown QAbstractItemView {{
                 background-color: {combo_popup_bg};

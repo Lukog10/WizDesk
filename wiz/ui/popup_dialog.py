@@ -52,6 +52,7 @@ from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView
 from wiz.ui.sidebar_widget import SideNavBar
 from wiz.ui.settings_view import SettingsView
+from wiz.ui.arrow_combo import ArrowComboBox
 
 
 # Professional Typography Stacks
@@ -153,7 +154,7 @@ class CalendarPopupDialog(QDialog):
                 background-color: {combo_bg};
                 border: 1px solid {combo_border};
                 border-radius: 6px;
-                padding: 4px 8px;
+                padding: 4px 22px 4px 8px;
                 color: {combo_text};
                 font-family: {FONT_SANS};
                 font-size: 12px;
@@ -164,7 +165,7 @@ class CalendarPopupDialog(QDialog):
             }}
             QComboBox::drop-down {{
                 border: none;
-                width: 14px;
+                width: 0px;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {card_bg};
@@ -242,13 +243,13 @@ class CalendarPopupDialog(QDialog):
         self.prev_btn.clicked.connect(self._on_prev_month)
         nav_layout.addWidget(self.prev_btn)
 
-        self.month_combo = QComboBox()
+        self.month_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.month_combo.addItems(CALENDAR_MONTHS)
         self.month_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.month_combo.currentIndexChanged.connect(self._on_combo_page_changed)
         nav_layout.addWidget(self.month_combo, stretch=3)
 
-        self.year_combo = QComboBox()
+        self.year_combo = ArrowComboBox(self, is_dark=self.is_dark)
         for y in range(2020, 2036):
             self.year_combo.addItem(str(y))
         self.year_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -1084,7 +1085,7 @@ class TaskRowWidget(QWidget):
         status_bar_layout.setContentsMargins(34, 0, 4, 3)
         status_bar_layout.setSpacing(10)
 
-        self.status_combo = QComboBox()
+        self.status_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.status_combo.setEditable(False)
         self.status_combo.addItems(["Status", "In progress", "Completed", "Cancelled"])
         self.status_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -1338,7 +1339,7 @@ class TaskRowWidget(QWidget):
                 }}
                 QComboBox::drop-down {{
                     border: none;
-                    width: 16px;
+                    width: 0px;
                 }}
                 QComboBox QAbstractItemView {{
                     background-color: {combo_popup_bg};
@@ -1367,7 +1368,7 @@ class TaskRowWidget(QWidget):
                 }}
                 QComboBox::drop-down {{
                     border: none;
-                    width: 16px;
+                    width: 0px;
                 }}
                 QComboBox QAbstractItemView {{
                     background-color: {combo_popup_bg};
@@ -1396,7 +1397,7 @@ class TaskRowWidget(QWidget):
                 }}
                 QComboBox::drop-down {{
                     border: none;
-                    width: 16px;
+                    width: 0px;
                 }}
                 QComboBox QAbstractItemView {{
                     background-color: {combo_popup_bg};
@@ -1435,7 +1436,7 @@ class TaskRowWidget(QWidget):
                 }}
                 QComboBox::drop-down {{
                     border: none;
-                    width: 16px;
+                    width: 0px;
                 }}
                 QComboBox QAbstractItemView {{
                     background-color: {combo_popup_bg};
@@ -1907,7 +1908,6 @@ class QuickEntryDialog(QDialog):
         self.today_pill_btn.setVisible(False)
         date_header_layout.addWidget(self.today_pill_btn)
 
-        top_bar.addWidget(self.date_header_container)
         top_bar.addStretch()
 
         # Window Control Buttons (Theme, -, □, x)
@@ -1952,8 +1952,11 @@ class QuickEntryDialog(QDialog):
         self.inner_card = QFrame()
         self.inner_card.setObjectName("innerCard")
         self.inner_layout = QVBoxLayout(self.inner_card)
-        self.inner_layout.setContentsMargins(14, 12, 14, 12)
-        self.inner_layout.setSpacing(10)
+        self.inner_layout.setContentsMargins(14, 10, 14, 10)
+        self.inner_layout.setSpacing(8)
+
+        # Contextual Date Header inside inner card (visible in tasks, notes, activity)
+        self.inner_layout.addWidget(self.date_header_container, 0, Qt.AlignmentFlag.AlignCenter)
 
         # Stacked Widget for Pages
         self.stack = QStackedWidget()
@@ -2003,7 +2006,7 @@ class QuickEntryDialog(QDialog):
         self.add_input.returnPressed.connect(self._on_quick_add_task)
         add_task_layout.addWidget(self.add_input, stretch=3)
 
-        self.project_combo = QComboBox()
+        self.project_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.project_combo.setEditable(False)
         self.project_combo.currentIndexChanged.connect(self._on_project_combo_changed)
         add_task_layout.addWidget(self.project_combo, stretch=1)
@@ -2056,7 +2059,7 @@ class QuickEntryDialog(QDialog):
         self.note_input.returnPressed.connect(self._on_quick_add_note)
         add_note_layout.addWidget(self.note_input, stretch=3)
 
-        self.note_project_combo = QComboBox()
+        self.note_project_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.note_project_combo.setEditable(False)
         self.note_project_combo.currentIndexChanged.connect(self._on_note_project_combo_changed)
         add_note_layout.addWidget(self.note_project_combo, stretch=1)
@@ -2277,7 +2280,7 @@ class QuickEntryDialog(QDialog):
                 color: {input_color};
                 border: 1px solid {input_border};
                 border-radius: 8px;
-                padding: 6px 12px;
+                padding: 6px 24px 6px 12px;
                 font-family: {FONT_SANS};
                 font-size: 12.5px;
                 font-weight: 500;
@@ -2288,7 +2291,7 @@ class QuickEntryDialog(QDialog):
             }}
             QComboBox::drop-down {{
                 border: none;
-                width: 20px;
+                width: 0px;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {combo_popup_bg};
@@ -2302,7 +2305,9 @@ class QuickEntryDialog(QDialog):
                 font-size: 12.5px;
             }}
         """
+        self.project_combo.set_theme(self.is_dark)
         self.project_combo.setStyleSheet(combo_qss)
+        self.note_project_combo.set_theme(self.is_dark)
         self.note_project_combo.setStyleSheet(combo_qss)
 
         btn_action_qss = f"""

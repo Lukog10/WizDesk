@@ -233,3 +233,80 @@ def test_quick_entry_dialog_activity_mode_switcher(qapp, repo: StorageRepository
     assert dialog.current_view_mode == "tasks"
     assert dialog.stack.currentWidget() == dialog.tasks_page
 
+
+def test_timeline_category_combo_filtering(qapp, repo: StorageRepository):
+    """Test filtering activity events using the category dropdown."""
+    target_date = "2026-09-15"
+
+    t1 = datetime(2026, 9, 15, 9, 0, 0)
+    t2 = t1 + timedelta(minutes=30)
+    repo.log_session("VS Code", "models.py", t1, t2, project_tag="WizDesk")
+
+    task_id = repo.create_task("Review timeline features", project_tag="WizDesk")
+    subtask_id = repo.add_subtask(task_id, "Check dropdown UI")
+    repo.update_subtask_status(subtask_id, "done", completed_at=datetime(2026, 9, 15, 10, 0, 0))
+
+    repo.create_note("Quick note item", project_tag="Other", created_at=datetime(2026, 9, 15, 11, 0, 0))
+
+    view = TimelineView(repo)
+    view.load_date(target_date)
+
+    # Initial All selection
+    assert view.category_combo.currentIndex() == 0
+    assert view.category_combo.currentText() == "All"
+    assert view.events_layout.count() == 3
+
+    # Filter to Apps
+    apps_idx = view.category_combo.findData("apps")
+    view.category_combo.setCurrentIndex(apps_idx)
+    assert view.events_layout.count() == 1
+    assert isinstance(view.events_layout.itemAt(0).widget(), AppSessionCard)
+
+    # Filter to Quick Notes
+    notes_idx = view.category_combo.findData("notes")
+    view.category_combo.setCurrentIndex(notes_idx)
+    assert view.events_layout.count() == 1
+    assert isinstance(view.events_layout.itemAt(0).widget(), MilestoneCard)
+
+    # Filter to Tasks
+    tasks_idx = view.category_combo.findData("tasks")
+    view.category_combo.setCurrentIndex(tasks_idx)
+    assert view.events_layout.count() == 1
+    assert isinstance(view.events_layout.itemAt(0).widget(), MilestoneCard)
+
+    # Reset to All
+    view.category_combo.setCurrentIndex(0)
+    assert view.events_layout.count() == 3
+
+
+def test_date_header_container_inside_card_position(qapp, repo: StorageRepository):
+    """Test that date_header_container is positioned inside the inner card layout."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+    dialog.show()
+
+    # Verify date_header_container is in inner_card layout
+    assert dialog.date_header_container.parent() == dialog.inner_card
+    assert dialog.inner_layout.indexOf(dialog.date_header_container) == 0
+    assert dialog.inner_layout.indexOf(dialog.stack) == 1
+
+    # Date header is visible in tasks, notes, activity
+    assert dialog.date_header_container.isVisible() is True
+
+    dialog.notes_mode_btn.click()
+    assert dialog.date_header_container.isVisible() is True
+
+    dialog.activity_mode_btn.click()
+    assert dialog.date_header_container.isVisible() is True
+
+    dialog.projects_mode_btn.click()
+    assert dialog.date_header_container.isVisible() is False
+
+    dialog.settings_mode_btn.click()
+    assert dialog.date_header_container.isVisible() is False
+
+    dialog.tasks_mode_btn.click()
+    assert dialog.date_header_container.isVisible() is True
+    dialog.close()
+
+

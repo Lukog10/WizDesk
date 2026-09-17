@@ -24,6 +24,7 @@ from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository
 from wiz.ui.popup_dialog import CreateSectionDialog
+from wiz.ui.arrow_combo import ArrowComboBox
 
 FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
 FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
@@ -107,7 +108,7 @@ class QuickBarPopup(QDialog):
         self.input_field.returnPressed.connect(self._on_submit)
         input_row.addWidget(self.input_field, stretch=1)
 
-        self.project_combo = QComboBox()
+        self.project_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.project_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.project_combo.setFixedWidth(135)
         self.project_combo.currentTextChanged.connect(self._on_project_changed)
@@ -309,13 +310,14 @@ class QuickBarPopup(QDialog):
         """)
 
         # 4. Project ComboBox
+        self.project_combo.set_theme(self.is_dark)
         self.project_combo.setStyleSheet(f"""
             QComboBox {{
                 background-color: {dropdown_bg};
                 color: {text_primary};
                 border: 1px solid {input_border};
                 border-radius: 8px;
-                padding: 6px 10px;
+                padding: 6px 24px 6px 10px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
                 font-weight: 500;
@@ -326,7 +328,7 @@ class QuickBarPopup(QDialog):
             }}
             QComboBox::drop-down {{
                 border: none;
-                width: 14px;
+                width: 0px;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {card_bg};

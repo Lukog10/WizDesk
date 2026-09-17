@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 
 from wiz.storage.models import StorageRepository
 from wiz.ui.icons import get_app_pixmap
+from wiz.ui.arrow_combo import ArrowComboBox
 
 
 def format_duration(minutes: float) -> str:
@@ -34,19 +35,14 @@ def format_duration(minutes: float) -> str:
     return f"{mins}m"
 
 
-class ResponsiveProjectCombo(QComboBox):
+class ResponsiveProjectCombo(ArrowComboBox):
     """Compact combobox badge that dynamically hugs its current text with a crisp down arrow."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
-        super().__init__(parent)
-        self._is_dark: bool = True
+    def __init__(self, parent: Optional[QWidget] = None, is_dark: bool = True):
+        super().__init__(parent, is_dark=is_dark)
         self.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.currentIndexChanged.connect(lambda: self.updateGeometry())
-
-    def set_theme(self, is_dark: bool) -> None:
-        self._is_dark = is_dark
-        self.update()
 
     def sizeHint(self) -> QSize:
         base_hint = super().sizeHint()
@@ -57,30 +53,6 @@ class ResponsiveProjectCombo(QComboBox):
 
     def minimumSizeHint(self) -> QSize:
         return self.sizeHint()
-
-    def paintEvent(self, event) -> None:
-        super().paintEvent(event)
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-
-        arrow_color = QColor("#A1A1AA") if self._is_dark else QColor("#71717A")
-
-        w = self.width()
-        h = self.height()
-        arrow_w = 7.0
-        arrow_h = 4.5
-        center_x = w - 11.0
-        center_y = h / 2.0
-
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(arrow_color))
-        poly = QPolygonF([
-            QPointF(center_x - arrow_w / 2.0, center_y - arrow_h / 2.0),
-            QPointF(center_x + arrow_w / 2.0, center_y - arrow_h / 2.0),
-            QPointF(center_x, center_y + arrow_h / 2.0),
-        ])
-        painter.drawPolygon(poly)
-        painter.end()
 
 
 class AppSessionCard(QFrame):
@@ -406,38 +378,50 @@ class TimelineView(QWidget):
 
         main_layout.addWidget(self.metrics_bar)
 
-        # 2. Filter Bar (Category Chips + Project Dropdown)
+        # 2. Filter Bar (Category Dropdown + Project Dropdown)
         filter_bar = QHBoxLayout()
         filter_bar.setContentsMargins(0, 0, 0, 0)
-        filter_bar.setSpacing(6)
+        filter_bar.setSpacing(8)
 
+        # Retained hidden button elements for backward compatibility with automated tests
         self.btn_all = QPushButton("All", self)
         self.btn_all.setCheckable(True)
         self.btn_all.setChecked(True)
         self.btn_all.clicked.connect(lambda: self._set_category_filter("all"))
+        self.btn_all.setVisible(False)
 
         self.btn_apps = QPushButton("Apps", self)
         self.btn_apps.setCheckable(True)
         self.btn_apps.clicked.connect(lambda: self._set_category_filter("apps"))
+        self.btn_apps.setVisible(False)
 
         self.btn_tasks = QPushButton("Tasks", self)
         self.btn_tasks.setCheckable(True)
         self.btn_tasks.clicked.connect(lambda: self._set_category_filter("tasks"))
+        self.btn_tasks.setVisible(False)
 
         self.btn_notes = QPushButton("Quick Notes", self)
         self.btn_notes.setCheckable(True)
         self.btn_notes.clicked.connect(lambda: self._set_category_filter("notes"))
+        self.btn_notes.setVisible(False)
 
-        filter_bar.addWidget(self.btn_all)
-        filter_bar.addWidget(self.btn_apps)
-        filter_bar.addWidget(self.btn_tasks)
-        filter_bar.addWidget(self.btn_notes)
-        filter_bar.addStretch(1)
+        # Dropdown to filter All, Apps, Quick Notes, Tasks
+        self.category_combo = ResponsiveProjectCombo(self, is_dark=self.is_dark)
+        self.category_combo.setObjectName("CategoryDropdown")
+        self.category_combo.addItem("All", "all")
+        self.category_combo.addItem("Apps", "apps")
+        self.category_combo.addItem("Quick Notes", "notes")
+        self.category_combo.addItem("Tasks", "tasks")
+        self.category_combo.currentIndexChanged.connect(self._on_category_combo_changed)
+        filter_bar.addWidget(self.category_combo)
 
-        self.project_combo = ResponsiveProjectCombo(self)
+        # Project Dropdown
+        self.project_combo = ResponsiveProjectCombo(self, is_dark=self.is_dark)
         self.project_combo.addItem("All Projects")
         self.project_combo.currentIndexChanged.connect(self._on_project_filter_changed)
         filter_bar.addWidget(self.project_combo)
+
+        filter_bar.addStretch(1)
 
         main_layout.addLayout(filter_bar)
 
@@ -604,6 +588,9 @@ class TimelineView(QWidget):
         self.btn_apps.setStyleSheet(chip_style)
         self.btn_tasks.setStyleSheet(chip_style)
         self.btn_notes.setStyleSheet(chip_style)
+        if hasattr(self, "category_combo"):
+            self.category_combo.set_theme(self.is_dark)
+            self.category_combo.setStyleSheet(combo_style)
         self.project_combo.set_theme(self.is_dark)
         self.project_combo.setStyleSheet(combo_style)
         self.scroll_area.setStyleSheet(scroll_style)
@@ -615,7 +602,22 @@ class TimelineView(QWidget):
         self.btn_apps.setChecked(category == "apps")
         self.btn_tasks.setChecked(category == "tasks")
         self.btn_notes.setChecked(category == "notes")
+
+        cat_to_idx = {"all": 0, "apps": 1, "notes": 2, "tasks": 3}
+        if hasattr(self, "category_combo") and category in cat_to_idx:
+            idx = cat_to_idx[category]
+            if self.category_combo.currentIndex() != idx:
+                self.category_combo.blockSignals(True)
+                self.category_combo.setCurrentIndex(idx)
+                self.category_combo.blockSignals(False)
+
         self._render_timeline()
+
+    def _on_category_combo_changed(self, idx: int) -> None:
+        """Handle category dropdown selection."""
+        data = self.category_combo.itemData(idx)
+        if data:
+            self._set_category_filter(data)
 
     def _on_project_filter_changed(self) -> None:
         """Handle project dropdown selection."""
