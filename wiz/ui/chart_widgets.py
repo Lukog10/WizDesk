@@ -41,12 +41,17 @@ from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 class MicroSparklineCanvas(QWidget):
     """Mini antialiased trend curve drawn inside KpiHeroCard."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
+        self.is_dark = is_dark
         self.values: List[float] = []
         self.is_hovered: bool = False
         self.setFixedHeight(22)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.update()
 
     def set_data(self, values: List[float]) -> None:
         self.values = values
@@ -84,21 +89,21 @@ class MicroSparklineCanvas(QWidget):
             ctrl2 = QPointF(p0.x() + (p1.x() - p0.x()) / 2.0, p1.y())
             path.cubicTo(ctrl1, ctrl2, p1)
 
-        # Gradient area under curve
+        # Gradient area under curve using WizDesk brand Indigo (#6366F1)
         area_path = QPainterPath(path)
         area_path.lineTo(w, h)
         area_path.lineTo(0.0, h)
         area_path.closeSubpath()
 
         grad = QLinearGradient(0, 0, 0, h)
-        top_alpha = 90 if self.is_hovered else 60
-        grad.setColorAt(0.0, QColor(255, 255, 255, top_alpha))
-        grad.setColorAt(1.0, QColor(255, 255, 255, 4))
+        top_alpha = 60 if self.is_hovered else 40
+        grad.setColorAt(0.0, QColor(99, 102, 241, top_alpha))
+        grad.setColorAt(1.0, QColor(99, 102, 241, 2))
         painter.fillPath(area_path, grad)
 
-        # Line stroke
+        # Line stroke in brand indigo
         stroke_width = 2.0 if self.is_hovered else 1.6
-        pen = QPen(QColor(255, 255, 255, 255 if self.is_hovered else 220), stroke_width)
+        pen = QPen(QColor("#818CF8" if self.is_hovered else "#6366F1"), stroke_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.strokePath(path, pen)
@@ -108,15 +113,15 @@ class MicroSparklineCanvas(QWidget):
             last_pt = points[-1]
             if self.is_hovered:
                 # Glowing outer halo
-                painter.setBrush(QColor(255, 255, 255, 75))
+                painter.setBrush(QColor(99, 102, 241, 75))
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.drawEllipse(last_pt, 5.0, 5.0)
-                painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#3730A3"), 1.6))
+                painter.setBrush(QColor("#FFFFFF" if self.is_dark else "#18181B"))
+                painter.setPen(QPen(QColor("#6366F1"), 1.6))
                 painter.drawEllipse(last_pt, 2.5, 2.5)
             else:
-                painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#4F46E5"), 1.4))
+                painter.setBrush(QColor("#FFFFFF" if self.is_dark else "#18181B"))
+                painter.setPen(QPen(QColor("#6366F1"), 1.4))
                 painter.drawEllipse(last_pt, 2.0, 2.0)
 
 
@@ -207,7 +212,7 @@ class KpiStatCard(QFrame):
 
         # Micro-sparkline for hero card
         if self.is_hero:
-            self.sparkline = MicroSparklineCanvas(self)
+            self.sparkline = MicroSparklineCanvas(is_dark=self.is_dark, parent=self)
             layout.addWidget(self.sparkline)
         else:
             self.sparkline = None
@@ -288,138 +293,105 @@ class KpiStatCard(QFrame):
         self.apply_theme()
 
     def apply_theme(self) -> None:
-        if self.is_hero:
-            self.setStyleSheet("""
-                QFrame#KpiHeroCard {
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4F46E5, stop:1 #3730A3);
-                    border: 1px solid #6366F1;
-                    border-radius: 12px;
-                }
-                QFrame#KpiHeroCard:hover {
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5B52F2, stop:1 #4338CA);
-                    border: 1px solid #818CF8;
-                }
-                QLabel {
-                    border: none;
-                    background: transparent;
-                }
-            """)
-            self.lbl_title.setStyleSheet(f"color: rgba(255, 255, 255, 0.85); border: none; background: transparent; font-family: {FONT_SANS}; font-size: 11px; font-weight: 500;")
-            val_font_size = "13px" if len(self.lbl_value.text()) > 8 else ("15px" if len(self.lbl_value.text()) > 5 else "18px")
-            self.lbl_value.setStyleSheet(f"color: #FFFFFF; font-family: {FONT_SANS}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
-            self.lbl_subtitle.setStyleSheet(f"color: rgba(255, 255, 255, 0.72); border: none; background: transparent; font-family: {FONT_SANS}; font-size: 8px;")
-            self.lbl_change.setStyleSheet(f"""
-                QLabel#KpiChangeBadge {{
-                    background-color: rgba(255, 255, 255, 0.2);
-                    color: #FFFFFF;
-                    border: none;
-                    border-radius: 6px;
-                    padding: 0px 4px;
-                    font-family: {FONT_SANS};
-                    font-size: 8px;
-                }}
-                QFrame#KpiHeroCard:hover QLabel#KpiChangeBadge {{
-                    background-color: rgba(255, 255, 255, 0.3);
-                }}
-            """)
-        else:
-            if self.is_dark:
-                bg = "#242427"
-                border = "#333338"
-                hover_bg = "#2A2A2F"
-                hover_border = "#4F46E5"
-                text_color = "#F4F4F6"
-                sub_color = "#A1A1AA"
-                badge_bg = "#2A2A2E"
-                badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#A1A1AA")
-                prog_bg = "#333338"
-                prog_chunk = "#10B981"
-                prog_chunk_hover = "#34D399"
-                arrow_bg = "#1F1F22"
-                arrow_border = "#333338"
-                arrow_color = "#A1A1AA"
-                icon_bg = "#1F1F22"
-                icon_border = "#333338"
-                icon_color = "#A1A1AA"
-            else:
-                bg = "#FFFFFF"
-                border = "#E5E0D8"
-                hover_bg = "#FAF9F6"
-                hover_border = "#6366F1"
-                text_color = "#111111"
-                sub_color = "#71717A"
-                badge_bg = "#F4F4F5"
-                badge_color = "#059669" if "+" in self.change_text else ("#E11D48" if "-" in self.change_text else "#71717A")
-                prog_bg = "#E5E0D8"
-                prog_chunk = "#059669"
-                prog_chunk_hover = "#10B981"
-                arrow_bg = "#F4F4F5"
-                arrow_border = "#E5E0D8"
-                arrow_color = "#71717A"
-                icon_bg = "#F4F4F5"
-                icon_border = "#E5E0D8"
-                icon_color = "#71717A"
+        if self.sparkline:
+            self.sparkline.set_theme(self.is_dark)
 
-            self.setStyleSheet(f"""
-                QFrame#KpiStatCard {{
-                    background-color: {bg};
-                    border: 1px solid {border};
-                    border-radius: 12px;
-                }}
-                QFrame#KpiStatCard:hover {{
-                    background-color: {hover_bg};
-                    border: 1px solid {hover_border};
-                }}
-                QLabel {{
-                    border: none;
-                    background: transparent;
-                }}
-                QLabel#KpiIconBadge {{
-                    background-color: {icon_bg};
-                    color: {icon_color};
-                }}
-                QLabel#KpiTitle {{
-                    color: {sub_color};
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                    font-weight: 500;
-                }}
-                QLabel#KpiChangeBadge {{
-                    background-color: {badge_bg};
-                    color: {badge_color};
-                    border-radius: 6px;
-                    padding: 0px 4px;
-                }}
-                QProgressBar {{
-                    background-color: {prog_bg};
-                    border: none;
-                    border-radius: 2.5px;
-                }}
-                QProgressBar::chunk {{
-                    background-color: {prog_chunk};
-                    border-radius: 2.5px;
-                }}
-                QFrame#KpiStatCard:hover QProgressBar::chunk {{
-                    background-color: {prog_chunk_hover};
-                }}
-            """)
-            val_font_size = "13px" if len(self.lbl_value.text()) > 8 else ("15px" if len(self.lbl_value.text()) > 5 else "18px")
-            self.lbl_value.setStyleSheet(f"color: {text_color}; font-family: {FONT_SANS}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
-            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-family: {FONT_SANS}; font-size: 9px;")
-            self.lbl_change.setStyleSheet(f"""
-                QLabel#KpiChangeBadge {{
-                    background-color: {badge_bg};
-                    color: {badge_color};
-                    border: 1px solid {border};
-                    border-radius: 7px;
-                    padding: 1px 5px;
-                    font-family: {FONT_SANS};
-                    font-size: 8px;
-                }}
-                QFrame#KpiStatCard:hover QLabel#KpiChangeBadge {{
-                    border-color: {hover_border};
-                }}
-            """)
+        if self.is_dark:
+            bg = "#242427"
+            border = "#333338"
+            hover_bg = "#2A2A2F"
+            hover_border = "#6366F1"
+            text_color = "#F4F4F6"
+            sub_color = "#A1A1AA"
+            badge_bg = "rgba(16, 185, 129, 0.15)" if "+" in self.change_text else ("rgba(244, 63, 94, 0.15)" if "-" in self.change_text else "rgba(99, 102, 241, 0.15)")
+            badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#818CF8")
+            prog_bg = "#333338"
+            prog_chunk = "#10B981"
+            prog_chunk_hover = "#34D399"
+            card_border = "1px solid rgba(99, 102, 241, 0.35)" if self.is_hero else f"1px solid {border}"
+            icon_bg = "#1F1F22"
+            icon_border = "#333338"
+            icon_color = "#A1A1AA"
+        else:
+            bg = "#FFFFFF"
+            border = "#E5E0D8"
+            hover_bg = "#FAF9F6"
+            hover_border = "#6366F1"
+            text_color = "#111111"
+            sub_color = "#71717A"
+            badge_bg = "#ECFDF5" if "+" in self.change_text else ("#FFF1F2" if "-" in self.change_text else "#EEF2FF")
+            badge_color = "#059669" if "+" in self.change_text else ("#E11D48" if "-" in self.change_text else "#4F46E5")
+            prog_bg = "#E5E0D8"
+            prog_chunk = "#059669"
+            prog_chunk_hover = "#10B981"
+            card_border = "1px solid rgba(99, 102, 241, 0.35)" if self.is_hero else f"1px solid {border}"
+            icon_bg = "#F4F4F5"
+            icon_border = "#E5E0D8"
+            icon_color = "#71717A"
+
+        card_name = "KpiHeroCard" if self.is_hero else "KpiStatCard"
+
+        self.setStyleSheet(f"""
+            QFrame#{card_name} {{
+                background-color: {bg};
+                border: {card_border};
+                border-radius: 12px;
+            }}
+            QFrame#{card_name}:hover {{
+                background-color: {hover_bg};
+                border: 1px solid {hover_border};
+            }}
+            QLabel {{
+                border: none;
+                background: transparent;
+            }}
+            QLabel#KpiIconBadge {{
+                background-color: {icon_bg};
+                color: {icon_color};
+            }}
+            QLabel#KpiTitle {{
+                color: {sub_color};
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 500;
+            }}
+            QLabel#KpiChangeBadge {{
+                background-color: {badge_bg};
+                color: {badge_color};
+                border-radius: 6px;
+                padding: 0px 4px;
+            }}
+            QProgressBar {{
+                background-color: {prog_bg};
+                border: none;
+                border-radius: 2.5px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {prog_chunk};
+                border-radius: 2.5px;
+            }}
+            QFrame#{card_name}:hover QProgressBar::chunk {{
+                background-color: {prog_chunk_hover};
+            }}
+        """)
+        val_font_size = "13px" if len(self.lbl_value.text()) > 8 else ("15px" if len(self.lbl_value.text()) > 5 else "18px")
+        self.lbl_value.setStyleSheet(f"color: {text_color}; font-family: {FONT_SANS}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
+        self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-family: {FONT_SANS}; font-size: 9px;")
+        self.lbl_change.setStyleSheet(f"""
+            QLabel#KpiChangeBadge {{
+                background-color: {badge_bg};
+                color: {badge_color};
+                border: 1px solid {border};
+                border-radius: 7px;
+                padding: 1px 5px;
+                font-family: {FONT_SANS};
+                font-size: 8px;
+                font-weight: 600;
+            }}
+            QFrame#{card_name}:hover QLabel#KpiChangeBadge {{
+                border-color: {hover_border};
+            }}
+        """)
 
 
 

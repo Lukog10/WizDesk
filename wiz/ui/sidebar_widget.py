@@ -266,14 +266,11 @@ class SideNavBar(QWidget):
         self.brand_title = QLabel("WizDesk")
         self.brand_title.setFont(get_font(11, QFont.Weight.Bold))
         brand_layout.addWidget(self.brand_title)
-
-        # Live status dot (Emerald #10B981)
-        self.status_dot = QLabel()
-        self.status_dot.setFixedSize(8, 8)
-        self.status_dot.setToolTip("Auto-tracking active")
-        self.status_dot.setStyleSheet("background-color: #10B981; border-radius: 4px;")
-        brand_layout.addWidget(self.status_dot)
         brand_layout.addStretch()
+
+        # Status dot removed per user request (preserved hidden for backwards compatibility)
+        self.status_dot = QLabel()
+        self.status_dot.hide()
 
         self.main_layout.addLayout(brand_layout)
 
