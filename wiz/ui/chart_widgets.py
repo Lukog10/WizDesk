@@ -147,9 +147,8 @@ class KpiStatCard(QFrame):
         self.setObjectName("KpiHeroCard" if self.is_hero else "KpiStatCard")
 
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.setMinimumHeight(86)
-        self.setMaximumHeight(96)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self.setFixedHeight(88)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 10, 12, 10)
@@ -168,6 +167,7 @@ class KpiStatCard(QFrame):
 
         self.lbl_value = QLabel(value)
         self.lbl_value.setObjectName("KpiValue")
+        self.lbl_value.setMinimumWidth(0)
         initial_size = 15 if len(value) > 7 else 18
         self.lbl_value.setFont(get_font(initial_size, QFont.Weight.Bold))
         val_row.addWidget(self.lbl_value)
@@ -227,6 +227,12 @@ class KpiStatCard(QFrame):
         except TypeError:
             pass
 
+    def minimumSizeHint(self) -> QSize:
+        return QSize(100, 88)
+
+    def sizeHint(self) -> QSize:
+        return QSize(150, 88)
+
     def set_sparkline_data(self, values: List[float]) -> None:
         if self.sparkline:
             self.sparkline.set_data(values)
@@ -241,13 +247,23 @@ class KpiStatCard(QFrame):
         self.value_text = value
         self.change_text = change_text
         self.subtitle_text = subtitle
-        self.lbl_value.setText(value)
+
+        # Auto-elide if text is long to maintain fixed static card size
+        display_val = value
+        if len(value) > 13:
+            display_val = value[:11] + "…"
+            self.lbl_value.setToolTip(value)
+            self.setToolTip(f"{self.title_text}: {value}")
+        else:
+            self.lbl_value.setToolTip("")
+            self.setToolTip("")
+        self.lbl_value.setText(display_val)
 
         # Auto-adjust font size to avoid wrapping in compact card width
         font_size = 18
-        if len(value) > 12:
+        if len(display_val) > 12:
             font_size = 13
-        elif len(value) > 8:
+        elif len(display_val) > 8:
             font_size = 15
         self.lbl_value.setFont(get_font(font_size, QFont.Weight.Bold))
 
@@ -930,15 +946,25 @@ class ProjectComparisonChartWidget(QFrame):
         self.canvas = ProjectComparisonCanvas(is_dark=self.is_dark, parent=self)
         layout.addWidget(self.canvas, 1)
 
-        # Legend Grid (2-column compact layout to fit within 280-320px width)
-        self.legend_layout = QGridLayout()
+        # Legend Grid in fixed-height container to preserve static canvas size across filters
+        self.legend_container = QWidget(self)
+        self.legend_container.setObjectName("LegendContainer")
+        self.legend_container.setFixedHeight(38)
+        self.legend_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.legend_layout = QGridLayout(self.legend_container)
         self.legend_layout.setContentsMargins(0, 0, 0, 0)
         self.legend_layout.setHorizontalSpacing(8)
         self.legend_layout.setVerticalSpacing(3)
-        layout.addLayout(self.legend_layout)
+        layout.addWidget(self.legend_container)
 
         self.apply_theme()
         self._update_toggle_styles()
+
+    def minimumSizeHint(self) -> QSize:
+        return QSize(180, 200)
+
+    def sizeHint(self) -> QSize:
+        return QSize(340, 340)
 
     def set_data(
         self,
@@ -985,6 +1011,7 @@ class ProjectComparisonChartWidget(QFrame):
             pill = QFrame()
             pill.setObjectName("LegendPill")
             pill.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            pill.setMinimumWidth(0)
             pill_layout = QHBoxLayout(pill)
             pill_layout.setContentsMargins(4, 2, 4, 2)
             pill_layout.setSpacing(4)
@@ -995,8 +1022,8 @@ class ProjectComparisonChartWidget(QFrame):
             pill_layout.addWidget(dot)
 
             name = s['name']
-            if len(name) > 12:
-                name = name[:11] + "…"
+            if len(name) > 10:
+                name = name[:9] + "…"
             name_lbl = QLabel(f"{name} ({s.get('total_hours', 0):.1f}h)")
             name_lbl.setFont(get_font(8, QFont.Weight.Medium))
             name_lbl.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #71717A;")
@@ -1355,6 +1382,7 @@ class ProjectTargetRow(QFrame):
         self.is_dark = is_dark
         self.setObjectName("ProjectTargetRow")
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setMinimumWidth(0)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(6, 3, 6, 3)
@@ -1371,12 +1399,14 @@ class ProjectTargetRow(QFrame):
 
         self.lbl_name = QLabel(self.project_name)
         self.lbl_name.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.lbl_name.setMinimumWidth(0)
         header.addWidget(self.lbl_name, 1)
 
         stat_str = f"{self.hours:.1f}h ({self.pct}%)" if self.hours > 0 else f"{self.pct}%"
         self.lbl_stat = QLabel(stat_str)
         self.lbl_stat.setFont(get_font(8, QFont.Weight.Medium))
         self.lbl_stat.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.lbl_stat.setMinimumWidth(0)
         header.addWidget(self.lbl_stat)
 
         layout.addLayout(header)
@@ -1384,6 +1414,7 @@ class ProjectTargetRow(QFrame):
         # Line 2: Rounded Progress Track
         self.prog = QProgressBar(self)
         self.prog.setFixedHeight(5)
+        self.prog.setMinimumWidth(0)
         self.prog.setRange(0, 100)
         self.prog.setValue(self.pct)
         self.prog.setTextVisible(False)
@@ -1454,6 +1485,8 @@ class ProjectTrackingWidget(QFrame):
         self.projects_data: List[Dict[str, Any]] = []
         self.total_hours: float = 0.0
         self.setObjectName("ProjectTrackingCard")
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setMinimumWidth(0)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 10, 12, 10)
@@ -1498,6 +1531,12 @@ class ProjectTrackingWidget(QFrame):
         layout.addWidget(self.scroll_area, 1)
 
         self.apply_theme()
+
+    def minimumSizeHint(self) -> QSize:
+        return QSize(180, 160)
+
+    def sizeHint(self) -> QSize:
+        return QSize(240, 260)
 
     def set_project_targets(self, projects: List[Dict[str, Any]], total_hours: float) -> None:
         """Render catchy minimalist project progress targets matching reference design."""
@@ -1637,6 +1676,9 @@ class AppUsageAnalyticsWidget(QFrame):
         self.projects_data: List[Dict[str, Any]] = []
         self.total_hours: float = 0.0
         self.setObjectName("AppUsageCard")
+        if not self.show_targets:
+            self.setFixedHeight(236)
+        self.setMinimumWidth(0)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 10, 12, 10)
@@ -1761,6 +1803,16 @@ class AppUsageAnalyticsWidget(QFrame):
         self.apply_theme()
         self._update_toggle_styles()
 
+    def minimumSizeHint(self) -> QSize:
+        if not self.show_targets:
+            return QSize(180, 236)
+        return QSize(180, 280)
+
+    def sizeHint(self) -> QSize:
+        if not self.show_targets:
+            return QSize(240, 236)
+        return QSize(260, 360)
+
     def set_data(self, apps_data: List[Dict[str, Any]], total_hours: float) -> None:
         self.apps_data = apps_data
         self.total_hours = total_hours
@@ -1840,6 +1892,7 @@ class AppUsageAnalyticsWidget(QFrame):
             row_frame = QFrame()
             row_frame.setObjectName("AppDonutRow")
             row_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            row_frame.setMinimumWidth(0)
             row = QHBoxLayout(row_frame)
             row.setContentsMargins(4, 2, 4, 2)
             row.setSpacing(3)
@@ -1893,6 +1946,7 @@ class AppUsageAnalyticsWidget(QFrame):
             item_frame = QFrame()
             item_frame.setObjectName("AppUsageBarItem")
             item_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            item_frame.setMinimumWidth(0)
             item_layout = QVBoxLayout(item_frame)
             item_layout.setContentsMargins(6, 2, 6, 2)
             item_layout.setSpacing(2)

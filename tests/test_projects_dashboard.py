@@ -916,6 +916,55 @@ def test_project_tracking_widget_standalone_card(qapp):
     assert widget.is_dark is False
 
 
+def test_dashboard_filter_static_geometry(repo, qapp):
+    """Verify that switching timeframe filters (today, week, month, all_time) keeps layout static and prevents horizontal overflow."""
+    now = datetime.now()
+    repo.create_or_update_project("WizDesk", ["wiz", "app"], color="#6366F1", description="Core")
+    repo.create_or_update_project("ExtremelyLongProjectNameForTestingStaticLayout", ["long", "test"], color="#10B981", description="Long")
+    repo.log_session("Duskfade-Win64-Shipping.exe", "Main Window", now - timedelta(hours=2), now, project_tag="WizDesk")
+    repo.log_session("zen.exe", "Browser", now - timedelta(hours=4), now - timedelta(hours=3), project_tag="WizDesk")
+    repo.create_task("Implement static dashboard", project_tag="WizDesk")
+
+    dashboard = ProjectDashboardView(repo, is_dark=True)
+    dashboard.resize(920, 680)
+    dashboard.show()
+    qapp.processEvents()
+
+    overview = dashboard.overview_page
+
+    # Verify column stretches
+    assert overview.kpi_grid.columnStretch(0) == 1
+    assert overview.kpi_grid.columnStretch(1) == 1
+    assert overview.right_column.stretch(0) == 0
+    assert overview.right_column.stretch(1) == 1
+    assert overview.apps_widget.height() == 236
+
+    recorded_widths = []
+    for tf in ["today", "this_week", "this_month", "all_time"]:
+        overview._set_timeframe(tf)
+        qapp.processEvents()
+
+        # Content must not overflow the viewport
+        assert overview.scroll_content.width() <= overview.scroll_area.width()
+
+        # KPI cards must have equal 50/50 widths
+        kpi_w0 = overview.kpi_hero.width()
+        kpi_w1 = overview.kpi_projects.width()
+        assert abs(kpi_w0 - kpi_w1) <= 2
+
+        # Card heights must remain static
+        assert overview.kpi_hero.height() == 88
+        assert overview.apps_widget.height() == 236
+
+        recorded_widths.append((overview.chart_widget.width(), overview.apps_widget.width()))
+
+    # Verify chart and apps widget widths are completely static across all filters
+    first_w = recorded_widths[0]
+    for w in recorded_widths:
+        assert w == first_w
+
+
+
 
 
 

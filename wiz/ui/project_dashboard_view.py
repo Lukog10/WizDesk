@@ -534,11 +534,15 @@ class ProjectsOverviewPage(QWidget):
         self.left_column.setContentsMargins(0, 0, 0, 0)
         self.left_column.setSpacing(8)
 
-        # 2x2 Executive KPI Grid
+        # 2x2 Executive KPI Grid (Locked 50%/50% equal column proportions)
         self.kpi_grid = QGridLayout()
         self.kpi_grid.setContentsMargins(0, 0, 0, 0)
         self.kpi_grid.setHorizontalSpacing(6)
         self.kpi_grid.setVerticalSpacing(6)
+        self.kpi_grid.setColumnStretch(0, 1)
+        self.kpi_grid.setColumnStretch(1, 1)
+        self.kpi_grid.setRowStretch(0, 1)
+        self.kpi_grid.setRowStretch(1, 1)
 
         self.kpi_hero = KpiStatCard("Tracked Time", "0h", "", is_hero=True, is_dark=self.is_dark, parent=self.scroll_content)
         self.kpi_projects = KpiStatCard("Active Projects", "0", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
@@ -565,17 +569,17 @@ class ProjectsOverviewPage(QWidget):
         self.right_column.setContentsMargins(0, 0, 0, 0)
         self.right_column.setSpacing(8)
 
-        # App Distribution Donut Card
+        # App Distribution Donut Card (Fixed height 236px, zero stretch)
         self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, show_targets=False, parent=self.scroll_content)
         self.apps_widget.project_selected.connect(self.project_selected.emit)
         self.apps_widget.new_project_clicked.connect(self.new_project_clicked.emit)
-        self.right_column.addWidget(self.apps_widget, 60)
+        self.right_column.addWidget(self.apps_widget, 0)
 
-        # Project Tracking Progress Track Card
+        # Project Tracking Progress Track Card (Expands to align with left chart widget)
         self.projects_widget = ProjectTrackingWidget(is_dark=self.is_dark, parent=self.scroll_content)
         self.projects_widget.project_selected.connect(self.project_selected.emit)
         self.projects_widget.new_project_clicked.connect(self.new_project_clicked.emit)
-        self.right_column.addWidget(self.projects_widget, 40)
+        self.right_column.addWidget(self.projects_widget, 1)
 
         self.columns_layout.addLayout(self.right_column, 42)
 
