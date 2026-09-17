@@ -1488,6 +1488,143 @@ class ProjectTargetRow(QFrame):
         self.lbl_stat.setStyleSheet(f"color: {stat_color};")
 
 
+class ProjectTrackingWidget(QFrame):
+    """
+    Dedicated Project Tracking card matching executive dashboard reference.
+    Displays:
+    - Header with title 'Project Tracking' and active count badge (e.g. '3 Active')
+    - Concise subtitle: 'Target vs Actual progress'
+    - Vertical list of ProjectTargetRow items with progress tracks
+    - Interactive hover elevation and click-to-drilldown
+    """
+
+    project_selected = pyqtSignal(str)
+    new_project_clicked = pyqtSignal()
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.projects_data: List[Dict[str, Any]] = []
+        self.total_hours: float = 0.0
+        self.setObjectName("ProjectTrackingCard")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(6)
+
+        # Header Row: Title + Active Badge
+        header_row = QHBoxLayout()
+        header_row.setSpacing(6)
+
+        self.lbl_title = QLabel("Project Tracking")
+        self.lbl_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
+        header_row.addWidget(self.lbl_title)
+        header_row.addStretch()
+
+        self.lbl_targets_count = QLabel("0 Active")
+        self.lbl_targets_count.setObjectName("TargetsBadge")
+        self.lbl_targets_count.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        header_row.addWidget(self.lbl_targets_count)
+
+        layout.addLayout(header_row)
+
+        self.lbl_subtitle = QLabel("Target vs Actual progress")
+        self.lbl_subtitle.setFont(QFont("Inter", 8))
+        layout.addWidget(self.lbl_subtitle)
+
+        # Container for target rows
+        self.targets_container = QWidget()
+        self.targets_layout = QVBoxLayout(self.targets_container)
+        self.targets_layout.setContentsMargins(0, 2, 0, 2)
+        self.targets_layout.setSpacing(5)
+        layout.addWidget(self.targets_container)
+
+        layout.addStretch()
+
+        self.apply_theme()
+
+    def set_project_targets(self, projects: List[Dict[str, Any]], total_hours: float) -> None:
+        """Render catchy minimalist project progress targets matching reference design."""
+        self.projects_data = projects
+        self.total_hours = total_hours
+
+        # Clear existing rows
+        while self.targets_layout.count() > 0:
+            item = self.targets_layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.setParent(None)
+                w.deleteLater()
+
+        active_projects = [p for p in projects if p.get("tracked_minutes", 0) > 0 or p.get("total_tasks", 0) > 0]
+        if not active_projects and projects:
+            active_projects = projects[:3]
+        display_projects = active_projects[:3] if active_projects else projects[:3]
+
+        self.lbl_targets_count.setText(f"{len(projects)} Active")
+
+        if not display_projects:
+            empty = QLabel("No active projects. Click '+ New Project' to start.")
+            empty.setFont(QFont("Inter", 8))
+            empty.setStyleSheet("color: #71717A; padding: 6px 0;")
+            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.targets_layout.addWidget(empty)
+            return
+
+        for p in display_projects:
+            mins = p.get("tracked_minutes", 0.0)
+            h = mins / 60.0
+            pct = int(round((h / total_hours * 100))) if total_hours > 0 else int(round(p.get("completion_rate", 0.0) * 100))
+            row = ProjectTargetRow(
+                project_name=p["name"],
+                color=p.get("color", "#6366F1"),
+                hours=h,
+                pct=pct,
+                is_dark=self.is_dark,
+                parent=self.targets_container,
+            )
+            row.clicked.connect(self.project_selected.emit)
+            self.targets_layout.addWidget(row)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.apply_theme()
+        if hasattr(self, "projects_data"):
+            self.set_project_targets(self.projects_data, self.total_hours)
+
+    def apply_theme(self) -> None:
+        bg = "#242427" if self.is_dark else "#FFFFFF"
+        border = "#333338" if self.is_dark else "#E5E0D8"
+        hover_border = "#4A4A54" if self.is_dark else "#D4CEBF"
+        title_color = "#F4F4F6" if self.is_dark else "#111111"
+        sub_color = "#A1A1AA" if self.is_dark else "#71717A"
+        badge_bg = "#1F1F22" if self.is_dark else "#F4F4F5"
+        badge_border = "#333338" if self.is_dark else "#E5E0D8"
+        badge_color = "#A1A1AA" if self.is_dark else "#71717A"
+
+        self.lbl_subtitle.setStyleSheet(f"color: {sub_color};")
+        self.setStyleSheet(f"""
+            QFrame#ProjectTrackingCard {{
+                background-color: {bg};
+                border: 1px solid {border};
+                border-radius: 14px;
+            }}
+            QFrame#ProjectTrackingCard:hover {{
+                border: 1px solid {hover_border};
+            }}
+            QLabel {{
+                color: {title_color};
+            }}
+            QLabel#TargetsBadge {{
+                background-color: {badge_bg};
+                color: {badge_color};
+                border: 1px solid {badge_border};
+                border-radius: 6px;
+                padding: 1px 6px;
+            }}
+        """)
+
+
 class AppUsageAnalyticsWidget(QFrame):
     """
     Combined Application Distribution & Project Targets Card matching reference design.
@@ -1498,9 +1635,15 @@ class AppUsageAnalyticsWidget(QFrame):
     project_selected = pyqtSignal(str)
     new_project_clicked = pyqtSignal()
 
-    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+    def __init__(
+        self,
+        is_dark: bool = True,
+        show_targets: bool = True,
+        parent: Optional[QWidget] = None,
+    ):
         super().__init__(parent)
         self.is_dark = is_dark
+        self.show_targets = show_targets
         self.active_mode = "donut"  # 'donut' or 'bar'
         self.apps_data: List[Dict[str, Any]] = []
         self.projects_data: List[Dict[str, Any]] = []
@@ -1598,25 +1741,33 @@ class AppUsageAnalyticsWidget(QFrame):
         layout.addWidget(self.divider)
 
         # Lower Section: Project Targets
-        targets_header = QHBoxLayout()
-        targets_header.setSpacing(6)
+        self.targets_header = QWidget()
+        targets_header_layout = QHBoxLayout(self.targets_header)
+        targets_header_layout.setContentsMargins(0, 0, 0, 0)
+        targets_header_layout.setSpacing(6)
 
         self.lbl_targets_title = QLabel("Project Targets")
         self.lbl_targets_title.setFont(QFont("Inter", 10, QFont.Weight.DemiBold))
-        targets_header.addWidget(self.lbl_targets_title)
-        targets_header.addStretch()
+        targets_header_layout.addWidget(self.lbl_targets_title)
+        targets_header_layout.addStretch()
 
         self.lbl_targets_count = QLabel("0 Active")
         self.lbl_targets_count.setObjectName("TargetsBadge")
         self.lbl_targets_count.setFont(QFont("Inter", 8, QFont.Weight.Medium))
-        targets_header.addWidget(self.lbl_targets_count)
-        layout.addLayout(targets_header)
+        targets_header_layout.addWidget(self.lbl_targets_count)
+        layout.addWidget(self.targets_header)
 
         self.targets_container = QWidget()
         self.targets_layout = QVBoxLayout(self.targets_container)
         self.targets_layout.setContentsMargins(0, 0, 0, 0)
         self.targets_layout.setSpacing(4)
         layout.addWidget(self.targets_container)
+
+        if not self.show_targets:
+            self.divider.hide()
+            self.targets_header.hide()
+            self.targets_container.hide()
+            layout.addStretch()
 
         self.apply_theme()
         self._update_toggle_styles()

@@ -22,6 +22,7 @@ from wiz.ui.chart_widgets import (
     KpiStatCard,
     ProjectComparisonChartWidget,
     AppUsageAnalyticsWidget,
+    ProjectTrackingWidget,
     ProjectComparisonCanvas,
     AppUsageRingCanvas,
     ProjectTargetRow,
@@ -819,20 +820,60 @@ def test_app_usage_analytics_widget_project_targets(qapp):
 
 
 def test_projects_overview_fixed_layout_and_zero_scroll(repo: StorageRepository, qapp):
-    """Verify ProjectsOverviewPage uses 4-across KPI layout, 2-column cards, and zero scroll policy."""
+    """Verify ProjectsOverviewPage uses DealDeck 2-column layout (2x2 KPI + chart, apps + tracking) and zero scroll policy."""
     overview = ProjectsOverviewPage(repo, is_dark=True)
 
-    # 1. KPI row has 4 horizontal cards
+    # 1. 2x2 KPI grid has 4 cards
+    assert overview.kpi_grid.count() == 4
     assert overview.kpi_layout.count() == 4
 
-    # 2. Columns layout has 2 side-by-side cards
+    # 2. Columns layout has 2 side-by-side columns
     assert overview.columns_layout.count() == 2
-    assert overview.columns_layout.itemAt(0).widget() is overview.chart_widget
-    assert overview.columns_layout.itemAt(1).widget() is overview.apps_widget
+    assert overview.columns_layout.itemAt(0).layout() is overview.left_column
+    assert overview.columns_layout.itemAt(1).layout() is overview.right_column
+
+    # Left column contains KPI grid and chart widget
+    assert overview.left_column.count() == 2
+    assert overview.left_column.itemAt(0).layout() is overview.kpi_grid
+    assert overview.left_column.itemAt(1).widget() is overview.chart_widget
+
+    # Right column contains apps donut widget and project tracking widget
+    assert overview.right_column.count() == 2
+    assert overview.right_column.itemAt(0).widget() is overview.apps_widget
+    assert overview.right_column.itemAt(1).widget() is overview.projects_widget
 
     # 3. Scroll area policies enforce zero-scroll mode
     assert overview.scroll_area.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
     assert overview.scroll_area.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+
+
+def test_project_tracking_widget_standalone_card(qapp):
+    """Verify ProjectTrackingWidget standalone card renders targets and fires selection."""
+    widget = ProjectTrackingWidget(is_dark=True)
+    selected = []
+    widget.project_selected.connect(lambda name: selected.append(name))
+
+    sample_projects = [
+        {"name": "Client Portal", "color": "#10B981", "tracked_minutes": 180.0, "total_tasks": 3, "completion_rate": 0.67},
+        {"name": "Infrastructure", "color": "#F59E0B", "tracked_minutes": 60.0, "total_tasks": 2, "completion_rate": 0.50},
+        {"name": "WizDesk Core", "color": "#6366F1", "tracked_minutes": 240.0, "total_tasks": 5, "completion_rate": 0.80},
+    ]
+
+    widget.set_project_targets(sample_projects, total_hours=8.0)
+    assert widget.targets_layout.count() == 3
+    assert "3 Active" in widget.lbl_targets_count.text()
+
+    # Click first target row and check signal
+    target_row = widget.targets_layout.itemAt(0).widget()
+    assert isinstance(target_row, ProjectTargetRow)
+    target_row.clicked.emit(target_row.project_name)
+    assert len(selected) == 1
+    assert selected[0] == target_row.project_name
+
+    # Switch theme
+    widget.set_theme(is_dark=False)
+    assert widget.is_dark is False
+
 
 
 

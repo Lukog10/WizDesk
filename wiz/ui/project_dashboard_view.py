@@ -31,6 +31,7 @@ from wiz.ui.chart_widgets import (
     KpiStatCard,
     ProjectComparisonChartWidget,
     AppUsageAnalyticsWidget,
+    ProjectTrackingWidget,
 )
 
 
@@ -505,37 +506,60 @@ class ProjectsOverviewPage(QWidget):
         self.content_layout.setContentsMargins(0, 2, 2, 2)
         self.content_layout.setSpacing(8)
 
-        # Section 1: Executive KPI Cards (4-column horizontal strip)
-        self.kpi_layout = QHBoxLayout()
-        self.kpi_layout.setSpacing(6)
+        # 2-Column Side-by-Side Analytics & Tracking Layout matching DealDeck macro structure
+        self.columns_layout = QHBoxLayout()
+        self.columns_layout.setContentsMargins(0, 0, 0, 0)
+        self.columns_layout.setSpacing(8)
+
+        # Left Column (~58% width): 2x2 KPI Grid + Project Comparison Statistics Chart
+        self.left_column = QVBoxLayout()
+        self.left_column.setContentsMargins(0, 0, 0, 0)
+        self.left_column.setSpacing(8)
+
+        # 2x2 Executive KPI Grid
+        self.kpi_grid = QGridLayout()
+        self.kpi_grid.setContentsMargins(0, 0, 0, 0)
+        self.kpi_grid.setHorizontalSpacing(6)
+        self.kpi_grid.setVerticalSpacing(6)
 
         self.kpi_hero = KpiStatCard("Tracked Time", "0h", "", is_hero=True, is_dark=self.is_dark, parent=self.scroll_content)
         self.kpi_projects = KpiStatCard("Active Projects", "0", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
         self.kpi_top_app = KpiStatCard("Top Application", "None", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
         self.kpi_tasks = KpiStatCard("Tasks Completed", "0 / 0", "", is_hero=False, is_dark=self.is_dark, parent=self.scroll_content)
 
-        self.kpi_layout.addWidget(self.kpi_hero)
-        self.kpi_layout.addWidget(self.kpi_projects)
-        self.kpi_layout.addWidget(self.kpi_top_app)
-        self.kpi_layout.addWidget(self.kpi_tasks)
-        self.content_layout.addLayout(self.kpi_layout)
+        self.kpi_grid.addWidget(self.kpi_hero, 0, 0)
+        self.kpi_grid.addWidget(self.kpi_projects, 0, 1)
+        self.kpi_grid.addWidget(self.kpi_top_app, 1, 0)
+        self.kpi_grid.addWidget(self.kpi_tasks, 1, 1)
+        self.left_column.addLayout(self.kpi_grid)
 
         # Backward compatibility alias
-        self.kpi_grid = self.kpi_layout
+        self.kpi_layout = self.kpi_grid
 
-        # Section 2: Main 2-Column Side-by-Side Analytics & Breakdown Cards
-        self.columns_layout = QHBoxLayout()
-        self.columns_layout.setSpacing(8)
-
-        # Left Column: Statistics (Project Comparison Chart with Bar/Area toggle)
+        # Project Comparison Statistics Chart
         self.chart_widget = ProjectComparisonChartWidget(is_dark=self.is_dark, parent=self.scroll_content)
-        self.columns_layout.addWidget(self.chart_widget, 3)
+        self.left_column.addWidget(self.chart_widget, 1)
 
-        # Right Column: Distribution & Projects Breakdown (Donut + Project Target Bars)
-        self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, parent=self.scroll_content)
+        self.columns_layout.addLayout(self.left_column, 58)
+
+        # Right Column (~42% width): App Distribution Donut (top) + Project Tracking (bottom)
+        self.right_column = QVBoxLayout()
+        self.right_column.setContentsMargins(0, 0, 0, 0)
+        self.right_column.setSpacing(8)
+
+        # App Distribution Donut Card
+        self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, show_targets=False, parent=self.scroll_content)
         self.apps_widget.project_selected.connect(self.project_selected.emit)
         self.apps_widget.new_project_clicked.connect(self.new_project_clicked.emit)
-        self.columns_layout.addWidget(self.apps_widget, 2)
+        self.right_column.addWidget(self.apps_widget, 1)
+
+        # Project Tracking Progress Track Card
+        self.projects_widget = ProjectTrackingWidget(is_dark=self.is_dark, parent=self.scroll_content)
+        self.projects_widget.project_selected.connect(self.project_selected.emit)
+        self.projects_widget.new_project_clicked.connect(self.new_project_clicked.emit)
+        self.right_column.addWidget(self.projects_widget, 1)
+
+        self.columns_layout.addLayout(self.right_column, 42)
 
         self.content_layout.addLayout(self.columns_layout)
 
@@ -636,6 +660,7 @@ class ProjectsOverviewPage(QWidget):
         metrics_list = self.repo.get_projects_overview_metrics(timeframe=self.active_timeframe)
         self.lbl_directory_count.setText(f"{len(metrics_list)} Projects")
         self.apps_widget.set_project_targets(metrics_list, tot_hrs)
+        self.projects_widget.set_project_targets(metrics_list, tot_hrs)
 
         # Populate legacy cards container
         for data in metrics_list:
@@ -651,6 +676,7 @@ class ProjectsOverviewPage(QWidget):
         self.kpi_tasks.set_theme(is_dark)
         self.chart_widget.set_theme(is_dark)
         self.apps_widget.set_theme(is_dark)
+        self.projects_widget.set_theme(is_dark)
         self.apply_theme()
         self.refresh()
 
