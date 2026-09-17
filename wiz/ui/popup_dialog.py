@@ -50,6 +50,8 @@ from wiz.ui.icons import get_app_icon
 from wiz.sync.obsidian import sync_today_logs
 from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView
+from wiz.ui.sidebar_widget import SideNavBar
+from wiz.ui.settings_view import SettingsView
 
 
 # Professional Typography Stacks
@@ -1806,11 +1808,11 @@ class QuickEntryDialog(QDialog):
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
         screen = QGuiApplication.primaryScreen()
         avail_geo = screen.availableGeometry() if screen else None
-        target_w = 640
-        target_h = 800
-        if avail_geo and avail_geo.height() < 860:
-            target_h = min(800, max(600, avail_geo.height() - 60))
-        self.setMinimumSize(500, min(640, target_h))
+        target_w = 920
+        target_h = 680
+        if avail_geo and avail_geo.height() < 740:
+            target_h = min(680, max(560, avail_geo.height() - 60))
+        self.setMinimumSize(780, min(560, target_h))
         self.resize(target_w, target_h)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
@@ -1834,22 +1836,81 @@ class QuickEntryDialog(QDialog):
 
         self.outer_layout.addWidget(self.outer_frame)
 
-        # Frame Inner Layout
-        self.frame_layout = QVBoxLayout(self.outer_frame)
-        self.frame_layout.setContentsMargins(12, 10, 12, 12)
-        self.frame_layout.setSpacing(8)
+        # Frame Split Layout: Left Sidebar + Right Workspace
+        self.frame_layout = QHBoxLayout(self.outer_frame)
+        self.frame_layout.setContentsMargins(0, 0, 0, 0)
+        self.frame_layout.setSpacing(0)
 
-        # Top Bar: Frameless Drag Region & Window Controls
+        # 1. Left Side Navigation Bar (190px)
+        self.sidebar = SideNavBar(is_dark=self.is_dark, parent=self.outer_frame)
+        self.sidebar.mode_changed.connect(self._set_view_mode)
+        self.sidebar.theme_toggle_requested.connect(self.toggle_theme)
+        self.frame_layout.addWidget(self.sidebar)
+
+        # Backwards-compatible aliases for mode buttons
+        self.tasks_mode_btn = self.sidebar.pills["tasks"]
+        self.notes_mode_btn = self.sidebar.pills["notes"]
+        self.activity_mode_btn = self.sidebar.pills["activity"]
+        self.projects_mode_btn = self.sidebar.pills["projects"]
+        self.settings_mode_btn = self.sidebar.pills["settings"]
+        self.mode_capsule = QFrame()
+        self.mode_capsule.setObjectName("modeCapsule")
+        self.mode_capsule.setVisible(False)
+        self.brand_lbl = self.sidebar.brand_title
+
+        # 2. Right Main Workspace Container (~710px)
+        self.workspace_container = QWidget()
+        self.workspace_layout = QVBoxLayout(self.workspace_container)
+        self.workspace_layout.setContentsMargins(16, 12, 16, 14)
+        self.workspace_layout.setSpacing(8)
+
+        # Top Bar: Dynamic Page Title + Contextual Header Actions + Window Controls
         top_bar = QHBoxLayout()
-        top_bar.setContentsMargins(4, 0, 4, 0)
+        top_bar.setContentsMargins(0, 0, 0, 0)
+        top_bar.setSpacing(12)
 
-        # Subtle drag hint / branding
-        self.brand_lbl = QLabel("  WizDesk")
-        self.brand_lbl.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
-        top_bar.addWidget(self.brand_lbl)
+        # Dynamic Page Title
+        self.page_title_lbl = QLabel("Tasks & To-Dos")
+        self.page_title_lbl.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        top_bar.addWidget(self.page_title_lbl)
+
+        # Contextual Date Header (visible in tasks & activity)
+        self.date_header_container = QWidget()
+        date_header_layout = QHBoxLayout(self.date_header_container)
+        date_header_layout.setContentsMargins(0, 0, 0, 0)
+        date_header_layout.setSpacing(6)
+
+        self.prev_day_btn = QPushButton("<")
+        self.prev_day_btn.setFixedSize(26, 26)
+        self.prev_day_btn.setToolTip("Previous Day")
+        self.prev_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.prev_day_btn.clicked.connect(self._on_prev_day)
+        date_header_layout.addWidget(self.prev_day_btn)
+
+        self.date_btn = QPushButton()
+        self.date_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.date_btn.setToolTip("Click to open calendar")
+        self.date_btn.clicked.connect(self._open_calendar)
+        date_header_layout.addWidget(self.date_btn)
+
+        self.next_day_btn = QPushButton(">")
+        self.next_day_btn.setFixedSize(26, 26)
+        self.next_day_btn.setToolTip("Next Day")
+        self.next_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.next_day_btn.clicked.connect(self._on_next_day)
+        date_header_layout.addWidget(self.next_day_btn)
+
+        self.today_pill_btn = QPushButton("Today")
+        self.today_pill_btn.setFixedHeight(24)
+        self.today_pill_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.today_pill_btn.clicked.connect(self._on_today_clicked)
+        self.today_pill_btn.setVisible(False)
+        date_header_layout.addWidget(self.today_pill_btn)
+
+        top_bar.addWidget(self.date_header_container)
         top_bar.addStretch()
 
-        # Window control buttons (Theme, -, □, x)
+        # Window Control Buttons (Theme, -, □, x)
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(6)
 
@@ -1882,95 +1943,19 @@ class QuickEntryDialog(QDialog):
         controls_layout.addWidget(self.close_btn)
 
         top_bar.addLayout(controls_layout)
-        self.frame_layout.addLayout(top_bar)
+        self.workspace_layout.addLayout(top_bar)
+
+        # Initialize date display
+        self._update_date_display()
 
         # --- Inner Canvas Card ---
         self.inner_card = QFrame()
         self.inner_card.setObjectName("innerCard")
         self.inner_layout = QVBoxLayout(self.inner_card)
-        self.inner_layout.setContentsMargins(18, 16, 18, 16)
-        self.inner_layout.setSpacing(12)
+        self.inner_layout.setContentsMargins(14, 12, 14, 12)
+        self.inner_layout.setSpacing(10)
 
-        # 1. Inside Page Header: Tasks | Quick Notes Switcher
-        page_header_layout = QHBoxLayout()
-        page_header_layout.setContentsMargins(0, 0, 0, 0)
-        page_header_layout.addStretch()
-
-        self.mode_capsule = QFrame()
-        self.mode_capsule.setObjectName("modeCapsule")
-        mode_layout = QHBoxLayout(self.mode_capsule)
-        mode_layout.setContentsMargins(3, 3, 3, 3)
-        mode_layout.setSpacing(2)
-
-        self.tasks_mode_btn = QPushButton("Tasks")
-        self.tasks_mode_btn.setFixedHeight(30)
-        self.tasks_mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.tasks_mode_btn.clicked.connect(lambda: self._set_view_mode("tasks"))
-        mode_layout.addWidget(self.tasks_mode_btn)
-
-        self.notes_mode_btn = QPushButton("Quick Notes")
-        self.notes_mode_btn.setFixedHeight(30)
-        self.notes_mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.notes_mode_btn.clicked.connect(lambda: self._set_view_mode("notes"))
-        mode_layout.addWidget(self.notes_mode_btn)
-
-        self.activity_mode_btn = QPushButton("Activity")
-        self.activity_mode_btn.setFixedHeight(30)
-        self.activity_mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.activity_mode_btn.clicked.connect(lambda: self._set_view_mode("activity"))
-        mode_layout.addWidget(self.activity_mode_btn)
-
-        self.projects_mode_btn = QPushButton("Projects")
-        self.projects_mode_btn.setFixedHeight(30)
-        self.projects_mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.projects_mode_btn.clicked.connect(lambda: self._set_view_mode("projects"))
-        mode_layout.addWidget(self.projects_mode_btn)
-
-        page_header_layout.addWidget(self.mode_capsule)
-        page_header_layout.addStretch()
-        self.inner_layout.addLayout(page_header_layout)
-
-        # 2. Date Header with Navigation & Interactive Calendar Picker
-        self.date_header_container = QWidget()
-        date_header_layout = QHBoxLayout(self.date_header_container)
-        date_header_layout.setContentsMargins(0, 0, 0, 14)
-        date_header_layout.setSpacing(6)
-        date_header_layout.addStretch()
-
-        self.prev_day_btn = QPushButton("<")
-        self.prev_day_btn.setFixedSize(26, 26)
-        self.prev_day_btn.setToolTip("Previous Day")
-        self.prev_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.prev_day_btn.clicked.connect(self._on_prev_day)
-        date_header_layout.addWidget(self.prev_day_btn)
-
-        self.date_btn = QPushButton()
-        self.date_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.date_btn.setToolTip("Click to open calendar")
-        self.date_btn.clicked.connect(self._open_calendar)
-        date_header_layout.addWidget(self.date_btn)
-
-        self.next_day_btn = QPushButton(">")
-        self.next_day_btn.setFixedSize(26, 26)
-        self.next_day_btn.setToolTip("Next Day")
-        self.next_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.next_day_btn.clicked.connect(self._on_next_day)
-        date_header_layout.addWidget(self.next_day_btn)
-
-        self.today_pill_btn = QPushButton("Today")
-        self.today_pill_btn.setFixedHeight(26)
-        self.today_pill_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.today_pill_btn.clicked.connect(self._on_today_clicked)
-        self.today_pill_btn.setVisible(False)
-        date_header_layout.addWidget(self.today_pill_btn)
-
-        date_header_layout.addStretch()
-        self.inner_layout.addWidget(self.date_header_container)
-
-        # Initialize date display
-        self._update_date_display()
-
-        # Stacked Widget for Tasks vs Quick Notes
+        # Stacked Widget for Pages
         self.stack = QStackedWidget()
 
         # ==========================================
@@ -2093,8 +2078,14 @@ class QuickEntryDialog(QDialog):
         self.project_dashboard_view.project_changed.connect(self._populate_projects)
         self.stack.addWidget(self.project_dashboard_view)
 
+        # 5. Embedded Settings Page
+        self.settings_view = SettingsView(self.repo, is_dark=self.is_dark, parent=self.stack)
+        self.settings_view.projects_changed.connect(self._populate_projects)
+        self.stack.addWidget(self.settings_view)
+
         self.inner_layout.addWidget(self.stack, stretch=1)
-        self.frame_layout.addWidget(self.inner_card, stretch=1)
+        self.workspace_layout.addWidget(self.inner_card, stretch=1)
+        self.frame_layout.addWidget(self.workspace_container, stretch=1)
 
         # Drag state for frameless window movement
         self._drag_pos = QPoint()
@@ -2124,12 +2115,16 @@ class QuickEntryDialog(QDialog):
         self.theme_btn.setText("☀" if self.is_dark else "☾")
         self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
 
-        # Color tokens
-        outer_bg = "#121214" if self.is_dark else "#E6E6EA"
+        # Update sidebar theme
+        if hasattr(self, "sidebar"):
+            self.sidebar.set_theme(self.is_dark)
+
+        # Color tokens - Brand aligned
+        outer_bg = "#121214" if self.is_dark else "#F0EFEB"
         outer_border = "#27272A" if self.is_dark else "#D8D8DE"
         inner_bg = "#18181B" if self.is_dark else "#FFFFFF"
         inner_border = "#27272A" if self.is_dark else "#ECECEF"
-        brand_color = "#A1A1AA" if self.is_dark else "#71717A"
+        page_title_color = "#F4F4F5" if self.is_dark else "#18181B"
         ctrl_btn_color = "#A1A1AA" if self.is_dark else "#52525B"
         ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.08)"
         ctrl_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
@@ -2139,39 +2134,40 @@ class QuickEntryDialog(QDialog):
         day_btn_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
         day_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
         date_btn_color = "#F4F4F5" if self.is_dark else "#27272A"
-        today_pill_bg = "#FAFAFA" if self.is_dark else "#18181B"
-        today_pill_color = "#18181B" if self.is_dark else "#FFFFFF"
-        today_pill_hover = "#E4E4E7" if self.is_dark else "#3F3F46"
+        today_pill_bg = "#6366F1" if self.is_dark else "#4F46E5"
+        today_pill_color = "#FFFFFF"
+        today_pill_hover = "#4F46E5" if self.is_dark else "#4338CA"
         input_bg = "#27272A" if self.is_dark else "#F4F4F5"
         input_color = "#F4F4F5" if self.is_dark else "#18181B"
         input_border = "#3F3F46" if self.is_dark else "#D4D4D8"
-        input_focus_border = "#FAFAFA" if self.is_dark else "#18181B"
+        input_focus_border = "#6366F1"
         combo_popup_bg = "#18181B" if self.is_dark else "#FFFFFF"
         combo_popup_border = "#27272A" if self.is_dark else "#E4E4E7"
-        combo_popup_sel_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        combo_popup_sel_text = "#FFFFFF" if self.is_dark else "#000000"
-        btn_action_bg = "#FAFAFA" if self.is_dark else "#18181B"
-        btn_action_color = "#18181B" if self.is_dark else "#FFFFFF"
-        btn_action_hover = "#E4E4E7" if self.is_dark else "#3F3F46"
+        combo_popup_sel_bg = "rgba(99, 102, 241, 0.2)" if self.is_dark else "#EEF2FF"
+        combo_popup_sel_text = "#C7D2FE" if self.is_dark else "#4F46E5"
+        btn_action_bg = "#6366F1"
+        btn_action_color = "#FFFFFF"
+        btn_action_hover = "#4F46E5"
 
         # 1. Outer Frame & Inner Card
         self.outer_frame.setStyleSheet(f"""
             QFrame#outerFrame {{
                 background-color: {outer_bg};
                 border: 1px solid {outer_border};
-                border-radius: 24px;
+                border-radius: 20px;
             }}
         """)
         self.inner_card.setStyleSheet(f"""
             QFrame#innerCard {{
                 background-color: {inner_bg};
-                border-radius: 20px;
+                border-radius: 16px;
                 border: 1px solid {inner_border};
             }}
         """)
 
-        # 2. Window Controls
-        self.brand_lbl.setStyleSheet(f"color: {brand_color};")
+        # 2. Window Controls & Title
+        if hasattr(self, "page_title_lbl"):
+            self.page_title_lbl.setStyleSheet(f"color: {page_title_color};")
         ctrl_qss = f"""
             QPushButton {{
                 background-color: transparent;
@@ -2192,13 +2188,14 @@ class QuickEntryDialog(QDialog):
         self.max_btn.setStyleSheet(ctrl_qss)
         self.close_btn.setStyleSheet(ctrl_qss)
 
-        # 3. Mode Capsule
-        self.mode_capsule.setStyleSheet(f"""
-            QFrame#modeCapsule {{
-                background-color: {mode_capsule_bg};
-                border-radius: 9px;
-            }}
-        """)
+        # 3. Mode Capsule (legacy compatibility)
+        if hasattr(self, "mode_capsule"):
+            self.mode_capsule.setStyleSheet(f"""
+                QFrame#modeCapsule {{
+                    background-color: {mode_capsule_bg};
+                    border-radius: 9px;
+                }}
+            """)
 
         # 4. Date header
         day_nav_qss = f"""
@@ -2214,7 +2211,7 @@ class QuickEntryDialog(QDialog):
             QPushButton:hover {{
                 color: {day_btn_hover_color};
                 background-color: {day_btn_hover_bg};
-                border-color: {input_border};
+                border-color: {input_focus_border};
             }}
         """
         self.prev_day_btn.setStyleSheet(day_nav_qss)
@@ -2326,62 +2323,36 @@ class QuickEntryDialog(QDialog):
         self.add_task_btn.setStyleSheet(btn_action_qss)
         self.add_note_btn.setStyleSheet(btn_action_qss)
 
-        # 7. Update timeline view & project dashboard view themes
+        # 7. Update timeline, project dashboard & settings view themes
         if hasattr(self, "timeline_view"):
             self.timeline_view.set_theme(self.is_dark)
         if hasattr(self, "project_dashboard_view"):
             self.project_dashboard_view.set_theme(self.is_dark)
+        if hasattr(self, "settings_view"):
+            self.settings_view.set_theme(self.is_dark)
 
         # 8. Re-apply mode buttons
         self._set_view_mode(self.current_view_mode)
 
     def _set_view_mode(self, mode: str) -> None:
-        """Switch between Tasks, Quick Notes, and Activity Timeline mode."""
+        """Switch between Tasks, Quick Notes, Activity Timeline, Projects, and Settings mode."""
         self.current_view_mode = mode
-        active_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        active_color = "#F4F4F5" if self.is_dark else "#18181B"
-        inactive_color = "#A1A1AA" if self.is_dark else "#71717A"
-        hover_color = "#FAFAFA" if self.is_dark else "#18181B"
 
-        def get_btn_style(is_active: bool) -> str:
-            if is_active:
-                return f"""
-                    QPushButton {{
-                        background-color: {active_bg};
-                        color: {active_color};
-                        border: none;
-                        border-radius: 7px;
-                        font-family: {FONT_SANS};
-                        font-size: 12.5px;
-                        font-weight: 600;
-                        padding: 0 14px;
-                    }}
-                """
-            return f"""
-                QPushButton {{
-                    background-color: transparent;
-                    color: {inactive_color};
-                    border: none;
-                    border-radius: 7px;
-                    font-family: {FONT_SANS};
-                    font-size: 12.5px;
-                    font-weight: 500;
-                    padding: 0 14px;
-                }}
-                QPushButton:hover {{
-                    color: {hover_color};
-                }}
-            """
+        if hasattr(self, "sidebar"):
+            self.sidebar.set_active_mode(mode)
 
-        self.tasks_mode_btn.setStyleSheet(get_btn_style(mode == "tasks"))
-        self.notes_mode_btn.setStyleSheet(get_btn_style(mode == "notes"))
-        if hasattr(self, "activity_mode_btn"):
-            self.activity_mode_btn.setStyleSheet(get_btn_style(mode == "activity"))
-        if hasattr(self, "projects_mode_btn"):
-            self.projects_mode_btn.setStyleSheet(get_btn_style(mode == "projects"))
+        titles = {
+            "tasks": "Tasks & To-Dos",
+            "notes": "Quick Notes",
+            "activity": "Activity Timeline",
+            "projects": "Projects Dashboard",
+            "settings": "Settings & Preferences",
+        }
+        if hasattr(self, "page_title_lbl"):
+            self.page_title_lbl.setText(titles.get(mode, "WizDesk"))
 
         if hasattr(self, "date_header_container"):
-            self.date_header_container.setVisible(mode != "projects")
+            self.date_header_container.setVisible(mode not in ("projects", "settings"))
 
         if mode == "tasks":
             self.stack.setCurrentWidget(self.tasks_page)
@@ -2395,6 +2366,9 @@ class QuickEntryDialog(QDialog):
         elif mode == "projects" and hasattr(self, "project_dashboard_view"):
             self.stack.setCurrentWidget(self.project_dashboard_view)
             self.project_dashboard_view.load_data()
+        elif mode == "settings" and hasattr(self, "settings_view"):
+            self.stack.setCurrentWidget(self.settings_view)
+            self.settings_view.load_settings()
 
     def _seed_initial_data_if_empty(self) -> None:
         """Seed default project categories if database has no projects."""
@@ -2527,6 +2501,12 @@ class QuickEntryDialog(QDialog):
         all_projects = [p.name for p in self.repo.get_all_projects()]
         if not all_projects:
             all_projects = ["Work", "Personal Projects"]
+
+        # Update sidebar task counter badge with open tasks
+        if hasattr(self, "sidebar"):
+            all_today_tasks = self.repo.get_task_hierarchy(target_date=self.selected_date, status_filter="all")
+            open_count = sum(1 for t in all_today_tasks if t.status != "done")
+            self.sidebar.set_tasks_badge(open_count)
 
         # Group tasks by project tag
         grouped: Dict[str, List[TaskRecord]] = {}
