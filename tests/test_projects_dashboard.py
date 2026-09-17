@@ -937,7 +937,7 @@ def test_dashboard_filter_static_geometry(repo, qapp):
     assert overview.kpi_grid.columnStretch(1) == 1
     assert overview.right_column.stretch(0) == 0
     assert overview.right_column.stretch(1) == 1
-    assert overview.apps_widget.height() == 296
+    assert overview.apps_widget.height() == 258
 
     recorded_widths = []
     for tf in ["today", "this_week", "this_month", "all_time"]:
@@ -954,7 +954,7 @@ def test_dashboard_filter_static_geometry(repo, qapp):
 
         # Card heights must remain static
         assert overview.kpi_hero.height() == 88
-        assert overview.apps_widget.height() == 296
+        assert overview.apps_widget.height() == 258
 
         recorded_widths.append((overview.chart_widget.width(), overview.apps_widget.width()))
 

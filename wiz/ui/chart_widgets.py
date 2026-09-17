@@ -151,8 +151,8 @@ class KpiStatCard(QFrame):
         self.setFixedHeight(88)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(3)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(4)
 
         # Backward compatibility placeholders (hidden per user request)
         self.badge_icon = QLabel()
@@ -544,8 +544,8 @@ class ProjectComparisonCanvas(QWidget):
 
         margin_left = 34.0
         margin_right = 14.0
-        margin_top = 18.0
-        margin_bottom = 20.0
+        margin_top = 16.0
+        margin_bottom = 28.0
 
         plot_w = max(10.0, w - margin_left - margin_right)
         plot_h = max(10.0, h - margin_top - margin_bottom)
@@ -601,7 +601,7 @@ class ProjectComparisonCanvas(QWidget):
         # 3. Draw X-axis Labels
         for i, label in enumerate(self.bucket_labels):
             bx = margin_left + i * b_width
-            rect = QRectF(bx, margin_top + plot_h + 4, b_width, 18)
+            rect = QRectF(bx, margin_top + plot_h + 5, b_width, 14)
             is_hovered_label = (self.hover_bucket_idx == i)
             if is_hovered_label:
                 painter.setPen(QColor("#FFFFFF" if self.is_dark else "#111111"))
@@ -609,7 +609,8 @@ class ProjectComparisonCanvas(QWidget):
             else:
                 painter.setPen(text_color)
                 painter.setFont(get_font(8, QFont.Weight.Medium))
-            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, label)
+            display_label = painter.fontMetrics().elidedText(label, Qt.TextElideMode.ElideRight, max(8, int(b_width - 4)))
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, display_label)
 
         # 4. Draw Day Background Slots & Hover Shaded Column Highlight
         slot_w = min(b_width * 0.72, 24.0)
@@ -875,7 +876,7 @@ class ProjectComparisonChartWidget(QFrame):
         self.setObjectName("ChartCard")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(6)
 
         # Header Row: Title and Mode Switcher
@@ -911,6 +912,7 @@ class ProjectComparisonChartWidget(QFrame):
         header_row.addWidget(self.capsule, 0, Qt.AlignmentFlag.AlignVCenter)
         self.capsule.hide()
         layout.addLayout(header_row)
+        layout.addSpacing(3)
 
         # Sub-metrics row matching reference design
         self.submetrics_row = QHBoxLayout()
@@ -948,19 +950,22 @@ class ProjectComparisonChartWidget(QFrame):
 
         self.submetrics_row.addStretch()
         layout.addLayout(self.submetrics_row)
+        layout.addSpacing(4)
 
         # Canvas (Expands to absorb remaining card height)
         self.canvas = ProjectComparisonCanvas(is_dark=self.is_dark, parent=self)
         layout.addWidget(self.canvas, 1)
 
+        layout.addSpacing(8)
+
         # Legend Grid in fixed-height container to preserve static canvas size across filters
         self.legend_container = QWidget(self)
         self.legend_container.setObjectName("LegendContainer")
-        self.legend_container.setFixedHeight(38)
+        self.legend_container.setFixedHeight(36)
         self.legend_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.legend_layout = QGridLayout(self.legend_container)
         self.legend_layout.setContentsMargins(0, 0, 0, 0)
-        self.legend_layout.setHorizontalSpacing(8)
+        self.legend_layout.setHorizontalSpacing(14)
         self.legend_layout.setVerticalSpacing(3)
         layout.addWidget(self.legend_container)
 
@@ -1404,8 +1409,8 @@ class ProjectTargetRow(QFrame):
         self.setMinimumWidth(0)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(6, 3, 6, 3)
-        layout.setSpacing(3)
+        layout.setContentsMargins(6, 4, 6, 4)
+        layout.setSpacing(4)
 
         # Line 1: Dot + Name, Right: Hours & %
         header = QHBoxLayout()
@@ -1423,6 +1428,7 @@ class ProjectTargetRow(QFrame):
 
         stat_str = f"{self.hours:.1f}h ({self.pct}%)" if self.hours > 0 else f"{self.pct}%"
         self.lbl_stat = QLabel(stat_str)
+        self.lbl_stat.setObjectName("StatLabel")
         self.lbl_stat.setFont(get_font(8, QFont.Weight.Medium))
         self.lbl_stat.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.lbl_stat.setMinimumWidth(0)
@@ -1459,17 +1465,19 @@ class ProjectTargetRow(QFrame):
 
         self.setStyleSheet(f"""
             QFrame#ProjectTargetRow {{
-                background: transparent;
+                background-color: transparent;
                 border: 1px solid transparent;
-                border-radius: 6px;
+                border-radius: 8px;
             }}
             QFrame#ProjectTargetRow:hover {{
                 background-color: {bg_hover};
                 border: 1px solid {border_hover};
             }}
             QLabel {{
-                border: none;
-                background: transparent;
+                color: {text_color};
+            }}
+            QLabel#StatLabel {{
+                color: {stat_color};
             }}
             QProgressBar {{
                 background-color: {prog_bg};
@@ -1481,18 +1489,12 @@ class ProjectTargetRow(QFrame):
                 border-radius: 2.5px;
             }}
         """)
-        self.lbl_name.setStyleSheet(f"color: {text_color};")
-        self.lbl_stat.setStyleSheet(f"color: {stat_color};")
 
 
 class ProjectTrackingWidget(QFrame):
     """
-    Dedicated Project Tracking card matching executive dashboard reference.
-    Displays:
-    - Header with title 'Project Tracking' and active count badge (e.g. '3 Active')
-    - Concise subtitle: 'Target vs Actual progress'
-    - Vertical list of ProjectTargetRow items with progress tracks
-    - Interactive hover elevation and click-to-drilldown
+    Dedicated widget for displaying tracked projects, their targets,
+    and completion status. Emits project_selected when clicked.
     """
 
     project_selected = pyqtSignal(str)
@@ -1508,7 +1510,7 @@ class ProjectTrackingWidget(QFrame):
         self.setMinimumWidth(0)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(6)
 
         # Header Row: Title + Active Badge
@@ -1544,8 +1546,8 @@ class ProjectTrackingWidget(QFrame):
         self.targets_container = QWidget()
         self.targets_container.setObjectName("ProjectTrackingContainer")
         self.targets_layout = QVBoxLayout(self.targets_container)
-        self.targets_layout.setContentsMargins(0, 0, 4, 0)
-        self.targets_layout.setSpacing(4)
+        self.targets_layout.setContentsMargins(0, 2, 4, 2)
+        self.targets_layout.setSpacing(6)
         self.scroll_area.setWidget(self.targets_container)
 
         layout.addWidget(self.scroll_area, 1)
@@ -1697,11 +1699,11 @@ class AppUsageAnalyticsWidget(QFrame):
         self.total_hours: float = 0.0
         self.setObjectName("AppUsageCard")
         if not self.show_targets:
-            self.setFixedHeight(296)
+            self.setFixedHeight(258)
         self.setMinimumWidth(0)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setContentsMargins(14, 12, 14, 12)
         layout.setSpacing(6)
 
         # Header Row: Title & Toggle
@@ -1748,8 +1750,8 @@ class AppUsageAnalyticsWidget(QFrame):
         self.donut_page = QWidget()
         donut_page_layout = QVBoxLayout(self.donut_page)
         donut_page_layout.setContentsMargins(0, 0, 0, 0)
-        donut_page_layout.setSpacing(3)
-        donut_page_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        donut_page_layout.setSpacing(6)
+        donut_page_layout.addStretch(1)
 
         # Donut Canvas centered
         donut_center_row = QHBoxLayout()
@@ -1760,6 +1762,8 @@ class AppUsageAnalyticsWidget(QFrame):
         donut_center_row.addStretch()
         donut_page_layout.addLayout(donut_center_row)
 
+        donut_page_layout.addSpacing(6)
+
         # Backward compatibility alias
         self.ring_page = self.donut_page
         self.ring_canvas = self.donut_canvas
@@ -1767,9 +1771,10 @@ class AppUsageAnalyticsWidget(QFrame):
         # Compact 2-column micro legend for top apps
         self.donut_list_layout = QGridLayout()
         self.donut_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.donut_list_layout.setHorizontalSpacing(6)
-        self.donut_list_layout.setVerticalSpacing(2)
+        self.donut_list_layout.setHorizontalSpacing(12)
+        self.donut_list_layout.setVerticalSpacing(4)
         donut_page_layout.addLayout(self.donut_list_layout)
+        donut_page_layout.addStretch(1)
 
         # Backward compatibility alias
         self.ring_list_layout = self.donut_list_layout
@@ -1818,19 +1823,18 @@ class AppUsageAnalyticsWidget(QFrame):
             self.divider.hide()
             self.targets_header.hide()
             self.targets_container.hide()
-            layout.addStretch()
 
         self.apply_theme()
         self._update_toggle_styles()
 
     def minimumSizeHint(self) -> QSize:
         if not self.show_targets:
-            return QSize(180, 296)
+            return QSize(180, 258)
         return QSize(180, 280)
 
     def sizeHint(self) -> QSize:
         if not self.show_targets:
-            return QSize(240, 296)
+            return QSize(240, 258)
         return QSize(260, 360)
 
     def set_data(self, apps_data: List[Dict[str, Any]], total_hours: float) -> None:
@@ -1914,8 +1918,8 @@ class AppUsageAnalyticsWidget(QFrame):
             row_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             row_frame.setMinimumWidth(0)
             row = QHBoxLayout(row_frame)
-            row.setContentsMargins(2, 1, 2, 1)
-            row.setSpacing(2)
+            row.setContentsMargins(3, 1, 3, 1)
+            row.setSpacing(4)
 
             dot = QFrame()
             dot.setFixedSize(6, 6)
@@ -1927,6 +1931,8 @@ class AppUsageAnalyticsWidget(QFrame):
                 app_name = app_name[:9] + "…"
             name_lbl = QLabel(app_name)
             name_lbl.setFont(get_font(8, QFont.Weight.Medium))
+            name_lbl.setWordWrap(False)
+            name_lbl.setMinimumWidth(0)
             row.addWidget(name_lbl)
 
             pct_lbl = QLabel(f"{int(round(app.get('percentage', 0)))}%")

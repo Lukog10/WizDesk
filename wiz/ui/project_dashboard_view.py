@@ -522,23 +522,23 @@ class ProjectsOverviewPage(QWidget):
         self.scroll_content.setObjectName("ScrollContent")
         self.content_layout = QVBoxLayout(self.scroll_content)
         self.content_layout.setContentsMargins(0, 2, 2, 2)
-        self.content_layout.setSpacing(8)
+        self.content_layout.setSpacing(10)
 
         # 2-Column Side-by-Side Analytics & Tracking Layout matching DealDeck macro structure
         self.columns_layout = QHBoxLayout()
         self.columns_layout.setContentsMargins(0, 0, 0, 0)
-        self.columns_layout.setSpacing(8)
+        self.columns_layout.setSpacing(10)
 
         # Left Column (~58% width): 2x2 KPI Grid + Project Comparison Statistics Chart
         self.left_column = QVBoxLayout()
         self.left_column.setContentsMargins(0, 0, 0, 0)
-        self.left_column.setSpacing(8)
+        self.left_column.setSpacing(10)
 
         # 2x2 Executive KPI Grid (Locked 50%/50% equal column proportions)
         self.kpi_grid = QGridLayout()
         self.kpi_grid.setContentsMargins(0, 0, 0, 0)
-        self.kpi_grid.setHorizontalSpacing(6)
-        self.kpi_grid.setVerticalSpacing(6)
+        self.kpi_grid.setHorizontalSpacing(8)
+        self.kpi_grid.setVerticalSpacing(8)
         self.kpi_grid.setColumnStretch(0, 1)
         self.kpi_grid.setColumnStretch(1, 1)
         self.kpi_grid.setRowStretch(0, 1)
@@ -567,9 +567,9 @@ class ProjectsOverviewPage(QWidget):
         # Right Column (~42% width): App Distribution Donut (top) + Project Tracking (bottom)
         self.right_column = QVBoxLayout()
         self.right_column.setContentsMargins(0, 0, 0, 0)
-        self.right_column.setSpacing(8)
+        self.right_column.setSpacing(10)
 
-        # App Distribution Donut Card (Fixed height 296px, zero stretch)
+        # App Distribution Donut Card (Fixed height 258px, zero stretch)
         self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, show_targets=False, parent=self.scroll_content)
         self.apps_widget.project_selected.connect(self.project_selected.emit)
         self.apps_widget.new_project_clicked.connect(self.new_project_clicked.emit)
