@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 from wiz.storage.models import StorageRepository
 from wiz.ui.icons import get_app_pixmap
 from wiz.ui.arrow_combo import ArrowComboBox
+from wiz.ui.fonts import get_font
 
 
 def format_duration(minutes: float) -> str:
@@ -77,11 +78,11 @@ class AppSessionCard(QFrame):
         start_time_str = session["start_time"].strftime("%H:%M")
         end_time_str = session["end_time"].strftime("%H:%M")
         time_label = QLabel(f"{start_time_str} - {end_time_str}", self)
-        time_label.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        time_label.setFont(get_font(10, QFont.Weight.DemiBold))
 
         duration_str = format_duration(session.get("duration_minutes", 0.0))
         dur_label = QLabel(duration_str, self)
-        dur_label.setFont(QFont("Segoe UI", 9))
+        dur_label.setFont(get_font(9))
 
         left_box.addWidget(time_label)
         left_box.addWidget(dur_label)
@@ -94,13 +95,13 @@ class AppSessionCard(QFrame):
 
         app_name = session.get("app_name") or "Unknown"
         app_label = QLabel(app_name, self)
-        app_label.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        app_label.setFont(get_font(10, QFont.Weight.Bold))
 
         window_title = session.get("window_title") or ""
         if len(window_title) > 65:
             window_title = window_title[:62] + "..."
         win_label = QLabel(window_title, self)
-        win_label.setFont(QFont("Segoe UI", 9))
+        win_label.setFont(get_font(9))
         win_label.setWordWrap(False)
 
         mid_box.addWidget(app_label)
@@ -111,7 +112,7 @@ class AppSessionCard(QFrame):
         project_tag = session.get("project_tag")
         if project_tag:
             tag_label = QLabel(f"[{project_tag}]", self)
-            tag_label.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+            tag_label.setFont(get_font(9, QFont.Weight.Medium))
             tag_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             tag_label.setObjectName("ProjectPill")
             layout.addWidget(tag_label, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -191,12 +192,12 @@ class MilestoneCard(QFrame):
         ts = event["timestamp"]
         ts_str = ts.strftime("%H:%M") if isinstance(ts, datetime) else str(ts)[:5]
         time_label = QLabel(ts_str, self)
-        time_label.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        time_label.setFont(get_font(10, QFont.Weight.DemiBold))
 
         event_type = event.get("event_type", "task")
         type_str = "[COMPLETED]" if event_type == "task" else "[NOTE]"
         type_badge = QLabel(type_str, self)
-        type_badge.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+        type_badge.setFont(get_font(8, QFont.Weight.Bold))
         type_badge.setObjectName("TypeBadge")
 
         time_box.addWidget(time_label)
@@ -210,12 +211,12 @@ class MilestoneCard(QFrame):
 
         title_text = event.get("title") or ""
         title_label = QLabel(title_text, self)
-        title_label.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        title_label.setFont(get_font(10, QFont.Weight.DemiBold))
         title_label.setWordWrap(True)
 
         subtitle_text = event.get("subtitle") or ""
         subtitle_label = QLabel(subtitle_text, self)
-        subtitle_label.setFont(QFont("Segoe UI", 9))
+        subtitle_label.setFont(get_font(9))
 
         mid_box.addWidget(title_label)
         if subtitle_text:
@@ -226,7 +227,7 @@ class MilestoneCard(QFrame):
         project_tag = event.get("project_tag")
         if project_tag:
             proj_label = QLabel(f"[{project_tag}]", self)
-            proj_label.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+            proj_label.setFont(get_font(9, QFont.Weight.Medium))
             proj_label.setObjectName("ProjectPill")
             layout.addWidget(proj_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -310,12 +311,12 @@ class EmptyStateCard(QFrame):
         layout.addWidget(icon_label)
 
         title = QLabel("No activity recorded for this date", self)
-        title.setFont(QFont("Segoe UI", 11, QFont.Weight.DemiBold))
+        title.setFont(get_font(11, QFont.Weight.DemiBold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
         subtitle = QLabel("Active application sessions and completed tasks will appear here as you work.", self)
-        subtitle.setFont(QFont("Segoe UI", 9))
+        subtitle.setFont(get_font(9))
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
@@ -361,15 +362,15 @@ class TimelineView(QWidget):
 
         self.lbl_metric_time = QLabel("Tracked: 0m", self.metrics_bar)
         self.lbl_metric_time.setObjectName("MetricBadge")
-        self.lbl_metric_time.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        self.lbl_metric_time.setFont(get_font(9, QFont.Weight.DemiBold))
 
         self.lbl_metric_tasks = QLabel("Completed: 0 tasks", self.metrics_bar)
         self.lbl_metric_tasks.setObjectName("MetricBadge")
-        self.lbl_metric_tasks.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        self.lbl_metric_tasks.setFont(get_font(9, QFont.Weight.DemiBold))
 
         self.lbl_metric_apps = QLabel("Apps: 0", self.metrics_bar)
         self.lbl_metric_apps.setObjectName("MetricBadge")
-        self.lbl_metric_apps.setFont(QFont("Segoe UI", 9))
+        self.lbl_metric_apps.setFont(get_font(9))
 
         metrics_layout.addWidget(self.lbl_metric_time)
         metrics_layout.addWidget(self.lbl_metric_tasks)

@@ -55,9 +55,8 @@ from wiz.ui.settings_view import SettingsView
 from wiz.ui.arrow_combo import ArrowComboBox
 
 
-# Professional Typography Stacks
-FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
-FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
+from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+
 
 def get_context_menu_style(is_dark: bool = False) -> str:
     bg = "#18181B" if is_dark else "#FFFFFF"
@@ -74,7 +73,7 @@ def get_context_menu_style(is_dark: bool = False) -> str:
             border-radius: 8px;
             padding: 4px;
             font-family: {FONT_SANS};
-            font-size: 12.5px;
+            font-size: 12px;
         }}
         QMenu::item {{
             padding: 6px 32px 6px 14px;
@@ -273,14 +272,14 @@ class CalendarPopupDialog(QDialog):
         self.calendar.setSelectedDate(QDate(current_date.year, current_date.month, current_date.day))
 
         # Format header days cleanly in muted grey
-        hdr_font = QFont("Segoe UI", 9, QFont.Weight.DemiBold)
+        hdr_font = get_font(9, QFont.Weight.DemiBold)
         hdr_fmt = QTextCharFormat()
         hdr_fmt.setForeground(QColor("#A1A1AA" if self.is_dark else "#71717A"))
         hdr_fmt.setFont(hdr_font)
         self.calendar.setHeaderTextFormat(hdr_fmt)
 
         # Neutralize weekend text to clean theme color
-        work_font = QFont("Segoe UI", 9)
+        work_font = get_font(9)
         work_fmt = QTextCharFormat()
         work_fmt.setForeground(QColor("#F4F4F5" if self.is_dark else "#18181B"))
         work_fmt.setFont(work_font)
@@ -313,7 +312,7 @@ class CalendarPopupDialog(QDialog):
                 border-radius: 6px;
                 padding: 6px;
                 font-family: {FONT_SANS};
-                font-size: 11.5px;
+                font-size: 11px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -438,7 +437,7 @@ class CreateSectionDialog(QDialog):
             QLabel {{
                 color: {title_color};
                 font-family: {FONT_SANS};
-                font-size: 14.5px;
+                font-size: 14px;
                 font-weight: 700;
             }}
         """)
@@ -503,7 +502,7 @@ class CreateSectionDialog(QDialog):
                 border-radius: 8px;
                 padding: 8px 16px;
                 font-family: {FONT_SANS};
-                font-size: 12.5px;
+                font-size: 12px;
                 font-weight: 500;
             }}
             QPushButton:hover {{
@@ -524,7 +523,7 @@ class CreateSectionDialog(QDialog):
                 border-radius: 8px;
                 padding: 8px 18px;
                 font-family: {FONT_SANS};
-                font-size: 12.5px;
+                font-size: 12px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -728,7 +727,7 @@ class SegmentedFilterBar(QWidget):
                         border: none;
                         border-radius: 7px;
                         font-family: {FONT_SANS};
-                        font-size: 12.5px;
+                        font-size: 12px;
                         font-weight: 600;
                         padding: 0 10px;
                     }}
@@ -741,7 +740,7 @@ class SegmentedFilterBar(QWidget):
                         border: none;
                         border-radius: 7px;
                         font-family: {FONT_SANS};
-                        font-size: 12.5px;
+                        font-size: 12px;
                         font-weight: 500;
                         padding: 0 10px;
                     }}
@@ -813,7 +812,7 @@ class SubtaskRowWidget(QWidget):
         self.customContextMenuRequested.connect(self._show_context_menu)
 
         self.label = EditableTaskLabel(subtask.title)
-        self.label.setFont(QFont("Segoe UI", 9))
+        self.label.setFont(get_font(9))
         self.label.setToolTip("Double-click or right-click to rename")
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.label.double_clicked.connect(self.start_renaming)
@@ -824,7 +823,7 @@ class SubtaskRowWidget(QWidget):
         edit_border = "#FAFAFA" if self.is_dark else "#18181B"
 
         self.edit_input = InlineEditInput(subtask.title, self)
-        self.edit_input.setFont(QFont("Segoe UI", 9))
+        self.edit_input.setFont(get_font(9))
         self.edit_input.setStyleSheet(f"""
             QLineEdit {{
                 background-color: {edit_bg};
@@ -876,7 +875,7 @@ class SubtaskRowWidget(QWidget):
             QLabel {{
                 color: {time_color};
                 font-family: {FONT_SANS};
-                font-size: 10.5px;
+                font-size: 11px;
                 font-weight: 500;
             }}
         """)
@@ -933,7 +932,7 @@ class SubtaskRowWidget(QWidget):
                     color: {done_color};
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
-                    font-size: 12.5px;
+                    font-size: 12px;
                 }}
             """)
         else:
@@ -942,7 +941,7 @@ class SubtaskRowWidget(QWidget):
                     color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
-                    font-size: 12.5px;
+                    font-size: 12px;
                 }}
             """)
 
@@ -1024,7 +1023,7 @@ class TaskRowWidget(QWidget):
         top_layout.addWidget(self.checkbox)
 
         self.label = EditableTaskLabel(task.title)
-        self.label.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
+        self.label.setFont(get_font(10, QFont.Weight.Medium))
         self.label.setToolTip("Double-click or right-click to rename")
         self.label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.label.double_clicked.connect(self.start_renaming)
@@ -1035,7 +1034,7 @@ class TaskRowWidget(QWidget):
         edit_border = "#FAFAFA" if self.is_dark else "#18181B"
 
         self.edit_input = InlineEditInput(task.title, self)
-        self.edit_input.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
+        self.edit_input.setFont(get_font(10, QFont.Weight.Medium))
         self.edit_input.setStyleSheet(f"""
             QLineEdit {{
                 background-color: {edit_bg};
@@ -1167,7 +1166,7 @@ class TaskRowWidget(QWidget):
                 border-radius: 6px;
                 padding: 4px 10px;
                 font-family: {FONT_SANS};
-                font-size: 11.5px;
+                font-size: 11px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -1282,7 +1281,7 @@ class TaskRowWidget(QWidget):
                     color: {done_color};
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
-                    font-size: 13.5px;
+                    font-size: 13px;
                 }}
             """)
         elif is_cancelled:
@@ -1292,7 +1291,7 @@ class TaskRowWidget(QWidget):
                     text-decoration: line-through;
                     font-style: italic;
                     font-family: {FONT_SANS};
-                    font-size: 13.5px;
+                    font-size: 13px;
                 }}
             """)
         elif is_in_progress:
@@ -1301,7 +1300,7 @@ class TaskRowWidget(QWidget):
                     color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
-                    font-size: 13.5px;
+                    font-size: 13px;
                     font-weight: 600;
                 }}
             """)
@@ -1311,7 +1310,7 @@ class TaskRowWidget(QWidget):
                     color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
-                    font-size: 13.5px;
+                    font-size: 13px;
                     font-weight: 500;
                 }}
             """)
@@ -1350,7 +1349,7 @@ class TaskRowWidget(QWidget):
                     selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
-                    font-size: 11.5px;
+                    font-size: 11px;
                 }}
             """)
         elif is_done:
@@ -1379,7 +1378,7 @@ class TaskRowWidget(QWidget):
                     selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
-                    font-size: 11.5px;
+                    font-size: 11px;
                 }}
             """)
         elif is_cancelled:
@@ -1408,7 +1407,7 @@ class TaskRowWidget(QWidget):
                     selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
-                    font-size: 11.5px;
+                    font-size: 11px;
                 }}
             """)
         else:
@@ -1447,7 +1446,7 @@ class TaskRowWidget(QWidget):
                     selection-color: {combo_popup_sel_text};
                     padding: 4px;
                     font-family: {FONT_SANS};
-                    font-size: 11.5px;
+                    font-size: 11px;
                 }}
             """)
 
@@ -1562,7 +1561,7 @@ class NoteRowWidget(QWidget):
         content_layout.setSpacing(2)
 
         self.label = QLabel(note.content)
-        self.label.setFont(QFont("Segoe UI", 10))
+        self.label.setFont(get_font(10))
         self._update_text_style(note.is_completed)
         content_layout.addWidget(self.label)
 
@@ -1706,7 +1705,7 @@ class NoteRowWidget(QWidget):
                     color: {done_color};
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
-                    font-size: 13.5px;
+                    font-size: 13px;
                 }}
             """)
         else:
@@ -1715,7 +1714,7 @@ class NoteRowWidget(QWidget):
                     color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
-                    font-size: 13.5px;
+                    font-size: 13px;
                     font-weight: 500;
                 }}
             """)
@@ -1751,7 +1750,7 @@ class ProjectGroupWidget(QWidget):
                 border: none;
                 text-align: left;
                 font-family: {FONT_SANS};
-                font-size: 14.5px;
+                font-size: 14px;
                 font-weight: 700;
                 color: {header_color};
                 padding: 4px 0;
@@ -1872,7 +1871,7 @@ class QuickEntryDialog(QDialog):
 
         # Dynamic Page Title
         self.page_title_lbl = QLabel("Tasks & To-Dos")
-        self.page_title_lbl.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        self.page_title_lbl.setFont(get_font(12, QFont.Weight.Bold))
         top_bar.addWidget(self.page_title_lbl)
 
         # Contextual Date Header (visible in tasks & activity)
@@ -2226,7 +2225,7 @@ class QuickEntryDialog(QDialog):
                 color: {date_btn_color};
                 border: none;
                 font-family: {FONT_MONO};
-                font-size: 13.5px;
+                font-size: 13px;
                 font-weight: 600;
                 padding: 4px 10px;
                 border-radius: 6px;
@@ -2282,7 +2281,7 @@ class QuickEntryDialog(QDialog):
                 border-radius: 8px;
                 padding: 6px 24px 6px 12px;
                 font-family: {FONT_SANS};
-                font-size: 12.5px;
+                font-size: 12px;
                 font-weight: 500;
                 min-width: 130px;
             }}
@@ -2302,7 +2301,7 @@ class QuickEntryDialog(QDialog):
                 selection-color: {combo_popup_sel_text};
                 padding: 4px;
                 font-family: {FONT_SANS};
-                font-size: 12.5px;
+                font-size: 12px;
             }}
         """
         self.project_combo.set_theme(self.is_dark)
@@ -2318,7 +2317,7 @@ class QuickEntryDialog(QDialog):
                 border-radius: 8px;
                 padding: 8px 16px;
                 font-family: {FONT_SANS};
-                font-size: 12.5px;
+                font-size: 12px;
                 font-weight: 600;
             }}
             QPushButton:hover {{

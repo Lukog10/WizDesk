@@ -10,6 +10,7 @@ from wiz.core.state_machine import MascotState, StateMachine
 from wiz.core.signals import app_signals
 from wiz.ui.mascot_widget import MascotWidget
 from wiz.ui.icons import get_app_icon
+from wiz.ui.fonts import FONT_SANS
 
 
 class MascotWindow(QWidget):
@@ -173,32 +174,32 @@ class MascotWindow(QWidget):
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         """Display right-click context menu on mascot."""
         menu = QMenu(self)
-        menu.setStyleSheet("""
-            QMenu {
+        menu.setStyleSheet(f"""
+            QMenu {{
                 background-color: #1E1E24;
                 color: #F7F3EA;
                 border: 1px solid #33333E;
                 border-radius: 8px;
                 padding: 6px;
-                font-family: 'Segoe UI', sans-serif;
+                font-family: {FONT_SANS};
                 font-size: 13px;
-            }
-            QMenu::item {
+            }}
+            QMenu::item {{
                 padding: 6px 30px 6px 12px;
                 border-radius: 4px;
-            }
-            QMenu::item:selected {
+            }}
+            QMenu::item:selected {{
                 background-color: #2D2D38;
                 color: #FFFFFF;
-            }
-            QMenu::right-arrow {
+            }}
+            QMenu::right-arrow {{
                 margin-right: 8px;
-            }
-            QMenu::separator {
+            }}
+            QMenu::separator {{
                 height: 1px;
                 background-color: #33333E;
                 margin: 4px 6px;
-            }
+            }}
         """)
 
         # Quick Note / Task Action

@@ -25,9 +25,7 @@ from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository
 from wiz.ui.popup_dialog import CreateSectionDialog
 from wiz.ui.arrow_combo import ArrowComboBox
-
-FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
-FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
+from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
 class QuickBarPopup(QDialog):
@@ -81,11 +79,11 @@ class QuickBarPopup(QDialog):
         hdr_layout.setSpacing(6)
 
         self.mode_badge = QLabel("✦ Quick Task")
-        self.mode_badge.setFont(QFont("Segoe UI", 9, QFont.Weight.DemiBold))
+        self.mode_badge.setFont(get_font(9, QFont.Weight.DemiBold))
         hdr_layout.addWidget(self.mode_badge)
 
         self.hint_label = QLabel("(Double-click Wiz for Task, Triple-click for Note)")
-        self.hint_label.setFont(QFont("Segoe UI", 8))
+        self.hint_label.setFont(get_font(8))
         hdr_layout.addWidget(self.hint_label)
 
         hdr_layout.addStretch()
@@ -301,7 +299,7 @@ class QuickBarPopup(QDialog):
                 border-radius: 8px;
                 padding: 6px 12px;
                 font-family: {FONT_SANS};
-                font-size: 12.5px;
+                font-size: 12px;
             }}
             QLineEdit:focus {{
                 background-color: {card_bg};

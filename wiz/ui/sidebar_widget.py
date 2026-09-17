@@ -27,8 +27,7 @@ from PyQt6.QtWidgets import (
 )
 
 from wiz.ui.icons import get_app_pixmap
-
-FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
+from wiz.ui.fonts import FONT_SANS, get_font
 
 
 class NavPillButton(QPushButton):
@@ -126,8 +125,7 @@ class NavPillButton(QPushButton):
 
         # 4. Text Label
         painter.setPen(text_color)
-        font = QFont("Segoe UI", 10)
-        font.setWeight(QFont.Weight.DemiBold if self.is_active else QFont.Weight.Medium)
+        font = get_font(10, QFont.Weight.DemiBold if self.is_active else QFont.Weight.Medium)
         painter.setFont(font)
 
         text_x = 42
@@ -142,8 +140,7 @@ class NavPillButton(QPushButton):
         # 5. Badge Pill (Right aligned if badge_count > 0)
         if self.badge_count > 0:
             badge_str = str(self.badge_count) if self.badge_count < 100 else "99+"
-            b_font = QFont("Segoe UI", 8)
-            b_font.setWeight(QFont.Weight.Bold)
+            b_font = get_font(8, QFont.Weight.Bold)
             painter.setFont(b_font)
 
             badge_text_w = max(18.0, float(len(badge_str) * 7 + 10))
@@ -267,7 +264,7 @@ class SideNavBar(QWidget):
         brand_layout.addWidget(self.logo_lbl)
 
         self.brand_title = QLabel("WizDesk")
-        self.brand_title.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+        self.brand_title.setFont(get_font(11, QFont.Weight.Bold))
         brand_layout.addWidget(self.brand_title)
 
         # Live status dot (Emerald #10B981)
@@ -282,7 +279,7 @@ class SideNavBar(QWidget):
 
         # 2. Section Header: Workspace
         self.workspace_lbl = QLabel("WORKSPACE")
-        self.workspace_lbl.setFont(QFont("Segoe UI", 8, QFont.Weight.Bold))
+        self.workspace_lbl.setFont(get_font(8, QFont.Weight.Bold))
         self.workspace_lbl.setStyleSheet("padding-left: 8px; margin-bottom: 2px;")
         self.main_layout.addWidget(self.workspace_lbl)
 
@@ -392,7 +389,7 @@ class SideNavBar(QWidget):
                 border: 1px solid {border_color};
                 border-radius: 6px;
                 font-family: {FONT_SANS};
-                font-size: 11.5px;
+                font-size: 11px;
                 font-weight: 500;
                 padding: 0 10px;
                 text-align: center;

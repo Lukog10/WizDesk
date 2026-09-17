@@ -36,6 +36,7 @@ from wiz.ui.chart_widgets import (
     AppUsageAnalyticsWidget,
     ProjectTrackingWidget,
 )
+from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
 PRESET_COLORS = [
@@ -88,7 +89,7 @@ class ProjectDialog(QDialog):
         layout.setSpacing(14)
 
         header_lbl = QLabel(title)
-        header_lbl.setFont(QFont("Inter", 14, QFont.Weight.Bold))
+        header_lbl.setFont(get_font(14, QFont.Weight.Bold))
         layout.addWidget(header_lbl)
 
         # Name Field
@@ -271,14 +272,14 @@ class ProjectSummaryCard(QFrame):
 
         # Project Name
         self.name_lbl = QLabel(data.get("name", "Project"))
-        self.name_lbl.setFont(QFont("Inter", 13, QFont.Weight.DemiBold))
+        self.name_lbl.setFont(get_font(13, QFont.Weight.DemiBold))
         top_row.addWidget(self.name_lbl)
         top_row.addStretch()
 
         # Tracked duration badge
         mins = data.get("tracked_minutes", 0.0)
         self.time_badge = QLabel(f"Tracked: {format_duration(mins)}")
-        self.time_badge.setFont(QFont("Inter", 11, QFont.Weight.Medium))
+        self.time_badge.setFont(get_font(11, QFont.Weight.Medium))
         self.time_badge.setObjectName("TimeBadge")
         top_row.addWidget(self.time_badge)
 
@@ -290,7 +291,7 @@ class ProjectSummaryCard(QFrame):
             desc_text = f"Keywords: {', '.join(data.get('keywords', []))}"
         if desc_text:
             self.desc_lbl = QLabel(desc_text)
-            self.desc_lbl.setFont(QFont("Inter", 10))
+            self.desc_lbl.setFont(get_font(10))
             self.desc_lbl.setObjectName("DescLabel")
             self.desc_lbl.setWordWrap(True)
             self.layout.addWidget(self.desc_lbl)
@@ -311,7 +312,7 @@ class ProjectSummaryCard(QFrame):
         progress_row.addWidget(self.progress_bar, 1)
 
         self.progress_lbl = QLabel(f"{completed_tasks}/{total_tasks} tasks ({pct}%)")
-        self.progress_lbl.setFont(QFont("Inter", 10))
+        self.progress_lbl.setFont(get_font(10))
         self.progress_lbl.setObjectName("ProgressText")
         progress_row.addWidget(self.progress_lbl)
 
@@ -323,13 +324,13 @@ class ProjectSummaryCard(QFrame):
             apps_row = QHBoxLayout()
             apps_row.setSpacing(6)
             apps_lbl = QLabel("Top apps:")
-            apps_lbl.setFont(QFont("Inter", 10))
+            apps_lbl.setFont(get_font(10))
             apps_lbl.setObjectName("ProgressText")
             apps_row.addWidget(apps_lbl)
 
             for app_name, app_mins in top_apps:
                 chip = QLabel(f"{app_name} ({format_duration(app_mins)})")
-                chip.setFont(QFont("Inter", 10))
+                chip.setFont(get_font(10))
                 chip.setObjectName("AppChip")
                 apps_row.addWidget(chip)
             apps_row.addStretch()
@@ -841,7 +842,7 @@ class ProjectsOverviewPage(QWidget):
                 color: {combo_text};
                 border: 1px solid {combo_border};
                 border-radius: 8px;
-                font-family: 'Inter', -apple-system, sans-serif;
+                font-family: {FONT_SANS};
                 font-size: 11px;
                 font-weight: 500;
                 padding: 2px 24px 2px 10px;
@@ -862,7 +863,7 @@ class ProjectsOverviewPage(QWidget):
                 selection-background-color: {combo_popup_sel_bg};
                 selection-color: {combo_text};
                 padding: 4px;
-                font-family: 'Inter', -apple-system, sans-serif;
+                font-family: {FONT_SANS};
                 font-size: 11px;
             }}
         """)
@@ -931,7 +932,7 @@ class ProjectDetailPage(QWidget):
         nav_row.addWidget(self.color_dot)
 
         self.title_lbl = QLabel("Project Details")
-        self.title_lbl.setFont(QFont("Inter", 14, QFont.Weight.Bold))
+        self.title_lbl.setFont(get_font(14, QFont.Weight.Bold))
         nav_row.addWidget(self.title_lbl)
         nav_row.addStretch()
 
@@ -1182,7 +1183,7 @@ class ProjectDetailPage(QWidget):
 
         if not tasks:
             empty = QLabel("No tasks tagged to this project yet.")
-            empty.setFont(QFont("Inter", 11))
+            empty.setFont(get_font(11))
             empty.setStyleSheet("color: #71717A; padding: 20px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tasks_content_layout.addWidget(empty)
@@ -1205,12 +1206,12 @@ class ProjectDetailPage(QWidget):
             t_row.addWidget(status_dot)
 
             t_title = QLabel(task.title)
-            t_title.setFont(QFont("Inter", 12, QFont.Weight.Medium))
+            t_title.setFont(get_font(12, QFont.Weight.Medium))
             t_row.addWidget(t_title)
             t_row.addStretch()
 
             status_lbl = QLabel(task.status.replace("_", " ").title())
-            status_lbl.setFont(QFont("Inter", 10))
+            status_lbl.setFont(get_font(10))
             status_lbl.setStyleSheet(f"color: {status_color}; font-weight: 600;")
             t_row.addWidget(status_lbl)
 
@@ -1224,7 +1225,7 @@ class ProjectDetailPage(QWidget):
                 s_dot = QLabel("•")
                 s_dot.setStyleSheet("color: #71717A;")
                 s_title = QLabel(sub.title)
-                s_title.setFont(QFont("Inter", 11))
+                s_title.setFont(get_font(11))
                 s_title.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #555550;")
                 s_row.addWidget(s_dot)
                 s_row.addWidget(s_title)
@@ -1243,7 +1244,7 @@ class ProjectDetailPage(QWidget):
 
         if not apps:
             empty = QLabel("No application usage logged for this project in the selected timeframe.")
-            empty.setFont(QFont("Inter", 11))
+            empty.setFont(get_font(11))
             empty.setStyleSheet("color: #71717A; padding: 20px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.apps_content_layout.addWidget(empty)
@@ -1258,14 +1259,14 @@ class ProjectDetailPage(QWidget):
 
             row = QHBoxLayout()
             app_lbl = QLabel(app_info.get("app_name", "Unknown"))
-            app_lbl.setFont(QFont("Inter", 12, QFont.Weight.Medium))
+            app_lbl.setFont(get_font(12, QFont.Weight.Medium))
             row.addWidget(app_lbl)
             row.addStretch()
 
             mins = app_info.get("minutes", 0.0)
             pct = app_info.get("percentage", 0.0)
             stat_lbl = QLabel(f"{format_duration(mins)} ({pct}%)")
-            stat_lbl.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
+            stat_lbl.setFont(get_font(11, QFont.Weight.DemiBold))
             row.addWidget(stat_lbl)
             c_layout.addLayout(row)
 
@@ -1273,7 +1274,7 @@ class ProjectDetailPage(QWidget):
             bar.setRange(0, 100)
             bar.setValue(int(round(pct)))
             bar.setTextVisible(False)
-            bar.setFixedHeight(6)
+            bar.setFixedHeight(5)
             c_layout.addWidget(bar)
 
             self.apps_content_layout.addWidget(card)
@@ -1293,11 +1294,11 @@ class ProjectDetailPage(QWidget):
         c_layout.setSpacing(10)
 
         d_title = QLabel("Description:")
-        d_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
+        d_title.setFont(get_font(11, QFont.Weight.DemiBold))
         c_layout.addWidget(d_title)
 
         d_val = QLabel(description or "No description provided.")
-        d_val.setFont(QFont("Inter", 11))
+        d_val.setFont(get_font(11))
         d_val.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #555550;")
         d_val.setWordWrap(True)
         c_layout.addWidget(d_val)
@@ -1305,12 +1306,12 @@ class ProjectDetailPage(QWidget):
         c_layout.addSpacing(6)
 
         k_title = QLabel("Auto-Tracking Matching Keywords:")
-        k_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
+        k_title.setFont(get_font(11, QFont.Weight.DemiBold))
         c_layout.addWidget(k_title)
 
         if not keywords:
             k_val = QLabel("No keywords configured. Window titles will not be auto-tagged to this project.")
-            k_val.setFont(QFont("Inter", 11))
+            k_val.setFont(get_font(11))
             k_val.setStyleSheet("color: #71717A;")
             c_layout.addWidget(k_val)
         else:
@@ -1318,7 +1319,7 @@ class ProjectDetailPage(QWidget):
             chips_layout.setSpacing(6)
             for kw in keywords:
                 chip = QLabel(kw)
-                chip.setFont(QFont("Inter", 10))
+                chip.setFont(get_font(10))
                 chip.setObjectName("KeywordChip")
                 chips_layout.addWidget(chip)
             chips_layout.addStretch()
@@ -1529,7 +1530,7 @@ class ProjectDetailPage(QWidget):
                 color: {combo_text};
                 border: 1px solid {combo_border};
                 border-radius: 8px;
-                font-family: 'Inter', -apple-system, sans-serif;
+                font-family: {FONT_SANS};
                 font-size: 11px;
                 font-weight: 500;
                 padding: 2px 24px 2px 10px;
@@ -1550,7 +1551,7 @@ class ProjectDetailPage(QWidget):
                 selection-background-color: {combo_popup_sel_bg};
                 selection-color: {combo_text};
                 padding: 4px;
-                font-family: 'Inter', -apple-system, sans-serif;
+                font-family: {FONT_SANS};
                 font-size: 11px;
             }}
         """)

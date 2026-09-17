@@ -29,8 +29,7 @@ from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.storage.models import StorageRepository
 
-FONT_SANS = "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif"
-FONT_MONO = "'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', 'SF Mono', monospace"
+from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
 class _CallableBool(int):
@@ -175,13 +174,13 @@ class SettingsView(QWidget):
         obs_box.setSpacing(4)
 
         self.obs_title = QLabel("Obsidian Vault Integration")
-        self.obs_title.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        self.obs_title.setFont(get_font(10, QFont.Weight.DemiBold))
         obs_box.addWidget(self.obs_title)
 
         self.obs_desc = QLabel(
             "Select your local Obsidian Vault folder to automatically sync your daily Markdown logs."
         )
-        self.obs_desc.setFont(QFont("Segoe UI", 9))
+        self.obs_desc.setFont(get_font(9))
         obs_box.addWidget(self.obs_desc)
 
         vault_input_layout = QHBoxLayout()
@@ -212,7 +211,7 @@ class SettingsView(QWidget):
         pref_box.setSpacing(10)
 
         self.pref_title = QLabel("General & Tracking Preferences")
-        self.pref_title.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        self.pref_title.setFont(get_font(10, QFont.Weight.DemiBold))
         pref_box.addWidget(self.pref_title)
 
         # Preference Row 1: Floating bob animation
@@ -228,7 +227,7 @@ class SettingsView(QWidget):
         pref_row_1.addWidget(self.float_anim_check)
 
         self.anim_lbl = QLabel("Enable floating mascot animation")
-        self.anim_lbl.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        self.anim_lbl.setFont(get_font(9, QFont.Weight.Medium))
         self.anim_lbl.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.anim_lbl.mousePressEvent = (
             lambda e: self.float_anim_check.setChecked(
@@ -245,7 +244,7 @@ class SettingsView(QWidget):
         pref_row_2.setSpacing(10)
 
         self.interval_lbl = QLabel("Auto-tracking interval:")
-        self.interval_lbl.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        self.interval_lbl.setFont(get_font(9, QFont.Weight.Medium))
         pref_row_2.addWidget(self.interval_lbl)
 
         self.interval_spin = QSpinBox()
@@ -272,13 +271,13 @@ class SettingsView(QWidget):
         proj_box.setSpacing(8)
 
         self.proj_title = QLabel("Project Auto-Tagging Keywords")
-        self.proj_title.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        self.proj_title.setFont(get_font(10, QFont.Weight.DemiBold))
         proj_box.addWidget(self.proj_title)
 
         self.proj_desc = QLabel(
             "Active windows matching these keywords are automatically categorized into project sections."
         )
-        self.proj_desc.setFont(QFont("Segoe UI", 9))
+        self.proj_desc.setFont(get_font(9))
         proj_box.addWidget(self.proj_desc)
 
         self.proj_table = QTableWidget()
@@ -332,7 +331,7 @@ class SettingsView(QWidget):
 
         # Saved feedback pill
         self.status_pill = QLabel("All settings up to date")
-        self.status_pill.setFont(QFont("Segoe UI", 9, QFont.Weight.Medium))
+        self.status_pill.setFont(get_font(9, QFont.Weight.Medium))
         bottom_bar.addWidget(self.status_pill)
 
         bottom_bar.addStretch()
@@ -376,9 +375,8 @@ class SettingsView(QWidget):
         projects = self.repo.get_all_projects()
         self.proj_table.setRowCount(len(projects))
 
-        font_name = QFont("Segoe UI", 9)
-        font_name.setWeight(QFont.Weight.Normal)
-        font_kw = QFont("JetBrains Mono", 8)
+        font_name = get_font(9)
+        font_kw = get_font(8, mono=True)
 
         name_color = QColor("#D4D4D8" if self.is_dark else "#52525B")
         kw_color = QColor("#A1A1AA" if self.is_dark else "#71717A")
@@ -557,7 +555,7 @@ class SettingsView(QWidget):
                 border-radius: 8px;
                 padding: 6px 14px;
                 font-family: {FONT_SANS};
-                font-size: 11.5px;
+                font-size: 11px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -574,7 +572,7 @@ class SettingsView(QWidget):
                 border-radius: 8px;
                 padding: 6px 14px;
                 font-family: {FONT_SANS};
-                font-size: 11.5px;
+                font-size: 11px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -583,25 +581,23 @@ class SettingsView(QWidget):
         """)
 
         # Save Button (Brand Indigo #6366F1)
-        self.save_btn.setStyleSheet("""
-            QPushButton {
+        self.save_btn.setStyleSheet(f"""
+            QPushButton {{
                 background-color: #6366F1;
                 color: #FFFFFF;
                 border: none;
                 border-radius: 8px;
                 padding: 7px 22px;
-                font-family: """
-            + FONT_SANS
-            + """;
-                font-size: 12.5px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
                 font-weight: 600;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: #4F46E5;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #4338CA;
-            }
+            }}
         """)
 
         # Dividers

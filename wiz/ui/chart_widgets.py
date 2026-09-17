@@ -35,8 +35,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
 )
 
-FONT_SANS = "'Inter', 'Segoe UI', -apple-system, sans-serif"
-FONT_MONO = "'JetBrains Mono', 'Consolas', monospace"
+from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
 class MicroSparklineCanvas(QWidget):
@@ -170,12 +169,12 @@ class KpiStatCard(QFrame):
         self.lbl_value = QLabel(value)
         self.lbl_value.setObjectName("KpiValue")
         initial_size = 15 if len(value) > 7 else 18
-        self.lbl_value.setFont(QFont("Inter", initial_size, QFont.Weight.Bold))
+        self.lbl_value.setFont(get_font(initial_size, QFont.Weight.Bold))
         val_row.addWidget(self.lbl_value)
 
         self.lbl_change = QLabel(change_text)
         self.lbl_change.setObjectName("KpiChangeBadge")
-        self.lbl_change.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
+        self.lbl_change.setFont(get_font(8, QFont.Weight.DemiBold))
         self.lbl_change.setVisible(bool(change_text))
         val_row.addWidget(self.lbl_change)
         val_row.addStretch()
@@ -185,7 +184,7 @@ class KpiStatCard(QFrame):
         # Title row
         self.lbl_title = QLabel(title)
         self.lbl_title.setObjectName("KpiTitle")
-        self.lbl_title.setFont(QFont("Inter", 9, QFont.Weight.Medium))
+        self.lbl_title.setFont(get_font(9, QFont.Weight.Medium))
         layout.addWidget(self.lbl_title)
 
         # Subtitle preserved for backward compatibility
@@ -250,7 +249,7 @@ class KpiStatCard(QFrame):
             font_size = 13
         elif len(value) > 8:
             font_size = 15
-        self.lbl_value.setFont(QFont("Inter", font_size, QFont.Weight.Bold))
+        self.lbl_value.setFont(get_font(font_size, QFont.Weight.Bold))
 
         self.lbl_change.setText(change_text)
         self.lbl_change.setVisible(bool(change_text))
@@ -296,7 +295,7 @@ class KpiStatCard(QFrame):
                     border: none;
                     border-radius: 6px;
                     padding: 0px 4px;
-                    font-size: 7.5px;
+                    font-size: 8px;
                 }
                 QFrame#KpiHeroCard:hover QLabel#KpiChangeBadge {
                     background-color: rgba(255, 255, 255, 0.3);
@@ -383,7 +382,7 @@ class KpiStatCard(QFrame):
             """)
             val_font_size = "15px" if len(self.value_text) > 7 else "18px"
             self.lbl_value.setStyleSheet(f"color: {text_color}; font-size: {val_font_size}; font-weight: bold; border: none; background: transparent;")
-            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 8.5px;")
+            self.lbl_subtitle.setStyleSheet(f"color: {sub_color}; border: none; background: transparent; font-size: 9px;")
             self.lbl_change.setStyleSheet(f"""
                 QLabel#KpiChangeBadge {{
                     background-color: {badge_bg};
@@ -559,7 +558,7 @@ class ProjectComparisonCanvas(QWidget):
             ticks = [float(i * step) for i in range(5)]
 
         # 2. Draw horizontal grid lines & Y-axis labels
-        painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        painter.setFont(get_font(8, QFont.Weight.Medium))
         for tick in ticks:
             y = margin_top + plot_h - (tick / y_max * plot_h)
             # Dashed gridline
@@ -582,10 +581,10 @@ class ProjectComparisonCanvas(QWidget):
             is_hovered_label = (self.hover_bucket_idx == i)
             if is_hovered_label:
                 painter.setPen(QColor("#FFFFFF" if self.is_dark else "#111111"))
-                painter.setFont(QFont("Inter", 8, QFont.Weight.Bold))
+                painter.setFont(get_font(8, QFont.Weight.Bold))
             else:
                 painter.setPen(text_color)
-                painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+                painter.setFont(get_font(8, QFont.Weight.Medium))
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, label)
 
         # 4. Draw Day Background Slots & Hover Shaded Column Highlight
@@ -764,11 +763,11 @@ class ProjectComparisonCanvas(QWidget):
                     active_rows.append((s.get("color", "#6366F1"), s.get("name", "Project"), val))
 
             if active_rows:
-                painter.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
+                painter.setFont(get_font(9, QFont.Weight.DemiBold))
                 title_text = f"{b_name}"
                 total_badge_text = f"{total_b_hours:.1f}h total"
 
-                painter.setFont(QFont("Inter", 8, QFont.Weight.Normal))
+                painter.setFont(get_font(8, QFont.Weight.Normal))
                 fm_sub = painter.fontMetrics()
                 max_name_w = 0
                 for _, name, h_val in active_rows:
@@ -810,12 +809,12 @@ class ProjectComparisonCanvas(QWidget):
                 painter.strokePath(card_path, QPen(card_border, 1.0))
 
                 # Header text
-                painter.setFont(QFont("Inter", 9, QFont.Weight.Bold))
+                painter.setFont(get_font(9, QFont.Weight.Bold))
                 painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
                 painter.drawText(QRectF(card_x + 10, card_y + 5, card_w - 65, 16), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, title_text)
 
                 # Total badge
-                painter.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
+                painter.setFont(get_font(8, QFont.Weight.DemiBold))
                 painter.setPen(QColor("#818CF8" if self.is_dark else "#4F46E5"))
                 painter.drawText(QRectF(card_x + card_w - 62, card_y + 5, 52, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, total_badge_text)
 
@@ -825,7 +824,7 @@ class ProjectComparisonCanvas(QWidget):
 
                 # Project rows
                 curr_y = card_y + 27
-                painter.setFont(QFont("Inter", 8, QFont.Weight.Normal))
+                painter.setFont(get_font(8, QFont.Weight.Normal))
                 for color_hex, name, h_val in active_rows:
                     # Color dot
                     painter.setBrush(QColor(color_hex))
@@ -860,7 +859,7 @@ class ProjectComparisonChartWidget(QFrame):
         header_row.setSpacing(8)
 
         self.lbl_title = QLabel("Statistics")
-        self.lbl_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
+        self.lbl_title.setFont(get_font(11, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
 
@@ -897,10 +896,10 @@ class ProjectComparisonChartWidget(QFrame):
         m1_col.setSpacing(1)
         self.lbl_sub1_title = QLabel("Tracked Hours")
         self.lbl_sub1_title.setObjectName("SubmetricTitle")
-        self.lbl_sub1_title.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_sub1_title.setFont(get_font(8, QFont.Weight.Medium))
         self.lbl_sub1_val = QLabel("0.0h")
         self.lbl_sub1_val.setObjectName("SubmetricVal")
-        self.lbl_sub1_val.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+        self.lbl_sub1_val.setFont(get_font(13, QFont.Weight.Bold))
         m1_col.addWidget(self.lbl_sub1_title)
         m1_col.addWidget(self.lbl_sub1_val)
         self.submetrics_row.addLayout(m1_col)
@@ -913,10 +912,10 @@ class ProjectComparisonChartWidget(QFrame):
         m2_col.setSpacing(1)
         self.lbl_sub2_title = QLabel("Peak Period")
         self.lbl_sub2_title.setObjectName("SubmetricTitle")
-        self.lbl_sub2_title.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_sub2_title.setFont(get_font(8, QFont.Weight.Medium))
         self.lbl_sub2_val = QLabel("0.0h")
         self.lbl_sub2_val.setObjectName("SubmetricVal")
-        self.lbl_sub2_val.setFont(QFont("Inter", 13, QFont.Weight.Bold))
+        self.lbl_sub2_val.setFont(get_font(13, QFont.Weight.Bold))
         m2_col.addWidget(self.lbl_sub2_title)
         m2_col.addWidget(self.lbl_sub2_val)
         self.submetrics_row.addLayout(m2_col)
@@ -996,7 +995,7 @@ class ProjectComparisonChartWidget(QFrame):
             if len(name) > 12:
                 name = name[:11] + "…"
             name_lbl = QLabel(f"{name} ({s.get('total_hours', 0):.1f}h)")
-            name_lbl.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+            name_lbl.setFont(get_font(8, QFont.Weight.Medium))
             name_lbl.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #71717A;")
             pill_layout.addWidget(name_lbl)
 
@@ -1291,7 +1290,7 @@ class AppUsageDonutCanvas(QWidget):
             pct_str = f"{int(round(pct))}%" if (isinstance(pct, (int, float)) and pct == int(pct)) else f"{pct}%"
             app_color = QColor(app.get("color", "#3B82F6")).lighter(120 if self.is_dark else 100)
 
-            font_title = QFont("Inter", 10, QFont.Weight.Bold)
+            font_title = get_font(10, QFont.Weight.Bold)
             fm_t = QFontMetrics(font_title)
             if fm_t.horizontalAdvance(app_name) > 74:
                 font_title.setPointSize(8)
@@ -1300,7 +1299,7 @@ class AppUsageDonutCanvas(QWidget):
             painter.drawText(QRectF(cx - 40, cy - 15, 80, 16), Qt.AlignmentFlag.AlignCenter, app_name)
 
             stat_text = f"{hours}h ({pct_str})"
-            font_stat = QFont("Inter", 8, QFont.Weight.DemiBold)
+            font_stat = get_font(8, QFont.Weight.DemiBold)
             fm_s = QFontMetrics(font_stat)
             if fm_s.horizontalAdvance(stat_text) > 74:
                 font_stat.setPointSize(7)
@@ -1309,12 +1308,12 @@ class AppUsageDonutCanvas(QWidget):
             painter.drawText(QRectF(cx - 40, cy + 2, 80, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
         else:
             hours_str = f"{self.total_hours}h"
-            painter.setFont(QFont("Inter", 14, QFont.Weight.Bold))
+            painter.setFont(get_font(14, QFont.Weight.Bold))
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
             text_rect = QRectF(cx - 40, cy - 13, 80, 18)
             painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
 
-            painter.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+            painter.setFont(get_font(8, QFont.Weight.Medium))
             painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
             sub_rect = QRectF(cx - 40, cy + 6, 80, 14)
             painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
@@ -1368,12 +1367,12 @@ class ProjectTargetRow(QFrame):
         header.addWidget(dot)
 
         self.lbl_name = QLabel(self.project_name)
-        self.lbl_name.setFont(QFont("Inter", 9, QFont.Weight.DemiBold))
+        self.lbl_name.setFont(get_font(9, QFont.Weight.DemiBold))
         header.addWidget(self.lbl_name, 1)
 
         stat_str = f"{self.hours:.1f}h ({self.pct}%)" if self.hours > 0 else f"{self.pct}%"
         self.lbl_stat = QLabel(stat_str)
-        self.lbl_stat.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_stat.setFont(get_font(8, QFont.Weight.Medium))
         self.lbl_stat.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         header.addWidget(self.lbl_stat)
 
@@ -1462,19 +1461,19 @@ class ProjectTrackingWidget(QFrame):
         header_row.setSpacing(6)
 
         self.lbl_title = QLabel("Project Tracking")
-        self.lbl_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
+        self.lbl_title.setFont(get_font(11, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
 
         self.lbl_targets_count = QLabel("0 Active")
         self.lbl_targets_count.setObjectName("TargetsBadge")
-        self.lbl_targets_count.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_targets_count.setFont(get_font(8, QFont.Weight.Medium))
         header_row.addWidget(self.lbl_targets_count)
 
         layout.addLayout(header_row)
 
         self.lbl_subtitle = QLabel("Target vs Actual progress")
-        self.lbl_subtitle.setFont(QFont("Inter", 8))
+        self.lbl_subtitle.setFont(get_font(8))
         layout.addWidget(self.lbl_subtitle)
 
         # Scroll Area for Target Rows
@@ -1517,7 +1516,7 @@ class ProjectTrackingWidget(QFrame):
 
         if not display_projects:
             empty = QLabel("No active projects. Click '+ New Project' to start.")
-            empty.setFont(QFont("Inter", 8))
+            empty.setFont(get_font(8))
             empty.setStyleSheet("color: #71717A; padding: 6px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.targets_layout.addWidget(empty)
@@ -1645,7 +1644,7 @@ class AppUsageAnalyticsWidget(QFrame):
         header_row.setSpacing(6)
 
         self.lbl_title = QLabel("Distribution")
-        self.lbl_title.setFont(QFont("Inter", 11, QFont.Weight.DemiBold))
+        self.lbl_title.setFont(get_font(11, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
 
@@ -1734,13 +1733,13 @@ class AppUsageAnalyticsWidget(QFrame):
         targets_header_layout.setSpacing(6)
 
         self.lbl_targets_title = QLabel("Project Targets")
-        self.lbl_targets_title.setFont(QFont("Inter", 10, QFont.Weight.DemiBold))
+        self.lbl_targets_title.setFont(get_font(10, QFont.Weight.DemiBold))
         targets_header_layout.addWidget(self.lbl_targets_title)
         targets_header_layout.addStretch()
 
         self.lbl_targets_count = QLabel("0 Active")
         self.lbl_targets_count.setObjectName("TargetsBadge")
-        self.lbl_targets_count.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+        self.lbl_targets_count.setFont(get_font(8, QFont.Weight.Medium))
         targets_header_layout.addWidget(self.lbl_targets_count)
         layout.addWidget(self.targets_header)
 
@@ -1788,7 +1787,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
         if not display_projects:
             empty = QLabel("No active projects. Click '+ New Project' to start.")
-            empty.setFont(QFont("Inter", 8))
+            empty.setFont(get_font(8))
             empty.setStyleSheet("color: #71717A; padding: 6px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.targets_layout.addWidget(empty)
@@ -1828,7 +1827,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
         if not apps:
             empty = QLabel("No app activity")
-            empty.setFont(QFont("Inter", 8))
+            empty.setFont(get_font(8))
             empty.setStyleSheet("color: #71717A; padding: 2px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.donut_list_layout.addWidget(empty)
@@ -1851,11 +1850,11 @@ class AppUsageAnalyticsWidget(QFrame):
             if len(app_name) > 8:
                 app_name = app_name[:7] + "…"
             name_lbl = QLabel(app_name)
-            name_lbl.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+            name_lbl.setFont(get_font(8, QFont.Weight.Medium))
             row.addWidget(name_lbl)
 
             pct_lbl = QLabel(f"{int(round(app.get('percentage', 0)))}%")
-            pct_lbl.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
+            pct_lbl.setFont(get_font(8, QFont.Weight.DemiBold))
             pct_color = "#10B981" if self.is_dark else "#059669"
             pct_lbl.setStyleSheet(f"color: {pct_color};")
             row.addWidget(pct_lbl)
@@ -1881,7 +1880,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
         if not apps:
             empty = QLabel("No application activity recorded.")
-            empty.setFont(QFont("Inter", 8))
+            empty.setFont(get_font(8))
             empty.setStyleSheet("color: #71717A; padding: 10px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.bar_page_layout.addWidget(empty)
@@ -1904,11 +1903,11 @@ class AppUsageAnalyticsWidget(QFrame):
             row.addWidget(dot)
 
             name_lbl = QLabel(app["app_name"])
-            name_lbl.setFont(QFont("Inter", 8, QFont.Weight.Medium))
+            name_lbl.setFont(get_font(8, QFont.Weight.Medium))
             row.addWidget(name_lbl, 1)
 
             stat_lbl = QLabel(f"{app.get('hours', 0.0)}h ({app.get('percentage', 0)}%)")
-            stat_lbl.setFont(QFont("Inter", 8, QFont.Weight.DemiBold))
+            stat_lbl.setFont(get_font(8, QFont.Weight.DemiBold))
             stat_lbl.setStyleSheet("color: #A1A1AA;" if self.is_dark else "color: #71717A;")
             stat_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             row.addWidget(stat_lbl)
