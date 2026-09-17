@@ -905,8 +905,8 @@ class StorageRepository:
                 if 0 <= b_idx < num_buckets:
                     project_bucket_mins[proj_name][b_idx] += dur
 
-            # Build app breakdown list
-            APP_PALETTE = ["#3B82F6", "#10B981", "#F59E0B", "#EC4899", "#8B5CF6", "#06B6D4", "#F43F5E", "#64748B"]
+            # Build app breakdown list using WizDesk brand palette
+            APP_PALETTE = ["#6366F1", "#10B981", "#818CF8", "#06B6D4", "#F59E0B", "#EC4899", "#8B5CF6", "#14B8A6"]
             apps_list = []
             for idx, (app_name, mins) in enumerate(sorted(app_durations.items(), key=lambda x: x[1], reverse=True)):
                 pct = round((mins / total_minutes * 100), 1) if total_minutes > 0 else 0.0
