@@ -569,7 +569,7 @@ class ProjectsOverviewPage(QWidget):
         self.right_column.setContentsMargins(0, 0, 0, 0)
         self.right_column.setSpacing(8)
 
-        # App Distribution Donut Card (Fixed height 236px, zero stretch)
+        # App Distribution Donut Card (Fixed height 296px, zero stretch)
         self.apps_widget = AppUsageAnalyticsWidget(is_dark=self.is_dark, show_targets=False, parent=self.scroll_content)
         self.apps_widget.project_selected.connect(self.project_selected.emit)
         self.apps_widget.new_project_clicked.connect(self.new_project_clicked.emit)

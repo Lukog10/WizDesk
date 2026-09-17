@@ -1120,7 +1120,7 @@ class AppUsageDonutCanvas(QWidget):
         self.hover_pos: Optional[QPoint] = None
 
         self.setMouseTracking(True)
-        self.setFixedSize(136, 136)
+        self.setFixedSize(160, 160)
 
     @property
     def hovered_ring_idx(self) -> Optional[int]:
@@ -1187,8 +1187,8 @@ class AppUsageDonutCanvas(QWidget):
         dy = pos.y() - cy
         d = math.hypot(dx, dy)
 
-        inner_r = 31.0
-        outer_r = 57.0
+        inner_r = 38.0
+        outer_r = 72.0
         apps = self._get_active_apps()
 
         found_idx = None
@@ -1230,8 +1230,8 @@ class AppUsageDonutCanvas(QWidget):
         cx = w / 2.0
         cy = h / 2.0
 
-        base_outer_r = 54.0
-        base_inner_r = 33.0
+        base_outer_r = 66.0
+        base_inner_r = 44.0
         track_color = QColor("#333338" if self.is_dark else "#ECECF0")
 
         apps = self._get_active_apps()
@@ -1322,30 +1322,30 @@ class AppUsageDonutCanvas(QWidget):
 
             font_title = get_font(10, QFont.Weight.Bold)
             fm_t = QFontMetrics(font_title)
-            if fm_t.horizontalAdvance(app_name) > 74:
+            if fm_t.horizontalAdvance(app_name) > 68:
                 font_title.setPointSize(8)
             painter.setFont(font_title)
             painter.setPen(app_color)
-            painter.drawText(QRectF(cx - 40, cy - 15, 80, 16), Qt.AlignmentFlag.AlignCenter, app_name)
+            painter.drawText(QRectF(cx - 36, cy - 14, 72, 16), Qt.AlignmentFlag.AlignCenter, app_name)
 
             stat_text = f"{hours}h ({pct_str})"
             font_stat = get_font(8, QFont.Weight.DemiBold)
             fm_s = QFontMetrics(font_stat)
-            if fm_s.horizontalAdvance(stat_text) > 74:
+            if fm_s.horizontalAdvance(stat_text) > 68:
                 font_stat.setPointSize(7)
             painter.setFont(font_stat)
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
-            painter.drawText(QRectF(cx - 40, cy + 2, 80, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
+            painter.drawText(QRectF(cx - 36, cy + 3, 72, 14), Qt.AlignmentFlag.AlignCenter, stat_text)
         else:
             hours_str = f"{self.total_hours}h"
-            painter.setFont(get_font(14, QFont.Weight.Bold))
+            painter.setFont(get_font(15, QFont.Weight.Bold))
             painter.setPen(QColor("#FAFAFA" if self.is_dark else "#111111"))
-            text_rect = QRectF(cx - 40, cy - 13, 80, 18)
+            text_rect = QRectF(cx - 36, cy - 14, 72, 18)
             painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, hours_str)
 
-            painter.setFont(get_font(8, QFont.Weight.Medium))
+            painter.setFont(get_font(7, QFont.Weight.Medium))
             painter.setPen(QColor("#71717A" if self.is_dark else "#A1A1AA"))
-            sub_rect = QRectF(cx - 40, cy + 6, 80, 14)
+            sub_rect = QRectF(cx - 36, cy + 5, 72, 12)
             painter.drawText(sub_rect, Qt.AlignmentFlag.AlignCenter, "Total Tracked")
 
 
@@ -1494,10 +1494,11 @@ class ProjectTrackingWidget(QFrame):
 
         # Header Row: Title + Active Badge
         header_row = QHBoxLayout()
-        header_row.setSpacing(6)
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(4)
 
         self.lbl_title = QLabel("Project Tracking")
-        self.lbl_title.setFont(get_font(11, QFont.Weight.DemiBold))
+        self.lbl_title.setFont(get_font(10, QFont.Weight.DemiBold))
         header_row.addWidget(self.lbl_title)
         header_row.addStretch()
 
@@ -1536,7 +1537,7 @@ class ProjectTrackingWidget(QFrame):
         return QSize(180, 160)
 
     def sizeHint(self) -> QSize:
-        return QSize(240, 260)
+        return QSize(240, 228)
 
     def set_project_targets(self, projects: List[Dict[str, Any]], total_hours: float) -> None:
         """Render catchy minimalist project progress targets matching reference design."""
@@ -1677,7 +1678,7 @@ class AppUsageAnalyticsWidget(QFrame):
         self.total_hours: float = 0.0
         self.setObjectName("AppUsageCard")
         if not self.show_targets:
-            self.setFixedHeight(236)
+            self.setFixedHeight(296)
         self.setMinimumWidth(0)
 
         layout = QVBoxLayout(self)
@@ -1805,12 +1806,12 @@ class AppUsageAnalyticsWidget(QFrame):
 
     def minimumSizeHint(self) -> QSize:
         if not self.show_targets:
-            return QSize(180, 236)
+            return QSize(180, 296)
         return QSize(180, 280)
 
     def sizeHint(self) -> QSize:
         if not self.show_targets:
-            return QSize(240, 236)
+            return QSize(240, 296)
         return QSize(260, 360)
 
     def set_data(self, apps_data: List[Dict[str, Any]], total_hours: float) -> None:
@@ -1894,8 +1895,8 @@ class AppUsageAnalyticsWidget(QFrame):
             row_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             row_frame.setMinimumWidth(0)
             row = QHBoxLayout(row_frame)
-            row.setContentsMargins(4, 2, 4, 2)
-            row.setSpacing(3)
+            row.setContentsMargins(2, 1, 2, 1)
+            row.setSpacing(2)
 
             dot = QFrame()
             dot.setFixedSize(6, 6)
@@ -1903,8 +1904,8 @@ class AppUsageAnalyticsWidget(QFrame):
             row.addWidget(dot)
 
             app_name = app["app_name"]
-            if len(app_name) > 8:
-                app_name = app_name[:7] + "…"
+            if len(app_name) > 10:
+                app_name = app_name[:9] + "…"
             name_lbl = QLabel(app_name)
             name_lbl.setFont(get_font(8, QFont.Weight.Medium))
             row.addWidget(name_lbl)

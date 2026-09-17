@@ -671,14 +671,14 @@ def test_app_usage_ring_canvas_hover(qapp):
     # Initial state
     assert canvas.hovered_segment_idx is None
 
-    # Center is (70, 70).
+    # Center is (80, 80).
     # Total val = 8 + 4 + 2 = 14.0
     # Slice 0 (VS Code): 8/14 = 57.1% (from 0° to 205.7° clockwise from 12 o'clock)
-    # Point at (70, 15) is dx=0, dy=-55 (12 o'clock, radius=55) -> Slice 0
+    # Point at (80, 25) is dx=0, dy=-55 (12 o'clock, radius=55) -> Slice 0
     move_ev = QMouseEvent(
         QEvent.Type.MouseMove,
-        QPointF(70.0, 15.0),
-        QPointF(70.0, 15.0),
+        QPointF(80.0, 25.0),
+        QPointF(80.0, 25.0),
         Qt.MouseButton.NoButton,
         Qt.MouseButton.NoButton,
         Qt.KeyboardModifier.NoModifier,
@@ -690,11 +690,11 @@ def test_app_usage_ring_canvas_hover(qapp):
     canvas.repaint()
 
     # Slice 1 (Chrome): 4/14 = 28.6% (from 205.7° to 308.6°)
-    # Point at (20, 70) is dx=-50, dy=0 (9 o'clock, angle=270°) -> Slice 1
+    # Point at (25, 80) is dx=-55, dy=0 (9 o'clock, angle=270°) -> Slice 1
     move_ev2 = QMouseEvent(
         QEvent.Type.MouseMove,
-        QPointF(20.0, 70.0),
-        QPointF(20.0, 70.0),
+        QPointF(25.0, 80.0),
+        QPointF(25.0, 80.0),
         Qt.MouseButton.NoButton,
         Qt.MouseButton.NoButton,
         Qt.KeyboardModifier.NoModifier,
@@ -937,7 +937,7 @@ def test_dashboard_filter_static_geometry(repo, qapp):
     assert overview.kpi_grid.columnStretch(1) == 1
     assert overview.right_column.stretch(0) == 0
     assert overview.right_column.stretch(1) == 1
-    assert overview.apps_widget.height() == 236
+    assert overview.apps_widget.height() == 296
 
     recorded_widths = []
     for tf in ["today", "this_week", "this_month", "all_time"]:
@@ -954,7 +954,7 @@ def test_dashboard_filter_static_geometry(repo, qapp):
 
         # Card heights must remain static
         assert overview.kpi_hero.height() == 88
-        assert overview.apps_widget.height() == 236
+        assert overview.apps_widget.height() == 296
 
         recorded_widths.append((overview.chart_widget.width(), overview.apps_widget.width()))
 
