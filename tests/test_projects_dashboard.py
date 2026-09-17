@@ -182,13 +182,28 @@ def test_project_crud_lifecycle(repo: StorageRepository):
 
 
 def test_projects_overview_page_ui(qapp, repo: StorageRepository):
-    """Test ProjectsOverviewPage widget rendering and timeframe chip switching."""
+    """Test ProjectsOverviewPage widget rendering and timeframe dropdown switching."""
     repo.create_or_update_project("Project 1", ["p1"], color="#6366F1")
     repo.create_or_update_project("Project 2", ["p2"], color="#10B981")
 
     overview = ProjectsOverviewPage(repo, is_dark=True)
     assert overview.active_timeframe == "all_time"
     assert overview.cards_layout.count() == 2
+
+    # Verify timeframe dropdown
+    assert overview.combo_timeframe is not None
+    assert overview.combo_timeframe.count() == 4
+    overview.combo_timeframe.setCurrentIndex(0)
+    assert overview.active_timeframe == "today"
+
+    overview.combo_timeframe.setCurrentIndex(1)
+    assert overview.active_timeframe == "this_week"
+
+    overview.combo_timeframe.setCurrentIndex(2)
+    assert overview.active_timeframe == "this_month"
+
+    overview.combo_timeframe.setCurrentIndex(3)
+    assert overview.active_timeframe == "all_time"
 
     # Switch timeframe chips
     overview.btn_tf_today.click()
@@ -398,6 +413,7 @@ def test_project_comparison_chart_widget_ui(qapp):
     assert widget.canvas.series == series
     assert widget.canvas.bucket_labels == bucket_labels
     assert widget.legend_layout.count() >= 2
+    assert widget.capsule.isHidden()
 
     # Switch to Area mode
     widget.btn_area.click()
@@ -433,6 +449,7 @@ def test_app_usage_analytics_widget_ui(qapp):
     widget = AppUsageAnalyticsWidget(is_dark=True)
     assert widget.active_mode in ("donut", "ring")
     assert widget.stack.currentWidget() == widget.donut_page
+    assert widget.capsule.isHidden()
 
     apps = [
         {"app_name": "Cursor", "hours": 6.5, "percentage": 65.0, "color": "#3B82F6"},

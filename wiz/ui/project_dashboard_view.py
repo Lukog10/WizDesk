@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QLabel,
     QPushButton,
+    QComboBox,
     QScrollArea,
     QFrame,
     QProgressBar,
@@ -454,10 +455,24 @@ class ProjectsOverviewPage(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
-        # 1. Action Toolbar: Timeframe Chips, + New Project Button
+        # 1. Action Toolbar: Timeframe Dropdown, + New Project Button
         toolbar = QHBoxLayout()
         toolbar.setSpacing(8)
 
+        self.combo_timeframe = QComboBox(self)
+        self.combo_timeframe.setObjectName("TimeframeDropdown")
+        self.combo_timeframe.setFixedHeight(28)
+        self.combo_timeframe.setFixedWidth(112)
+        self.combo_timeframe.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.combo_timeframe.addItem("Today", "today")
+        self.combo_timeframe.addItem("This Week", "this_week")
+        self.combo_timeframe.addItem("This Month", "this_month")
+        self.combo_timeframe.addItem("All Time", "all_time")
+        self.combo_timeframe.setCurrentIndex(3)
+        self.combo_timeframe.currentIndexChanged.connect(self._on_combo_timeframe_changed)
+        toolbar.addWidget(self.combo_timeframe)
+
+        # Backward compatibility invisible buttons
         self.btn_tf_today = QPushButton("Today")
         self.btn_tf_week = QPushButton("This Week")
         self.btn_tf_month = QPushButton("This Month")
@@ -465,7 +480,7 @@ class ProjectsOverviewPage(QWidget):
 
         for btn in [self.btn_tf_today, self.btn_tf_week, self.btn_tf_month, self.btn_tf_all]:
             btn.setCheckable(True)
-            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.hide()
 
         self.btn_tf_all.setChecked(True)
 
@@ -474,10 +489,6 @@ class ProjectsOverviewPage(QWidget):
         self.btn_tf_month.clicked.connect(lambda: self._set_timeframe("this_month"))
         self.btn_tf_all.clicked.connect(lambda: self._set_timeframe("all_time"))
 
-        toolbar.addWidget(self.btn_tf_today)
-        toolbar.addWidget(self.btn_tf_week)
-        toolbar.addWidget(self.btn_tf_month)
-        toolbar.addWidget(self.btn_tf_all)
         toolbar.addStretch()
 
         self.btn_new_project = QPushButton("+ New Project")
@@ -579,11 +590,21 @@ class ProjectsOverviewPage(QWidget):
 
     def _set_timeframe(self, timeframe: str) -> None:
         self.active_timeframe = timeframe
+        idx = self.combo_timeframe.findData(timeframe)
+        if idx >= 0 and self.combo_timeframe.currentIndex() != idx:
+            self.combo_timeframe.blockSignals(True)
+            self.combo_timeframe.setCurrentIndex(idx)
+            self.combo_timeframe.blockSignals(False)
         self.btn_tf_today.setChecked(timeframe == "today")
         self.btn_tf_week.setChecked(timeframe == "this_week")
         self.btn_tf_month.setChecked(timeframe == "this_month")
         self.btn_tf_all.setChecked(timeframe == "all_time")
         self.refresh()
+
+    def _on_combo_timeframe_changed(self, index: int) -> None:
+        data = self.combo_timeframe.currentData()
+        if data and data != self.active_timeframe:
+            self._set_timeframe(data)
 
     def refresh(self) -> None:
         """Fetch updated project metrics and re-render charts, stats, and project targets."""
@@ -803,6 +824,46 @@ class ProjectsOverviewPage(QWidget):
         self.lbl_directory_title.setStyleSheet(f"color: {dir_title_color};")
         self.setStyleSheet(badge_style)
 
+        combo_bg = "#242427" if self.is_dark else "#FFFFFF"
+        combo_border = "#333338" if self.is_dark else "#E5E0D8"
+        combo_hover_border = "#6366F1" if self.is_dark else "#4F46E5"
+        combo_text = "#F4F4F6" if self.is_dark else "#111111"
+        combo_popup_bg = "#242427" if self.is_dark else "#FFFFFF"
+        combo_popup_border = "#3F3F46" if self.is_dark else "#D4CEBF"
+        combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#F4F4F5"
+
+        self.combo_timeframe.setStyleSheet(f"""
+            QComboBox#TimeframeDropdown {{
+                background-color: {combo_bg};
+                color: {combo_text};
+                border: 1px solid {combo_border};
+                border-radius: 8px;
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-size: 11px;
+                font-weight: 500;
+                padding: 2px 20px 2px 10px;
+                min-height: 22px;
+            }}
+            QComboBox#TimeframeDropdown:hover {{
+                border-color: {combo_hover_border};
+            }}
+            QComboBox#TimeframeDropdown::drop-down {{
+                border: none;
+                width: 18px;
+            }}
+            QComboBox#TimeframeDropdown QAbstractItemView {{
+                background-color: {combo_popup_bg};
+                color: {combo_text};
+                border: 1px solid {combo_popup_border};
+                border-radius: 8px;
+                selection-background-color: {combo_popup_sel_bg};
+                selection-color: {combo_text};
+                padding: 4px;
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-size: 11px;
+            }}
+        """)
+
         scrollbar_color = "rgba(255, 255, 255, 0.15)" if self.is_dark else "rgba(0, 0, 0, 0.15)"
         scrollbar_hover = "rgba(255, 255, 255, 0.3)" if self.is_dark else "rgba(0, 0, 0, 0.3)"
         scroll_style = f"""
@@ -883,10 +944,24 @@ class ProjectDetailPage(QWidget):
 
         layout.addLayout(nav_row)
 
-        # 2. Timeframe Filter Chips
+        # 2. Timeframe Filter Dropdown
         tf_row = QHBoxLayout()
         tf_row.setSpacing(8)
 
+        self.combo_timeframe = QComboBox(self)
+        self.combo_timeframe.setObjectName("DetailTimeframeDropdown")
+        self.combo_timeframe.setFixedHeight(28)
+        self.combo_timeframe.setFixedWidth(112)
+        self.combo_timeframe.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.combo_timeframe.addItem("Today", "today")
+        self.combo_timeframe.addItem("This Week", "this_week")
+        self.combo_timeframe.addItem("This Month", "this_month")
+        self.combo_timeframe.addItem("All Time", "all_time")
+        self.combo_timeframe.setCurrentIndex(1)
+        self.combo_timeframe.currentIndexChanged.connect(self._on_combo_timeframe_changed)
+        tf_row.addWidget(self.combo_timeframe)
+
+        # Backward compatibility invisible buttons
         self.btn_tf_today = QPushButton("Today")
         self.btn_tf_week = QPushButton("This Week")
         self.btn_tf_month = QPushButton("This Month")
@@ -894,19 +969,15 @@ class ProjectDetailPage(QWidget):
 
         for btn in [self.btn_tf_today, self.btn_tf_week, self.btn_tf_month, self.btn_tf_all]:
             btn.setCheckable(True)
-            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.hide()
 
-        self.btn_tf_all.setChecked(True)
+        self.btn_tf_week.setChecked(True)
 
         self.btn_tf_today.clicked.connect(lambda: self._set_timeframe("today"))
         self.btn_tf_week.clicked.connect(lambda: self._set_timeframe("this_week"))
         self.btn_tf_month.clicked.connect(lambda: self._set_timeframe("this_month"))
         self.btn_tf_all.clicked.connect(lambda: self._set_timeframe("all_time"))
 
-        tf_row.addWidget(self.btn_tf_today)
-        tf_row.addWidget(self.btn_tf_week)
-        tf_row.addWidget(self.btn_tf_month)
-        tf_row.addWidget(self.btn_tf_all)
         tf_row.addStretch()
 
         layout.addLayout(tf_row)
@@ -1032,11 +1103,21 @@ class ProjectDetailPage(QWidget):
 
     def _set_timeframe(self, timeframe: str) -> None:
         self.active_timeframe = timeframe
+        idx = self.combo_timeframe.findData(timeframe)
+        if idx >= 0 and self.combo_timeframe.currentIndex() != idx:
+            self.combo_timeframe.blockSignals(True)
+            self.combo_timeframe.setCurrentIndex(idx)
+            self.combo_timeframe.blockSignals(False)
         self.btn_tf_today.setChecked(timeframe == "today")
         self.btn_tf_week.setChecked(timeframe == "this_week")
         self.btn_tf_month.setChecked(timeframe == "this_month")
         self.btn_tf_all.setChecked(timeframe == "all_time")
         self.load_project(self.current_project_name)
+
+    def _on_combo_timeframe_changed(self, index: int) -> None:
+        data = self.combo_timeframe.currentData()
+        if data and data != self.active_timeframe:
+            self._set_timeframe(data)
 
     def _set_tab(self, tab_key: str) -> None:
         self.active_tab = tab_key
@@ -1429,6 +1510,46 @@ class ProjectDetailPage(QWidget):
         self.btn_tf_week.setStyleSheet(chip_style)
         self.btn_tf_month.setStyleSheet(chip_style)
         self.btn_tf_all.setStyleSheet(chip_style)
+
+        combo_bg = "#242427" if self.is_dark else "#FFFFFF"
+        combo_border = "#333338" if self.is_dark else "#E5E0D8"
+        combo_hover_border = "#6366F1" if self.is_dark else "#4F46E5"
+        combo_text = "#F4F4F6" if self.is_dark else "#111111"
+        combo_popup_bg = "#242427" if self.is_dark else "#FFFFFF"
+        combo_popup_border = "#3F3F46" if self.is_dark else "#D4CEBF"
+        combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#F4F4F5"
+
+        self.combo_timeframe.setStyleSheet(f"""
+            QComboBox#DetailTimeframeDropdown {{
+                background-color: {combo_bg};
+                color: {combo_text};
+                border: 1px solid {combo_border};
+                border-radius: 8px;
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-size: 11px;
+                font-weight: 500;
+                padding: 2px 20px 2px 10px;
+                min-height: 22px;
+            }}
+            QComboBox#DetailTimeframeDropdown:hover {{
+                border-color: {combo_hover_border};
+            }}
+            QComboBox#DetailTimeframeDropdown::drop-down {{
+                border: none;
+                width: 18px;
+            }}
+            QComboBox#DetailTimeframeDropdown QAbstractItemView {{
+                background-color: {combo_popup_bg};
+                color: {combo_text};
+                border: 1px solid {combo_popup_border};
+                border-radius: 8px;
+                selection-background-color: {combo_popup_sel_bg};
+                selection-color: {combo_text};
+                padding: 4px;
+                font-family: 'Inter', -apple-system, sans-serif;
+                font-size: 11px;
+            }}
+        """)
 
         self.btn_tab_tasks.setStyleSheet(chip_style)
         self.btn_tab_apps.setStyleSheet(chip_style)

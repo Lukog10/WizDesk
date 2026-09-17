@@ -886,6 +886,7 @@ class ProjectComparisonChartWidget(QFrame):
         capsule_layout.addWidget(self.btn_area)
 
         header_row.addWidget(self.capsule, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.capsule.hide()
         layout.addLayout(header_row)
 
         # Sub-metrics row matching reference design
@@ -1673,6 +1674,7 @@ class AppUsageAnalyticsWidget(QFrame):
         capsule_layout.addWidget(self.btn_bar)
 
         header_row.addWidget(self.capsule, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.capsule.hide()
         layout.addLayout(header_row)
 
         # Upper Section: Stacked Views (Donut vs Bar)
