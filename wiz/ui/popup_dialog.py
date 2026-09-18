@@ -46,6 +46,7 @@ from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
 from wiz.ui.icons import get_app_icon
 from wiz.sync.obsidian import sync_today_logs
+from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView
 from wiz.ui.sidebar_widget import SideNavBar
 from wiz.ui.settings_view import SettingsView
@@ -1766,7 +1767,7 @@ class QuickEntryDialog(QDialog):
         # Backwards-compatible aliases for mode buttons
         self.tasks_mode_btn = self.sidebar.pills["tasks"]
         self.notes_mode_btn = self.sidebar.pills["notes"]
-        self.activity_mode_btn = None
+        self.activity_mode_btn = self.sidebar.pills["activity"]
         self.projects_mode_btn = self.sidebar.pills["projects"]
         self.settings_mode_btn = self.sidebar.pills["settings"]
         self.mode_capsule = QFrame()
@@ -1989,7 +1990,11 @@ class QuickEntryDialog(QDialog):
         notes_page_layout.addLayout(add_note_layout)
         self.stack.addWidget(self.notes_page)
 
-        # 3. Projects Dashboard Page
+        # 3. Activity Timeline Page
+        self.timeline_view = TimelineView(self.repo, is_dark=self.is_dark, parent=self.stack)
+        self.stack.addWidget(self.timeline_view)
+
+        # 4. Projects Dashboard Page
         self.project_dashboard_view = ProjectDashboardView(self.repo, parent=self.stack, is_dark=self.is_dark)
         self.project_dashboard_view.project_changed.connect(self._populate_projects)
         self.stack.addWidget(self.project_dashboard_view)
@@ -2261,7 +2266,7 @@ class QuickEntryDialog(QDialog):
         self._set_view_mode(self.current_view_mode)
 
     def _set_view_mode(self, mode: str) -> None:
-        """Switch between Tasks, Quick Notes, Projects, and Settings mode."""
+        """Switch between Tasks, Quick Notes, Activity Timeline, Projects, and Settings mode."""
         self.current_view_mode = mode
 
         if hasattr(self, "sidebar"):
@@ -2270,6 +2275,7 @@ class QuickEntryDialog(QDialog):
         titles = {
             "tasks": "Tasks & To-Dos",
             "notes": "Quick Notes",
+            "activity": "Activity Timeline",
             "projects": "Projects Dashboard",
             "settings": "Settings & Preferences",
         }
@@ -2285,6 +2291,9 @@ class QuickEntryDialog(QDialog):
         elif mode == "notes":
             self.stack.setCurrentWidget(self.notes_page)
             self.refresh_notes()
+        elif mode == "activity" and hasattr(self, "timeline_view"):
+            self.stack.setCurrentWidget(self.timeline_view)
+            self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
         elif mode == "projects" and hasattr(self, "project_dashboard_view"):
             self.stack.setCurrentWidget(self.project_dashboard_view)
             self.project_dashboard_view.load_data()
@@ -2403,6 +2412,8 @@ class QuickEntryDialog(QDialog):
         if self.isVisible():
             if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
                 self.project_dashboard_view.load_data()
+            elif hasattr(self, "timeline_view") and self.current_view_mode == "activity" and self.selected_date == date.today():
+                self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
 
     def _on_background_task_activity(self, task_id: int) -> None:
         """Refresh dashboard or task views when tasks change."""
