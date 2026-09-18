@@ -307,11 +307,6 @@ def test_quick_entry_dialog_projects_mode(qapp, repo: StorageRepository):
     assert dialog.stack.currentWidget() == dialog.tasks_page
     assert not dialog.date_header_container.isHidden()
 
-    # Switch to Activity
-    dialog.activity_mode_btn.click()
-    assert dialog.current_view_mode == "activity"
-    assert not dialog.date_header_container.isHidden()
-
     # Switch to Quick Notes
     dialog.notes_mode_btn.click()
     assert dialog.current_view_mode == "notes"

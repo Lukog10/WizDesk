@@ -1,8 +1,19 @@
 """Frameless, transparent, draggable, always-on-top companion window."""
 
 from typing import Optional
-from PyQt6.QtCore import Qt, QPoint, QTimer
-from PyQt6.QtGui import QMouseEvent, QContextMenuEvent, QGuiApplication, QCursor
+from PyQt6.QtCore import Qt, QPoint, QTimer, QRectF
+from PyQt6.QtGui import (
+    QMouseEvent,
+    QContextMenuEvent,
+    QGuiApplication,
+    QCursor,
+    QIcon,
+    QPixmap,
+    QPainter,
+    QPen,
+    QColor,
+    QPainterPath,
+)
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QMenu
 
 from wiz.core.config import config
@@ -150,12 +161,9 @@ class MascotWindow(QWidget):
         count = self._click_count
         self._click_count = 0
 
-        if count == 2:
-            # Double-click: Quick Task Bar
-            app_signals.request_quick_task_bar.emit()
-        elif count >= 3:
-            # Triple-click: Quick Note Bar
-            app_signals.request_quick_note_bar.emit()
+        if count >= 2:
+            # Double-click: directly open the main workspace window
+            app_signals.request_quick_entry.emit()
 
     def _clamp_to_screens(self, pos: QPoint) -> QPoint:
         """Ensure the window does not get dragged completely off-screen."""
@@ -172,67 +180,109 @@ class MascotWindow(QWidget):
     # --- Context Menu ---
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
-        """Display right-click context menu on mascot."""
+        """Display redesigned right-click context menu on mascot."""
         menu = QMenu(self)
+        menu.setWindowFlags(menu.windowFlags() | Qt.WindowType.FramelessWindowHint | Qt.WindowType.NoDropShadowWindowHint)
+        menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         menu.setStyleSheet(f"""
             QMenu {{
-                background-color: #1E1E24;
-                color: #F7F3EA;
-                border: 1px solid #33333E;
-                border-radius: 8px;
+                background-color: #15151A;
+                color: #F4F4F6;
+                border: 1px solid #2B2B36;
+                border-radius: 12px;
                 padding: 6px;
                 font-family: {FONT_SANS};
                 font-size: 13px;
+                font-weight: 500;
             }}
             QMenu::item {{
-                padding: 6px 30px 6px 12px;
-                border-radius: 4px;
+                background-color: transparent;
+                padding: 8px 24px 8px 10px;
+                border-radius: 7px;
+                margin: 2px 2px;
+                color: #E2E2E8;
             }}
             QMenu::item:selected {{
-                background-color: #2D2D38;
+                background-color: #262632;
                 color: #FFFFFF;
             }}
-            QMenu::right-arrow {{
+            QMenu::icon {{
+                padding-left: 4px;
                 margin-right: 8px;
             }}
             QMenu::separator {{
                 height: 1px;
-                background-color: #33333E;
-                margin: 4px 6px;
+                background-color: #272732;
+                margin: 5px 6px;
             }}
         """)
 
-        # Quick Note / Task Action
-        action_note = menu.addAction("Quick Note / Task")
-        action_note.triggered.connect(lambda: app_signals.request_quick_entry.emit())
+        # Open Workspace Action
+        act_ws = menu.addAction(_create_context_menu_icon("workspace"), "Open Workspace")
+        act_ws.setShortcut("Ctrl+Shift+W")
+        act_ws.triggered.connect(lambda: app_signals.request_quick_entry.emit())
+
+        # Hide Mascot Action
+        act_hide = menu.addAction(_create_context_menu_icon("hide"), "Hide Mascot")
+        act_hide.triggered.connect(self.hide)
 
         menu.addSeparator()
 
-        # State Switcher Submenu (useful for instant testing and manual status)
-        state_menu = menu.addMenu("Mascot State")
-        state_menu.setStyleSheet(menu.styleSheet())
-
-        for state in MascotState:
-            action = state_menu.addAction(state.value.capitalize())
-            if self.state_machine.current_state == state:
-                action.setText(f"[x] {state.value.capitalize()}")
-            # Capture state in default arg
-            action.triggered.connect(lambda checked, s=state: self.state_machine.set_state(s))
-
-        menu.addSeparator()
-
-        # Settings
-        action_settings = menu.addAction("Settings")
-        action_settings.triggered.connect(lambda: app_signals.request_settings.emit())
-
-        # Hide Mascot
-        action_hide = menu.addAction("Hide Mascot")
-        action_hide.triggered.connect(self.hide)
-
-        menu.addSeparator()
-
-        # Quit
-        action_quit = menu.addAction("Quit WizDesk")
-        action_quit.triggered.connect(lambda: app_signals.quit_application.emit())
+        # Quit WizDesk Action
+        act_quit = menu.addAction(_create_context_menu_icon("quit"), "Quit WizDesk")
+        act_quit.triggered.connect(lambda: app_signals.quit_application.emit())
 
         menu.exec(event.globalPos())
+
+
+def _create_context_menu_icon(icon_type: str) -> QIcon:
+    """Render a crisp, high-DPI vector micro-icon for context menu actions."""
+    pix = QPixmap(32, 32)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+    if icon_type == "workspace":
+        # Warm orange window card
+        pen = QPen(QColor("#FF6B3D"), 2.2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        p.drawRoundedRect(QRectF(3, 4, 26, 24), 4.5, 4.5)
+        # Header bar divider
+        p.drawLine(3, 11, 29, 11)
+        # Left sidebar separator
+        p.drawLine(11, 11, 11, 28)
+        # Header indicator dots
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor("#FF6B3D"))
+        p.drawEllipse(QRectF(6, 6.5, 2.5, 2.5))
+        p.drawEllipse(QRectF(10.5, 6.5, 2.5, 2.5))
+
+    elif icon_type == "hide":
+        # Neutral slate eye with slash
+        pen = QPen(QColor("#94A3B8"), 2.0)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        path = QPainterPath()
+        path.moveTo(4, 16)
+        path.quadTo(16, 6, 28, 16)
+        path.quadTo(16, 26, 4, 16)
+        p.drawPath(path)
+        p.drawEllipse(QRectF(13, 13, 6, 6))
+        slash_pen = QPen(QColor("#CBD5E1"), 2.2)
+        slash_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(slash_pen)
+        p.drawLine(6, 26, 26, 6)
+
+    elif icon_type == "quit":
+        # Gentle soft red power / quit icon
+        pen = QPen(QColor("#F87171"), 2.2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
+        p.drawArc(QRectF(5, 5, 22, 22), 45 * 16, 270 * 16)
+        p.drawLine(16, 3, 16, 15)
+
+    p.end()
+    return QIcon(pix)

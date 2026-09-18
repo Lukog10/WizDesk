@@ -72,7 +72,6 @@ def test_sidebar_widget_modes_and_signals(qapp):
     assert sidebar.current_mode == "tasks"
     assert "tasks" in sidebar.pills
     assert "notes" in sidebar.pills
-    assert "activity" in sidebar.pills
     assert "projects" in sidebar.pills
     assert "settings" in sidebar.pills
 
@@ -158,13 +157,12 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
     assert isinstance(dialog.sidebar, SideNavBar)
     assert dialog.sidebar.width() == 190
 
-    # Check 5 views in stack
-    assert dialog.stack.count() == 5
+    # Check 4 views in stack (Tasks, Notes, Projects, Settings)
+    assert dialog.stack.count() == 4
     assert dialog.stack.widget(0) == dialog.tasks_page
     assert dialog.stack.widget(1) == dialog.notes_page
-    assert dialog.stack.widget(2) == dialog.timeline_view
-    assert dialog.stack.widget(3) == dialog.project_dashboard_view
-    assert dialog.stack.widget(4) == dialog.settings_view
+    assert dialog.stack.widget(2) == dialog.project_dashboard_view
+    assert dialog.stack.widget(3) == dialog.settings_view
 
     # Initial view is Tasks
     assert dialog.current_view_mode == "tasks"
@@ -176,12 +174,6 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
     assert dialog.current_view_mode == "notes"
     assert dialog.page_title_lbl.text() == "Quick Notes"
     assert dialog.stack.currentWidget() == dialog.notes_page
-
-    # Switch to Activity Timeline via sidebar pill
-    dialog.sidebar.pills["activity"].click()
-    assert dialog.current_view_mode == "activity"
-    assert dialog.page_title_lbl.text() == "Activity Timeline"
-    assert dialog.stack.currentWidget() == dialog.timeline_view
 
     # Switch to Projects Dashboard via sidebar pill
     dialog.sidebar.pills["projects"].click()

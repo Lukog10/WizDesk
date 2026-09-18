@@ -279,7 +279,6 @@ class SideNavBar(QWidget):
         nav_defs = [
             ("tasks", "Tasks", "tasks"),
             ("notes", "Quick Notes", "notes"),
-            ("activity", "Activity", "activity"),
             ("projects", "Projects", "projects"),
         ]
 

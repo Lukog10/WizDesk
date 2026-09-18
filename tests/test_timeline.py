@@ -206,22 +206,15 @@ def test_timeline_view_ui_filtering_and_theming(qapp, repo: StorageRepository):
     assert view.is_dark is False
 
 
-def test_quick_entry_dialog_activity_mode_switcher(qapp, repo: StorageRepository):
-    """Test switching to Activity Timeline view mode inside QuickEntryDialog."""
+def test_quick_entry_dialog_activity_option_removed(qapp, repo: StorageRepository):
+    """Verify that Activity window option is removed from QuickEntryDialog."""
     sm = StateMachine()
     dialog = QuickEntryDialog(sm, repository=repo)
 
-    assert hasattr(dialog, "activity_mode_btn")
-    assert hasattr(dialog, "timeline_view")
-
-    # Initially on tasks
+    assert dialog.activity_mode_btn is None
+    assert "activity" not in dialog.sidebar.pills
     assert dialog.current_view_mode == "tasks"
     assert dialog.stack.currentWidget() == dialog.tasks_page
-
-    # Switch to Activity mode
-    dialog.activity_mode_btn.click()
-    assert dialog.current_view_mode == "activity"
-    assert dialog.stack.currentWidget() == dialog.timeline_view
 
     # Switch to Quick Notes
     dialog.notes_mode_btn.click()
@@ -232,6 +225,7 @@ def test_quick_entry_dialog_activity_mode_switcher(qapp, repo: StorageRepository
     dialog.tasks_mode_btn.click()
     assert dialog.current_view_mode == "tasks"
     assert dialog.stack.currentWidget() == dialog.tasks_page
+    dialog.close()
 
 
 def test_timeline_category_combo_filtering(qapp, repo: StorageRepository):
@@ -296,9 +290,6 @@ def test_date_header_container_inside_card_position(qapp, repo: StorageRepositor
     dialog.notes_mode_btn.click()
     assert dialog.date_header_container.isVisible() is True
 
-    dialog.activity_mode_btn.click()
-    assert dialog.date_header_container.isVisible() is True
-
     dialog.projects_mode_btn.click()
     assert dialog.date_header_container.isVisible() is False
 
@@ -310,14 +301,12 @@ def test_date_header_container_inside_card_position(qapp, repo: StorageRepositor
     dialog.close()
 
 
-def test_activity_mode_switch_and_paint_events(qapp, repo: StorageRepository):
-    """Ensure switching to activity mode and repainting the dialog does not raise exceptions."""
-    sm = StateMachine()
-    dialog = QuickEntryDialog(sm, repository=repo)
-    dialog.show()
-    dialog._set_view_mode("activity")
+def test_activity_timeline_standalone_paint_events(qapp, repo: StorageRepository):
+    """Ensure painting TimelineView directly does not raise exceptions."""
+    view = TimelineView(repo)
+    view.show()
+    view.load_date("2026-09-18")
     qapp.processEvents()
-    assert dialog.stack.currentWidget() == dialog.timeline_view
-    dialog.close()
+    view.close()
 
 

@@ -477,18 +477,12 @@ def test_quick_bar_popup_and_multi_click_gestures(qapp, repo):
     mascot = MascotWindow(sm)
     received_signals = []
 
-    app_signals.request_quick_task_bar.connect(lambda: received_signals.append("task_bar"))
-    app_signals.request_quick_note_bar.connect(lambda: received_signals.append("note_bar"))
+    app_signals.request_quick_entry.connect(lambda: received_signals.append("quick_entry"))
 
-    # Simulate Double-click (2 clicks)
+    # Simulate Double-click (2 clicks -> opens workspace window)
     mascot._click_count = 2
     mascot._on_click_timeout()
-    assert received_signals[-1] == "task_bar"
-
-    # Simulate Triple-click (3 clicks)
-    mascot._click_count = 3
-    mascot._on_click_timeout()
-    assert received_signals[-1] == "note_bar"
+    assert received_signals[-1] == "quick_entry"
 
     popup.close()
     mascot.close()

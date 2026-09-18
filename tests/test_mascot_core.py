@@ -158,3 +158,21 @@ def test_application_quit_signal(qapp):
     assert len(quit_called) > 0
     app_instance.shutdown()
 
+
+def test_mascot_window_double_click_opens_workspace(qapp):
+    """Test that double clicking on MascotWindow emits request_quick_entry."""
+    from wiz.core.signals import app_signals
+
+    sm = StateMachine(initial_state=MascotState.IDLE)
+    window = MascotWindow(sm)
+
+    emitted = []
+    app_signals.request_quick_entry.connect(lambda: emitted.append(True))
+
+    window._click_count = 2
+    window._on_click_timeout()
+    assert len(emitted) == 1
+
+    window.close()
+
+
