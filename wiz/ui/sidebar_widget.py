@@ -114,13 +114,7 @@ class NavPillButton(QPushButton):
             painter.setBrush(QBrush(bg_color))
             painter.drawRoundedRect(QRectF(4, 2, w - 8, h - 4), 8, 8)
 
-        # 2. Active Indicator Bar (Left Edge)
-        if self.is_active:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(QColor("#FF6B3D")))
-            painter.drawRoundedRect(QRectF(4, 7, 3.5, h - 14), 2, 2)
-
-        # 3. Vector Icon (Left aligned around x=18)
+        # 2. Vector Icon (Left aligned around x=18)
         self._draw_vector_icon(painter, 18, (h - 16) // 2, 16, icon_color)
 
         # 4. Text Label
