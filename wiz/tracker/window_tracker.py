@@ -78,7 +78,6 @@ class WindowTracker(QThread):
         super().__init__(parent)
         self.repo = repository or StorageRepository()
         self._is_running: bool = True
-        self._last_poll_time: datetime = datetime.now()
 
         # Session tracking state
         self._current_app: Optional[str] = None

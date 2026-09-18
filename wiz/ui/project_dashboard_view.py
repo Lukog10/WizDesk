@@ -6,9 +6,8 @@ Provides an in-page drilldown architecture:
 """
 
 from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime
-from PyQt6.QtCore import Qt, pyqtSignal, QSize
-from PyQt6.QtGui import QFont, QColor, QPainter, QBrush, QPen, QCursor
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QColor, QCursor
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -16,7 +15,6 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QLabel,
     QPushButton,
-    QComboBox,
     QScrollArea,
     QFrame,
     QProgressBar,
@@ -25,11 +23,9 @@ from PyQt6.QtWidgets import (
     QColorDialog,
     QMessageBox,
     QStackedWidget,
-    QSizePolicy,
 )
 
 from wiz.storage.models import StorageRepository, ProjectRecord, TaskRecord
-from wiz.ui.icons import get_app_pixmap
 from wiz.ui.arrow_combo import ArrowComboBox
 from wiz.ui.chart_widgets import (
     KpiStatCard,
@@ -37,7 +33,7 @@ from wiz.ui.chart_widgets import (
     AppUsageAnalyticsWidget,
     ProjectTrackingWidget,
 )
-from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.fonts import FONT_SANS, get_font
 
 
 PRESET_COLORS = [

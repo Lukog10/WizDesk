@@ -5,7 +5,7 @@ Strictly adheres to WizDesk brand colors (#FF6B3D Mascot Orange-Red, #10B981 Eme
 """
 
 from typing import Optional, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QRectF, QPointF, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -14,7 +14,6 @@ from PyQt6.QtGui import (
     QPen,
     QBrush,
     QCursor,
-    QMouseEvent,
     QPaintEvent,
 )
 from PyQt6.QtWidgets import (

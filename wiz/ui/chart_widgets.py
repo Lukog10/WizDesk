@@ -8,14 +8,13 @@ Rendered purely via PyQt6 QPainter:
 
 from typing import List, Dict, Any, Optional, Tuple
 import math
-from PyQt6.QtCore import Qt, QPoint, QPointF, QRect, QRectF, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, QPoint, QPointF, QRectF, pyqtSignal, QSize
 from PyQt6.QtGui import (
     QFont,
     QFontMetrics,
     QColor,
     QPainter,
     QPen,
-    QBrush,
     QPainterPath,
     QLinearGradient,
     QCursor,
@@ -35,7 +34,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
 )
 
-from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.fonts import FONT_SANS, get_font
 
 
 class MicroSparklineCanvas(QWidget):

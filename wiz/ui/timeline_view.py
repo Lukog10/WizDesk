@@ -2,8 +2,8 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from PyQt6.QtCore import Qt, QSize, QPointF
-from PyQt6.QtGui import QFont, QPainter, QPolygonF, QColor, QBrush
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,

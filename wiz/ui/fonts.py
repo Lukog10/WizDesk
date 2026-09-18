@@ -1,7 +1,5 @@
 """Centralized typography definitions for WizDesk (Option A: Plus Jakarta Sans + JetBrains Mono)."""
 
-from pathlib import Path
-from typing import Sequence, Optional
 from PyQt6.QtGui import QFont, QFontDatabase
 
 from wiz.core.config import config

@@ -69,10 +69,13 @@ CREATE TABLE IF NOT EXISTS projects (
     description TEXT DEFAULT ''
 );
 
--- Indices for rapid daily reporting and sync queries
+-- Indices for rapid daily reporting, project filtering, and sync queries
 CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time);
+CREATE INDEX IF NOT EXISTS idx_sessions_project_tag ON sessions(project_tag);
 CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at);
+CREATE INDEX IF NOT EXISTS idx_notes_project_tag ON notes(project_tag);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
+CREATE INDEX IF NOT EXISTS idx_tasks_project_tag ON tasks(project_tag);
 CREATE INDEX IF NOT EXISTS idx_subtasks_task_id ON subtasks(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_logs_task_id ON task_logs(task_id);
 """
