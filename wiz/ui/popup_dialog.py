@@ -17,6 +17,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer
 from PyQt6.QtGui import (
     QFont,
     QColor,
+    QPainter,
     QMouseEvent,
     QKeyEvent,
     QCursor,

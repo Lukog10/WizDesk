@@ -310,3 +310,14 @@ def test_date_header_container_inside_card_position(qapp, repo: StorageRepositor
     dialog.close()
 
 
+def test_activity_mode_switch_and_paint_events(qapp, repo: StorageRepository):
+    """Ensure switching to activity mode and repainting the dialog does not raise exceptions."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+    dialog.show()
+    dialog._set_view_mode("activity")
+    qapp.processEvents()
+    assert dialog.stack.currentWidget() == dialog.timeline_view
+    dialog.close()
+
+
