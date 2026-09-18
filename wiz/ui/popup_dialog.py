@@ -50,6 +50,7 @@ from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView
 from wiz.ui.sidebar_widget import SideNavBar
 from wiz.ui.settings_view import SettingsView
+from wiz.ui.help_faq_view import HelpFaqView
 from wiz.ui.arrow_combo import ArrowComboBox
 
 
@@ -1770,6 +1771,7 @@ class QuickEntryDialog(QDialog):
         self.activity_mode_btn = self.sidebar.pills["activity"]
         self.projects_mode_btn = self.sidebar.pills["projects"]
         self.settings_mode_btn = self.sidebar.pills["settings"]
+        self.help_mode_btn = self.sidebar.pills["help"]
         self.mode_capsule = QFrame()
         self.mode_capsule.setObjectName("modeCapsule")
         self.mode_capsule.setVisible(False)
@@ -2003,6 +2005,10 @@ class QuickEntryDialog(QDialog):
         self.settings_view = SettingsView(self.repo, is_dark=self.is_dark, parent=self.stack)
         self.settings_view.projects_changed.connect(self._populate_projects)
         self.stack.addWidget(self.settings_view)
+
+        # 6. Embedded Help & Documentation Page
+        self.help_faq_view = HelpFaqView(is_dark=self.is_dark, parent=self.stack)
+        self.stack.addWidget(self.help_faq_view)
 
         self.inner_layout.addWidget(self.stack, stretch=1)
         self.workspace_layout.addWidget(self.inner_card, stretch=1)
@@ -2261,12 +2267,14 @@ class QuickEntryDialog(QDialog):
             self.project_dashboard_view.set_theme(self.is_dark)
         if hasattr(self, "settings_view"):
             self.settings_view.set_theme(self.is_dark)
+        if hasattr(self, "help_faq_view"):
+            self.help_faq_view.set_theme(self.is_dark)
 
         # 8. Re-apply mode buttons
         self._set_view_mode(self.current_view_mode)
 
     def _set_view_mode(self, mode: str) -> None:
-        """Switch between Tasks, Quick Notes, Activity Timeline, Projects, and Settings mode."""
+        """Switch between Tasks, Quick Notes, Activity Timeline, Projects, Settings, and Help mode."""
         self.current_view_mode = mode
 
         if hasattr(self, "sidebar"):
@@ -2278,12 +2286,13 @@ class QuickEntryDialog(QDialog):
             "activity": "Activity Timeline",
             "projects": "Projects Dashboard",
             "settings": "Settings & Preferences",
+            "help": "Help & Documentation",
         }
         if hasattr(self, "page_title_lbl"):
             self.page_title_lbl.setText(titles.get(mode, "WizDesk"))
 
         if hasattr(self, "date_header_container"):
-            self.date_header_container.setVisible(mode not in ("projects", "settings"))
+            self.date_header_container.setVisible(mode not in ("projects", "settings", "help"))
 
         if mode == "tasks":
             self.stack.setCurrentWidget(self.tasks_page)
@@ -2300,6 +2309,9 @@ class QuickEntryDialog(QDialog):
         elif mode == "settings" and hasattr(self, "settings_view"):
             self.stack.setCurrentWidget(self.settings_view)
             self.settings_view.load_settings()
+        elif mode == "help" and hasattr(self, "help_faq_view"):
+            self.stack.setCurrentWidget(self.help_faq_view)
+            self.help_faq_view.load_settings()
 
     def _seed_initial_data_if_empty(self) -> None:
         """Seed default project categories if database has no projects."""

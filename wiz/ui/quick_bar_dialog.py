@@ -77,11 +77,11 @@ class QuickBarPopup(QDialog):
         hdr_layout.setContentsMargins(0, 0, 0, 0)
         hdr_layout.setSpacing(6)
 
-        self.mode_badge = QLabel("✦ Quick Task")
+        self.mode_badge = QLabel("Quick Task")
         self.mode_badge.setFont(get_font(9, QFont.Weight.DemiBold))
         hdr_layout.addWidget(self.mode_badge)
 
-        self.hint_label = QLabel("(Double-click Wiz for Task, Triple-click for Note)")
+        self.hint_label = QLabel("(Hotkeys: Ctrl+Shift+T / Ctrl+Shift+N)")
         self.hint_label.setFont(get_font(8))
         hdr_layout.addWidget(self.hint_label)
 
@@ -172,11 +172,11 @@ class QuickBarPopup(QDialog):
         self._populate_projects()
 
         if mode == "note":
-            self.mode_badge.setText("✦ Quick Work Note")
+            self.mode_badge.setText("Quick Work Note")
             self.input_field.setPlaceholderText("+ Log a quick work note... (Press Enter)")
             self.submit_btn.setText("Log Note")
         else:
-            self.mode_badge.setText("✦ Quick Task")
+            self.mode_badge.setText("Quick Task")
             self.input_field.setPlaceholderText("+ Add task... (Press Enter)")
             self.submit_btn.setText("Add")
 

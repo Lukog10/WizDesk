@@ -15,6 +15,7 @@ class AppSignals(QObject):
     request_sync = pyqtSignal()
     quit_application = pyqtSignal()
     theme_changed = pyqtSignal(str)  # 'light' or 'dark'
+    hotkeys_changed = pyqtSignal()
 
     # Tracking & Activity signals
     # session_polled: (app_name: str, window_title: str, project_tag: str)

@@ -12,6 +12,7 @@ from wiz.storage.models import StorageRepository
 from wiz.ui.popup_dialog import QuickEntryDialog
 from wiz.ui.sidebar_widget import SideNavBar, NavPillButton
 from wiz.ui.settings_view import SettingsView, SettingsCheckbox
+from wiz.ui.help_faq_view import HelpFaqView, FaqItemWidget
 
 
 @pytest.fixture
@@ -75,6 +76,7 @@ def test_sidebar_widget_modes_and_signals(qapp):
     assert "activity" in sidebar.pills
     assert "projects" in sidebar.pills
     assert "settings" in sidebar.pills
+    assert "help" in sidebar.pills
 
     # Check initial active state
     assert sidebar.pills["tasks"].is_active
@@ -96,6 +98,12 @@ def test_sidebar_widget_modes_and_signals(qapp):
     assert sidebar.current_mode == "settings"
     assert sidebar.pills["settings"].is_active
     assert emitted_modes == ["projects", "settings"]
+
+    # Test help pill
+    sidebar.pills["help"].click()
+    assert sidebar.current_mode == "help"
+    assert sidebar.pills["help"].is_active
+    assert emitted_modes == ["projects", "settings", "help"]
 
     # Test tasks badge
     sidebar.set_tasks_badge(4)
@@ -158,13 +166,14 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
     assert isinstance(dialog.sidebar, SideNavBar)
     assert dialog.sidebar.width() == 190
 
-    # Check 5 views in stack
-    assert dialog.stack.count() == 5
+    # Check 6 views in stack
+    assert dialog.stack.count() == 6
     assert dialog.stack.widget(0) == dialog.tasks_page
     assert dialog.stack.widget(1) == dialog.notes_page
     assert dialog.stack.widget(2) == dialog.timeline_view
     assert dialog.stack.widget(3) == dialog.project_dashboard_view
     assert dialog.stack.widget(4) == dialog.settings_view
+    assert dialog.stack.widget(5) == dialog.help_faq_view
 
     # Initial view is Tasks
     assert dialog.current_view_mode == "tasks"
@@ -197,6 +206,13 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
     assert dialog.stack.currentWidget() == dialog.settings_view
     assert dialog.date_header_container.isHidden()
 
+    # Switch to Help & FAQ via sidebar pill
+    dialog.sidebar.pills["help"].click()
+    assert dialog.current_view_mode == "help"
+    assert dialog.page_title_lbl.text() == "Help & Documentation"
+    assert dialog.stack.currentWidget() == dialog.help_faq_view
+    assert dialog.date_header_container.isHidden()
+
     # Switch back to Tasks
     dialog.sidebar.pills["tasks"].click()
     assert dialog.current_view_mode == "tasks"
@@ -213,3 +229,45 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
     assert dialog.sidebar.is_dark
 
     dialog.close()
+
+
+def test_help_faq_view_lifecycle(qapp):
+    """Test HelpFaqView shortcut customization, saving, reset, and FAQ accordion."""
+    view = HelpFaqView(is_dark=True)
+
+    # Check hotkey input fields
+    assert "hotkey_workspace" in view.hotkey_inputs
+    assert "hotkey_toggle_mascot" in view.hotkey_inputs
+    assert "hotkey_quick_task" in view.hotkey_inputs
+    assert "hotkey_quick_note" in view.hotkey_inputs
+
+    # Check FAQ items populated
+    assert len(view.faq_items) >= 4
+    first_faq = view.faq_items[0]
+    assert not first_faq.is_expanded
+    assert first_faq.a_lbl.isHidden()
+
+    # Test expanding FAQ accordion
+    first_faq.header_btn.click()
+    assert first_faq.is_expanded
+    assert not first_faq.a_lbl.isHidden()
+    assert first_faq.indicator_lbl.text() == "[-]"
+
+    # Test custom hotkey input and saving
+    view.hotkey_inputs["hotkey_quick_task"].setText("Ctrl+Alt+T")
+    view.save_hk_btn.click()
+
+    assert config.get("hotkey_quick_task") == "<ctrl>+<alt>+t"
+    assert "successfully" in view.hk_feedback_lbl.text()
+
+    # Test reset to defaults
+    view.reset_hk_btn.click()
+    assert config.get("hotkey_quick_task") == "<ctrl>+<shift>+t"
+    assert config.get("hotkey_workspace") == "<ctrl>+<shift>+w"
+    assert "default" in view.hk_feedback_lbl.text()
+
+    # Test theme toggle
+    view.set_theme(is_dark=False)
+    assert not view.is_dark
+    view.set_theme(is_dark=True)
+    assert view.is_dark

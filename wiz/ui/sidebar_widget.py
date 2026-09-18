@@ -219,6 +219,16 @@ class NavPillButton(QPushButton):
             painter.drawLine(int(x + 1.5), int(y + 8), int(x + 4.0), int(y + 8))
             painter.drawLine(int(x + 12.0), int(y + 8), int(x + 14.5), int(y + 8))
 
+        elif self.icon_type == "help":
+            # Circular help badge with question mark
+            painter.drawEllipse(QRectF(x + 1.5, y + 1.5, 13, 13))
+            path = QPainterPath()
+            path.moveTo(x + 5.5, y + 6.0)
+            path.quadTo(x + 8.0, y + 4.0, x + 10.0, y + 6.0)
+            path.quadTo(x + 10.0, y + 8.0, x + 8.0, y + 9.5)
+            painter.drawPath(path)
+            painter.drawLine(int(x + 8), int(y + 11.5), int(x + 8), int(y + 12.0))
+
         painter.restore()
 
 
@@ -304,7 +314,7 @@ class SideNavBar(QWidget):
         self.divider.setFixedHeight(1)
         self.main_layout.addWidget(self.divider)
 
-        # 5. Settings Nav Pill
+        # 5. Utility Pills (Settings, Help & FAQ)
         self.settings_pill = NavPillButton(
             mode_id="settings",
             label="Settings",
@@ -315,6 +325,17 @@ class SideNavBar(QWidget):
         self.settings_pill.mode_selected.connect(self._on_pill_selected)
         self.pills["settings"] = self.settings_pill
         self.main_layout.addWidget(self.settings_pill)
+
+        self.help_pill = NavPillButton(
+            mode_id="help",
+            label="Help & FAQ",
+            icon_type="help",
+            is_dark=self.is_dark,
+            parent=self,
+        )
+        self.help_pill.mode_selected.connect(self._on_pill_selected)
+        self.pills["help"] = self.help_pill
+        self.main_layout.addWidget(self.help_pill)
 
         # 6. Theme Toggle Row
         theme_row = QHBoxLayout()
