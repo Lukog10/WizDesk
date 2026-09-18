@@ -1920,6 +1920,9 @@ class QuickEntryDialog(QDialog):
         self.theme_btn.setFixedSize(22, 22)
         self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
         self.theme_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.theme_btn.setAutoDefault(False)
+        self.theme_btn.setDefault(False)
+        self.theme_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.theme_btn.clicked.connect(self.toggle_theme)
         controls_layout.addWidget(self.theme_btn)
 
@@ -1927,6 +1930,9 @@ class QuickEntryDialog(QDialog):
         self.min_btn.setFixedSize(22, 22)
         self.min_btn.setToolTip("Minimize")
         self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.min_btn.setAutoDefault(False)
+        self.min_btn.setDefault(False)
+        self.min_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.min_btn.clicked.connect(self.showMinimized)
         controls_layout.addWidget(self.min_btn)
 
@@ -1934,6 +1940,9 @@ class QuickEntryDialog(QDialog):
         self.max_btn.setFixedSize(22, 22)
         self.max_btn.setToolTip("Maximize")
         self.max_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.max_btn.setAutoDefault(False)
+        self.max_btn.setDefault(False)
+        self.max_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.max_btn.clicked.connect(self._toggle_maximize_restore)
         controls_layout.addWidget(self.max_btn)
 
@@ -1941,6 +1950,9 @@ class QuickEntryDialog(QDialog):
         self.close_btn.setFixedSize(22, 22)
         self.close_btn.setToolTip("Close")
         self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.close_btn.setAutoDefault(False)
+        self.close_btn.setDefault(False)
+        self.close_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.close_btn.clicked.connect(self.close)
         controls_layout.addWidget(self.close_btn)
 
@@ -2111,6 +2123,11 @@ class QuickEntryDialog(QDialog):
         # Initial populate & render
         self._populate_projects()
         self._set_view_mode("tasks")
+
+        # Disable autoDefault and default on all child QPushButton widgets to prevent Enter key activations
+        for btn in self.findChildren(QPushButton):
+            btn.setAutoDefault(False)
+            btn.setDefault(False)
 
     def toggle_theme(self) -> None:
         """Toggle between light and dark themes and broadcast."""
@@ -2818,6 +2835,9 @@ class QuickEntryDialog(QDialog):
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Escape:
             self.close()
+        elif event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            # Suppress Enter/Return at the dialog level so QDialog does not trigger default/theme buttons
+            event.accept()
         else:
             super().keyPressEvent(event)
 

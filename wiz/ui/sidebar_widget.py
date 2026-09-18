@@ -61,6 +61,8 @@ class NavPillButton(QPushButton):
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
 
         self.clicked.connect(lambda: self.mode_selected.emit(self.mode_id))
 
@@ -323,6 +325,9 @@ class SideNavBar(QWidget):
         self.theme_btn = QPushButton()
         self.theme_btn.setFixedHeight(30)
         self.theme_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.theme_btn.setAutoDefault(False)
+        self.theme_btn.setDefault(False)
+        self.theme_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.theme_btn.clicked.connect(self.theme_toggle_requested.emit)
         theme_row.addWidget(self.theme_btn)
 
