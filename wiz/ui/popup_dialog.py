@@ -124,22 +124,23 @@ class CalendarPopupDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        card_border = "#27272A" if self.is_dark else "#E4E4E7"
-        combo_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        combo_border = "#3F3F46" if self.is_dark else "#E4E4E7"
-        combo_text = "#F4F4F5" if self.is_dark else "#18181B"
-        nav_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
-        nav_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
-        nav_btn_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        table_text = "#F4F4F5" if self.is_dark else "#18181B"
-        table_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        table_sel_bg = "#FAFAFA" if self.is_dark else "#18181B"
-        table_sel_text = "#18181B" if self.is_dark else "#FFFFFF"
-        today_btn_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        today_btn_border = "#3F3F46" if self.is_dark else "#E4E4E7"
-        today_btn_text = "#F4F4F5" if self.is_dark else "#18181B"
-        today_btn_hover_bg = "#3F3F46" if self.is_dark else "#E4E4E7"
+        card_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        card_border = "#27272A" if self.is_dark else "#D6D0C5"
+        combo_bg = "#27272A" if self.is_dark else "#EDE9E0"
+        combo_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        combo_text = "#F4F4F5" if self.is_dark else "#242220"
+        nav_btn_color = "#A1A1AA" if self.is_dark else "#666460"
+        nav_btn_hover_color = "#FF8E6B" if self.is_dark else "#FF5722"
+        nav_btn_hover_bg = "#27272A" if self.is_dark else "#EDE7DC"
+        table_text = "#F4F4F5" if self.is_dark else "#242220"
+        table_hover_bg = "rgba(255, 107, 61, 40)" if self.is_dark else "#FEECE5"
+        table_sel_bg = "#FF5722"
+        table_sel_text = "#FFFFFF"
+        today_btn_bg = "#27272A" if self.is_dark else "#EDE7DC"
+        today_btn_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        today_btn_text = "#F4F4F5" if self.is_dark else "#242220"
+        today_btn_hover_bg = "#FF5722"
+        today_btn_hover_text = "#FFFFFF"
 
         card = QFrame()
         card.setObjectName("calCard")
@@ -161,6 +162,7 @@ class CalendarPopupDialog(QDialog):
             }}
             QComboBox:hover {{
                 background-color: {nav_btn_hover_bg};
+                border-color: #FF6B3D;
             }}
             QComboBox::drop-down {{
                 border: none;
@@ -191,7 +193,7 @@ class CalendarPopupDialog(QDialog):
             QPushButton#calNavBtn:hover {{
                 background-color: {nav_btn_hover_bg};
                 color: {nav_btn_hover_color};
-                border: 1px solid {combo_border};
+                border: 1px solid #FF6B3D;
             }}
             QCalendarWidget {{
                 background-color: {card_bg};
@@ -274,14 +276,14 @@ class CalendarPopupDialog(QDialog):
         # Format header days cleanly in muted grey
         hdr_font = get_font(9, QFont.Weight.DemiBold)
         hdr_fmt = QTextCharFormat()
-        hdr_fmt.setForeground(QColor("#A1A1AA" if self.is_dark else "#71717A"))
+        hdr_fmt.setForeground(QColor("#A1A1AA" if self.is_dark else "#666460"))
         hdr_fmt.setFont(hdr_font)
         self.calendar.setHeaderTextFormat(hdr_fmt)
 
         # Neutralize weekend text to clean theme color
         work_font = get_font(9)
         work_fmt = QTextCharFormat()
-        work_fmt.setForeground(QColor("#F4F4F5" if self.is_dark else "#18181B"))
+        work_fmt.setForeground(QColor("#F4F4F5" if self.is_dark else "#242220"))
         work_fmt.setFont(work_font)
         for day in [
             Qt.DayOfWeek.Sunday,
@@ -317,7 +319,8 @@ class CalendarPopupDialog(QDialog):
             }}
             QPushButton:hover {{
                 background-color: {today_btn_hover_bg};
-                color: #FFFFFF;
+                color: {today_btn_hover_text};
+                border: 1px solid {today_btn_hover_bg};
             }}
         """)
         today_btn.clicked.connect(self._on_today_clicked)
