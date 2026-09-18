@@ -481,6 +481,13 @@ class ProjectsOverviewPage(QWidget):
         self.combo_timeframe.currentIndexChanged.connect(self._on_combo_timeframe_changed)
         toolbar.addWidget(self.combo_timeframe)
 
+        self.btn_new_project = QPushButton("+ New Project")
+        self.btn_new_project.setObjectName("NewProjectButton")
+        self.btn_new_project.setFixedHeight(28)
+        self.btn_new_project.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_new_project.clicked.connect(self.new_project_clicked.emit)
+        toolbar.addWidget(self.btn_new_project)
+
         # Backward compatibility invisible buttons
         self.btn_tf_today = QPushButton("Today")
         self.btn_tf_week = QPushButton("This Week")
@@ -499,11 +506,6 @@ class ProjectsOverviewPage(QWidget):
         self.btn_tf_all.clicked.connect(lambda: self._set_timeframe("all_time"))
 
         toolbar.addStretch()
-
-        self.btn_new_project = QPushButton("+ New Project")
-        self.btn_new_project.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_new_project.clicked.connect(self.new_project_clicked.emit)
-        toolbar.addWidget(self.btn_new_project)
 
         layout.addLayout(toolbar)
 
@@ -741,18 +743,22 @@ class ProjectsOverviewPage(QWidget):
             """
             btn_new_style = f"""
                 QPushButton {{
-                    background-color: #2E2E33;
-                    color: #F4F4F6;
-                    border: 1px solid #4A4A52;
-                    border-radius: 12px;
-                    padding: 4px 14px;
+                    background-color: #FF5722;
+                    color: #FFFFFF;
+                    border: 1px solid #FF5722;
+                    border-radius: 8px;
+                    padding: 0px 14px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 600;
                 }}
                 QPushButton:hover {{
-                    background-color: #383840;
+                    background-color: #FF6B3D;
                     border-color: #FF6B3D;
+                }}
+                QPushButton:pressed {{
+                    background-color: #E64A19;
+                    border-color: #E64A19;
                 }}
             """
             badge_style = f"""
@@ -806,14 +812,19 @@ class ProjectsOverviewPage(QWidget):
                     background-color: #FF5722;
                     color: #FFFFFF;
                     border: 1px solid #FF5722;
-                    border-radius: 12px;
-                    padding: 4px 14px;
+                    border-radius: 8px;
+                    padding: 0px 14px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 600;
                 }}
                 QPushButton:hover {{
                     background-color: #E64A19;
+                    border-color: #E64A19;
+                }}
+                QPushButton:pressed {{
+                    background-color: #D84315;
+                    border-color: #D84315;
                 }}
             """
             badge_style = f"""
