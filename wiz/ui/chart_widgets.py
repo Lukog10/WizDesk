@@ -102,8 +102,8 @@ class MicroSparklineCanvas(QWidget):
             grad.setColorAt(1.0, QColor(255, 255, 255, 4))
         else:
             top_alpha = 50 if self.is_hovered else 30
-            grad.setColorAt(0.0, QColor(99, 102, 241, top_alpha))
-            grad.setColorAt(1.0, QColor(99, 102, 241, 2))
+            grad.setColorAt(0.0, QColor(255, 107, 61, top_alpha))
+            grad.setColorAt(1.0, QColor(255, 107, 61, 2))
         painter.fillPath(area_path, grad)
 
         # Line stroke
@@ -111,7 +111,7 @@ class MicroSparklineCanvas(QWidget):
         if self.is_dark:
             stroke_color = QColor("#FFFFFF" if self.is_hovered else "#F4F4F5")
         else:
-            stroke_color = QColor("#4F46E5" if self.is_hovered else "#6366F1")
+            stroke_color = QColor("#E64A19" if self.is_hovered else "#FF6B3D")
         pen = QPen(stroke_color, stroke_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -122,16 +122,16 @@ class MicroSparklineCanvas(QWidget):
             last_pt = points[-1]
             if self.is_hovered:
                 # Glowing outer halo
-                halo_color = QColor(255, 255, 255, 80) if self.is_dark else QColor(99, 102, 241, 75)
+                halo_color = QColor(255, 255, 255, 80) if self.is_dark else QColor(255, 107, 61, 75)
                 painter.setBrush(halo_color)
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.drawEllipse(last_pt, 5.0, 5.0)
                 painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#4F46E5"), 1.6))
+                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#FF5722"), 1.6))
                 painter.drawEllipse(last_pt, 2.5, 2.5)
             else:
                 painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#4F46E5"), 1.4))
+                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#FF5722"), 1.4))
                 painter.drawEllipse(last_pt, 2.0, 2.0)
 
 
@@ -308,10 +308,10 @@ class KpiStatCard(QFrame):
 
         if self.is_dark:
             if self.is_hero:
-                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4F46E5, stop:0.55 #4338CA, stop:1 #059669)"
-                border = "#6366F1"
-                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #6366F1, stop:0.55 #4F46E5, stop:1 #10B981)"
-                hover_border = "#818CF8"
+                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #C83B12, stop:0.55 #8E2506, stop:1 #27140E)"
+                border = "#FF6B3D"
+                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E04818, stop:0.55 #A72E09, stop:1 #321810)"
+                hover_border = "#FF8E6B"
                 text_color = "#FFFFFF"
                 sub_color = "rgba(255, 255, 255, 0.88)"
                 badge_bg = "rgba(255, 255, 255, 0.22)"
@@ -328,11 +328,11 @@ class KpiStatCard(QFrame):
                 bg = "#242427"
                 border = "#333338"
                 hover_bg = "#2A2A2F"
-                hover_border = "#6366F1"
+                hover_border = "#FF6B3D"
                 text_color = "#F4F4F6"
                 sub_color = "#A1A1AA"
-                badge_bg = "rgba(16, 185, 129, 0.15)" if "+" in self.change_text else ("rgba(244, 63, 94, 0.15)" if "-" in self.change_text else "rgba(99, 102, 241, 0.15)")
-                badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#818CF8")
+                badge_bg = "rgba(16, 185, 129, 0.15)" if "+" in self.change_text else ("rgba(244, 63, 94, 0.15)" if "-" in self.change_text else "rgba(255, 107, 61, 0.20)")
+                badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#FF8E6B")
                 badge_border = border
                 prog_bg = "#333338"
                 prog_chunk = "#10B981"
@@ -343,39 +343,39 @@ class KpiStatCard(QFrame):
                 icon_color = "#A1A1AA"
         else:
             if self.is_hero:
-                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #EEF2FF, stop:0.6 #E0E7FF, stop:1 #ECFDF5)"
-                border = "#C7D2FE"
-                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E0E7FF, stop:0.6 #D5DEFF, stop:1 #D1FAE5)"
-                hover_border = "#818CF8"
-                text_color = "#1E1B4B"
-                sub_color = "#4338CA"
+                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #FFF1EC, stop:0.6 #FFE3D8, stop:1 #FFF8F5)"
+                border = "#FFCCBC"
+                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #FFEBE3, stop:0.6 #FFDACD, stop:1 #FFF3EE)"
+                hover_border = "#FF6B3D"
+                text_color = "#242220"
+                sub_color = "#D84315"
                 badge_bg = "#ECFDF5"
                 badge_color = "#059669"
                 badge_border = "#A7F3D0"
-                prog_bg = "#E5E0D8"
+                prog_bg = "#EBE5DC"
                 prog_chunk = "#059669"
                 prog_chunk_hover = "#10B981"
                 card_border = f"1px solid {border}"
-                icon_bg = "#EEF2FF"
-                icon_border = "#C7D2FE"
-                icon_color = "#4F46E5"
+                icon_bg = "#FFDCCF"
+                icon_border = "#FFBCAA"
+                icon_color = "#E64A19"
             else:
                 bg = "#FFFFFF"
-                border = "#E5E0D8"
-                hover_bg = "#FAF9F6"
-                hover_border = "#6366F1"
-                text_color = "#111111"
-                sub_color = "#71717A"
-                badge_bg = "#ECFDF5" if "+" in self.change_text else ("#FFF1F2" if "-" in self.change_text else "#EEF2FF")
-                badge_color = "#059669" if "+" in self.change_text else ("#E11D48" if "-" in self.change_text else "#4F46E5")
+                border = "#E2DDD3"
+                hover_bg = "#FAF8F5"
+                hover_border = "#FF6B3D"
+                text_color = "#242220"
+                sub_color = "#78716C"
+                badge_bg = "#ECFDF5" if "+" in self.change_text else ("#FFF1F2" if "-" in self.change_text else "#FEECE5")
+                badge_color = "#059669" if "+" in self.change_text else ("#E11D48" if "-" in self.change_text else "#D84315")
                 badge_border = border
-                prog_bg = "#E5E0D8"
+                prog_bg = "#EDE8DF"
                 prog_chunk = "#059669"
                 prog_chunk_hover = "#10B981"
                 card_border = f"1px solid {border}"
-                icon_bg = "#F4F4F5"
-                icon_border = "#E5E0D8"
-                icon_color = "#71717A"
+                icon_bg = "#EDE8DF"
+                icon_border = "#D6D0C5"
+                icon_color = "#78716C"
 
         card_name = "KpiHeroCard" if self.is_hero else "KpiStatCard"
 
@@ -444,7 +444,7 @@ class KpiStatCard(QFrame):
 
 
 COMPARISON_PALETTE = [
-    "#6366F1",  # Indigo
+    "#FF6B3D",  # Brand Mascot Orange-Red
     "#10B981",  # Emerald
     "#F59E0B",  # Amber
     "#EC4899",  # Rose
@@ -693,7 +693,7 @@ class ProjectComparisonCanvas(QWidget):
                         is_spotlighted = (self.spotlight_series == s.get("name"))
                         is_dimmed = (self.spotlight_series is not None and not is_spotlighted)
 
-                        bar_color = QColor(s.get("color", "#6366F1"))
+                        bar_color = QColor(s.get("color", "#FF6B3D"))
                         if is_spotlighted:
                             bar_color = bar_color.lighter(125)
                         elif is_dimmed:
@@ -723,7 +723,7 @@ class ProjectComparisonCanvas(QWidget):
             else:
                 # Area / Line Mode: Smooth Bezier Splines
                 for s in reversed(active_series):
-                    color = QColor(s.get("color", "#6366F1"))
+                    color = QColor(s.get("color", "#FF6B3D"))
                     hours_list = s.get("hours", [])
 
                     is_spotlighted = (self.spotlight_series == s.get("name"))
@@ -808,7 +808,7 @@ class ProjectComparisonCanvas(QWidget):
                 val = h_list[self.hover_bucket_idx] if self.hover_bucket_idx < len(h_list) else 0.0
                 total_b_hours += val
                 if val > 0 or len(self.series) <= 3:
-                    active_rows.append((s.get("color", "#6366F1"), s.get("name", "Project"), val))
+                    active_rows.append((s.get("color", "#FF6B3D"), s.get("name", "Project"), val))
 
             if active_rows:
                 painter.setFont(get_font(9, QFont.Weight.DemiBold))
@@ -863,7 +863,7 @@ class ProjectComparisonCanvas(QWidget):
 
                 # Total badge
                 painter.setFont(get_font(8, QFont.Weight.DemiBold))
-                painter.setPen(QColor("#818CF8" if self.is_dark else "#4F46E5"))
+                painter.setPen(QColor("#FF8E6B" if self.is_dark else "#D84315"))
                 painter.drawText(QRectF(card_x + card_w - 62, card_y + 5, 52, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, total_badge_text)
 
                 # Divider
@@ -1053,7 +1053,7 @@ class ProjectComparisonChartWidget(QFrame):
 
             dot = QFrame()
             dot.setFixedSize(6, 6)
-            dot.setStyleSheet(f"background-color: {s.get('color', '#6366F1')}; border-radius: 3px;")
+            dot.setStyleSheet(f"background-color: {s.get('color', '#FF6B3D')}; border-radius: 3px;")
             pill_layout.addWidget(dot)
 
             name = s['name']
@@ -1080,9 +1080,9 @@ class ProjectComparisonChartWidget(QFrame):
 
     def _update_toggle_styles(self) -> None:
         mode = self.canvas.chart_mode
-        active_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        active_color = "#F4F4F6" if self.is_dark else "#18181B"
-        inactive_color = "#A1A1AA" if self.is_dark else "#71717A"
+        active_bg = "#18181B" if self.is_dark else "#FAF8F4"
+        active_color = "#F4F4F6" if self.is_dark else "#242220"
+        inactive_color = "#A1A1AA" if self.is_dark else "#78716C"
 
         btn_base = f"""
             QPushButton {{
@@ -1099,10 +1099,10 @@ class ProjectComparisonChartWidget(QFrame):
 
     def apply_theme(self) -> None:
         bg = "#242427" if self.is_dark else "#FFFFFF"
-        border = "#333338" if self.is_dark else "#E5E0D8"
-        hover_border = "#4A4A54" if self.is_dark else "#D4CEBF"
-        capsule_bg = "#1E1E22" if self.is_dark else "#ECECF0"
-        title_color = "#F4F4F6" if self.is_dark else "#111111"
+        border = "#333338" if self.is_dark else "#E2DDD3"
+        hover_border = "#4A4A54" if self.is_dark else "#D6D0C5"
+        capsule_bg = "#1E1E22" if self.is_dark else "#E6E1D7"
+        title_color = "#F4F4F6" if self.is_dark else "#242220"
 
         self.setStyleSheet(f"""
             QFrame#ChartCard {{
@@ -1321,7 +1321,7 @@ class AppUsageDonutCanvas(QWidget):
                     sec_cx = cx
                     sec_cy = cy
 
-                app_color = QColor(app.get("color", "#6366F1"))
+                app_color = QColor(app.get("color", "#FF6B3D"))
                 if is_hovered:
                     app_color = app_color.lighter(118)
                 elif self.hovered_segment_idx is not None:
@@ -1368,7 +1368,7 @@ class AppUsageDonutCanvas(QWidget):
             hours = app.get("hours", 0.0)
             pct = app.get("percentage", 0)
             pct_str = f"{int(round(pct))}%" if (isinstance(pct, (int, float)) and pct == int(pct)) else f"{pct}%"
-            app_color = QColor(app.get("color", "#6366F1")).lighter(120 if self.is_dark else 100)
+            app_color = QColor(app.get("color", "#FF6B3D")).lighter(120 if self.is_dark else 100)
 
             font_title = get_font(10, QFont.Weight.Bold)
             fm_t = QFontMetrics(font_title)
@@ -1621,7 +1621,7 @@ class ProjectTrackingWidget(QFrame):
             pct = int(round((h / total_hours * 100))) if total_hours > 0 else int(round(p.get("completion_rate", 0.0) * 100))
             row = ProjectTargetRow(
                 project_name=p["name"],
-                color=p.get("color", "#6366F1"),
+                color=p.get("color", "#FF6B3D"),
                 hours=h,
                 pct=pct,
                 is_dark=self.is_dark,
@@ -1640,15 +1640,15 @@ class ProjectTrackingWidget(QFrame):
 
     def apply_theme(self) -> None:
         bg = "#242427" if self.is_dark else "#FFFFFF"
-        border = "#333338" if self.is_dark else "#E5E0D8"
-        hover_border = "#4A4A54" if self.is_dark else "#D4CEBF"
-        title_color = "#F4F4F6" if self.is_dark else "#111111"
-        sub_color = "#A1A1AA" if self.is_dark else "#71717A"
-        badge_bg = "#1F1F22" if self.is_dark else "#F4F4F5"
-        badge_border = "#333338" if self.is_dark else "#E5E0D8"
-        badge_color = "#A1A1AA" if self.is_dark else "#71717A"
-        scrollbar_thumb = "#3F3F46" if self.is_dark else "#D4CEBF"
-        scrollbar_thumb_hover = "#52525B" if self.is_dark else "#A1A1AA"
+        border = "#333338" if self.is_dark else "#E2DDD3"
+        hover_border = "#4A4A54" if self.is_dark else "#D6D0C5"
+        title_color = "#F4F4F6" if self.is_dark else "#242220"
+        sub_color = "#A1A1AA" if self.is_dark else "#78716C"
+        badge_bg = "#1F1F22" if self.is_dark else "#EDE8DF"
+        badge_border = "#333338" if self.is_dark else "#D6D0C5"
+        badge_color = "#A1A1AA" if self.is_dark else "#78716C"
+        scrollbar_thumb = "#3F3F46" if self.is_dark else "#D6D0C5"
+        scrollbar_thumb_hover = "#52525B" if self.is_dark else "#78716C"
 
         self.lbl_subtitle.setStyleSheet(f"color: {sub_color};")
         self.setStyleSheet(f"""
@@ -1906,7 +1906,7 @@ class AppUsageAnalyticsWidget(QFrame):
             pct = int(round((h / total_hours * 100))) if total_hours > 0 else int(round(p.get("completion_rate", 0.0) * 100))
             row = ProjectTargetRow(
                 project_name=p["name"],
-                color=p.get("color", "#6366F1"),
+                color=p.get("color", "#FF6B3D"),
                 hours=h,
                 pct=pct,
                 is_dark=self.is_dark,
@@ -1951,7 +1951,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
             dot = QFrame()
             dot.setFixedSize(6, 6)
-            dot.setStyleSheet(f"background-color: {app.get('color', '#6366F1')}; border-radius: 3px;")
+            dot.setStyleSheet(f"background-color: {app.get('color', '#FF6B3D')}; border-radius: 3px;")
             row.addWidget(dot)
 
             app_name = app["app_name"]
@@ -2010,7 +2010,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
             dot = QFrame()
             dot.setFixedSize(6, 6)
-            dot.setStyleSheet(f"background-color: {app.get('color', '#6366F1')}; border-radius: 3px;")
+            dot.setStyleSheet(f"background-color: {app.get('color', '#FF6B3D')}; border-radius: 3px;")
             row.addWidget(dot)
 
             name_lbl = QLabel(app["app_name"])
@@ -2032,7 +2032,7 @@ class AppUsageAnalyticsWidget(QFrame):
             bar.setFixedHeight(5)
 
             bar_bg = "#333338" if self.is_dark else "#E5E0D8"
-            bar_color = app.get("color", "#6366F1")
+            bar_color = app.get("color", "#FF6B3D")
             bar_color_q = QColor(bar_color)
             bar_chunk_grad = f"qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {bar_color}, stop:1 {bar_color_q.lighter(116).name()})"
             bar.setStyleSheet(f"""
@@ -2063,9 +2063,9 @@ class AppUsageAnalyticsWidget(QFrame):
 
     def _update_toggle_styles(self) -> None:
         mode = self.active_mode
-        active_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        active_color = "#F4F4F6" if self.is_dark else "#18181B"
-        inactive_color = "#A1A1AA" if self.is_dark else "#71717A"
+        active_bg = "#18181B" if self.is_dark else "#FAF8F4"
+        active_color = "#F4F4F6" if self.is_dark else "#242220"
+        inactive_color = "#A1A1AA" if self.is_dark else "#78716C"
 
         btn_base = f"""
             QPushButton {{
@@ -2082,14 +2082,14 @@ class AppUsageAnalyticsWidget(QFrame):
 
     def apply_theme(self) -> None:
         bg = "#242427" if self.is_dark else "#FFFFFF"
-        border = "#333338" if self.is_dark else "#E5E0D8"
-        hover_border = "#4A4A54" if self.is_dark else "#D4CEBF"
-        capsule_bg = "#1E1E22" if self.is_dark else "#ECECF0"
-        title_color = "#F4F4F6" if self.is_dark else "#111111"
-        divider_color = "#333338" if self.is_dark else "#E5E0D8"
-        badge_bg = "#1F1F22" if self.is_dark else "#F4F4F5"
-        badge_border = "#333338" if self.is_dark else "#E5E0D8"
-        badge_color = "#A1A1AA" if self.is_dark else "#71717A"
+        border = "#333338" if self.is_dark else "#E2DDD3"
+        hover_border = "#4A4A54" if self.is_dark else "#D6D0C5"
+        capsule_bg = "#1E1E22" if self.is_dark else "#E6E1D7"
+        title_color = "#F4F4F6" if self.is_dark else "#242220"
+        divider_color = "#333338" if self.is_dark else "#E2DDD3"
+        badge_bg = "#1F1F22" if self.is_dark else "#EDE8DF"
+        badge_border = "#333338" if self.is_dark else "#D6D0C5"
+        badge_color = "#A1A1AA" if self.is_dark else "#78716C"
 
         self.setStyleSheet(f"""
             QFrame#AppUsageCard {{

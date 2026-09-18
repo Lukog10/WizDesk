@@ -59,12 +59,12 @@ from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
 def get_context_menu_style(is_dark: bool = False) -> str:
-    bg = "#18181B" if is_dark else "#FFFFFF"
-    color = "#F4F4F5" if is_dark else "#18181B"
-    border = "#27272A" if is_dark else "#E4E4E7"
-    hover_bg = "#27272A" if is_dark else "#F4F4F5"
-    hover_color = "#FAFAFA" if is_dark else "#000000"
-    disabled_color = "#71717A" if is_dark else "#A1A1AA"
+    bg = "#18181B" if is_dark else "#FAF8F5"
+    color = "#F4F4F5" if is_dark else "#242220"
+    border = "#27272A" if is_dark else "#D6D0C5"
+    hover_bg = "#27272A" if is_dark else "#FEECE5"
+    hover_color = "#FAFAFA" if is_dark else "#D84315"
+    disabled_color = "#71717A" if is_dark else "#A8A29E"
     return f"""
         QMenu {{
             background-color: {bg};
@@ -390,21 +390,21 @@ class CreateSectionDialog(QDialog):
 
         self.is_dark = is_dark if is_dark is not None else (config.theme == "dark")
 
-        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        card_border = "#27272A" if self.is_dark else "#E4E4E7"
-        title_color = "#F4F4F5" if self.is_dark else "#18181B"
-        close_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
-        input_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        input_border = "#3F3F46" if self.is_dark else "#D4D4D8"
-        input_text = "#F4F4F5" if self.is_dark else "#18181B"
-        input_focus_border = "#FAFAFA" if self.is_dark else "#18181B"
-        cancel_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        cancel_text = "#A1A1AA" if self.is_dark else "#52525B"
-        cancel_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
-        cancel_hover_bg = "#3F3F46" if self.is_dark else "#E4E4E7"
-        submit_bg = "#FAFAFA" if self.is_dark else "#18181B"
-        submit_text = "#18181B" if self.is_dark else "#FFFFFF"
-        submit_hover_bg = "#E4E4E7" if self.is_dark else "#3F3F46"
+        card_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        card_border = "#27272A" if self.is_dark else "#D6D0C5"
+        title_color = "#F4F4F5" if self.is_dark else "#242220"
+        close_btn_color = "#71717A" if self.is_dark else "#A8A29E"
+        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
+        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        input_text = "#F4F4F5" if self.is_dark else "#242220"
+        input_focus_border = "#FF6B3D"
+        cancel_bg = "#27272A" if self.is_dark else "#EBE6DC"
+        cancel_text = "#A1A1AA" if self.is_dark else "#57534E"
+        cancel_hover_color = "#FAFAFA" if self.is_dark else "#242220"
+        cancel_hover_bg = "#3F3F46" if self.is_dark else "#DDD7CC"
+        submit_bg = "#FF6B3D" if self.is_dark else "#FF5722"
+        submit_text = "#FFFFFF"
+        submit_hover_bg = "#E8582B" if self.is_dark else "#E64A19"
 
         self.outer_layout = QVBoxLayout(self)
         self.outer_layout.setContentsMargins(12, 12, 12, 12)
@@ -627,9 +627,9 @@ class RoundedCheckbox(QWidget):
         radius = 4.0 if self._size >= 18 else 3.0
 
         if self._checked:
-            # Filled rounded square with checkmark
-            bg_color = QColor("#FAFAFA") if self.is_dark else QColor("#18181B")
-            check_color = QColor("#18181B") if self.is_dark else QColor("#FFFFFF")
+            # Brand Orange-Red filled rounded square with white checkmark
+            bg_color = QColor("#FF6B3D") if self.is_dark else QColor("#FF5722")
+            check_color = QColor("#FFFFFF")
 
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(bg_color)
@@ -649,8 +649,8 @@ class RoundedCheckbox(QWidget):
             painter.drawLine(int(p2_x), int(p2_y), int(p3_x), int(p3_y))
         else:
             # Clean subtle rounded outline
-            border_color = QColor("#52525B") if self.is_dark else QColor("#D0D0D6")
-            bg_color = QColor("#27272A") if self.is_dark else QColor("#FFFFFF")
+            border_color = QColor("#52525B") if self.is_dark else QColor("#C8C2B6")
+            bg_color = QColor("#27272A") if self.is_dark else QColor("#EDE9E0")
 
             pen = QPen(border_color, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)
@@ -695,7 +695,7 @@ class SegmentedFilterBar(QWidget):
             self._update_button_styles()
 
     def _update_container_style(self) -> None:
-        bg = "#27272A" if self.is_dark else "#ECECF0"
+        bg = "#27272A" if self.is_dark else "#E6E1D7"
         self.setStyleSheet(f"""
             QWidget {{
                 background-color: {bg};
@@ -712,11 +712,11 @@ class SegmentedFilterBar(QWidget):
 
     def _update_button_styles(self) -> None:
         """Update button styles to give the active button an elevated pill look."""
-        active_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        active_color = "#F4F4F5" if self.is_dark else "#111113"
-        inactive_color = "#A1A1AA" if self.is_dark else "#71717A"
-        hover_color = "#FAFAFA" if self.is_dark else "#18181B"
-        hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(255, 255, 255, 0.4)"
+        active_bg = "#18181B" if self.is_dark else "#FAF8F4"
+        active_color = "#F4F4F5" if self.is_dark else "#242220"
+        inactive_color = "#A1A1AA" if self.is_dark else "#78716C"
+        hover_color = "#FAFAFA" if self.is_dark else "#242220"
+        hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.05)"
 
         for opt, btn in self._buttons.items():
             if opt == self.current_filter:
@@ -818,9 +818,9 @@ class SubtaskRowWidget(QWidget):
         self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
 
-        edit_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        edit_color = "#F4F4F5" if self.is_dark else "#18181B"
-        edit_border = "#FAFAFA" if self.is_dark else "#18181B"
+        edit_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        edit_color = "#F4F4F5" if self.is_dark else "#242220"
+        edit_border = "#FF6B3D"
 
         self.edit_input = InlineEditInput(subtask.title, self)
         self.edit_input.setFont(get_font(9))
@@ -843,7 +843,7 @@ class SubtaskRowWidget(QWidget):
         del_btn = QPushButton("x")
         del_btn.setFixedSize(16, 16)
         del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        del_btn_color = "#71717A" if self.is_dark else "#D4D4D8"
+        del_btn_color = "#71717A" if self.is_dark else "#A8A29E"
         del_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -869,7 +869,7 @@ class SubtaskRowWidget(QWidget):
         time_layout.setContentsMargins(52, 0, 4, 2)
         time_layout.setSpacing(4)
 
-        time_color = "#71717A" if self.is_dark else "#A1A1AA"
+        time_color = "#71717A" if self.is_dark else "#78716C"
         self.time_label = QLabel()
         self.time_label.setStyleSheet(f"""
             QLabel {{
@@ -923,8 +923,8 @@ class SubtaskRowWidget(QWidget):
 
     def _update_label_style(self, is_done: bool) -> None:
         self._update_time_label(is_done)
-        done_color = "#71717A" if self.is_dark else "#A1A1AA"
-        active_color = "#D4D4D8" if self.is_dark else "#52525B"
+        done_color = "#71717A" if self.is_dark else "#A8A29E"
+        active_color = "#D4D4D8" if self.is_dark else "#44403C"
 
         if is_done:
             self.label.setStyleSheet(f"""
@@ -1029,9 +1029,9 @@ class TaskRowWidget(QWidget):
         self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
 
-        edit_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        edit_color = "#F4F4F5" if self.is_dark else "#18181B"
-        edit_border = "#FAFAFA" if self.is_dark else "#18181B"
+        edit_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        edit_color = "#F4F4F5" if self.is_dark else "#242220"
+        edit_border = "#FF6B3D"
 
         self.edit_input = InlineEditInput(task.title, self)
         self.edit_input.setFont(get_font(10, QFont.Weight.Medium))
@@ -1054,9 +1054,9 @@ class TaskRowWidget(QWidget):
         # "+ subtask" button
         self.add_sub_btn = QPushButton("+ subtask")
         self.add_sub_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        sub_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
-        sub_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
-        sub_btn_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
+        sub_btn_color = "#71717A" if self.is_dark else "#78716C"
+        sub_btn_hover_color = "#FAFAFA" if self.is_dark else "#242220"
+        sub_btn_hover_bg = "#27272A" if self.is_dark else "#EBE6DC"
         self.add_sub_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -1092,7 +1092,7 @@ class TaskRowWidget(QWidget):
         status_bar_layout.addWidget(self.status_combo)
 
         # Time metadata label
-        time_color = "#71717A" if self.is_dark else "#A1A1AA"
+        time_color = "#71717A" if self.is_dark else "#78716C"
         self.time_label = QLabel()
         self.time_label.setStyleSheet(f"""
             QLabel {{
@@ -1127,10 +1127,10 @@ class TaskRowWidget(QWidget):
         sub_input_layout.setContentsMargins(28, 2, 4, 2)
         sub_input_layout.setSpacing(6)
 
-        sub_in_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        sub_in_border = "#3F3F46" if self.is_dark else "#D4D4D8"
-        sub_in_text = "#F4F4F5" if self.is_dark else "#18181B"
-        sub_in_focus = "#FAFAFA" if self.is_dark else "#18181B"
+        sub_in_bg = "#27272A" if self.is_dark else "#EDE9E0"
+        sub_in_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        sub_in_text = "#F4F4F5" if self.is_dark else "#242220"
+        sub_in_focus = "#FF6B3D"
 
         self.sub_input = QLineEdit()
         self.sub_input.setPlaceholderText("+ Add subtask... (Press Enter)")
@@ -1152,9 +1152,9 @@ class TaskRowWidget(QWidget):
         self.sub_input.returnPressed.connect(self._on_submit_subtask)
         sub_input_layout.addWidget(self.sub_input, stretch=1)
 
-        sub_btn_bg = "#FAFAFA" if self.is_dark else "#18181B"
-        sub_btn_text = "#18181B" if self.is_dark else "#FFFFFF"
-        sub_btn_hover = "#E4E4E7" if self.is_dark else "#3F3F46"
+        sub_btn_bg = "#FF6B3D" if self.is_dark else "#FF5722"
+        sub_btn_text = "#FFFFFF"
+        sub_btn_hover = "#E8582B" if self.is_dark else "#E64A19"
 
         sub_add_confirm_btn = QPushButton("Add")
         sub_add_confirm_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -1271,8 +1271,8 @@ class TaskRowWidget(QWidget):
         self.status_combo.blockSignals(False)
 
         # Text colors
-        done_color = "#71717A" if self.is_dark else "#A1A1AA"
-        active_color = "#F4F4F5" if self.is_dark else "#18181B"
+        done_color = "#71717A" if self.is_dark else "#A8A29E"
+        active_color = "#F4F4F5" if self.is_dark else "#242220"
 
         # Label styling
         if is_done:
@@ -1316,11 +1316,11 @@ class TaskRowWidget(QWidget):
             """)
 
         # Dropdown popup styling
-        combo_popup_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        combo_popup_text = "#F4F4F5" if self.is_dark else "#18181B"
-        combo_popup_border = "#27272A" if self.is_dark else "#E4E4E7"
-        combo_popup_sel_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        combo_popup_sel_text = "#FFFFFF" if self.is_dark else "#000000"
+        combo_popup_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        combo_popup_text = "#F4F4F5" if self.is_dark else "#242220"
+        combo_popup_border = "#27272A" if self.is_dark else "#D6D0C5"
+        combo_popup_sel_bg = "rgba(255, 107, 61, 0.22)" if self.is_dark else "#FEECE5"
+        combo_popup_sel_text = "#FFAB91" if self.is_dark else "#D84315"
 
         # Dropdown styling based on state
         if is_in_progress:
@@ -1411,11 +1411,11 @@ class TaskRowWidget(QWidget):
                 }}
             """)
         else:
-            default_bg = "#27272A" if self.is_dark else "#F4F4F5"
-            default_color = "#A1A1AA" if self.is_dark else "#71717A"
-            default_border = "#3F3F46" if self.is_dark else "#E4E4E7"
-            hover_border = "#52525B" if self.is_dark else "#D4D4D8"
-            hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+            default_bg = "#27272A" if self.is_dark else "#EDE9E0"
+            default_color = "#A1A1AA" if self.is_dark else "#57534E"
+            default_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+            hover_border = "#FF6B3D"
+            hover_color = "#FAFAFA" if self.is_dark else "#242220"
 
             self.status_combo.setStyleSheet(f"""
                 QComboBox {{
@@ -1598,7 +1598,7 @@ class NoteRowWidget(QWidget):
         meta_layout.addWidget(self.tag_btn)
 
         time_str = note.created_at.strftime("%I:%M %p").lstrip("0")
-        time_color = "#71717A" if self.is_dark else "#A1A1AA"
+        time_color = "#71717A" if self.is_dark else "#78716C"
         time_lbl = QLabel(time_str)
         time_lbl.setStyleSheet(f"""
             QLabel {{
@@ -1617,7 +1617,7 @@ class NoteRowWidget(QWidget):
         del_btn = QPushButton("x")
         del_btn.setFixedSize(18, 18)
         del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        del_btn_color = "#71717A" if self.is_dark else "#D4D4D8"
+        del_btn_color = "#71717A" if self.is_dark else "#A8A29E"
         del_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -1696,8 +1696,8 @@ class NoteRowWidget(QWidget):
                 self.project_changed.emit(self.note_id, name.strip())
 
     def _update_text_style(self, is_done: bool) -> None:
-        done_color = "#71717A" if self.is_dark else "#A1A1AA"
-        active_color = "#F4F4F5" if self.is_dark else "#18181B"
+        done_color = "#71717A" if self.is_dark else "#A8A29E"
+        active_color = "#F4F4F5" if self.is_dark else "#242220"
 
         if is_done:
             self.label.setStyleSheet(f"""
@@ -1739,8 +1739,8 @@ class ProjectGroupWidget(QWidget):
         self.main_layout.setSpacing(6)
 
         # Header bar
-        header_color = "#F4F4F5" if self.is_dark else "#18181B"
-        header_hover = "#A1A1AA" if self.is_dark else "#52525B"
+        header_color = "#F4F4F5" if self.is_dark else "#242220"
+        header_hover = "#A1A1AA" if self.is_dark else "#57534E"
 
         self.header_btn = QPushButton(f"v {project_name}")
         self.header_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -2121,35 +2121,35 @@ class QuickEntryDialog(QDialog):
         if hasattr(self, "sidebar"):
             self.sidebar.set_theme(self.is_dark)
 
-        # Color tokens - Brand aligned
-        outer_bg = "#121214" if self.is_dark else "#F0EFEB"
-        outer_border = "#27272A" if self.is_dark else "#D8D8DE"
-        inner_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        inner_border = "#27272A" if self.is_dark else "#ECECEF"
-        page_title_color = "#F4F4F5" if self.is_dark else "#18181B"
-        ctrl_btn_color = "#A1A1AA" if self.is_dark else "#52525B"
-        ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.08)"
-        ctrl_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
-        mode_capsule_bg = "#27272A" if self.is_dark else "#ECECF0"
-        day_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
-        day_btn_border = "#3F3F46" if self.is_dark else "#E4E4E7"
-        day_btn_hover_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        day_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
-        date_btn_color = "#F4F4F5" if self.is_dark else "#27272A"
-        today_pill_bg = "#6366F1" if self.is_dark else "#4F46E5"
+        # Color tokens - Brand aligned & Softer Light Mode
+        outer_bg = "#121214" if self.is_dark else "#E8E4DC"
+        outer_border = "#27272A" if self.is_dark else "#D5CEC2"
+        inner_bg = "#18181B" if self.is_dark else "#F6F4EE"
+        inner_border = "#27272A" if self.is_dark else "#DFD9CE"
+        page_title_color = "#F4F4F5" if self.is_dark else "#242220"
+        ctrl_btn_color = "#A1A1AA" if self.is_dark else "#57534E"
+        ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.06)"
+        ctrl_btn_hover_color = "#FAFAFA" if self.is_dark else "#242220"
+        mode_capsule_bg = "#27272A" if self.is_dark else "#E6E1D7"
+        day_btn_color = "#A1A1AA" if self.is_dark else "#78716C"
+        day_btn_border = "#3F3F46" if self.is_dark else "#D8D1C4"
+        day_btn_hover_bg = "#27272A" if self.is_dark else "#EBE6DC"
+        day_btn_hover_color = "#FAFAFA" if self.is_dark else "#242220"
+        date_btn_color = "#F4F4F5" if self.is_dark else "#242220"
+        today_pill_bg = "#FF6B3D" if self.is_dark else "#FF5722"
         today_pill_color = "#FFFFFF"
-        today_pill_hover = "#4F46E5" if self.is_dark else "#4338CA"
-        input_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        input_color = "#F4F4F5" if self.is_dark else "#18181B"
-        input_border = "#3F3F46" if self.is_dark else "#D4D4D8"
-        input_focus_border = "#6366F1"
-        combo_popup_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        combo_popup_border = "#27272A" if self.is_dark else "#E4E4E7"
-        combo_popup_sel_bg = "rgba(99, 102, 241, 0.2)" if self.is_dark else "#EEF2FF"
-        combo_popup_sel_text = "#C7D2FE" if self.is_dark else "#4F46E5"
-        btn_action_bg = "#6366F1"
+        today_pill_hover = "#E8582B" if self.is_dark else "#E64A19"
+        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
+        input_color = "#F4F4F5" if self.is_dark else "#242220"
+        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        input_focus_border = "#FF6B3D"
+        combo_popup_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        combo_popup_border = "#27272A" if self.is_dark else "#D6D0C5"
+        combo_popup_sel_bg = "rgba(255, 107, 61, 0.22)" if self.is_dark else "#FEECE5"
+        combo_popup_sel_text = "#FFAB91" if self.is_dark else "#D84315"
+        btn_action_bg = "#FF5722"
         btn_action_color = "#FFFFFF"
-        btn_action_hover = "#4F46E5"
+        btn_action_hover = "#E64A19"
 
         # 1. Outer Frame & Inner Card
         self.outer_frame.setStyleSheet(f"""

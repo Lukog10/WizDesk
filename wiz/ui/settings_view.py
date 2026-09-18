@@ -2,7 +2,7 @@
 Embedded Settings View for WizDesk Widescreen Shell.
 Provides in-workspace configuration for Obsidian Vault, tracking preferences,
 and project auto-tagging keywords without opening secondary modal dialogs.
-Strictly adheres to WizDesk brand colors (#6366F1 Indigo, #10B981 Emerald).
+Strictly adheres to WizDesk brand colors (#FF6B3D Mascot Orange-Red, #10B981 Emerald).
 """
 
 from typing import Optional, List
@@ -93,8 +93,8 @@ class SettingsCheckbox(QWidget):
         radius = 4.0
 
         if self._checked:
-            # Brand Indigo filled square with white checkmark
-            bg_color = QColor("#6366F1")
+            # Brand Orange-Red filled square with white checkmark
+            bg_color = QColor("#FF6B3D") if self.is_dark else QColor("#FF5722")
             check_color = QColor("#FFFFFF")
 
             painter.setPen(Qt.PenStyle.NoPen)
@@ -119,8 +119,8 @@ class SettingsCheckbox(QWidget):
             painter.drawLine(int(p1_x), int(p1_y), int(p2_x), int(p2_y))
             painter.drawLine(int(p2_x), int(p2_y), int(p3_x), int(p3_y))
         else:
-            border_color = QColor("#52525B") if self.is_dark else QColor("#D0D0D6")
-            bg_color = QColor("#27272A") if self.is_dark else QColor("#FFFFFF")
+            border_color = QColor("#52525B") if self.is_dark else QColor("#C8C2B6")
+            bg_color = QColor("#27272A") if self.is_dark else QColor("#EDE9E0")
 
             pen = QPen(border_color, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)
@@ -471,25 +471,25 @@ class SettingsView(QWidget):
         self.is_dark = is_dark
         self.float_anim_check.set_dark_mode(is_dark)
 
-        # Brand color tokens
-        inner_bg = "#18181B" if is_dark else "#FFFFFF"
-        text_primary = "#F4F4F5" if is_dark else "#18181B"
-        text_secondary = "#A1A1AA" if is_dark else "#71717A"
-        input_bg = "#27272A" if is_dark else "#F4F4F5"
-        input_border = "#3F3F46" if is_dark else "#E4E4E7"
-        input_focus = "#6366F1"
-        btn_neutral_bg = "#27272A" if is_dark else "#F4F4F5"
-        btn_neutral_border = "#3F3F46" if is_dark else "#E4E4E7"
-        btn_neutral_text = "#F4F4F5" if is_dark else "#18181B"
-        btn_neutral_hover_bg = "#3F3F46" if is_dark else "#E4E4E7"
+        # Brand color tokens - Softer Light Mode & Mascot Orange-Red
+        inner_bg = "#18181B" if is_dark else "#FAF8F5"
+        text_primary = "#F4F4F5" if is_dark else "#242220"
+        text_secondary = "#A1A1AA" if is_dark else "#78716C"
+        input_bg = "#27272A" if is_dark else "#EDE9E0"
+        input_border = "#3F3F46" if is_dark else "#D6D0C5"
+        input_focus = "#FF6B3D"
+        btn_neutral_bg = "#27272A" if is_dark else "#EBE6DC"
+        btn_neutral_border = "#3F3F46" if is_dark else "#D6D0C5"
+        btn_neutral_text = "#F4F4F5" if is_dark else "#242220"
+        btn_neutral_hover_bg = "#3F3F46" if is_dark else "#DDD7CC"
         btn_danger_bg = "#3B1818" if is_dark else "#FEF2F2"
         btn_danger_border = "#5C1D1D" if is_dark else "#FEE2E2"
         btn_danger_text = "#F87171" if is_dark else "#EF4444"
         btn_danger_hover_bg = "#4C1D1D" if is_dark else "#FEE2E2"
-        div_color = "#27272A" if is_dark else "#E5E0D8"
-        table_grid = "#27272A" if is_dark else "#F4F4F5"
-        table_header_bg = "#27272A" if is_dark else "#F4F4F5"
-        table_header_border = "#3F3F46" if is_dark else "#E4E4E7"
+        div_color = "#27272A" if is_dark else "#E2DDD3"
+        table_grid = "#27272A" if is_dark else "#EFECE5"
+        table_header_bg = "#27272A" if is_dark else "#EBE6DC"
+        table_header_border = "#3F3F46" if is_dark else "#D6D0C5"
 
         # Typography
         self.obs_title.setStyleSheet(f"color: {text_primary};")
@@ -580,10 +580,10 @@ class SettingsView(QWidget):
             }}
         """)
 
-        # Save Button (Brand Indigo #6366F1)
+        # Save Button (Brand Orange-Red #FF5722 / #FF6B3D)
         self.save_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: #6366F1;
+                background-color: #FF5722;
                 color: #FFFFFF;
                 border: none;
                 border-radius: 8px;
@@ -593,10 +593,10 @@ class SettingsView(QWidget):
                 font-weight: 600;
             }}
             QPushButton:hover {{
-                background-color: #4F46E5;
+                background-color: #E64A19;
             }}
             QPushButton:pressed {{
-                background-color: #4338CA;
+                background-color: #BF360C;
             }}
         """)
 

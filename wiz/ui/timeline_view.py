@@ -151,23 +151,23 @@ class AppSessionCard(QFrame):
             self.setStyleSheet(
                 """
                 QFrame#AppSessionCard {
-                    background-color: #FFFFFF;
-                    border: 1px solid #E2DDD2;
+                    background-color: #FAF8F5;
+                    border: 1px solid #E2DDD3;
                     border-radius: 8px;
                 }
                 QLabel#ProjectPill {
-                    background-color: #EBE6DC;
-                    color: #555550;
-                    border: 1px solid #DCD6CA;
+                    background-color: #EDE7DC;
+                    color: #57534E;
+                    border: 1px solid #D6D0C4;
                     border-radius: 4px;
                     padding: 2px 8px;
                 }
                 """
             )
-            time_lbl.setStyleSheet("color: #111111;")
-            dur_lbl.setStyleSheet("color: #777770;")
-            app_lbl.setStyleSheet("color: #111111;")
-            win_lbl.setStyleSheet("color: #666660;")
+            time_lbl.setStyleSheet("color: #242220;")
+            dur_lbl.setStyleSheet("color: #78716C;")
+            app_lbl.setStyleSheet("color: #242220;")
+            win_lbl.setStyleSheet("color: #57534E;")
 
 
 class MilestoneCard(QFrame):
@@ -270,23 +270,23 @@ class MilestoneCard(QFrame):
             self.setStyleSheet(
                 f"""
                 QFrame#MilestoneCard {{
-                    background-color: #FFFFFF;
+                    background-color: #FAF8F5;
                     border: 1px solid {border_color};
                     border-radius: 8px;
                 }}
                 QLabel#ProjectPill {{
-                    background-color: #EBE6DC;
-                    color: #555550;
-                    border: 1px solid #DCD6CA;
+                    background-color: #EDE7DC;
+                    color: #57534E;
+                    border: 1px solid #D6D0C4;
                     border-radius: 4px;
                     padding: 2px 8px;
                 }}
                 """
             )
-            time_lbl.setStyleSheet("color: #111111;")
+            time_lbl.setStyleSheet("color: #242220;")
             type_badge.setStyleSheet(f"color: {type_color};")
-            title_lbl.setStyleSheet("color: #111111;")
-            sub_lbl.setStyleSheet("color: #666660;")
+            title_lbl.setStyleSheet("color: #242220;")
+            sub_lbl.setStyleSheet("color: #57534E;")
 
 
 class EmptyStateCard(QFrame):
@@ -530,9 +530,9 @@ class TimelineView(QWidget):
                     border: none;
                 }}
                 QLabel#MetricBadge {{
-                    background-color: #FFFFFF;
-                    color: #222220;
-                    border: 1px solid #DCD6CA;
+                    background-color: #FAF8F5;
+                    color: #242220;
+                    border: 1px solid #D6D0C5;
                     border-radius: 6px;
                     padding: 4px 10px;
                     font-family: {FONT_SANS};
@@ -543,9 +543,9 @@ class TimelineView(QWidget):
             )
             chip_style = f"""
                 QPushButton {{
-                    background-color: #FFFFFF;
-                    color: #666660;
-                    border: 1px solid #DCD6CA;
+                    background-color: #FAF8F5;
+                    color: #57534E;
+                    border: 1px solid #D6D0C5;
                     border-radius: 12px;
                     padding: 4px 12px;
                     font-family: {FONT_SANS};
@@ -553,36 +553,41 @@ class TimelineView(QWidget):
                     font-weight: 500;
                 }}
                 QPushButton:checked {{
-                    background-color: #111111;
+                    background-color: #242220;
                     color: #FFFFFF;
-                    border: 1px solid #111111;
+                    border: 1px solid #242220;
                     font-weight: 600;
                 }}
                 QPushButton:hover:!checked {{
-                    background-color: #F2ECE1;
-                    color: #111111;
+                    background-color: #EDE8DF;
+                    border-color: #FF6B3D;
+                    color: #242220;
                 }}
             """
             combo_style = f"""
                 QComboBox {{
-                    background-color: #FFFFFF;
-                    color: #111111;
-                    border: 1px solid #DCD6CA;
+                    background-color: #FAF8F5;
+                    color: #242220;
+                    border: 1px solid #D6D0C5;
                     border-radius: 6px;
                     padding: 4px 20px 4px 10px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
                 }}
+                QComboBox:hover {{
+                    border-color: #FF6B3D;
+                }}
                 QComboBox::drop-down {{
                     border: none;
                     width: 0px;
                 }}
                 QComboBox QAbstractItemView {{
-                    background-color: #FFFFFF;
-                    color: #111111;
-                    selection-background-color: #EBE6DC;
-                    border: 1px solid #DCD6CA;
+                    background-color: #FAF8F5;
+                    color: #242220;
+                    selection-background-color: #FEECE5;
+                    selection-color: #D84315;
+                    border: 1px solid #D6D0C5;
                     min-width: 130px;
                 }}
             """

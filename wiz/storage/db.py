@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     keywords TEXT NOT NULL,  -- Comma-separated match hints
-    color TEXT DEFAULT '#6366F1',
+    color TEXT DEFAULT '#FF6B3D',
     description TEXT DEFAULT ''
 );
 
@@ -114,7 +114,7 @@ class Database:
             conn.executescript(SCHEMA_SQL)
             # Safe migrations for projects table extensions
             try:
-                conn.execute("ALTER TABLE projects ADD COLUMN color TEXT DEFAULT '#6366F1'")
+                conn.execute("ALTER TABLE projects ADD COLUMN color TEXT DEFAULT '#FF6B3D'")
             except sqlite3.OperationalError:
                 pass
             try:

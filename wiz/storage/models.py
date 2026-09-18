@@ -75,7 +75,7 @@ class ProjectRecord:
     id: Optional[int]
     name: str
     keywords: List[str]  # e.g. ["turfline", "booking"]
-    color: str = "#6366F1"
+    color: str = "#FF6B3D"
     description: str = ""
 
 
@@ -484,7 +484,7 @@ class StorageRepository:
         self,
         name: str,
         keywords: List[str],
-        color: str = "#6366F1",
+        color: str = "#FF6B3D",
         description: str = "",
     ) -> int:
         """Create or update a project and its comma-separated keywords, color, and description."""
@@ -531,7 +531,7 @@ class StorageRepository:
                     id=row["id"],
                     name=row["name"],
                     keywords=[k.strip() for k in (row["keywords"] or "").split(",") if k.strip()],
-                    color=row["color"] or "#6366F1",
+                    color=row["color"] or "#FF6B3D",
                     description=row["description"] or "",
                 )
                 for row in rows
@@ -656,7 +656,7 @@ class StorageRepository:
         projects = self.get_all_projects()
         target_proj = next((p for p in projects if p.name.lower() == project_name.lower()), None)
         if target_proj is None:
-            target_proj = ProjectRecord(id=None, name=project_name, keywords=[], color="#6366F1", description="")
+            target_proj = ProjectRecord(id=None, name=project_name, keywords=[], color="#FF6B3D", description="")
 
         start_bound = self._get_timeframe_bounds(timeframe)
         start_iso = start_bound.isoformat() if start_bound else None
@@ -775,7 +775,7 @@ class StorageRepository:
             bucket_labels = []
 
         all_projects = self.get_all_projects(force_refresh=True)
-        proj_colors: Dict[str, str] = {p.name: (p.color or "#6366F1") for p in all_projects}
+        proj_colors: Dict[str, str] = {p.name: (p.color or "#FF6B3D") for p in all_projects}
 
         with self.db.cursor() as cur:
             # 2. Fetch current period sessions
@@ -906,7 +906,7 @@ class StorageRepository:
                     project_bucket_mins[proj_name][b_idx] += dur
 
             # Build app breakdown list using WizDesk brand palette
-            APP_PALETTE = ["#6366F1", "#10B981", "#818CF8", "#06B6D4", "#F59E0B", "#EC4899", "#8B5CF6", "#14B8A6"]
+            APP_PALETTE = ["#FF6B3D", "#10B981", "#FF8E6B", "#06B6D4", "#F59E0B", "#EC4899", "#8B5CF6", "#14B8A6"]
             apps_list = []
             for idx, (app_name, mins) in enumerate(sorted(app_durations.items(), key=lambda x: x[1], reverse=True)):
                 pct = round((mins / total_minutes * 100), 1) if total_minutes > 0 else 0.0
@@ -928,7 +928,7 @@ class StorageRepository:
 
             # Ensure distinct colors across all compared project series
             PROJECT_COMPARISON_PALETTE = [
-                "#6366F1",  # Indigo
+                "#FF6B3D",  # Mascot Orange-Red
                 "#10B981",  # Emerald
                 "#F59E0B",  # Amber
                 "#EC4899",  # Rose

@@ -1,7 +1,7 @@
 """
 Side Navigation Bar for WizDesk Widescreen Shell.
 Provides persistent left navigation across Tasks, Quick Notes, Activity, Projects, and Settings.
-Strictly adheres to WizDesk brand colors (#6366F1 Indigo, #10B981 Emerald).
+Strictly adheres to WizDesk brand colors (#FF6B3D Mascot Orange-Red, #10B981 Emerald).
 """
 
 from typing import Optional, Dict
@@ -96,17 +96,17 @@ class NavPillButton(QPushButton):
 
         # Determine color tokens
         if self.is_active:
-            bg_color = QColor(99, 102, 241, 35) if self.is_dark else QColor("#EEF2FF")
-            text_color = QColor("#C7D2FE") if self.is_dark else QColor("#4F46E5")
-            icon_color = QColor("#818CF8") if self.is_dark else QColor("#6366F1")
+            bg_color = QColor(255, 107, 61, 45) if self.is_dark else QColor("#FEECE5")
+            text_color = QColor("#FFAB91") if self.is_dark else QColor("#D84315")
+            icon_color = QColor("#FF8E6B") if self.is_dark else QColor("#FF5722")
         elif self.is_hovered:
             bg_color = QColor(255, 255, 255, 12) if self.is_dark else QColor(0, 0, 0, 10)
-            text_color = QColor("#F4F4F5") if self.is_dark else QColor("#18181B")
-            icon_color = QColor("#D4D4D8") if self.is_dark else QColor("#4B5563")
+            text_color = QColor("#F4F4F5") if self.is_dark else QColor("#242220")
+            icon_color = QColor("#D4D4D8") if self.is_dark else QColor("#44403C")
         else:
             bg_color = Qt.GlobalColor.transparent
-            text_color = QColor("#A1A1AA") if self.is_dark else QColor("#64748B")
-            icon_color = QColor("#71717A") if self.is_dark else QColor("#94A3B8")
+            text_color = QColor("#A1A1AA") if self.is_dark else QColor("#57534E")
+            icon_color = QColor("#71717A") if self.is_dark else QColor("#78716C")
 
         # 1. Background capsule
         if bg_color != Qt.GlobalColor.transparent:
@@ -117,7 +117,7 @@ class NavPillButton(QPushButton):
         # 2. Active Indicator Bar (Left Edge)
         if self.is_active:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(QColor("#6366F1")))
+            painter.setBrush(QBrush(QColor("#FF6B3D")))
             painter.drawRoundedRect(QRectF(4, 7, 3.5, h - 14), 2, 2)
 
         # 3. Vector Icon (Left aligned around x=18)
@@ -149,10 +149,10 @@ class NavPillButton(QPushButton):
             badge_y = float((h - badge_h) / 2)
 
             badge_bg = (
-                QColor(99, 102, 241, 50) if self.is_dark else QColor("#E0E7FF")
+                QColor(255, 107, 61, 65) if self.is_dark else QColor("#FFDCCF")
             )
             badge_fg = (
-                QColor("#A5B4FC") if self.is_dark else QColor("#4338CA")
+                QColor("#FFCCBC") if self.is_dark else QColor("#BF360C")
             )
 
             painter.setPen(Qt.PenStyle.NoPen)
@@ -354,14 +354,14 @@ class SideNavBar(QWidget):
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
 
-        # Theme color variables
-        bg_color = "#16161A" if is_dark else "#F8F7F4"
-        brand_color = "#F4F4F5" if is_dark else "#18181B"
-        sub_color = "#71717A" if is_dark else "#94A3B8"
-        border_color = "#232328" if is_dark else "#E5E0D8"
-        btn_bg = "#232328" if is_dark else "#ECEAE4"
-        btn_fg = "#D4D4D8" if is_dark else "#4B5563"
-        btn_hover = "#2D2D34" if is_dark else "#DFDDD7"
+        # Theme color variables - Softer Light Mode & Calibrated Warm Neutrals
+        bg_color = "#16161A" if is_dark else "#E2DDD4"
+        brand_color = "#F4F4F5" if is_dark else "#242220"
+        sub_color = "#71717A" if is_dark else "#78716C"
+        border_color = "#232328" if is_dark else "#D6D0C5"
+        btn_bg = "#232328" if is_dark else "#DAD5CB"
+        btn_fg = "#D4D4D8" if is_dark else "#44403C"
+        btn_hover = "#2D2D34" if is_dark else "#D0CAC0"
 
         self.setStyleSheet(f"""
             QWidget#sideNavBar {{

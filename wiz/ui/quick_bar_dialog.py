@@ -248,18 +248,18 @@ class QuickBarPopup(QDialog):
         self.is_dark = (theme_name.lower() == "dark")
 
         # Color tokens
-        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        card_border = "#27272A" if self.is_dark else "#E4E4E7"
-        text_primary = "#F4F4F5" if self.is_dark else "#18181B"
-        text_secondary = "#A1A1AA" if self.is_dark else "#71717A"
-        input_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
-        input_focus = "#FAFAFA" if self.is_dark else "#18181B"
-        btn_action_bg = "#FAFAFA" if self.is_dark else "#18181B"
-        btn_action_text = "#18181B" if self.is_dark else "#FFFFFF"
-        btn_action_hover = "#E4E4E7" if self.is_dark else "#27272A"
-        dropdown_bg = "#27272A" if self.is_dark else "#F4F4F5"
-        dropdown_hover = "#3F3F46" if self.is_dark else "#E4E4E7"
+        card_bg = "#18181B" if self.is_dark else "#F6F4EE"
+        card_border = "#27272A" if self.is_dark else "#E2DDD3"
+        text_primary = "#F4F4F5" if self.is_dark else "#242220"
+        text_secondary = "#A1A1AA" if self.is_dark else "#666460"
+        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
+        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        input_focus = "#FF6B3D"
+        btn_action_bg = "#FF5722"
+        btn_action_text = "#FFFFFF"
+        btn_action_hover = "#E64A19"
+        dropdown_bg = "#27272A" if self.is_dark else "#EDE7DC"
+        dropdown_hover = "#3F3F46" if self.is_dark else "#E2DDD4"
 
         # 1. Outer Card & Shadow
         self.card.setStyleSheet(f"""

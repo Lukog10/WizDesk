@@ -40,7 +40,7 @@ from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
 PRESET_COLORS = [
-    "#6366F1",  # Indigo
+    "#FF6B3D",  # Mascot Orange-Red
     "#10B981",  # Emerald
     "#F59E0B",  # Amber
     "#F43F5E",  # Rose
@@ -112,7 +112,8 @@ class ProjectDialog(QDialog):
             btn.setFixedSize(28, 28)
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             is_active = (col.lower() == self.selected_color.lower())
-            border = "2px solid #FFFFFF" if is_active else "1px solid transparent"
+            active_border = "2px solid #FFFFFF" if self.is_dark else "2px solid #242220"
+            border = active_border if is_active else "1px solid transparent"
             btn.setStyleSheet(f"background-color: {col}; border-radius: 14px; border: {border};")
             btn.clicked.connect(lambda checked, c=col: self._on_color_selected(c))
             color_layout.addWidget(btn)
@@ -161,7 +162,8 @@ class ProjectDialog(QDialog):
         for idx, col in enumerate(PRESET_COLORS):
             btn = self.color_buttons[idx]
             is_active = (col.lower() == color_hex.lower())
-            border = "2px solid #FFFFFF" if is_active else "1px solid transparent"
+            active_border = "2px solid #FFFFFF" if self.is_dark else "2px solid #242220"
+            border = active_border if is_active else "1px solid transparent"
             btn.setStyleSheet(f"background-color: {col}; border-radius: 14px; border: {border};")
 
     def _on_save(self) -> None:
@@ -192,7 +194,7 @@ class ProjectDialog(QDialog):
                     font-family: {FONT_SANS};
                     font-size: 12px;
                 }}
-                QLineEdit:focus {{ border: 1px solid #6366F1; }}
+                QLineEdit:focus {{ border: 1px solid #FF6B3D; }}
                 QPushButton {{
                     padding: 6px 14px;
                     border-radius: 6px;
@@ -207,25 +209,25 @@ class ProjectDialog(QDialog):
                 border: 1px solid #3F3F46;
             """)
             self.save_btn.setStyleSheet("""
-                background-color: #F4F4F6;
-                color: #18181B;
-                border: 1px solid #F4F4F6;
+                background-color: #FF5722;
+                color: #FFFFFF;
+                border: 1px solid #FF5722;
                 font-weight: 600;
             """)
         else:
             self.setStyleSheet(f"""
-                QDialog {{ background-color: #FFFFFF; color: #111111; }}
-                QLabel {{ color: #4B4B46; font-family: {FONT_SANS}; font-size: 11px; font-weight: 500; }}
+                QDialog {{ background-color: #FAF8F5; color: #242220; }}
+                QLabel {{ color: #555350; font-family: {FONT_SANS}; font-size: 11px; font-weight: 500; }}
                 QLineEdit {{
-                    background-color: #FAFAF8;
-                    color: #111111;
-                    border: 1px solid #DCD6CA;
+                    background-color: #EDE9E0;
+                    color: #242220;
+                    border: 1px solid #D6D0C5;
                     border-radius: 6px;
                     padding: 6px 10px;
                     font-family: {FONT_SANS};
                     font-size: 12px;
                 }}
-                QLineEdit:focus {{ border: 1px solid #6366F1; }}
+                QLineEdit:focus {{ border: 1px solid #FF6B3D; }}
                 QPushButton {{
                     padding: 6px 14px;
                     border-radius: 6px;
@@ -235,14 +237,14 @@ class ProjectDialog(QDialog):
                 }}
             """)
             self.cancel_btn.setStyleSheet("""
-                background-color: #F2ECE1;
-                color: #555550;
-                border: 1px solid #DCD6CA;
+                background-color: #E2DDD4;
+                color: #444240;
+                border: 1px solid #D6D0C5;
             """)
             self.save_btn.setStyleSheet("""
-                background-color: #111111;
+                background-color: #FF5722;
                 color: #FFFFFF;
-                border: 1px solid #111111;
+                border: 1px solid #FF5722;
                 font-weight: 600;
             """)
 
@@ -270,7 +272,7 @@ class ProjectSummaryCard(QFrame):
         # Color dot indicator
         self.dot = QFrame()
         self.dot.setFixedSize(10, 10)
-        color = data.get("color") or "#6366F1"
+        color = data.get("color") or "#FF6B3D"
         self.dot.setStyleSheet(f"background-color: {color}; border-radius: 5px;")
         top_row.addWidget(self.dot)
 
@@ -350,7 +352,7 @@ class ProjectSummaryCard(QFrame):
             super().mousePressEvent(event)
 
     def apply_theme(self) -> None:
-        color = self.data.get("color") or "#6366F1"
+        color = self.data.get("color") or "#FF6B3D"
         if self.is_dark:
             self.setStyleSheet(f"""
                 QFrame#ProjectSummaryCard {{
@@ -359,7 +361,7 @@ class ProjectSummaryCard(QFrame):
                     border-radius: 8px;
                 }}
                 QFrame#ProjectSummaryCard:hover {{
-                    border: 1px solid #6366F1;
+                    border: 1px solid #FF6B3D;
                     background-color: #2A2A2F;
                 }}
                 QLabel {{ color: #F4F4F6; }}
@@ -371,7 +373,7 @@ class ProjectSummaryCard(QFrame):
                     padding: 3px 8px;
                 }}
                 QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {{
-                    border-color: #6366F1;
+                    border-color: #FF6B3D;
                     color: #FFFFFF;
                 }}
                 QLabel#DescLabel {{ color: #A1A1AA; }}
@@ -384,7 +386,7 @@ class ProjectSummaryCard(QFrame):
                     padding: 2px 6px;
                 }}
                 QLabel#AppChip:hover {{
-                    border-color: #4F46E5;
+                    border-color: #FF6B3D;
                     background-color: #2E2E33;
                     color: #FFFFFF;
                 }}
@@ -401,41 +403,41 @@ class ProjectSummaryCard(QFrame):
         else:
             self.setStyleSheet(f"""
                 QFrame#ProjectSummaryCard {{
-                    background-color: #FFFFFF;
-                    border: 1px solid #E5E0D8;
+                    background-color: #FAF8F5;
+                    border: 1px solid #E2DDD3;
                     border-radius: 8px;
                 }}
                 QFrame#ProjectSummaryCard:hover {{
-                    border: 1px solid #6366F1;
-                    background-color: #FAF8F5;
+                    border: 1px solid #FF6B3D;
+                    background-color: #F5F2EC;
                 }}
-                QLabel {{ color: #111111; }}
+                QLabel {{ color: #242220; }}
                 QLabel#TimeBadge {{
-                    background-color: #F7F5F0;
-                    color: #222220;
-                    border: 1px solid #DCD6CA;
+                    background-color: #EDE7DC;
+                    color: #242220;
+                    border: 1px solid #D6D0C5;
                     border-radius: 6px;
                     padding: 3px 8px;
                 }}
                 QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {{
-                    border-color: #6366F1;
-                    color: #111111;
+                    border-color: #FF6B3D;
+                    color: #242220;
                 }}
-                QLabel#DescLabel {{ color: #666660; }}
-                QLabel#ProgressText {{ color: #888880; }}
+                QLabel#DescLabel {{ color: #666460; }}
+                QLabel#ProgressText {{ color: #888680; }}
                 QLabel#AppChip {{
-                    background-color: #F7F5F0;
+                    background-color: #EDE7DC;
                     color: #555550;
-                    border: 1px solid #E5E0D8;
+                    border: 1px solid #D6D0C5;
                     border-radius: 4px;
                     padding: 2px 6px;
                 }}
                 QLabel#AppChip:hover {{
-                    border-color: #6366F1;
-                    background-color: #F0EDEB;
+                    border-color: #FF6B3D;
+                    background-color: #E2DDD4;
                 }}
                 QProgressBar {{
-                    background-color: #EBE6DC;
+                    background-color: #E2DDD4;
                     border: none;
                     border-radius: 3px;
                 }}
@@ -733,7 +735,7 @@ class ProjectsOverviewPage(QWidget):
                 }}
                 QPushButton:hover:!checked {{
                     background-color: #2E2E33;
-                    border-color: #6366F1;
+                    border-color: #FF6B3D;
                     color: #FFFFFF;
                 }}
             """
@@ -750,7 +752,7 @@ class ProjectsOverviewPage(QWidget):
                 }}
                 QPushButton:hover {{
                     background-color: #383840;
-                    border-color: #6366F1;
+                    border-color: #FF6B3D;
                 }}
             """
             badge_style = f"""
@@ -764,7 +766,7 @@ class ProjectsOverviewPage(QWidget):
                     font-size: 10px;
                 }}
                 QLabel#DirectoryBadge:hover {{
-                    border-color: #6366F1;
+                    border-color: #FF6B3D;
                     color: #F4F4F6;
                 }}
                 QFrame#EmptyCard {{
@@ -778,9 +780,9 @@ class ProjectsOverviewPage(QWidget):
         else:
             chip_style = f"""
                 QPushButton {{
-                    background-color: #FFFFFF;
-                    color: #666660;
-                    border: 1px solid #DCD6CA;
+                    background-color: #EDE7DC;
+                    color: #4B4945;
+                    border: 1px solid #D6D0C5;
                     border-radius: 12px;
                     padding: 4px 12px;
                     font-family: {FONT_SANS};
@@ -788,22 +790,22 @@ class ProjectsOverviewPage(QWidget):
                     font-weight: 500;
                 }}
                 QPushButton:checked {{
-                    background-color: #111111;
-                    color: #FFFFFF;
-                    border: 1px solid #111111;
+                    background-color: #242220;
+                    color: #FAF8F5;
+                    border: 1px solid #242220;
                     font-weight: 600;
                 }}
                 QPushButton:hover:!checked {{
-                    background-color: #F2ECE1;
-                    border-color: #6366F1;
-                    color: #111111;
+                    background-color: #E2DDD4;
+                    border-color: #FF6B3D;
+                    color: #242220;
                 }}
             """
             btn_new_style = f"""
                 QPushButton {{
-                    background-color: #111111;
+                    background-color: #FF5722;
                     color: #FFFFFF;
-                    border: 1px solid #111111;
+                    border: 1px solid #FF5722;
                     border-radius: 12px;
                     padding: 4px 14px;
                     font-family: {FONT_SANS};
@@ -811,27 +813,31 @@ class ProjectsOverviewPage(QWidget):
                     font-weight: 600;
                 }}
                 QPushButton:hover {{
-                    background-color: #2E2E33;
+                    background-color: #E64A19;
                 }}
             """
             badge_style = f"""
                 QLabel#DirectoryBadge {{
-                    background-color: #FFFFFF;
-                    color: #71717A;
-                    border: 1px solid #E5E0D8;
+                    background-color: #FAF8F5;
+                    color: #666460;
+                    border: 1px solid #D6D0C5;
                     border-radius: 6px;
                     padding: 2px 8px;
                     font-family: {FONT_SANS};
                     font-size: 10px;
                 }}
+                QLabel#DirectoryBadge:hover {{
+                    border-color: #FF6B3D;
+                    color: #242220;
+                }}
                 QFrame#EmptyCard {{
-                    background-color: #FFFFFF;
-                    border: 1px dashed #DCD6CA;
+                    background-color: #FAF8F5;
+                    border: 1px dashed #D6D0C5;
                     border-radius: 8px;
                 }}
-                QFrame#EmptyCard QLabel {{ color: #666660; }}
+                QFrame#EmptyCard QLabel {{ color: #666460; }}
             """
-            dir_title_color = "#111111"
+            dir_title_color = "#242220"
 
         self.btn_tf_today.setStyleSheet(chip_style)
         self.btn_tf_week.setStyleSheet(chip_style)
@@ -841,13 +847,13 @@ class ProjectsOverviewPage(QWidget):
         self.lbl_directory_title.setStyleSheet(f"color: {dir_title_color};")
         self.setStyleSheet(badge_style)
 
-        combo_bg = "#242427" if self.is_dark else "#FFFFFF"
-        combo_border = "#333338" if self.is_dark else "#E5E0D8"
-        combo_hover_border = "#6366F1" if self.is_dark else "#4F46E5"
-        combo_text = "#F4F4F6" if self.is_dark else "#111111"
-        combo_popup_bg = "#242427" if self.is_dark else "#FFFFFF"
-        combo_popup_border = "#3F3F46" if self.is_dark else "#D4CEBF"
-        combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#F4F4F5"
+        combo_bg = "#242427" if self.is_dark else "#FAF8F5"
+        combo_border = "#333338" if self.is_dark else "#D6D0C5"
+        combo_hover_border = "#FF6B3D"
+        combo_text = "#F4F4F6" if self.is_dark else "#242220"
+        combo_popup_bg = "#242427" if self.is_dark else "#FAF8F5"
+        combo_popup_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#FEECE5"
 
         self.combo_timeframe.set_theme(self.is_dark)
         self.combo_timeframe.setStyleSheet(f"""
@@ -942,7 +948,7 @@ class ProjectDetailPage(QWidget):
 
         self.color_dot = QFrame()
         self.color_dot.setFixedSize(12, 12)
-        self.color_dot.setStyleSheet("background-color: #6366F1; border-radius: 6px;")
+        self.color_dot.setStyleSheet("background-color: #FF6B3D; border-radius: 6px;")
         nav_row.addWidget(self.color_dot)
 
         self.title_lbl = QLabel("Project Details")
@@ -1158,7 +1164,7 @@ class ProjectDetailPage(QWidget):
 
         # Update Header
         self.title_lbl.setText(project_name)
-        color = proj.color if proj else "#6366F1"
+        color = proj.color if proj else "#FF6B3D"
         self.color_dot.setStyleSheet(f"background-color: {color}; border-radius: 6px;")
 
         # Disable delete for Untagged
@@ -1432,7 +1438,7 @@ class ProjectDetailPage(QWidget):
                     border-radius: 3px;
                 }
                 QProgressBar::chunk {
-                    background-color: #6366F1;
+                    background-color: #FF5722;
                     border-radius: 3px;
                 }
             """
@@ -1452,9 +1458,9 @@ class ProjectDetailPage(QWidget):
         else:
             btn_style = f"""
                 QPushButton {{
-                    background-color: #FFFFFF;
-                    color: #555550;
-                    border: 1px solid #DCD6CA;
+                    background-color: #FAF8F5;
+                    color: #3A3835;
+                    border: 1px solid #D6D0C5;
                     border-radius: 6px;
                     padding: 4px 10px;
                     font-family: {FONT_SANS};
@@ -1462,15 +1468,16 @@ class ProjectDetailPage(QWidget):
                     font-weight: 500;
                 }}
                 QPushButton:hover {{
-                    background-color: #F2ECE1;
-                    color: #111111;
+                    background-color: #EDE7DC;
+                    border-color: #FF6B3D;
+                    color: #242220;
                 }}
             """
             chip_style = f"""
                 QPushButton {{
-                    background-color: #FFFFFF;
-                    color: #666660;
-                    border: 1px solid #DCD6CA;
+                    background-color: #EDE7DC;
+                    color: #4B4945;
+                    border: 1px solid #D6D0C5;
                     border-radius: 12px;
                     padding: 4px 12px;
                     font-family: {FONT_SANS};
@@ -1478,46 +1485,47 @@ class ProjectDetailPage(QWidget):
                     font-weight: 500;
                 }}
                 QPushButton:checked {{
-                    background-color: #111111;
-                    color: #FFFFFF;
-                    border: 1px solid #111111;
+                    background-color: #242220;
+                    color: #FAF8F5;
+                    border: 1px solid #242220;
                     font-weight: 600;
                 }}
                 QPushButton:hover:!checked {{
-                    background-color: #F2ECE1;
-                    color: #111111;
+                    background-color: #E2DDD4;
+                    border-color: #FF6B3D;
+                    color: #242220;
                 }}
             """
             card_style = """
                 QFrame#DetailItemCard {
-                    background-color: #FFFFFF;
-                    border: 1px solid #E5E0D8;
+                    background-color: #FAF8F5;
+                    border: 1px solid #E2DDD3;
                     border-radius: 8px;
                 }
-                QLabel { color: #111111; }
+                QLabel { color: #242220; }
                 QLabel#KeywordChip {
-                    background-color: #F7F5F0;
+                    background-color: #EDE7DC;
                     color: #555550;
-                    border: 1px solid #DCD6CA;
+                    border: 1px solid #D6D0C5;
                     border-radius: 4px;
                     padding: 3px 8px;
                 }
                 QProgressBar {
-                    background-color: #EBE6DC;
+                    background-color: #E2DDD4;
                     border: none;
                     border-radius: 3px;
                 }
                 QProgressBar::chunk {
-                    background-color: #6366F1;
+                    background-color: #FF5722;
                     border-radius: 3px;
                 }
             """
             badge_style = f"""
                 QFrame#MetricsBar {{ background: transparent; border: none; }}
                 QLabel#MetricBadge {{
-                    background-color: #FFFFFF;
-                    color: #222220;
-                    border: 1px solid #DCD6CA;
+                    background-color: #FAF8F5;
+                    color: #242220;
+                    border: 1px solid #D6D0C5;
                     border-radius: 6px;
                     padding: 4px 10px;
                     font-family: {FONT_SANS};
@@ -1535,13 +1543,13 @@ class ProjectDetailPage(QWidget):
         self.btn_tf_month.setStyleSheet(chip_style)
         self.btn_tf_all.setStyleSheet(chip_style)
 
-        combo_bg = "#242427" if self.is_dark else "#FFFFFF"
-        combo_border = "#333338" if self.is_dark else "#E5E0D8"
-        combo_hover_border = "#6366F1" if self.is_dark else "#4F46E5"
-        combo_text = "#F4F4F6" if self.is_dark else "#111111"
-        combo_popup_bg = "#242427" if self.is_dark else "#FFFFFF"
-        combo_popup_border = "#3F3F46" if self.is_dark else "#D4CEBF"
-        combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#F4F4F5"
+        combo_bg = "#242427" if self.is_dark else "#FAF8F5"
+        combo_border = "#333338" if self.is_dark else "#D6D0C5"
+        combo_hover_border = "#FF6B3D"
+        combo_text = "#F4F4F6" if self.is_dark else "#242220"
+        combo_popup_bg = "#242427" if self.is_dark else "#FAF8F5"
+        combo_popup_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        combo_popup_sel_bg = "#2A2A2F" if self.is_dark else "#FEECE5"
 
         self.combo_timeframe.set_theme(self.is_dark)
         self.combo_timeframe.setStyleSheet(f"""
