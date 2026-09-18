@@ -496,34 +496,40 @@ class ProjectComparisonCanvas(QWidget):
             self.update()
 
     def set_data(self, series: List[Dict[str, Any]], bucket_labels: List[str]) -> None:
-        # Guarantee distinct colors across all compared series
+        UNTAGGED_COLOR = "#64748B"  # Dedicated neutral slate gray for untagged activity
         used_colors = set()
         sanitized_series = []
         palette_idx = 0
 
-        # First pass: preserve unique explicit colors for named projects
+        # First pass: preserve unique explicit colors for named projects and dedicated neutral for Untagged
         pre_assigned = []
         for s in series:
             s_copy = dict(s)
             c = s_copy.get("color")
             name = s_copy.get("name", "")
-            if name != "Untagged" and c and c not in used_colors:
-                used_colors.add(c)
+            if name == "Untagged":
+                used_colors.add(UNTAGGED_COLOR.upper())
+                pre_assigned.append((s_copy, UNTAGGED_COLOR))
+            elif c and c.upper() not in used_colors and c.upper() != UNTAGGED_COLOR.upper():
+                used_colors.add(c.upper())
                 pre_assigned.append((s_copy, c))
             else:
                 pre_assigned.append((s_copy, None))
 
-        # Second pass: assign distinct palette colors for untagged or duplicate projects
+        # Second pass: assign distinct palette colors for unassigned or duplicate projects
         for s_copy, c in pre_assigned:
             if not c:
-                while palette_idx < len(COMPARISON_PALETTE) and COMPARISON_PALETTE[palette_idx] in used_colors:
+                while palette_idx < len(COMPARISON_PALETTE) and (
+                    COMPARISON_PALETTE[palette_idx].upper() in used_colors
+                    or COMPARISON_PALETTE[palette_idx].upper() == UNTAGGED_COLOR.upper()
+                ):
                     palette_idx += 1
                 if palette_idx < len(COMPARISON_PALETTE):
                     c = COMPARISON_PALETTE[palette_idx]
                     palette_idx += 1
                 else:
                     c = COMPARISON_PALETTE[len(used_colors) % len(COMPARISON_PALETTE)]
-                used_colors.add(c)
+                used_colors.add(c.upper())
             s_copy["color"] = c
             sanitized_series.append(s_copy)
 

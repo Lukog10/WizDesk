@@ -1448,7 +1448,7 @@ class ProjectDetailPage(QWidget):
         self.kw_content_layout.addWidget(card)
 
     def _on_edit_project(self) -> None:
-        projects = self.repo.get_all_projects()
+        projects = self.repo.get_all_projects(force_refresh=True)
         target = next((p for p in projects if p.name == self.current_project_name), None)
         if not target:
             return

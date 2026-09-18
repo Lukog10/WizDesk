@@ -653,7 +653,7 @@ class StorageRepository:
 
     def get_project_detail(self, project_name: str, timeframe: str = "all_time") -> Dict[str, Any]:
         """Fetch full metrics, tasks, and application breakdown for a specific project."""
-        projects = self.get_all_projects()
+        projects = self.get_all_projects(force_refresh=True)
         target_proj = next((p for p in projects if p.name.lower() == project_name.lower()), None)
         if target_proj is None:
             target_proj = ProjectRecord(id=None, name=project_name, keywords=[], color="#FF6B3D", description="")
@@ -977,33 +977,41 @@ class StorageRepository:
                 reverse=True,
             )
 
+            UNTAGGED_COLOR = "#64748B"  # Dedicated neutral slate gray for untagged activity
             used_colors: set[str] = set()
             palette_idx = 0
             series_pre = []
 
-            # First pass: assign explicit unique colors for named projects
+            # First pass: assign explicit unique colors for named projects and dedicated neutral for Untagged
             for proj_name, bucket_vals in sorted_proj_buckets:
                 hours_vals = [round(m / 60.0, 2) for m in bucket_vals]
                 tot_h = round(sum(hours_vals), 2)
-                raw_color = proj_colors.get(proj_name)
-                if proj_name != "Untagged" and raw_color and raw_color not in used_colors:
-                    used_colors.add(raw_color)
-                    series_pre.append((proj_name, hours_vals, tot_h, raw_color))
+                if proj_name == "Untagged":
+                    used_colors.add(UNTAGGED_COLOR.upper())
+                    series_pre.append((proj_name, hours_vals, tot_h, UNTAGGED_COLOR))
                 else:
-                    series_pre.append((proj_name, hours_vals, tot_h, None))
+                    raw_color = proj_colors.get(proj_name)
+                    if raw_color and raw_color.upper() not in used_colors and raw_color.upper() != UNTAGGED_COLOR.upper():
+                        used_colors.add(raw_color.upper())
+                        series_pre.append((proj_name, hours_vals, tot_h, raw_color))
+                    else:
+                        series_pre.append((proj_name, hours_vals, tot_h, None))
 
-            # Second pass: assign distinct palette colors to untagged or colliding projects
+            # Second pass: assign distinct palette colors to unregistered or colliding projects
             project_series = []
             for proj_name, hours_vals, tot_h, assigned_color in series_pre:
                 if not assigned_color:
-                    while palette_idx < len(PROJECT_COMPARISON_PALETTE) and PROJECT_COMPARISON_PALETTE[palette_idx] in used_colors:
+                    while palette_idx < len(PROJECT_COMPARISON_PALETTE) and (
+                        PROJECT_COMPARISON_PALETTE[palette_idx].upper() in used_colors
+                        or PROJECT_COMPARISON_PALETTE[palette_idx].upper() == UNTAGGED_COLOR.upper()
+                    ):
                         palette_idx += 1
                     if palette_idx < len(PROJECT_COMPARISON_PALETTE):
                         assigned_color = PROJECT_COMPARISON_PALETTE[palette_idx]
                         palette_idx += 1
                     else:
                         assigned_color = PROJECT_COMPARISON_PALETTE[len(used_colors) % len(PROJECT_COMPARISON_PALETTE)]
-                    used_colors.add(assigned_color)
+                    used_colors.add(assigned_color.upper())
 
                 project_series.append({
                     "name": proj_name,

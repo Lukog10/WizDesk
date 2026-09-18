@@ -2095,8 +2095,12 @@ class QuickEntryDialog(QDialog):
         # Drag state for frameless window movement
         self._drag_pos = QPoint()
 
-        # Connect theme changed broadcast
+        # Connect broadcast signals for real-time workspace synchronization
         app_signals.theme_changed.connect(self.apply_theme)
+        app_signals.session_polled.connect(self._on_background_session_polled)
+        app_signals.task_created.connect(self._on_background_task_activity)
+        app_signals.task_updated.connect(self._on_background_task_activity)
+        app_signals.task_completed.connect(self._on_background_task_activity)
 
         # Apply initial theme stylesheet
         self.apply_theme(config.theme)
@@ -2482,6 +2486,20 @@ class QuickEntryDialog(QDialog):
     def _on_today_clicked(self) -> None:
         """Jump back to today."""
         self.set_selected_date(date.today())
+
+    def _on_background_session_polled(self, app_name: str, window_title: str, project_tag: str) -> None:
+        """Handle background activity tracker polling to update active views in real-time."""
+        if self.isVisible():
+            if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
+                self.project_dashboard_view.load_data()
+            elif hasattr(self, "timeline_view") and self.current_view_mode == "activity" and self.selected_date == date.today():
+                self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
+
+    def _on_background_task_activity(self, task_id: int) -> None:
+        """Refresh dashboard or task views when tasks change."""
+        if self.isVisible():
+            if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
+                self.project_dashboard_view.load_data()
 
     def _open_calendar(self) -> None:
         """Open popup calendar picker."""
