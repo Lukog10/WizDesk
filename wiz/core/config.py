@@ -12,11 +12,21 @@ class Config:
 
     def __init__(self, config_file: Optional[Path] = None):
         # Base paths (supports PyInstaller frozen bundles and standard execution)
-        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-            self.root_dir = Path(sys._MEIPASS)
+        if getattr(sys, "frozen", False):
+            if hasattr(sys, "_MEIPASS"):
+                self.root_dir = Path(sys._MEIPASS)
+            else:
+                self.root_dir = Path(sys.executable).parent
         else:
             self.root_dir = Path(__file__).resolve().parent.parent.parent
         self.assets_dir = self.root_dir / "assets"
+        if not self.assets_dir.exists() and getattr(sys, "frozen", False):
+            exe_assets = Path(sys.executable).parent / "assets"
+            internal_assets = Path(sys.executable).parent / "_internal" / "assets"
+            if exe_assets.exists():
+                self.assets_dir = exe_assets
+            elif internal_assets.exists():
+                self.assets_dir = internal_assets
         
         # User app data directory for persistent settings & storage (Windows & Linux ready)
         appdata = os.environ.get("APPDATA")
@@ -65,6 +75,13 @@ class Config:
             fallback = Path.cwd() / "assets" / asset_name
             if fallback.exists():
                 return fallback
+            if getattr(sys, "frozen", False):
+                exe_fallback = Path(sys.executable).parent / "assets" / asset_name
+                if exe_fallback.exists():
+                    return exe_fallback
+                internal_fallback = Path(sys.executable).parent / "_internal" / "assets" / asset_name
+                if internal_fallback.exists():
+                    return internal_fallback
         return path
 
     def load(self) -> None:

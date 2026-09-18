@@ -15,7 +15,9 @@ a = Analysis(
     ],
     hiddenimports=[
         'PyQt6.QtSvg',
+        'PyQt6.QtSvgWidgets',
         'pynput.keyboard._win32',
+        'pynput.mouse._win32',
         'psutil',
         'win32gui',
         'win32process',
