@@ -905,8 +905,25 @@ class StorageRepository:
                 if 0 <= b_idx < num_buckets:
                     project_bucket_mins[proj_name][b_idx] += dur
 
-            # Build app breakdown list using WizDesk brand palette
-            APP_PALETTE = ["#FF6B3D", "#10B981", "#FF8E6B", "#06B6D4", "#F59E0B", "#EC4899", "#8B5CF6", "#14B8A6"]
+            # Build app breakdown list using WizDesk brand palette (16 colors)
+            APP_PALETTE = [
+                "#FF6B3D",  # Mascot Orange-Red (Brand)
+                "#10B981",  # Emerald
+                "#3B82F6",  # Electric Blue
+                "#F59E0B",  # Amber Gold
+                "#8B5CF6",  # Violet
+                "#EC4899",  # Hot Pink
+                "#06B6D4",  # Cyan
+                "#14B8A6",  # Teal
+                "#F97316",  # Tangerine
+                "#84CC16",  # Lime Green
+                "#6366F1",  # Indigo
+                "#F43F5E",  # Rose
+                "#0EA5E9",  # Sky Blue
+                "#D946EF",  # Fuchsia
+                "#EAB308",  # Sunburst Yellow
+                "#64748B",  # Slate
+            ]
             apps_list = []
             for idx, (app_name, mins) in enumerate(sorted(app_durations.items(), key=lambda x: x[1], reverse=True)):
                 pct = round((mins / total_minutes * 100), 1) if total_minutes > 0 else 0.0
@@ -926,18 +943,32 @@ class StorageRepository:
             else:
                 change_pct = 0.0
 
-            # Ensure distinct colors across all compared project series
+            # Ensure distinct colors across all compared project series (24 colors)
             PROJECT_COMPARISON_PALETTE = [
-                "#FF6B3D",  # Mascot Orange-Red
+                "#FF6B3D",  # Mascot Orange-Red (Brand)
                 "#10B981",  # Emerald
-                "#F59E0B",  # Amber
-                "#EC4899",  # Rose
-                "#06B6D4",  # Cyan
+                "#3B82F6",  # Electric Blue
+                "#F59E0B",  # Amber Gold
                 "#8B5CF6",  # Violet
-                "#F43F5E",  # Coral
-                "#3B82F6",  # Blue
+                "#EC4899",  # Hot Pink
+                "#06B6D4",  # Cyan
+                "#F43F5E",  # Rose
+                "#84CC16",  # Lime Green
                 "#14B8A6",  # Teal
-                "#EAB308",  # Gold
+                "#F97316",  # Tangerine
+                "#A855F7",  # Purple
+                "#0EA5E9",  # Sky Blue
+                "#E11D48",  # Crimson
+                "#059669",  # Forest Jade
+                "#6366F1",  # Indigo
+                "#EAB308",  # Sunburst Yellow
+                "#D946EF",  # Fuchsia
+                "#2563EB",  # Cobalt Blue
+                "#FF5722",  # Flame Orange
+                "#0284C7",  # Cerulean
+                "#D97706",  # Bronze Ochre
+                "#64748B",  # Slate
+                "#475569",  # Steel
             ]
 
             sorted_proj_buckets = sorted(

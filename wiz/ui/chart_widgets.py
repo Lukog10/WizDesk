@@ -444,16 +444,31 @@ class KpiStatCard(QFrame):
 
 
 COMPARISON_PALETTE = [
-    "#FF6B3D",  # Brand Mascot Orange-Red
+    # 24 Curated High-Contrast Brand & Studio Colors
+    "#FF6B3D",  # Mascot Orange-Red (Brand)
     "#10B981",  # Emerald
-    "#F59E0B",  # Amber
-    "#EC4899",  # Rose
-    "#06B6D4",  # Cyan
-    "#8B5CF6",  # Violet
-    "#F43F5E",  # Coral
     "#3B82F6",  # Electric Blue
+    "#F59E0B",  # Amber Gold
+    "#8B5CF6",  # Violet
+    "#EC4899",  # Hot Pink
+    "#06B6D4",  # Cyan
+    "#F43F5E",  # Rose
+    "#84CC16",  # Lime Green
     "#14B8A6",  # Teal
-    "#EAB308",  # Gold
+    "#F97316",  # Tangerine
+    "#A855F7",  # Purple
+    "#0EA5E9",  # Sky Blue
+    "#E11D48",  # Crimson
+    "#059669",  # Forest Jade
+    "#6366F1",  # Indigo
+    "#EAB308",  # Sunburst Yellow
+    "#D946EF",  # Fuchsia
+    "#2563EB",  # Cobalt Blue
+    "#FF5722",  # Flame Orange
+    "#0284C7",  # Cerulean
+    "#D97706",  # Bronze Ochre
+    "#64748B",  # Slate
+    "#475569",  # Steel
 ]
 
 

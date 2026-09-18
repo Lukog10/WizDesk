@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QLineEdit,
     QDialog,
+    QColorDialog,
     QMessageBox,
     QStackedWidget,
     QSizePolicy,
@@ -40,14 +41,35 @@ from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
 PRESET_COLORS = [
-    "#FF6B3D",  # Mascot Orange-Red
+    # Row 1: Warm, Fire & Citrus
+    "#FF6B3D",  # Mascot Orange-Red (Brand)
+    "#FF5722",  # Flame Orange
+    "#F97316",  # Tangerine
+    "#F59E0B",  # Amber Gold
+    "#EAB308",  # Sunburst Yellow
+    "#84CC16",  # Lime Green
     "#10B981",  # Emerald
-    "#F59E0B",  # Amber
-    "#F43F5E",  # Rose
-    "#0EA5E9",  # Sky
-    "#8B5CF6",  # Violet
-    "#EC4899",  # Pink
+    "#059669",  # Forest Jade
+
+    # Row 2: Cyan, Sky, Blues & Purples
     "#14B8A6",  # Teal
+    "#06B6D4",  # Cyan
+    "#0EA5E9",  # Sky Blue
+    "#3B82F6",  # Electric Blue
+    "#2563EB",  # Cobalt Blue
+    "#6366F1",  # Indigo
+    "#8B5CF6",  # Violet
+    "#A855F7",  # Purple
+
+    # Row 3: Fuchsia, Pinks, Reds & Sleek Neutrals
+    "#D946EF",  # Fuchsia
+    "#EC4899",  # Hot Pink
+    "#F43F5E",  # Rose
+    "#E11D48",  # Crimson
+    "#D97706",  # Bronze Ochre
+    "#64748B",  # Slate
+    "#475569",  # Steel
+    "#334155",  # Charcoal Slate
 ]
 
 
@@ -81,12 +103,12 @@ class ProjectDialog(QDialog):
 
         title = "Edit Project" if project else "New Project"
         self.setWindowTitle(title)
-        self.setFixedSize(400, 380)
+        self.setFixedSize(430, 460)
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowCloseButtonHint)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(14)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(11)
 
         header_lbl = QLabel(title)
         header_lbl.setFont(get_font(14, QFont.Weight.Bold))
@@ -102,24 +124,40 @@ class ProjectDialog(QDialog):
                 self.name_edit.setEnabled(False)
         layout.addWidget(self.name_edit)
 
-        # Color Selector
-        layout.addWidget(QLabel("Project Accent Color:"))
-        color_layout = QHBoxLayout()
-        color_layout.setSpacing(8)
+        # Color Selector Header with Custom Color Picker Button
+        color_header = QHBoxLayout()
+        color_header.addWidget(QLabel("Project Accent Color:"))
+        color_header.addStretch()
+
+        self.btn_custom_color = QPushButton("+ Custom Color…")
+        self.btn_custom_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_custom_color.clicked.connect(self._on_pick_custom_color)
+        color_header.addWidget(self.btn_custom_color)
+        layout.addLayout(color_header)
+
+        # 3x8 Preset Color Grid
+        color_grid = QGridLayout()
+        color_grid.setSpacing(6)
+        color_grid.setContentsMargins(0, 0, 0, 0)
         self.color_buttons: List[QPushButton] = []
-        for col in PRESET_COLORS:
+        for idx, col in enumerate(PRESET_COLORS):
+            row = idx // 8
+            col_idx = idx % 8
             btn = QPushButton()
-            btn.setFixedSize(28, 28)
+            btn.setFixedSize(26, 26)
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             is_active = (col.lower() == self.selected_color.lower())
-            active_border = "2px solid #FFFFFF" if self.is_dark else "2px solid #242220"
+            active_border = "2.5px solid #FFFFFF" if self.is_dark else "2.5px solid #242220"
             border = active_border if is_active else "1px solid transparent"
-            btn.setStyleSheet(f"background-color: {col}; border-radius: 14px; border: {border};")
+            btn.setStyleSheet(f"background-color: {col}; border-radius: 13px; border: {border};")
             btn.clicked.connect(lambda checked, c=col: self._on_color_selected(c))
-            color_layout.addWidget(btn)
+            color_grid.addWidget(btn, row, col_idx)
             self.color_buttons.append(btn)
-        color_layout.addStretch()
-        layout.addLayout(color_layout)
+        layout.addLayout(color_grid)
+
+        # Check if project currently has a non-preset custom color
+        if self.selected_color.upper() not in [c.upper() for c in PRESET_COLORS]:
+            self.btn_custom_color.setText(f"Custom: {self.selected_color}")
 
         # Description Field
         layout.addWidget(QLabel("Description:"))
@@ -159,12 +197,27 @@ class ProjectDialog(QDialog):
 
     def _on_color_selected(self, color_hex: str) -> None:
         self.selected_color = color_hex
+        found = False
         for idx, col in enumerate(PRESET_COLORS):
             btn = self.color_buttons[idx]
             is_active = (col.lower() == color_hex.lower())
-            active_border = "2px solid #FFFFFF" if self.is_dark else "2px solid #242220"
+            if is_active:
+                found = True
+            active_border = "2.5px solid #FFFFFF" if self.is_dark else "2.5px solid #242220"
             border = active_border if is_active else "1px solid transparent"
-            btn.setStyleSheet(f"background-color: {col}; border-radius: 14px; border: {border};")
+            btn.setStyleSheet(f"background-color: {col}; border-radius: 13px; border: {border};")
+
+        if hasattr(self, "btn_custom_color"):
+            if not found:
+                self.btn_custom_color.setText(f"Custom: {color_hex}")
+            else:
+                self.btn_custom_color.setText("+ Custom Color…")
+
+    def _on_pick_custom_color(self) -> None:
+        initial = QColor(self.selected_color) if QColor.isValidColor(self.selected_color) else QColor("#FF6B3D")
+        color = QColorDialog.getColor(initial, self, "Select Project Color")
+        if color.isValid():
+            self._on_color_selected(color.name().upper())
 
     def _on_save(self) -> None:
         name = self.name_edit.text().strip()
@@ -214,6 +267,24 @@ class ProjectDialog(QDialog):
                 border: 1px solid #FF5722;
                 font-weight: 600;
             """)
+            if hasattr(self, "btn_custom_color"):
+                self.btn_custom_color.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #242427;
+                        color: #FF8E6B;
+                        border: 1px solid #3F3F46;
+                        border-radius: 6px;
+                        padding: 2px 8px;
+                        font-family: {FONT_SANS};
+                        font-size: 11px;
+                        font-weight: 500;
+                    }}
+                    QPushButton:hover {{
+                        background-color: rgba(255, 107, 61, 35);
+                        border-color: #FF6B3D;
+                        color: #FFFFFF;
+                    }}
+                """)
         else:
             self.setStyleSheet(f"""
                 QDialog {{ background-color: #FAF8F5; color: #242220; }}
@@ -247,6 +318,24 @@ class ProjectDialog(QDialog):
                 border: 1px solid #FF5722;
                 font-weight: 600;
             """)
+            if hasattr(self, "btn_custom_color"):
+                self.btn_custom_color.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #EDE7DC;
+                        color: #D84315;
+                        border: 1px solid #D6D0C5;
+                        border-radius: 6px;
+                        padding: 2px 8px;
+                        font-family: {FONT_SANS};
+                        font-size: 11px;
+                        font-weight: 500;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #FEECE5;
+                        border-color: #FF6B3D;
+                        color: #BF360C;
+                    }}
+                """)
 
 
 class ProjectSummaryCard(QFrame):
