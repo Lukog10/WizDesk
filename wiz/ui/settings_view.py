@@ -207,11 +207,13 @@ class SettingsView(QWidget):
         proj_btn_layout.setSpacing(8)
 
         self.add_proj_btn = QPushButton("+ Add Project")
+        self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.add_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_proj_btn.clicked.connect(self._on_add_project)
         proj_btn_layout.addWidget(self.add_proj_btn)
 
         self.del_proj_btn = QPushButton("Remove Selected")
+        self.del_proj_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.del_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.del_proj_btn.clicked.connect(self._on_remove_project)
         proj_btn_layout.addWidget(self.del_proj_btn)
@@ -241,6 +243,7 @@ class SettingsView(QWidget):
         bottom_bar.addStretch()
 
         self.save_btn = QPushButton("Save Settings")
+        self.save_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.save_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.save_btn.clicked.connect(self.save_settings)
         bottom_bar.addWidget(self.save_btn)
@@ -381,7 +384,10 @@ class SettingsView(QWidget):
         text_secondary = "#A1A1AA" if is_dark else "#78716C"
         input_bg = "#27272A" if is_dark else "#EDE9E0"
         input_border = "#3F3F46" if is_dark else "#D6D0C5"
-        input_focus = "#FF6B3D"
+        input_focus = "#C2410C" if is_dark else "#BA3F1A"
+        save_bg = "#C2410C" if is_dark else "#BA3F1A"
+        save_hover = "#A3360E" if is_dark else "#9E3414"
+        save_pressed = "#872A09" if is_dark else "#7D280E"
         btn_neutral_bg = "#27272A" if is_dark else "#EBE6DC"
         btn_neutral_border = "#3F3F46" if is_dark else "#D6D0C5"
         btn_neutral_text = "#F4F4F5" if is_dark else "#242220"
@@ -428,13 +434,13 @@ class SettingsView(QWidget):
             }}
             QSpinBox::up-button:hover, QSpinBox::down-button:hover {{
                 background: rgba(255, 255, 255, 0.1) if self.is_dark else rgba(0, 0, 0, 0.06);
-                border-radius: 3px;
             }}
         """
         self.vault_path_input.setStyleSheet(input_qss)
         self.interval_spin.setStyleSheet(input_qss)
 
         # Buttons
+        self.browse_btn.setFont(get_font(12, QFont.Weight.DemiBold))
         self.browse_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_neutral_bg};
@@ -452,6 +458,7 @@ class SettingsView(QWidget):
             }}
         """)
 
+        self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.add_proj_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_neutral_bg};
@@ -469,6 +476,7 @@ class SettingsView(QWidget):
             }}
         """)
 
+        self.del_proj_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.del_proj_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_danger_bg};
@@ -485,10 +493,11 @@ class SettingsView(QWidget):
             }}
         """)
 
-        # Save Button (Brand Orange-Red #FF5722 / #FF6B3D)
+        # Save Button (Deeper brand accent shade)
+        self.save_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.save_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: #FF5722;
+                background-color: {save_bg};
                 color: #FFFFFF;
                 border: none;
                 border-radius: 8px;
@@ -498,10 +507,10 @@ class SettingsView(QWidget):
                 font-weight: 600;
             }}
             QPushButton:hover {{
-                background-color: #E64A19;
+                background-color: {save_hover};
             }}
             QPushButton:pressed {{
-                background-color: #BF360C;
+                background-color: {save_pressed};
             }}
         """)
 

@@ -240,11 +240,13 @@ class SettingsDialog(QDialog):
         proj_btn_layout.setSpacing(8)
 
         self.add_proj_btn = QPushButton("+ Add Project")
+        self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.add_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_proj_btn.clicked.connect(self._on_add_project)
         proj_btn_layout.addWidget(self.add_proj_btn)
 
         self.del_proj_btn = QPushButton("Remove Selected")
+        self.del_proj_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.del_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.del_proj_btn.clicked.connect(self._on_remove_project)
         proj_btn_layout.addWidget(self.del_proj_btn)
@@ -266,11 +268,13 @@ class SettingsDialog(QDialog):
         bottom_layout.addStretch()
 
         self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn.setFont(get_font(12, QFont.Weight.Medium))
         self.cancel_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.cancel_btn.clicked.connect(self.reject)
         bottom_layout.addWidget(self.cancel_btn)
 
         self.save_btn = QPushButton("Save Settings")
+        self.save_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.save_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.save_btn.clicked.connect(self._on_save)
         bottom_layout.addWidget(self.save_btn)
@@ -313,7 +317,7 @@ class SettingsDialog(QDialog):
         text_secondary = "#A1A1AA" if self.is_dark else "#666460"
         input_bg = "#27272A" if self.is_dark else "#EDE9E0"
         input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        input_focus = "#FF6B3D"
+        input_focus = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_neutral_bg = "#27272A" if self.is_dark else "#EDE7DC"
         btn_neutral_border = "#3F3F46" if self.is_dark else "#D6D0C5"
         btn_neutral_text = "#F4F4F5" if self.is_dark else "#242220"
@@ -323,9 +327,9 @@ class SettingsDialog(QDialog):
         btn_danger_text = "#F87171" if self.is_dark else "#EF4444"
         btn_danger_hover_bg = "#4C1D1D" if self.is_dark else "#FEE2E2"
         btn_danger_hover_text = "#FCA5A5" if self.is_dark else "#DC2626"
-        btn_save_bg = "#FF5722"
+        btn_save_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_save_text = "#FFFFFF"
-        btn_save_hover = "#E64A19"
+        btn_save_hover = "#A3360E" if self.is_dark else "#9E3414"
         div_color = "#27272A" if self.is_dark else "#E2DDD3"
         table_grid = "#27272A" if self.is_dark else "#E2DDD3"
         table_header_bg = "#27272A" if self.is_dark else "#EDE7DC"
@@ -437,6 +441,7 @@ class SettingsDialog(QDialog):
             }}
         """)
 
+        self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.add_proj_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_neutral_bg};
@@ -454,6 +459,7 @@ class SettingsDialog(QDialog):
             }}
         """)
 
+        self.del_proj_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.del_proj_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_danger_bg};
@@ -471,6 +477,7 @@ class SettingsDialog(QDialog):
             }}
         """)
 
+        self.cancel_btn.setFont(get_font(12, QFont.Weight.Medium))
         self.cancel_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_neutral_bg};
@@ -489,6 +496,7 @@ class SettingsDialog(QDialog):
             }}
         """)
 
+        self.save_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.save_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_save_bg};

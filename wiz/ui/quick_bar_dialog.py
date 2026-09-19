@@ -112,6 +112,7 @@ class QuickBarPopup(QDialog):
         input_row.addWidget(self.project_combo)
 
         self.submit_btn = QPushButton("Add")
+        self.submit_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.submit_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.submit_btn.clicked.connect(self._on_submit)
         input_row.addWidget(self.submit_btn)
@@ -253,10 +254,10 @@ class QuickBarPopup(QDialog):
         text_secondary = "#A1A1AA" if self.is_dark else "#666460"
         input_bg = "#27272A" if self.is_dark else "#EDE9E0"
         input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        input_focus = "#FF6B3D"
-        btn_action_bg = "#FF5722"
+        input_focus = "#C2410C" if self.is_dark else "#BA3F1A"
+        btn_action_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_action_text = "#FFFFFF"
-        btn_action_hover = "#E64A19"
+        btn_action_hover = "#A3360E" if self.is_dark else "#9E3414"
         dropdown_bg = "#27272A" if self.is_dark else "#EDE7DC"
         dropdown_hover = "#3F3F46" if self.is_dark else "#E2DDD4"
 
@@ -342,6 +343,7 @@ class QuickBarPopup(QDialog):
         """)
 
         # 5. Submit Action Button
+        self.submit_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.submit_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_action_bg};

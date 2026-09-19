@@ -598,6 +598,7 @@ class SegmentedFilterBar(QWidget):
         for opt in self.options:
             btn = QPushButton(opt)
             btn.setFixedHeight(32)
+            btn.setFont(get_font(11, QFont.Weight.DemiBold))
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.clicked.connect(lambda checked, o=opt: self.set_active_filter(o))
             self._buttons[opt] = btn
@@ -638,6 +639,7 @@ class SegmentedFilterBar(QWidget):
 
         for opt, btn in self._buttons.items():
             if opt == self.current_filter:
+                btn.setFont(get_font(11, QFont.Weight.Bold))
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: {active_bg};
@@ -651,6 +653,7 @@ class SegmentedFilterBar(QWidget):
                     }}
                 """)
             else:
+                btn.setFont(get_font(11, QFont.Weight.Medium))
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: transparent;
@@ -1933,6 +1936,7 @@ class QuickEntryDialog(QDialog):
         add_task_layout.addWidget(self.project_combo, stretch=1)
 
         self.add_task_btn = QPushButton("Add")
+        self.add_task_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.add_task_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_task_btn.clicked.connect(self._on_quick_add_task)
         add_task_layout.addWidget(self.add_task_btn)
@@ -1986,6 +1990,7 @@ class QuickEntryDialog(QDialog):
         add_note_layout.addWidget(self.note_project_combo, stretch=1)
 
         self.add_note_btn = QPushButton("Log Note")
+        self.add_note_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.add_note_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_note_btn.clicked.connect(self._on_quick_add_note)
         add_note_layout.addWidget(self.add_note_btn)
@@ -2071,20 +2076,20 @@ class QuickEntryDialog(QDialog):
         day_btn_hover_bg = "#27272A" if self.is_dark else "#EBE6DC"
         day_btn_hover_color = "#FAFAFA" if self.is_dark else "#242220"
         date_btn_color = "#F4F4F5" if self.is_dark else "#242220"
-        today_pill_bg = "#FF6B3D" if self.is_dark else "#FF5722"
+        today_pill_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         today_pill_color = "#FFFFFF"
-        today_pill_hover = "#E8582B" if self.is_dark else "#E64A19"
+        today_pill_hover = "#A3360E" if self.is_dark else "#9E3414"
         input_bg = "#27272A" if self.is_dark else "#EDE9E0"
         input_color = "#F4F4F5" if self.is_dark else "#242220"
         input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        input_focus_border = "#FF6B3D"
+        input_focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
         combo_popup_bg = "#18181B" if self.is_dark else "#FAF8F5"
         combo_popup_border = "#27272A" if self.is_dark else "#D6D0C5"
-        combo_popup_sel_bg = "rgba(255, 107, 61, 0.22)" if self.is_dark else "#FEECE5"
-        combo_popup_sel_text = "#FFAB91" if self.is_dark else "#D84315"
-        btn_action_bg = "#FF5722"
+        combo_popup_sel_bg = "rgba(194, 65, 12, 0.22)" if self.is_dark else "#FEECE5"
+        combo_popup_sel_text = "#FFAB91" if self.is_dark else "#BA3F1A"
+        btn_action_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_action_color = "#FFFFFF"
-        btn_action_hover = "#E64A19"
+        btn_action_hover = "#A3360E" if self.is_dark else "#9E3414"
 
         # 1. Outer Frame & Inner Card
         self.outer_frame.setStyleSheet(f"""
@@ -2169,6 +2174,7 @@ class QuickEntryDialog(QDialog):
             }}
         """)
 
+        self.today_pill_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.today_pill_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {today_pill_bg};
@@ -2259,7 +2265,9 @@ class QuickEntryDialog(QDialog):
                 background-color: {btn_action_hover};
             }}
         """
+        self.add_task_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.add_task_btn.setStyleSheet(btn_action_qss)
+        self.add_note_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.add_note_btn.setStyleSheet(btn_action_qss)
 
         # 7. Update timeline, project dashboard & settings view themes

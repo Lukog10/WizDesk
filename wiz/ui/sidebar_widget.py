@@ -95,8 +95,8 @@ class NavPillButton(QPushButton):
         w = self.width()
         h = self.height()
 
-        # Accent color: Thick, dense, solid high-contrast accent fill
-        accent_color = QColor("#FF6B3D") if self.is_dark else QColor("#FF5722")
+        # Accent color: Thick, dense, rich deeper accent fill that blends in smoothly
+        accent_color = QColor("#C2410C") if self.is_dark else QColor("#BA3F1A")
 
         if self.is_active:
             bg_color = accent_color

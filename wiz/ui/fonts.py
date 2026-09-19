@@ -7,14 +7,8 @@ from wiz.core.config import config
 # Primary UI Sans Stack: Modern geometric SaaS font with open counters and high legibility
 # NOTE: Qt stylesheet CSS 2.1 subset — no web-only aliases (-apple-system, BlinkMacSystemFont).
 # Double-quoted names for reliable parsing in f-string stylesheets.
-FONT_SANS = (
-    '"Plus Jakarta Sans", "Inter", "Segoe UI", "Helvetica Neue", sans-serif'
-)
-
-# Primary Developer Mono Stack: Precision tabular numerals, timestamps, and metrics
-FONT_MONO = (
-    '"JetBrains Mono", "Cascadia Code", "Fira Code", "Consolas", monospace'
-)
+FONT_SANS = '"Plus Jakarta Sans"'
+FONT_MONO = '"JetBrains Mono"'
 
 SANS_FAMILIES = [
     "Plus Jakarta Sans",
