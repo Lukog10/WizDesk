@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
     QFrame,
 )
 
-from wiz.ui.icons import get_app_pixmap
+from wiz.ui.icons import get_app_pixmap, render_tinted_svg
 from wiz.ui.fonts import FONT_SANS, get_font
 
 
@@ -172,10 +172,27 @@ class NavPillButton(QPushButton):
 
         painter.end()
 
+    # Mapping from icon_type to SVG asset filename
+    _SVG_ICON_MAP = {
+        "tasks": "tasklist-24.svg",
+        "notes": "notes-bold.svg",
+        "activity": "activity-04.svg",
+        "projects": "dashboard-2-outline.svg",
+    }
+
     def _draw_vector_icon(
         self, painter: QPainter, x: int, y: int, size: int, color: QColor
     ) -> None:
-        """Draw crisp antialiased geometric icon for each mode."""
+        """Draw crisp icon for each mode — SVG asset for main nav, hand-drawn for utility."""
+        svg_name = self._SVG_ICON_MAP.get(self.icon_type)
+        if svg_name:
+            # Render tinted SVG asset with 2px padding for visual balance
+            render_tinted_svg(
+                painter, svg_name, color.name(), float(x + 1), float(y + 1), float(size - 2)
+            )
+            return
+
+        # Fallback: hand-drawn QPainter icons for settings & help
         painter.save()
         pen_width = 2.0 if self.is_active else 1.6
         pen = QPen(color, pen_width)
@@ -184,40 +201,7 @@ class NavPillButton(QPushButton):
         painter.setPen(pen)
         painter.setBrush(Qt.GlobalColor.transparent)
 
-        if self.icon_type == "tasks":
-            # Checklist icon: box + checkmark
-            painter.drawRoundedRect(QRectF(x + 1, y + 2, 13, 12), 2.5, 2.5)
-            path = QPainterPath()
-            path.moveTo(x + 4.2, y + 8.0)
-            path.lineTo(x + 6.8, y + 10.6)
-            path.lineTo(x + 11.0, y + 5.8)
-            painter.drawPath(path)
-
-        elif self.icon_type == "notes":
-            # Document/pad icon with two lines
-            painter.drawRoundedRect(QRectF(x + 2, y + 1, 12, 14), 2.5, 2.5)
-            painter.drawLine(int(x + 5), int(y + 6), int(x + 11), int(y + 6))
-            painter.drawLine(int(x + 5), int(y + 9), int(x + 9), int(y + 9))
-
-        elif self.icon_type == "activity":
-            # Pulse / waveform line
-            path = QPainterPath()
-            path.moveTo(x + 1, y + 8)
-            path.lineTo(x + 4.5, y + 8)
-            path.lineTo(x + 6.5, y + 3.5)
-            path.lineTo(x + 9.5, y + 12.5)
-            path.lineTo(x + 11.5, y + 8)
-            path.lineTo(x + 15, y + 8)
-            painter.drawPath(path)
-
-        elif self.icon_type == "projects":
-            # 2x2 grid / dashboard blocks
-            painter.drawRoundedRect(QRectF(x + 1.5, y + 1.5, 5.5, 5.5), 1.5, 1.5)
-            painter.drawRoundedRect(QRectF(x + 9.0, y + 1.5, 5.5, 5.5), 1.5, 1.5)
-            painter.drawRoundedRect(QRectF(x + 1.5, y + 9.0, 5.5, 5.5), 1.5, 1.5)
-            painter.drawRoundedRect(QRectF(x + 9.0, y + 9.0, 5.5, 5.5), 1.5, 1.5)
-
-        elif self.icon_type == "settings":
+        if self.icon_type == "settings":
             # Gear / sliders icon
             painter.drawEllipse(QRectF(x + 4.5, y + 4.5, 7, 7))
             painter.drawLine(int(x + 8), int(y + 1.5), int(x + 8), int(y + 4.0))

@@ -40,6 +40,36 @@ def get_app_icon(asset_name: str = "wiz-idle.svg") -> QIcon:
     return icon
 
 
+def render_tinted_svg(
+    painter: QPainter,
+    svg_name: str,
+    color_hex: str,
+    x: float,
+    y: float,
+    size: float,
+) -> None:
+    """Render a tinted SVG asset directly onto an active QPainter at (x, y) with given size.
+
+    Replaces both fill and stroke color attributes to support all SVG icon styles.
+    """
+    asset_path = config.get_asset_path(svg_name)
+    if not asset_path.exists():
+        return
+
+    content = asset_path.read_text(encoding="utf-8")
+    # Replace fill attributes (but not fill="none")
+    tinted = re.sub(r'fill="(?!none)[^"]*"', f'fill="{color_hex}"', content)
+    # Replace stroke attributes (but not stroke="none")
+    tinted = re.sub(r'stroke="(?!none)[^"]*"', f'stroke="{color_hex}"', tinted)
+    # Replace color="currentColor" for SVGs that use it
+    tinted = tinted.replace('color="currentColor"', f'color="{color_hex}"')
+
+    renderer = QSvgRenderer(QByteArray(tinted.encode("utf-8")))
+    if renderer.isValid():
+        from PyQt6.QtCore import QRectF
+        renderer.render(painter, QRectF(x, y, size, size))
+
+
 def get_status_icon(svg_name: str, color_hex: str, size: int = 14) -> QIcon:
     """Load an SVG icon from assets/, dynamically tint it with color_hex, and return a crisp high-DPI QIcon."""
     asset_path = config.get_asset_path(svg_name)
