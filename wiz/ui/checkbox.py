@@ -40,6 +40,10 @@ class RoundedCheckbox(QWidget):
             self.is_dark = is_dark
             self.update()
 
+    def set_theme(self, is_dark: bool) -> None:
+        """Alias for set_dark_mode to support theme switching calls."""
+        self.set_dark_mode(is_dark)
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self._checked = not self._checked
@@ -59,8 +63,8 @@ class RoundedCheckbox(QWidget):
         radius = 4.0 if self._size >= 18 else 3.0
 
         if self._checked:
-            # Brand Orange-Red filled rounded square with white checkmark
-            bg_color = QColor("#FF6B3D") if self.is_dark else QColor("#FF5722")
+            # Brand deeper accent filled rounded square with white checkmark
+            bg_color = QColor("#C2410C") if self.is_dark else QColor("#BA3F1A")
             check_color = QColor("#FFFFFF")
 
             painter.setPen(Qt.PenStyle.NoPen)

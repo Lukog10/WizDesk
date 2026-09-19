@@ -400,14 +400,14 @@ class CreateSectionDialog(QDialog):
         input_bg = "#27272A" if self.is_dark else "#EDE9E0"
         input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
         input_text = "#F4F4F5" if self.is_dark else "#242220"
-        input_focus_border = "#FF6B3D"
+        input_focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
         cancel_bg = "#27272A" if self.is_dark else "#EBE6DC"
         cancel_text = "#A1A1AA" if self.is_dark else "#57534E"
         cancel_hover_color = "#FAFAFA" if self.is_dark else "#242220"
         cancel_hover_bg = "#3F3F46" if self.is_dark else "#DDD7CC"
-        submit_bg = "#FF6B3D" if self.is_dark else "#FF5722"
+        submit_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         submit_text = "#FFFFFF"
-        submit_hover_bg = "#E8582B" if self.is_dark else "#E64A19"
+        submit_hover_bg = "#A3360E" if self.is_dark else "#9E3414"
 
         self.outer_layout = QVBoxLayout(self)
         self.outer_layout.setContentsMargins(12, 12, 12, 12)
@@ -741,7 +741,7 @@ class SubtaskRowWidget(QWidget):
 
         edit_bg = "#18181B" if self.is_dark else "#FAF8F5"
         edit_color = "#F4F4F5" if self.is_dark else "#242220"
-        edit_border = "#FF6B3D"
+        edit_border = "#C2410C" if self.is_dark else "#BA3F1A"
 
         self.edit_input = InlineEditInput(subtask.title, self)
         self.edit_input.setFont(get_font(9))
@@ -932,13 +932,10 @@ class TaskRowWidget(QWidget):
         self.main_layout.setContentsMargins(0, 2, 0, 2)
         self.main_layout.setSpacing(3)
 
-        # Top row: Oval capsule containing Checkbox, Title, + Subtask button
+        # Top row: Checkbox, Title, + Subtask button
         self.top_widget = QWidget()
-        self.top_widget.setObjectName("taskTopWidget")
-        self.top_widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.top_widget.setFixedHeight(34)
         top_layout = QHBoxLayout(self.top_widget)
-        top_layout.setContentsMargins(12, 3, 12, 3)
+        top_layout.setContentsMargins(4, 3, 4, 3)
         top_layout.setSpacing(10)
 
         is_done = (task.status in ("done", "completed"))
@@ -955,7 +952,7 @@ class TaskRowWidget(QWidget):
 
         edit_bg = "#18181B" if self.is_dark else "#FAF8F5"
         edit_color = "#F4F4F5" if self.is_dark else "#242220"
-        edit_border = "#FF6B3D"
+        edit_border = "#C2410C" if self.is_dark else "#BA3F1A"
 
         self.edit_input = InlineEditInput(task.title, self)
         self.edit_input.setFont(get_font(10, QFont.Weight.Medium))
@@ -1000,13 +997,12 @@ class TaskRowWidget(QWidget):
         self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
         top_layout.addWidget(self.add_sub_btn)
 
-        self._update_capsule_style()
         self.main_layout.addWidget(self.top_widget)
 
         # Status dropdown & time label directly below task title
         self.status_bar_widget = QWidget()
         status_bar_layout = QHBoxLayout(self.status_bar_widget)
-        status_bar_layout.setContentsMargins(26, 0, 4, 3)
+        status_bar_layout.setContentsMargins(34, 0, 4, 3)
         status_bar_layout.setSpacing(10)
 
         self.status_combo = ArrowComboBox(self, is_dark=self.is_dark)
@@ -1055,7 +1051,7 @@ class TaskRowWidget(QWidget):
         sub_in_bg = "#27272A" if self.is_dark else "#EDE9E0"
         sub_in_border = "#3F3F46" if self.is_dark else "#D6D0C5"
         sub_in_text = "#F4F4F5" if self.is_dark else "#242220"
-        sub_in_focus = "#FF6B3D"
+        sub_in_focus = "#C2410C" if self.is_dark else "#BA3F1A"
 
         self.sub_input = QLineEdit()
         self.sub_input.setPlaceholderText("+ Add subtask... (Press Enter)")
@@ -1078,9 +1074,9 @@ class TaskRowWidget(QWidget):
         self.sub_input.returnPressed.connect(self._on_submit_subtask)
         sub_input_layout.addWidget(self.sub_input, stretch=1)
 
-        sub_btn_bg = "#FF6B3D" if self.is_dark else "#FF5722"
+        sub_btn_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         sub_btn_text = "#FFFFFF"
-        sub_btn_hover = "#E8582B" if self.is_dark else "#E64A19"
+        sub_btn_hover = "#A3360E" if self.is_dark else "#9E3414"
 
         sub_add_confirm_btn = QPushButton("Add")
         sub_add_confirm_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -1141,29 +1137,12 @@ class TaskRowWidget(QWidget):
         self.status_combo.addItem(get_status_icon("cancelled.svg", sub_color, size=13), "Cancelled")
         self.status_combo.blockSignals(False)
 
-    def _update_capsule_style(self) -> None:
-        """Apply the single smooth oval pill styling with exact theme colors."""
-        task_bg = "#242427" if self.is_dark else "#FFFFFF"
-        task_border = "#333338" if self.is_dark else "#E2DDD3"
-        task_border_hover = "#4A4A52" if self.is_dark else "#D6D0C5"
-        self.top_widget.setStyleSheet(f"""
-            QWidget#taskTopWidget {{
-                background-color: {task_bg};
-                border: 1px solid {task_border};
-                border-radius: 17px;
-            }}
-            QWidget#taskTopWidget:hover {{
-                border-color: {task_border_hover};
-            }}
-        """)
-
     def set_theme(self, is_dark: bool) -> None:
         """Dynamically update theme on the task row."""
         self.is_dark = is_dark
         self.checkbox.set_theme(is_dark)
         self.status_combo.set_theme(is_dark)
         self._populate_status_combo()
-        self._update_capsule_style()
         self._update_status_ui(self.task.status)
 
     def _on_status_combo_changed(self, index: int) -> None:
@@ -1326,7 +1305,6 @@ class TaskRowWidget(QWidget):
                 font-size: 11px;
             }}
         """)
-        self._update_capsule_style()
 
     def start_renaming(self) -> None:
         """Enter inline task renaming mode."""
