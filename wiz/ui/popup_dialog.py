@@ -1061,6 +1061,7 @@ class TaskRowWidget(QWidget):
                 padding: 4px 8px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
+                word-spacing: 1px;
             }}
             QLineEdit:focus {{
                 background-color: {edit_bg};
@@ -2197,6 +2198,7 @@ class QuickEntryDialog(QDialog):
                 padding: 8px 12px;
                 font-family: {FONT_SANS};
                 font-size: 13px;
+                word-spacing: 1px;
             }}
             QLineEdit:focus {{
                 background-color: {inner_bg};

@@ -415,6 +415,7 @@ class SettingsView(QWidget):
                 padding: 6px 12px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
+                word-spacing: 1px;
             }}
             QLineEdit:focus, QSpinBox:focus {{
                 background-color: {inner_bg};

@@ -299,6 +299,7 @@ class QuickBarPopup(QDialog):
                 padding: 6px 12px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
+                word-spacing: 1px;
             }}
             QLineEdit:focus {{
                 background-color: {card_bg};
