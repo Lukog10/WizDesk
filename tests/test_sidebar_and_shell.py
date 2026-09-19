@@ -122,20 +122,44 @@ def test_sidebar_widget_modes_and_signals(qapp):
 
 
 def test_settings_view_lifecycle_and_saving(qapp, repo: StorageRepository):
-    """Test SettingsView preference management and database synchronization."""
+    """Test SettingsView preference management, categories, and database synchronization."""
     view = SettingsView(repository=repo, is_dark=True)
 
     # Initial state
     assert hasattr(view, "vault_path_input")
     assert hasattr(view, "float_anim_check")
+    assert hasattr(view, "always_on_top_check")
+    assert hasattr(view, "autostart_check")
+    assert hasattr(view, "sound_check")
+    assert hasattr(view, "vault_logs_folder_input")
     assert hasattr(view, "interval_spin")
     assert hasattr(view, "proj_table")
     assert hasattr(view, "save_btn")
+    assert hasattr(view, "category_bar")
 
-    # Modify preferences
+    # Verify category navigation
+    assert view.stack.currentIndex() == 0  # General
+    view.category_bar.buttons["hotkeys"].click()
+    assert view.stack.currentIndex() == 1
+    view.category_bar.buttons["projects"].click()
+    assert view.stack.currentIndex() == 2
+    view.category_bar.buttons["integrations"].click()
+    assert view.stack.currentIndex() == 3
+    view.category_bar.buttons["general"].click()
+    assert view.stack.currentIndex() == 0
+
+    # Modify preferences across tabs
     view.vault_path_input.setText("C:/Users/Tester/ObsidianVault")
+    view.vault_logs_folder_input.setText("Custom Vault Logs")
     view.float_anim_check.setChecked(False)
+    view.always_on_top_check.setChecked(False)
+    view.autostart_check.setChecked(True)
+    view.sound_check.setChecked(True)
     view.interval_spin.setValue(15)
+
+    # Modify hotkey inside SettingsView
+    assert "hotkey_quick_task" in view.hotkey_inputs
+    view.hotkey_inputs["hotkey_quick_task"].setText("Ctrl+Alt+K")
 
     # Save
     saved_signal = []
@@ -144,12 +168,19 @@ def test_settings_view_lifecycle_and_saving(qapp, repo: StorageRepository):
 
     assert len(saved_signal) == 1
     assert config.get("obsidian_vault_path") == "C:/Users/Tester/ObsidianVault"
+    assert config.get("obsidian_logs_folder") == "Custom Vault Logs"
     assert config.get("enable_floating_animation") is False
+    assert config.get("always_on_top") is False
+    assert config.get("auto_start_on_login") is True
+    assert config.get("sound_effects") is True
     assert config.get("tracking_interval_seconds") == 900
+    assert config.get("hotkey_quick_task") == "<ctrl>+<alt>+k"
 
     # Test theme toggle on view
     view.set_theme(is_dark=False)
     assert not view.is_dark
+    view.set_theme(is_dark=True)
+    assert view.is_dark
 
 
 def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: StorageRepository):
@@ -271,3 +302,26 @@ def test_help_faq_view_lifecycle(qapp):
     assert not view.is_dark
     view.set_theme(is_dark=True)
     assert view.is_dark
+
+
+def test_help_to_settings_navigation(qapp, repo: StorageRepository):
+    """Test clicking 'Configure in Settings →' navigates to settings hotkey category."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    # Navigate to help page
+    dialog.sidebar.pills["help"].click()
+    assert dialog.current_view_mode == "help"
+    assert dialog.stack.currentWidget() == dialog.help_faq_view
+
+    # Click Configure in Settings button
+    dialog.help_faq_view.open_settings_btn.click()
+
+    # Verify dialog switched to Settings and activated the hotkeys tab
+    assert dialog.current_view_mode == "settings"
+    assert dialog.stack.currentWidget() == dialog.settings_view
+    assert dialog.settings_view.stack.currentIndex() == 1  # Hotkeys tab
+    assert dialog.settings_view.category_bar.current_category == "hotkeys"
+
+    dialog.close()
+

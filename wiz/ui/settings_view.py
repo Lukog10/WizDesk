@@ -1,12 +1,12 @@
 """
 Embedded Settings View for WizDesk Widescreen Shell.
-Provides in-workspace configuration for Obsidian Vault, tracking preferences,
-and project auto-tagging keywords without opening secondary modal dialogs.
-Strictly adheres to WizDesk brand colors (#FF6B3D Mascot Orange-Red, #10B981 Emerald).
+Provides in-workspace categorized configuration for General preferences,
+Global Hotkeys, Project Auto-Tagging Keywords, and Obsidian Vault Integration.
+Styled to match the Untitled UI design with clean category tabs and two-column setting rows.
 """
 
-from typing import Optional
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from typing import Optional, Dict, Any, List
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize
 from PyQt6.QtGui import QFont, QColor, QCursor
 from PyQt6.QtWidgets import (
     QWidget,
@@ -23,21 +23,146 @@ from PyQt6.QtWidgets import (
     QFrame,
     QInputDialog,
     QScrollArea,
+    QStackedWidget,
+    QSizePolicy,
 )
 
 from wiz.core.config import config
+from wiz.core.signals import app_signals
 from wiz.storage.models import StorageRepository
-from wiz.ui.fonts import FONT_SANS, get_font
+from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
+from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
 
 # Shared component alias for backwards compatibility and tests
 SettingsCheckbox = RoundedCheckbox
 
 
+class SettingsCategoryBar(QFrame):
+    """
+    Untitled UI style category tab navigation bar.
+    Displays a horizontal row of rounded tabs in a contained border strip.
+    """
+
+    category_selected = pyqtSignal(str)
+
+    CATEGORIES = [
+        ("general", "General"),
+        ("hotkeys", "Hotkeys"),
+        ("projects", "Projects"),
+        ("integrations", "Integrations"),
+    ]
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.active_category = "general"
+        self.buttons: Dict[str, QPushButton] = {}
+        self._init_ui()
+
+    @property
+    def current_category(self) -> str:
+        return self.active_category
+
+    def _init_ui(self) -> None:
+        self.setObjectName("SettingsCategoryBar")
+        self.setFixedHeight(38)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(3, 3, 3, 3)
+        layout.setSpacing(4)
+
+        for cat_id, cat_label in self.CATEGORIES:
+            btn = QPushButton(cat_label, self)
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.setAutoDefault(False)
+            btn.setDefault(False)
+            btn.clicked.connect(lambda checked, c=cat_id: self._on_btn_clicked(c))
+            self.buttons[cat_id] = btn
+            layout.addWidget(btn)
+
+        layout.addStretch(1)
+        self.apply_theme()
+
+    def _on_btn_clicked(self, cat_id: str) -> None:
+        self.set_active_category(cat_id)
+        self.category_selected.emit(cat_id)
+
+    def set_active_category(self, cat_id: str) -> None:
+        self.active_category = cat_id
+        self.apply_theme()
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.apply_theme()
+
+    def apply_theme(self) -> None:
+        if self.is_dark:
+            container_bg = "#18181B"
+            container_border = "#27272A"
+            btn_color = "#A1A1AA"
+            btn_hover_bg = "rgba(255, 255, 255, 0.05)"
+            btn_hover_color = "#F4F4F6"
+            active_bg = "#27272A"
+            active_color = "#FAFAFA"
+            active_border = "#3F3F46"
+        else:
+            container_bg = "#EDE8DF"
+            container_border = "#D6D0C5"
+            btn_color = "#57534E"
+            btn_hover_bg = "rgba(0, 0, 0, 0.04)"
+            btn_hover_color = "#18181B"
+            active_bg = "#FFFFFF"
+            active_color = "#18181B"
+            active_border = "#D5CEC2"
+
+        self.setStyleSheet(f"""
+            QFrame#SettingsCategoryBar {{
+                background-color: {container_bg};
+                border: 1px solid {container_border};
+                border-radius: 8px;
+            }}
+        """)
+
+        for cid, btn in self.buttons.items():
+            is_active = (cid == self.active_category)
+            if is_active:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {active_bg};
+                        color: {active_color};
+                        border: 1px solid {active_border};
+                        border-radius: 6px;
+                        padding: 5px 16px;
+                        font-family: {FONT_SANS};
+                        font-size: 11px;
+                        font-weight: 600;
+                    }}
+                """)
+            else:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: transparent;
+                        color: {btn_color};
+                        border: none;
+                        border-radius: 6px;
+                        padding: 5px 16px;
+                        font-family: {FONT_SANS};
+                        font-size: 11px;
+                        font-weight: 500;
+                    }}
+                    QPushButton:hover {{
+                        background-color: {btn_hover_bg};
+                        color: {btn_hover_color};
+                    }}
+                """)
+
+
 class SettingsView(QWidget):
     """
     Embedded settings view placed inside the main workspace stack.
-    Houses all user preferences with instant visual feedback and brand cohesion.
+    Categorizes settings into General, Hotkeys, Projects, and Integrations
+    using the Untitled UI layout paradigm.
     """
 
     saved = pyqtSignal()
@@ -52,229 +177,433 @@ class SettingsView(QWidget):
         super().__init__(parent)
         self.repo = repository or StorageRepository()
         self.is_dark = is_dark
+        self.hotkey_inputs: Dict[str, QLineEdit] = {}
 
+        self._init_ui()
+
+    def _init_ui(self) -> None:
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(12, 8, 12, 12)
-        self.main_layout.setSpacing(14)
+        self.main_layout.setContentsMargins(16, 12, 16, 12)
+        self.main_layout.setSpacing(12)
 
-        # Scroll Area for comfortable viewing on any display
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
+        # 1. Header Section
+        header_layout = QVBoxLayout()
+        header_layout.setSpacing(2)
 
-        self.scroll_content = QWidget()
-        self.scroll_content.setStyleSheet("background: transparent;")
-        self.content_layout = QVBoxLayout(self.scroll_content)
-        self.content_layout.setContentsMargins(4, 4, 12, 4)
-        self.content_layout.setSpacing(14)
+        self.title_lbl = QLabel("Settings", self)
+        self.title_lbl.setFont(get_font(14, QFont.Weight.Bold))
+        header_layout.addWidget(self.title_lbl)
 
-        # ----------------------------------------------------
-        # Section 1: Obsidian Vault Configuration
-        # ----------------------------------------------------
-        obs_box = QVBoxLayout()
-        obs_box.setSpacing(4)
+        self.subtitle_lbl = QLabel("Manage your desktop preferences, keyboard shortcuts, and project workflows.", self)
+        self.subtitle_lbl.setFont(get_font(9))
+        header_layout.addWidget(self.subtitle_lbl)
 
-        self.obs_title = QLabel("Obsidian Vault Integration")
-        self.obs_title.setFont(get_font(10, QFont.Weight.DemiBold))
-        obs_box.addWidget(self.obs_title)
+        self.main_layout.addLayout(header_layout)
 
-        self.obs_desc = QLabel(
-            "Select your local Obsidian Vault folder to automatically sync your daily Markdown logs."
-        )
-        self.obs_desc.setFont(get_font(9))
-        obs_box.addWidget(self.obs_desc)
+        # 2. Untitled UI Style Category Bar
+        self.category_bar = SettingsCategoryBar(is_dark=self.is_dark, parent=self)
+        self.category_bar.category_selected.connect(self.switch_to_category)
+        self.main_layout.addWidget(self.category_bar)
 
-        vault_input_layout = QHBoxLayout()
-        vault_input_layout.setSpacing(8)
+        # 3. Stack of Categorized Settings Pages
+        self.stack = QStackedWidget(self)
 
-        self.vault_path_input = QLineEdit()
-        self.vault_path_input.setPlaceholderText("Path to Obsidian Vault root folder...")
-        self.vault_path_input.setText(config.get("obsidian_vault_path", ""))
-        vault_input_layout.addWidget(self.vault_path_input, stretch=1)
+        self.page_general = self._build_general_page()
+        self.page_hotkeys = self._build_hotkeys_page()
+        self.page_projects = self._build_projects_page()
+        self.page_integrations = self._build_integrations_page()
 
-        self.browse_btn = QPushButton("Browse")
-        self.browse_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.browse_btn.clicked.connect(self._on_browse_vault)
-        vault_input_layout.addWidget(self.browse_btn)
+        self.stack.addWidget(self.page_general)       # index 0: general
+        self.stack.addWidget(self.page_hotkeys)       # index 1: hotkeys
+        self.stack.addWidget(self.page_projects)      # index 2: projects
+        self.stack.addWidget(self.page_integrations)  # index 3: integrations
 
-        obs_box.addLayout(vault_input_layout)
-        self.content_layout.addLayout(obs_box)
+        self.main_layout.addWidget(self.stack, stretch=1)
 
-        # Divider 1
-        self.div1 = QFrame()
-        self.div1.setFrameShape(QFrame.Shape.HLine)
-        self.content_layout.addWidget(self.div1)
+        # 4. Universal Bottom Action Bar
+        bottom_bar = QHBoxLayout()
+        bottom_bar.setContentsMargins(4, 4, 4, 0)
+        bottom_bar.setSpacing(10)
 
-        # ----------------------------------------------------
-        # Section 2: General & Tracking Preferences
-        # ----------------------------------------------------
-        pref_box = QVBoxLayout()
-        pref_box.setSpacing(10)
+        self.status_pill = QLabel("All settings up to date", self)
+        self.status_pill.setFont(get_font(9, QFont.Weight.Medium))
+        bottom_bar.addWidget(self.status_pill)
 
-        self.pref_title = QLabel("General & Tracking Preferences")
-        self.pref_title.setFont(get_font(10, QFont.Weight.DemiBold))
-        pref_box.addWidget(self.pref_title)
+        bottom_bar.addStretch()
 
-        # Preference Row 1: Floating bob animation
-        pref_row_1 = QHBoxLayout()
-        pref_row_1.setSpacing(10)
+        self.save_btn = QPushButton("Save Settings", self)
+        self.save_btn.setFont(get_font(11, QFont.Weight.Bold))
+        self.save_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.save_btn.setAutoDefault(False)
+        self.save_btn.setDefault(False)
+        self.save_btn.clicked.connect(self.save_settings)
+        bottom_bar.addWidget(self.save_btn)
 
+        self.main_layout.addLayout(bottom_bar)
+
+        # Apply initial theme & load data
+        self.apply_theme()
+        self.load_settings()
+
+    def _create_card_container(self) -> QFrame:
+        """Create an elevated panel card for containing a setting category."""
+        card = QFrame(self)
+        card.setObjectName("SettingsCard")
+        return card
+
+    def _create_setting_row(
+        self,
+        title: str,
+        description: str,
+        control_widget: QWidget,
+        parent_layout: QVBoxLayout,
+        include_divider: bool = True,
+    ) -> None:
+        """
+        Build an Untitled UI two-column setting row:
+        Left: Title (bold) + Description (small muted)
+        Right: Control widget
+        """
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(0, 6, 0, 6)
+        row_layout.setSpacing(16)
+
+        # Left Column: Label + Description
+        left_box = QVBoxLayout()
+        left_box.setSpacing(2)
+        left_box.setContentsMargins(0, 0, 0, 0)
+
+        title_lbl = QLabel(title, row_widget)
+        title_lbl.setFont(get_font(10, QFont.Weight.DemiBold))
+        title_lbl.setObjectName("SettingRowTitle")
+        left_box.addWidget(title_lbl)
+
+        desc_lbl = QLabel(description, row_widget)
+        desc_lbl.setFont(get_font(9))
+        desc_lbl.setObjectName("SettingRowDesc")
+        desc_lbl.setWordWrap(True)
+        left_box.addWidget(desc_lbl)
+
+        row_layout.addLayout(left_box, stretch=1)
+
+        # Right Column: Control Widget
+        row_layout.addWidget(control_widget, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        parent_layout.addWidget(row_widget)
+
+        if include_divider:
+            div = QFrame()
+            div.setFrameShape(QFrame.Shape.HLine)
+            div.setObjectName("SettingDivider")
+            div.setFixedHeight(1)
+            parent_layout.addWidget(div)
+
+    # ----------------------------------------------------------------
+    # Category Page 1: General Preferences
+    # ----------------------------------------------------------------
+    def _build_general_page(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("background: transparent; border: none;")
+
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 6, 12, 6)
+        layout.setSpacing(10)
+
+        # Section Heading
+        self.gen_heading = QLabel("General & Companion Behavior", container)
+        self.gen_heading.setFont(get_font(11, QFont.Weight.Bold))
+        layout.addWidget(self.gen_heading)
+
+        self.gen_subheading = QLabel("Configure desktop mascot animations, window tracking behavior, and app startup.", container)
+        self.gen_subheading.setFont(get_font(9))
+        layout.addWidget(self.gen_subheading)
+
+        # Row 1: Floating bob animation
         self.float_anim_check = SettingsCheckbox(
             checked=config.get("enable_floating_animation", True),
             size=18,
-            parent=self.scroll_content,
+            parent=container,
             is_dark=self.is_dark,
         )
-        pref_row_1.addWidget(self.float_anim_check)
-
-        self.anim_lbl = QLabel("Enable floating mascot animation")
-        self.anim_lbl.setFont(get_font(9, QFont.Weight.Medium))
-        self.anim_lbl.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.anim_lbl.mousePressEvent = (
-            lambda e: self.float_anim_check.setChecked(
-                not self.float_anim_check.isChecked()
-            )
+        self._create_setting_row(
+            title="Floating Mascot Animation",
+            description="Mascot gently bobs and floats on screen with smooth sinusoidal motion.",
+            control_widget=self.float_anim_check,
+            parent_layout=layout,
         )
-        pref_row_1.addWidget(self.anim_lbl)
-        pref_row_1.addStretch()
 
-        pref_box.addLayout(pref_row_1)
+        # Row 2: Always on top
+        self.always_on_top_check = SettingsCheckbox(
+            checked=config.get("always_on_top", True),
+            size=18,
+            parent=container,
+            is_dark=self.is_dark,
+        )
+        self._create_setting_row(
+            title="Always On Top",
+            description="Keep the desktop companion floating above full-screen windows and active applications.",
+            control_widget=self.always_on_top_check,
+            parent_layout=layout,
+        )
 
-        # Preference Row 2: Auto-tracking interval
-        pref_row_2 = QHBoxLayout()
-        pref_row_2.setSpacing(10)
-
-        self.interval_lbl = QLabel("Auto-tracking interval:")
-        self.interval_lbl.setFont(get_font(9, QFont.Weight.Medium))
-        pref_row_2.addWidget(self.interval_lbl)
-
-        self.interval_spin = QSpinBox()
+        # Row 3: Tracking interval
+        self.interval_spin = QSpinBox(container)
         self.interval_spin.setRange(1, 120)
-        curr_interval_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
-        self.interval_spin.setValue(curr_interval_min)
+        curr_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
+        self.interval_spin.setValue(curr_min)
         self.interval_spin.setSuffix(" min")
-        self.interval_spin.setFixedWidth(96)
-        pref_row_2.addWidget(self.interval_spin)
-        pref_row_2.addStretch()
-
-        pref_box.addLayout(pref_row_2)
-        self.content_layout.addLayout(pref_box)
-
-        # Divider 2
-        self.div2 = QFrame()
-        self.div2.setFrameShape(QFrame.Shape.HLine)
-        self.content_layout.addWidget(self.div2)
-
-        # ----------------------------------------------------
-        # Section 3: Project Auto-Tagging Keywords
-        # ----------------------------------------------------
-        proj_box = QVBoxLayout()
-        proj_box.setSpacing(8)
-
-        self.proj_title = QLabel("Project Auto-Tagging Keywords")
-        self.proj_title.setFont(get_font(10, QFont.Weight.DemiBold))
-        proj_box.addWidget(self.proj_title)
-
-        self.proj_desc = QLabel(
-            "Active windows matching these keywords are automatically categorized into project sections."
+        self.interval_spin.setFixedWidth(100)
+        self._create_setting_row(
+            title="Activity Tracking Interval",
+            description="Frequency of active window polling and automatic session chunk logging.",
+            control_widget=self.interval_spin,
+            parent_layout=layout,
         )
-        self.proj_desc.setFont(get_font(9))
-        proj_box.addWidget(self.proj_desc)
 
-        self.proj_table = QTableWidget()
+        # Row 4: Launch on startup
+        self.autostart_check = SettingsCheckbox(
+            checked=config.get("auto_start_on_login", False),
+            size=18,
+            parent=container,
+            is_dark=self.is_dark,
+        )
+        self._create_setting_row(
+            title="Launch on Windows Startup",
+            description="Automatically launch WizDesk in the background when your computer turns on.",
+            control_widget=self.autostart_check,
+            parent_layout=layout,
+        )
+
+        # Row 5: Sound effects
+        self.sound_check = SettingsCheckbox(
+            checked=config.get("sound_effects", False),
+            size=18,
+            parent=container,
+            is_dark=self.is_dark,
+        )
+        self._create_setting_row(
+            title="Sound Effects & Chimes",
+            description="Play a subtle, crisp sound chime upon completing tasks or timers.",
+            control_widget=self.sound_check,
+            parent_layout=layout,
+            include_divider=False,
+        )
+
+        layout.addStretch(1)
+        scroll.setWidget(container)
+        return scroll
+
+    # ----------------------------------------------------------------
+    # Category Page 2: Keyboard Shortcuts (Hotkeys)
+    # ----------------------------------------------------------------
+    def _build_hotkeys_page(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("background: transparent; border: none;")
+
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 6, 12, 6)
+        layout.setSpacing(10)
+
+        # Section Heading with Active status pill
+        header_row = QHBoxLayout()
+        header_vbox = QVBoxLayout()
+        header_vbox.setSpacing(2)
+
+        self.hk_heading = QLabel("Global Keyboard Shortcuts", container)
+        self.hk_heading.setFont(get_font(11, QFont.Weight.Bold))
+        header_vbox.addWidget(self.hk_heading)
+
+        self.hk_subheading = QLabel(
+            "Global hotkeys trigger actions across your operating system even when WizDesk is in the background.",
+            container,
+        )
+        self.hk_subheading.setFont(get_font(9))
+        self.hk_subheading.setWordWrap(True)
+        header_vbox.addWidget(self.hk_subheading)
+        header_row.addLayout(header_vbox, stretch=1)
+
+        self.hk_active_badge = QLabel("Active", container)
+        self.hk_active_badge.setFont(get_font(8, QFont.Weight.Bold))
+        self.hk_active_badge.setObjectName("ActiveBadge")
+        header_row.addWidget(self.hk_active_badge, 0, Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(header_row)
+
+        # Hotkey Configuration Fields
+        shortcuts_meta = [
+            ("hotkey_workspace", "Open Workspace Window", "<ctrl>+<shift>+w", "Opens the main tasks, notes, and activity dashboard."),
+            ("hotkey_toggle_mascot", "Show / Hide Desktop Mascot", "<ctrl>+<shift>+m", "Quickly toggles the desktop companion on or off screen."),
+            ("hotkey_quick_task", "Quick Add Task Bar", "<ctrl>+<shift>+t", "Summons the lightweight floating bar to capture a task."),
+            ("hotkey_quick_note", "Quick Add Note Bar", "<ctrl>+<shift>+n", "Summons the lightweight floating bar to capture a quick note."),
+        ]
+
+        for i, (key_name, label_text, default_val, help_text) in enumerate(shortcuts_meta):
+            line_edit = QLineEdit(container)
+            line_edit.setFixedWidth(150)
+            line_edit.setFont(QFont(FONT_MONO, 9, QFont.Weight.Bold))
+            line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            curr_val = config.get(key_name, default_val)
+            line_edit.setText(format_display_shortcut(curr_val))
+            line_edit.setPlaceholderText("e.g. Ctrl+Shift+W")
+            self.hotkey_inputs[key_name] = line_edit
+
+            self._create_setting_row(
+                title=label_text,
+                description=help_text,
+                control_widget=line_edit,
+                parent_layout=layout,
+                include_divider=(i < len(shortcuts_meta) - 1),
+            )
+
+        # Action Buttons Row
+        btn_row = QHBoxLayout()
+        btn_row.setContentsMargins(0, 10, 0, 0)
+        btn_row.setSpacing(8)
+
+        self.save_hk_btn = QPushButton("Save Shortcuts", container)
+        self.save_hk_btn.setFont(get_font(9, QFont.Weight.Bold))
+        self.save_hk_btn.setFixedHeight(30)
+        self.save_hk_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.save_hk_btn.clicked.connect(self._on_save_hotkeys)
+        btn_row.addWidget(self.save_hk_btn)
+
+        self.reset_hk_btn = QPushButton("Reset to Defaults", container)
+        self.reset_hk_btn.setFont(get_font(9))
+        self.reset_hk_btn.setFixedHeight(30)
+        self.reset_hk_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.reset_hk_btn.clicked.connect(self._on_reset_hotkeys)
+        btn_row.addWidget(self.reset_hk_btn)
+
+        btn_row.addStretch(1)
+
+        self.hk_feedback_lbl = QLabel("", container)
+        self.hk_feedback_lbl.setFont(get_font(8, QFont.Weight.DemiBold))
+        btn_row.addWidget(self.hk_feedback_lbl)
+
+        layout.addLayout(btn_row)
+        layout.addStretch(1)
+
+        scroll.setWidget(container)
+        return scroll
+
+    def _on_save_hotkeys(self) -> None:
+        """Validate and persist user-configured hotkeys."""
+        try:
+            for key_name, input_field in self.hotkey_inputs.items():
+                raw_text = input_field.text().strip()
+                norm = normalize_hotkey_str(raw_text)
+                if norm:
+                    config.set(key_name, norm)
+                    input_field.setText(format_display_shortcut(norm))
+
+            if "hotkey_workspace" in self.hotkey_inputs:
+                config.set("global_hotkey", config.get("hotkey_workspace"))
+
+            config.save()
+            app_signals.hotkeys_changed.emit()
+
+            self.hk_feedback_lbl.setText("Shortcuts saved successfully.")
+            self.hk_feedback_lbl.setStyleSheet("color: #10B981;")
+            QTimer.singleShot(2500, lambda: self.hk_feedback_lbl.setText(""))
+        except Exception as e:
+            self.hk_feedback_lbl.setText(f"Error: {e}")
+            self.hk_feedback_lbl.setStyleSheet("color: #EF4444;")
+
+    def _on_reset_hotkeys(self) -> None:
+        """Reset all shortcuts to default combinations."""
+        defaults = {
+            "hotkey_workspace": "<ctrl>+<shift>+w",
+            "hotkey_toggle_mascot": "<ctrl>+<shift>+m",
+            "hotkey_quick_task": "<ctrl>+<shift>+t",
+            "hotkey_quick_note": "<ctrl>+<shift>+n",
+        }
+        for k, v in defaults.items():
+            config.set(k, v)
+            if k in self.hotkey_inputs:
+                self.hotkey_inputs[k].setText(format_display_shortcut(v))
+
+        config.set("global_hotkey", defaults["hotkey_workspace"])
+        config.save()
+        app_signals.hotkeys_changed.emit()
+
+        self.hk_feedback_lbl.setText("Reset to default shortcuts.")
+        self.hk_feedback_lbl.setStyleSheet("color: #FF6B3D;")
+        QTimer.singleShot(2500, lambda: self.hk_feedback_lbl.setText(""))
+
+    # ----------------------------------------------------------------
+    # Category Page 3: Projects & Auto-Tagging
+    # ----------------------------------------------------------------
+    def _build_projects_page(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("background: transparent; border: none;")
+
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 6, 12, 6)
+        layout.setSpacing(10)
+
+        self.proj_heading = QLabel("Project Auto-Tagging Keywords", container)
+        self.proj_heading.setFont(get_font(11, QFont.Weight.Bold))
+        layout.addWidget(self.proj_heading)
+
+        self.proj_subheading = QLabel(
+            "Active windows matching these keywords are automatically categorized into project sections during tracking.",
+            container,
+        )
+        self.proj_subheading.setFont(get_font(9))
+        self.proj_subheading.setWordWrap(True)
+        layout.addWidget(self.proj_subheading)
+
+        self.proj_table = QTableWidget(container)
         self.proj_table.setColumnCount(2)
-        self.proj_table.setHorizontalHeaderLabels(
-            ["Project Name", "Matching Keywords (comma-separated)"]
-        )
-        self.proj_table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.proj_table.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeMode.Stretch
-        )
+        self.proj_table.setHorizontalHeaderLabels(["Project Name", "Matching Keywords (comma-separated)"])
+        self.proj_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.proj_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.proj_table.verticalHeader().setVisible(False)
         self.proj_table.verticalHeader().setDefaultSectionSize(32)
-        self.proj_table.setFixedHeight(140)
+        self.proj_table.setFixedHeight(180)
         self.proj_table.itemChanged.connect(self._on_table_item_changed)
-        proj_box.addWidget(self.proj_table)
+        layout.addWidget(self.proj_table)
 
         # Action buttons below table
         proj_btn_layout = QHBoxLayout()
         proj_btn_layout.setContentsMargins(0, 4, 0, 0)
         proj_btn_layout.setSpacing(8)
 
-        self.add_proj_btn = QPushButton("+ Add Project")
-        self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
+        self.add_proj_btn = QPushButton("+ Add Project", container)
+        self.add_proj_btn.setFont(get_font(10, QFont.Weight.Bold))
         self.add_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_proj_btn.clicked.connect(self._on_add_project)
         proj_btn_layout.addWidget(self.add_proj_btn)
 
-        self.del_proj_btn = QPushButton("Remove Selected")
-        self.del_proj_btn.setFont(get_font(11, QFont.Weight.DemiBold))
+        self.del_proj_btn = QPushButton("Remove Selected", container)
+        self.del_proj_btn.setFont(get_font(10, QFont.Weight.DemiBold))
         self.del_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.del_proj_btn.clicked.connect(self._on_remove_project)
         proj_btn_layout.addWidget(self.del_proj_btn)
-        proj_btn_layout.addStretch()
+        proj_btn_layout.addStretch(1)
 
-        proj_box.addLayout(proj_btn_layout)
-        self.content_layout.addLayout(proj_box)
+        layout.addLayout(proj_btn_layout)
+        layout.addStretch(1)
 
-        # Add vertical stretch in scroll content
-        self.content_layout.addStretch()
-
-        self.scroll.setWidget(self.scroll_content)
-        self.main_layout.addWidget(self.scroll, stretch=1)
-
-        # ----------------------------------------------------
-        # Bottom Save Bar
-        # ----------------------------------------------------
-        bottom_bar = QHBoxLayout()
-        bottom_bar.setContentsMargins(4, 6, 4, 0)
-        bottom_bar.setSpacing(10)
-
-        # Saved feedback pill
-        self.status_pill = QLabel("All settings up to date")
-        self.status_pill.setFont(get_font(9, QFont.Weight.Medium))
-        bottom_bar.addWidget(self.status_pill)
-
-        bottom_bar.addStretch()
-
-        self.save_btn = QPushButton("Save Settings")
-        self.save_btn.setFont(get_font(12, QFont.Weight.Bold))
-        self.save_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.save_btn.clicked.connect(self.save_settings)
-        bottom_bar.addWidget(self.save_btn)
-
-        self.main_layout.addLayout(bottom_bar)
-
-        # Apply initial theme
-        self.set_theme(self.is_dark)
-
-        # Initial load
-        self.load_settings()
-
-    def _on_browse_vault(self) -> None:
-        """Open directory picker for selecting the Obsidian Vault folder."""
-        folder = QFileDialog.getExistingDirectory(
-            self, "Select Obsidian Vault Directory"
-        )
-        if folder:
-            self.vault_path_input.setText(folder)
-
-    def load_settings(self) -> None:
-        """Reload configuration and projects into UI controls."""
-        self.vault_path_input.setText(config.get("obsidian_vault_path", ""))
-        self.float_anim_check.setChecked(
-            config.get("enable_floating_animation", True)
-        )
-        curr_interval_min = max(
-            1, config.get("tracking_interval_seconds", 300) // 60
-        )
-        self.interval_spin.setValue(curr_interval_min)
-        self._load_projects()
+        scroll.setWidget(container)
+        return scroll
 
     def _load_projects(self) -> None:
         """Load projects from database into table."""
@@ -319,7 +648,6 @@ class SettingsView(QWidget):
                 else:
                     self.repo.create_or_update_project(pname, keywords)
                 self.projects_changed.emit()
-                from wiz.core.signals import app_signals
                 app_signals.projects_changed.emit()
 
     def _on_add_project(self) -> None:
@@ -327,9 +655,7 @@ class SettingsView(QWidget):
         name, ok1 = QInputDialog.getText(self, "New Project", "Project Name:")
         if not ok1 or not name.strip():
             return
-        keywords, ok2 = QInputDialog.getText(
-            self, "Keywords", "Keywords (comma-separated):"
-        )
+        keywords, ok2 = QInputDialog.getText(self, "Keywords", "Keywords (comma-separated):")
         if not ok2:
             return
 
@@ -339,7 +665,6 @@ class SettingsView(QWidget):
         )
         self._load_projects()
         self.projects_changed.emit()
-        from wiz.core.signals import app_signals
         app_signals.projects_changed.emit()
 
     def _on_remove_project(self) -> None:
@@ -352,20 +677,165 @@ class SettingsView(QWidget):
                 self.repo.delete_project_by_name(proj_name)
                 self._load_projects()
                 self.projects_changed.emit()
-                from wiz.core.signals import app_signals
                 app_signals.projects_changed.emit()
+
+    # ----------------------------------------------------------------
+    # Category Page 4: Integrations (Obsidian)
+    # ----------------------------------------------------------------
+    def _build_integrations_page(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("background: transparent; border: none;")
+
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 6, 12, 6)
+        layout.setSpacing(10)
+
+        self.obs_heading = QLabel("Obsidian Vault Integration", container)
+        self.obs_heading.setFont(get_font(11, QFont.Weight.Bold))
+        layout.addWidget(self.obs_heading)
+
+        self.obs_subheading = QLabel(
+            "Connect your local Obsidian Vault folder to automatically sync your daily work logs, completed tasks, and notes.",
+            container,
+        )
+        self.obs_subheading.setFont(get_font(9))
+        self.obs_subheading.setWordWrap(True)
+        layout.addWidget(self.obs_subheading)
+
+        # Row 1: Vault Folder Path
+        vault_ctrl = QWidget()
+        vault_ctrl_layout = QHBoxLayout(vault_ctrl)
+        vault_ctrl_layout.setContentsMargins(0, 0, 0, 0)
+        vault_ctrl_layout.setSpacing(8)
+
+        self.vault_path_input = QLineEdit(vault_ctrl)
+        self.vault_path_input.setPlaceholderText("Path to Obsidian Vault root folder...")
+        self.vault_path_input.setText(config.get("obsidian_vault_path", ""))
+        self.vault_path_input.setFixedWidth(280)
+        vault_ctrl_layout.addWidget(self.vault_path_input)
+
+        self.browse_btn = QPushButton("Browse", vault_ctrl)
+        self.browse_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.browse_btn.clicked.connect(self._on_browse_vault)
+        vault_ctrl_layout.addWidget(self.browse_btn)
+
+        self._create_setting_row(
+            title="Obsidian Vault Directory",
+            description="Root folder of your local Obsidian vault on disk.",
+            control_widget=vault_ctrl,
+            parent_layout=layout,
+        )
+
+        # Row 2: Logs Subfolder Name
+        self.vault_logs_folder_input = QLineEdit(container)
+        self.vault_logs_folder_input.setPlaceholderText("e.g. WizDesk Logs")
+        self.vault_logs_folder_input.setText(config.get("obsidian_logs_folder", "WizDesk Logs"))
+        self.vault_logs_folder_input.setFixedWidth(200)
+
+        self._create_setting_row(
+            title="Daily Logs Subfolder",
+            description="Folder name inside your vault where daily Markdown tracking logs are stored.",
+            control_widget=self.vault_logs_folder_input,
+            parent_layout=layout,
+        )
+
+        # Row 3: Auto-Sync Status
+        self.sync_status_badge = QLabel("Active" if config.get("obsidian_vault_path") else "Not Configured", container)
+        self.sync_status_badge.setFont(get_font(8, QFont.Weight.Bold))
+        self.sync_status_badge.setObjectName("SyncBadge")
+
+        self._create_setting_row(
+            title="Automatic Daily Notes Sync",
+            description="Automatically flushes work sessions, completed tasks, and notes to daily files upon application idle or shutdown.",
+            control_widget=self.sync_status_badge,
+            parent_layout=layout,
+            include_divider=False,
+        )
+
+        layout.addStretch(1)
+        scroll.setWidget(container)
+        return scroll
+
+    def _on_browse_vault(self) -> None:
+        """Open directory picker for selecting the Obsidian Vault folder."""
+        folder = QFileDialog.getExistingDirectory(self, "Select Obsidian Vault Directory")
+        if folder:
+            self.vault_path_input.setText(folder)
+            self._update_sync_status()
+
+    def _update_sync_status(self) -> None:
+        is_set = bool(self.vault_path_input.text().strip())
+        self.sync_status_badge.setText("Active" if is_set else "Not Configured")
+        self._apply_badge_style(self.sync_status_badge, is_active=is_set)
+
+    # ----------------------------------------------------------------
+    # Navigation & Lifecycle
+    # ----------------------------------------------------------------
+    def switch_to_category(self, cat_id: str) -> None:
+        """Switch category page in the stack widget."""
+        cat_map = {
+            "general": 0,
+            "hotkeys": 1,
+            "projects": 2,
+            "integrations": 3,
+        }
+        idx = cat_map.get(cat_id.lower(), 0)
+        self.stack.setCurrentIndex(idx)
+        self.category_bar.set_active_category(cat_id.lower())
+
+    def load_settings(self) -> None:
+        """Reload configuration and projects into UI controls."""
+        self.vault_path_input.setText(config.get("obsidian_vault_path", ""))
+        self.vault_logs_folder_input.setText(config.get("obsidian_logs_folder", "WizDesk Logs"))
+        self.float_anim_check.setChecked(config.get("enable_floating_animation", True))
+        self.always_on_top_check.setChecked(config.get("always_on_top", True))
+        self.autostart_check.setChecked(config.get("auto_start_on_login", False))
+        self.sound_check.setChecked(config.get("sound_effects", False))
+
+        curr_interval_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
+        self.interval_spin.setValue(curr_interval_min)
+
+        for key_name, input_field in self.hotkey_inputs.items():
+            val = config.get(key_name, "")
+            input_field.setText(format_display_shortcut(val))
+
+        self._load_projects()
+        self._update_sync_status()
 
     def save_settings(self) -> None:
         """Persist settings to config and database with visual feedback."""
-        config.set("obsidian_vault_path", self.vault_path_input.text().strip())
-        is_anim = (
-            self.float_anim_check.isChecked()
-            if callable(self.float_anim_check.isChecked)
-            else self.float_anim_check.isChecked
-        )
+        # General
+        is_anim = self.float_anim_check.isChecked() if callable(self.float_anim_check.isChecked) else self.float_anim_check.isChecked
         config.set("enable_floating_animation", bool(is_anim))
+        config.set("always_on_top", bool(self.always_on_top_check.isChecked()))
         config.set("tracking_interval_seconds", self.interval_spin.value() * 60)
+        config.set("auto_start_on_login", bool(self.autostart_check.isChecked()))
+        config.set("sound_effects", bool(self.sound_check.isChecked()))
+
+        # Integrations
+        config.set("obsidian_vault_path", self.vault_path_input.text().strip())
+        config.set("obsidian_logs_folder", self.vault_logs_folder_input.text().strip() or "WizDesk Logs")
+
+        # Hotkeys
+        for key_name, input_field in self.hotkey_inputs.items():
+            raw_text = input_field.text().strip()
+            norm = normalize_hotkey_str(raw_text)
+            if norm:
+                config.set(key_name, norm)
+                input_field.setText(format_display_shortcut(norm))
+
+        if "hotkey_workspace" in self.hotkey_inputs:
+            config.set("global_hotkey", config.get("hotkey_workspace"))
+
         config.save()
+        app_signals.hotkeys_changed.emit()
+        self._update_sync_status()
 
         # Update feedback status
         self.status_pill.setText("Settings saved successfully")
@@ -374,8 +844,7 @@ class SettingsView(QWidget):
         )
         QTimer.singleShot(
             2500,
-            lambda: self.status_pill.setText("All settings up to date")
-            or self._refresh_status_pill_style(),
+            lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
         )
 
         self.saved.emit()
@@ -384,55 +853,102 @@ class SettingsView(QWidget):
         color = "#71717A" if self.is_dark else "#94A3B8"
         self.status_pill.setStyleSheet(f"color: {color}; font-family: {FONT_SANS}; font-size: 12px;")
 
+    def _apply_badge_style(self, badge: QLabel, is_active: bool = True) -> None:
+        if is_active:
+            bg = "#1B382B" if self.is_dark else "#ECFDF5"
+            border = "#235B43" if self.is_dark else "#A7F3D0"
+            color = "#34D399" if self.is_dark else "#059669"
+        else:
+            bg = "#27272A" if self.is_dark else "#F3EFE9"
+            border = "#3F3F46" if self.is_dark else "#D6D0C5"
+            color = "#71717A" if self.is_dark else "#78716C"
+
+        badge.setStyleSheet(f"""
+            background-color: {bg};
+            color: {color};
+            border: 1px solid {border};
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: {FONT_SANS};
+            font-size: 10px;
+            font-weight: 600;
+        """)
+
     def set_theme(self, is_dark: bool) -> None:
         """Apply dark or light theme with WizDesk brand colors."""
         self.is_dark = is_dark
         self.float_anim_check.set_dark_mode(is_dark)
+        self.always_on_top_check.set_dark_mode(is_dark)
+        self.autostart_check.set_dark_mode(is_dark)
+        self.sound_check.set_dark_mode(is_dark)
+        self.category_bar.set_theme(is_dark)
+        self.apply_theme()
 
-        # Brand color tokens - Softer Light Mode & Mascot Orange-Red
+    def apply_theme(self) -> None:
+        """Apply complete theme styling."""
+        is_dark = self.is_dark
+
         inner_bg = "#18181B" if is_dark else "#FAF8F5"
         text_primary = "#F4F4F5" if is_dark else "#242220"
         text_secondary = "#A1A1AA" if is_dark else "#78716C"
         input_bg = "#27272A" if is_dark else "#EDE9E0"
         input_border = "#3F3F46" if is_dark else "#D6D0C5"
         input_focus = "#C2410C" if is_dark else "#BA3F1A"
+
         save_bg = "#C2410C" if is_dark else "#BA3F1A"
         save_hover = "#A3360E" if is_dark else "#9E3414"
         save_pressed = "#872A09" if is_dark else "#7D280E"
+
         btn_neutral_bg = "#27272A" if is_dark else "#EBE6DC"
         btn_neutral_border = "#3F3F46" if is_dark else "#D6D0C5"
         btn_neutral_text = "#F4F4F5" if is_dark else "#242220"
         btn_neutral_hover_bg = "#3F3F46" if is_dark else "#DDD7CC"
+
         btn_danger_bg = "#3B1818" if is_dark else "#FEF2F2"
         btn_danger_border = "#5C1D1D" if is_dark else "#FEE2E2"
         btn_danger_text = "#F87171" if is_dark else "#EF4444"
         btn_danger_hover_bg = "#4C1D1D" if is_dark else "#FEE2E2"
-        div_color = "#27272A" if is_dark else "#E2DDD3"
+
+        div_color = "rgba(255, 255, 255, 0.06)" if is_dark else "rgba(0, 0, 0, 0.06)"
         table_grid = "#27272A" if is_dark else "#EFECE5"
         table_header_bg = "#27272A" if is_dark else "#EBE6DC"
         table_header_border = "#3F3F46" if is_dark else "#D6D0C5"
 
-        # Typography
-        self.obs_title.setStyleSheet(f"color: {text_primary};")
-        self.obs_desc.setStyleSheet(f"color: {text_secondary};")
-        self.pref_title.setStyleSheet(f"color: {text_primary};")
-        self.anim_lbl.setStyleSheet(f"color: {text_primary};")
-        self.interval_lbl.setStyleSheet(f"color: {text_secondary};")
-        self.proj_title.setStyleSheet(f"color: {text_primary};")
-        self.proj_desc.setStyleSheet(f"color: {text_secondary};")
-        self._refresh_status_pill_style()
+        # Headers
+        self.title_lbl.setStyleSheet(f"color: {text_primary};")
+        self.subtitle_lbl.setStyleSheet(f"color: {text_secondary};")
 
-        # Input boxes
+        self.gen_heading.setStyleSheet(f"color: {text_primary};")
+        self.gen_subheading.setStyleSheet(f"color: {text_secondary};")
+        self.hk_heading.setStyleSheet(f"color: {text_primary};")
+        self.hk_subheading.setStyleSheet(f"color: {text_secondary};")
+        self.proj_heading.setStyleSheet(f"color: {text_primary};")
+        self.proj_subheading.setStyleSheet(f"color: {text_secondary};")
+        self.obs_heading.setStyleSheet(f"color: {text_primary};")
+        self.obs_subheading.setStyleSheet(f"color: {text_secondary};")
+
+        self._refresh_status_pill_style()
+        self._apply_badge_style(self.hk_active_badge, is_active=True)
+        self._update_sync_status()
+
+        # Setting row titles and descriptions via parent container style
+        for lbl in self.findChildren(QLabel, "SettingRowTitle"):
+            lbl.setStyleSheet(f"color: {text_primary};")
+        for lbl in self.findChildren(QLabel, "SettingRowDesc"):
+            lbl.setStyleSheet(f"color: {text_secondary};")
+        for div in self.findChildren(QFrame, "SettingDivider"):
+            div.setStyleSheet(f"background-color: {div_color}; max-height: 1px; border: none;")
+
+        # Inputs styling
         input_qss = f"""
             QLineEdit, QSpinBox {{
                 background-color: {input_bg};
                 color: {text_primary};
                 border: 1px solid {input_border};
-                border-radius: 8px;
-                padding: 6px 12px;
+                border-radius: 6px;
+                padding: 4px 10px;
                 font-family: {FONT_SANS};
-                font-size: 12px;
-                word-spacing: 1px;
+                font-size: 11px;
             }}
             QLineEdit:focus, QSpinBox:focus {{
                 background-color: {inner_bg};
@@ -444,39 +960,38 @@ class SettingsView(QWidget):
                 background: transparent;
             }}
             QSpinBox::up-button:hover, QSpinBox::down-button:hover {{
-                background: rgba(255, 255, 255, 0.1) if self.is_dark else rgba(0, 0, 0, 0.06);
+                background: rgba(255, 255, 255, 0.1) if is_dark else rgba(0, 0, 0, 0.06);
             }}
         """
         self.vault_path_input.setStyleSheet(input_qss)
+        self.vault_logs_folder_input.setStyleSheet(input_qss)
         self.interval_spin.setStyleSheet(input_qss)
+        for inp in self.hotkey_inputs.values():
+            inp.setStyleSheet(f"""
+                QLineEdit {{
+                    background-color: {input_bg};
+                    color: {text_primary};
+                    border: 1px solid {input_border};
+                    border-radius: 6px;
+                    padding: 4px 8px;
+                    font-family: {FONT_MONO};
+                    font-size: 11px;
+                    font-weight: bold;
+                }}
+                QLineEdit:focus {{
+                    background-color: {inner_bg};
+                    border: 1.5px solid {input_focus};
+                }}
+            """)
 
-        # Buttons
-        self.browse_btn.setFont(get_font(12, QFont.Weight.DemiBold))
-        self.browse_btn.setStyleSheet(f"""
+        # Neutral buttons
+        neutral_btn_qss = f"""
             QPushButton {{
                 background-color: {btn_neutral_bg};
                 color: {btn_neutral_text};
                 border: 1px solid {btn_neutral_border};
-                border-radius: 8px;
-                padding: 6px 14px;
-                font-family: {FONT_SANS};
-                font-size: 12px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {btn_neutral_hover_bg};
-                border-color: {input_focus};
-            }}
-        """)
-
-        self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
-        self.add_proj_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {btn_neutral_bg};
-                color: {btn_neutral_text};
-                border: 1px solid {btn_neutral_border};
-                border-radius: 8px;
-                padding: 6px 14px;
+                border-radius: 6px;
+                padding: 5px 12px;
                 font-family: {FONT_SANS};
                 font-size: 11px;
                 font-weight: 600;
@@ -485,16 +1000,19 @@ class SettingsView(QWidget):
                 background-color: {btn_neutral_hover_bg};
                 border-color: {input_focus};
             }}
-        """)
+        """
+        self.browse_btn.setStyleSheet(neutral_btn_qss)
+        self.add_proj_btn.setStyleSheet(neutral_btn_qss)
+        self.reset_hk_btn.setStyleSheet(neutral_btn_qss)
 
-        self.del_proj_btn.setFont(get_font(11, QFont.Weight.DemiBold))
+        # Danger button
         self.del_proj_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_danger_bg};
                 color: {btn_danger_text};
                 border: 1px solid {btn_danger_border};
-                border-radius: 8px;
-                padding: 6px 14px;
+                border-radius: 6px;
+                padding: 5px 12px;
                 font-family: {FONT_SANS};
                 font-size: 11px;
                 font-weight: 600;
@@ -504,17 +1022,16 @@ class SettingsView(QWidget):
             }}
         """)
 
-        # Save Button (Deeper brand accent shade)
-        self.save_btn.setFont(get_font(12, QFont.Weight.Bold))
-        self.save_btn.setStyleSheet(f"""
+        # Accent Action buttons (Save Settings & Save Shortcuts)
+        accent_btn_qss = f"""
             QPushButton {{
                 background-color: {save_bg};
                 color: #FFFFFF;
                 border: none;
-                border-radius: 8px;
-                padding: 7px 22px;
+                border-radius: 6px;
+                padding: 6px 16px;
                 font-family: {FONT_SANS};
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -523,23 +1040,20 @@ class SettingsView(QWidget):
             QPushButton:pressed {{
                 background-color: {save_pressed};
             }}
-        """)
+        """
+        self.save_btn.setStyleSheet(accent_btn_qss)
+        self.save_hk_btn.setStyleSheet(accent_btn_qss)
 
-        # Dividers
-        div_style = f"background-color: {div_color}; max-height: 1px; border: none;"
-        self.div1.setStyleSheet(div_style)
-        self.div2.setStyleSheet(div_style)
-
-        # Table
+        # Projects Table
         self.proj_table.setStyleSheet(f"""
             QTableWidget {{
                 background-color: {inner_bg};
                 color: {text_primary};
                 border: 1px solid {input_border};
-                border-radius: 8px;
+                border-radius: 6px;
                 gridline-color: {table_grid};
                 font-family: {FONT_SANS};
-                font-size: 12px;
+                font-size: 11px;
                 selection-background-color: {input_bg};
                 selection-color: {text_primary};
             }}
@@ -554,16 +1068,16 @@ class SettingsView(QWidget):
                 padding: 2px 6px;
                 margin: 1px;
                 font-family: {FONT_SANS};
-                font-size: 12px;
+                font-size: 11px;
             }}
             QHeaderView::section {{
                 background-color: {table_header_bg};
                 color: {text_secondary};
                 border: none;
                 border-bottom: 1px solid {table_header_border};
-                padding: 6px 10px;
+                padding: 5px 10px;
                 font-family: {FONT_SANS};
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 600;
             }}
         """)

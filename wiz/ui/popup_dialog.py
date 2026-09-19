@@ -1987,6 +1987,7 @@ class QuickEntryDialog(QDialog):
 
         # 6. Embedded Help & Documentation Page
         self.help_faq_view = HelpFaqView(is_dark=self.is_dark, parent=self.stack)
+        self.help_faq_view.open_settings_requested.connect(self._on_open_settings_category)
         self.stack.addWidget(self.help_faq_view)
 
         self.inner_layout.addWidget(self.stack, stretch=1)
@@ -2296,6 +2297,12 @@ class QuickEntryDialog(QDialog):
         elif mode == "help" and hasattr(self, "help_faq_view"):
             self.stack.setCurrentWidget(self.help_faq_view)
             self.help_faq_view.load_settings()
+
+    def _on_open_settings_category(self, category: str) -> None:
+        """Switch to settings view and activate requested category."""
+        self._set_view_mode("settings")
+        if hasattr(self, "settings_view"):
+            self.settings_view.switch_to_category(category)
 
     def _seed_initial_data_if_empty(self) -> None:
         """Seed default project categories if database has no projects."""

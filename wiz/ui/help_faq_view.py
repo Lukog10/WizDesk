@@ -110,6 +110,8 @@ class HelpFaqView(QWidget):
     and allows user configuration of global shortcuts.
     """
 
+    open_settings_requested = pyqtSignal(str)
+
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
@@ -159,20 +161,31 @@ class HelpFaqView(QWidget):
         hk_layout.setSpacing(12)
 
         hk_title_row = QHBoxLayout()
+        hk_title_row.setSpacing(10)
         self.hk_title = QLabel("Global Keyboard Shortcuts")
         self.hk_title.setFont(get_font(10, QFont.Weight.Bold))
         hk_title_row.addWidget(self.hk_title)
-        hk_title_row.addStretch()
 
         self.hk_status_badge = QLabel("Active")
         self.hk_status_badge.setFont(get_font(8, QFont.Weight.Bold))
         self.hk_status_badge.setContentsMargins(6, 2, 6, 2)
         hk_title_row.addWidget(self.hk_status_badge)
+
+        hk_title_row.addStretch()
+
+        self.open_settings_btn = QPushButton("Configure in Settings →", self.hotkeys_card)
+        self.open_settings_btn.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.open_settings_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.open_settings_btn.setAutoDefault(False)
+        self.open_settings_btn.setDefault(False)
+        self.open_settings_btn.clicked.connect(lambda: self.open_settings_requested.emit("hotkeys"))
+        hk_title_row.addWidget(self.open_settings_btn)
+
         hk_layout.addLayout(hk_title_row)
 
         self.hk_desc = QLabel(
             "Global hotkeys trigger actions across your operating system even when WizDesk is in the background. "
-            "Click any field to customize your shortcuts, then click 'Save Shortcuts'."
+            "Customize all combinations in the Settings view or edit directly below."
         )
         self.hk_desc.setFont(get_font(9))
         self.hk_desc.setWordWrap(True)
@@ -471,6 +484,26 @@ class HelpFaqView(QWidget):
             color: {badge_fg};
             border: 1px solid #059669;
             border-radius: 4px;
+        """)
+
+        btn_link_border = "#432616" if is_dark else "#FED7AA"
+        btn_link_hover_bg = "#27170E" if is_dark else "#FFF7ED"
+        self.open_settings_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: #FF6B3D;
+                border: 1px solid {btn_link_border};
+                border-radius: 6px;
+                padding: 3px 10px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_link_hover_bg};
+                color: #FF855D;
+                border-color: #FF6B3D;
+            }}
         """)
 
         card_qss = f"""
