@@ -56,7 +56,7 @@ class NavPillButton(QPushButton):
         self.is_active = False
         self.is_hovered = False
 
-        self.setFixedHeight(38)
+        self.setFixedHeight(42)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -95,36 +95,38 @@ class NavPillButton(QPushButton):
         w = self.width()
         h = self.height()
 
-        # Determine color tokens
+        # Accent color: Thick, dense, solid high-contrast accent fill
+        accent_color = QColor("#FF6B3D") if self.is_dark else QColor("#FF5722")
+
         if self.is_active:
-            bg_color = QColor(255, 107, 61, 45) if self.is_dark else QColor("#FEECE5")
-            text_color = QColor("#FFAB91") if self.is_dark else QColor("#D84315")
-            icon_color = QColor("#FF8E6B") if self.is_dark else QColor("#FF5722")
+            bg_color = accent_color
+            text_color = QColor("#FFFFFF")
+            icon_color = QColor("#FFFFFF")
         elif self.is_hovered:
-            bg_color = QColor(255, 255, 255, 12) if self.is_dark else QColor(0, 0, 0, 10)
-            text_color = QColor("#F4F4F5") if self.is_dark else QColor("#242220")
-            icon_color = QColor("#D4D4D8") if self.is_dark else QColor("#44403C")
+            bg_color = QColor(255, 255, 255, 14) if self.is_dark else QColor(0, 0, 0, 10)
+            text_color = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
+            icon_color = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
         else:
             bg_color = Qt.GlobalColor.transparent
-            text_color = QColor("#A1A1AA") if self.is_dark else QColor("#57534E")
-            icon_color = QColor("#71717A") if self.is_dark else QColor("#78716C")
+            text_color = QColor("#9CA3AF") if self.is_dark else QColor("#57534E")
+            icon_color = QColor("#9CA3AF") if self.is_dark else QColor("#78716C")
 
-        # 1. Background capsule
+        # 1. Background capsule (Dense, thick pill with 10px smooth radius)
         if bg_color != Qt.GlobalColor.transparent:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QBrush(bg_color))
-            painter.drawRoundedRect(QRectF(4, 2, w - 8, h - 4), 8, 8)
+            painter.drawRoundedRect(QRectF(2, 2, w - 4, h - 4), 10, 10)
 
-        # 2. Vector Icon (Left aligned around x=18)
-        self._draw_vector_icon(painter, 18, (h - 16) // 2, 16, icon_color)
+        # 2. Vector Icon (Crisp geometric icon, bolder stroke when active)
+        self._draw_vector_icon(painter, 16, (h - 16) // 2, 16, icon_color)
 
-        # 4. Text Label
+        # 3. Text Label
         painter.setPen(text_color)
-        font = get_font(10, QFont.Weight.DemiBold if self.is_active else QFont.Weight.Medium)
+        font = get_font(10, QFont.Weight.Bold if self.is_active else QFont.Weight.Medium)
         painter.setFont(font)
 
         text_x = 42
-        text_w = w - text_x - (44 if self.badge_count > 0 else 10)
+        text_w = w - text_x - (46 if self.badge_count > 0 else 10)
         text_rect = QRectF(text_x, 0, text_w, h)
         painter.drawText(
             text_rect,
@@ -132,30 +134,33 @@ class NavPillButton(QPushButton):
             self.label,
         )
 
-        # 5. Badge Pill (Right aligned if badge_count > 0)
+        # 4. Badge Pill (Right aligned if badge_count > 0)
         if self.badge_count > 0:
             badge_str = str(self.badge_count) if self.badge_count < 100 else "99+"
             b_font = get_font(8, QFont.Weight.Bold)
             painter.setFont(b_font)
 
-            badge_text_w = max(18.0, float(len(badge_str) * 7 + 10))
-            badge_h = 18.0
-            badge_x = float(w - badge_text_w - 12)
+            badge_text_w = max(20.0, float(len(badge_str) * 7 + 10))
+            badge_h = 20.0
+            badge_x = float(w - badge_text_w - 10)
             badge_y = float((h - badge_h) / 2)
 
-            badge_bg = (
-                QColor(255, 107, 61, 65) if self.is_dark else QColor("#FFDCCF")
-            )
-            badge_fg = (
-                QColor("#FFCCBC") if self.is_dark else QColor("#BF360C")
-            )
+            if self.is_active:
+                badge_bg = QColor(255, 255, 255, 65)
+                badge_fg = QColor("#FFFFFF")
+            elif self.is_hovered:
+                badge_bg = QColor(255, 255, 255, 30) if self.is_dark else QColor(0, 0, 0, 22)
+                badge_fg = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
+            else:
+                badge_bg = QColor(255, 255, 255, 20) if self.is_dark else QColor(0, 0, 0, 16)
+                badge_fg = QColor("#D4D4D8") if self.is_dark else QColor("#57534E")
 
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QBrush(badge_bg))
             painter.drawRoundedRect(
                 QRectF(badge_x, badge_y, badge_text_w, badge_h),
-                9,
-                9,
+                10,
+                10,
             )
 
             painter.setPen(badge_fg)
@@ -172,7 +177,8 @@ class NavPillButton(QPushButton):
     ) -> None:
         """Draw crisp antialiased geometric icon for each mode."""
         painter.save()
-        pen = QPen(color, 1.6)
+        pen_width = 2.0 if self.is_active else 1.6
+        pen = QPen(color, pen_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
@@ -251,6 +257,7 @@ class SideNavBar(QWidget):
 
         self.setFixedWidth(190)
         self.setObjectName("sideNavBar")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(10, 14, 10, 14)
@@ -391,8 +398,9 @@ class SideNavBar(QWidget):
             }}
         """)
 
-        self.brand_title.setStyleSheet(f"color: {brand_color};")
-        self.workspace_lbl.setStyleSheet(f"color: {sub_color}; padding-left: 8px; margin-bottom: 2px;")
+        self.logo_lbl.setStyleSheet("background: transparent;")
+        self.brand_title.setStyleSheet(f"color: {brand_color}; background: transparent;")
+        self.workspace_lbl.setStyleSheet(f"color: {sub_color}; background: transparent; padding-left: 8px; margin-bottom: 2px;")
         self.divider.setStyleSheet(f"background-color: {border_color}; border: none;")
 
         theme_text = "Light Mode" if is_dark else "Dark Mode"
