@@ -74,18 +74,28 @@ class Config:
     def get_asset_path(self, asset_name: str) -> Path:
         """Resolve the path to an asset file in the assets directory."""
         path = self.assets_dir / asset_name
-        if not path.exists():
-            # Fallback check relative to cwd
-            fallback = Path.cwd() / "assets" / asset_name
-            if fallback.exists():
-                return fallback
-            if getattr(sys, "frozen", False):
-                exe_fallback = Path(sys.executable).parent / "assets" / asset_name
-                if exe_fallback.exists():
-                    return exe_fallback
-                internal_fallback = Path(sys.executable).parent / "_internal" / "assets" / asset_name
-                if internal_fallback.exists():
-                    return internal_fallback
+        if path.exists():
+            return path
+
+        # Check in icons/ subdirectory
+        icons_path = self.assets_dir / "icons" / asset_name
+        if icons_path.exists():
+            return icons_path
+
+        # Fallback check relative to cwd
+        fallback = Path.cwd() / "assets" / asset_name
+        if fallback.exists():
+            return fallback
+        fallback_icons = Path.cwd() / "assets" / "icons" / asset_name
+        if fallback_icons.exists():
+            return fallback_icons
+
+        if getattr(sys, "frozen", False):
+            for base in [Path(sys.executable).parent / "assets", Path(sys.executable).parent / "_internal" / "assets"]:
+                if (base / asset_name).exists():
+                    return base / asset_name
+                if (base / "icons" / asset_name).exists():
+                    return base / "icons" / asset_name
         return path
 
     def load(self) -> None:

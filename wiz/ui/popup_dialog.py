@@ -885,14 +885,21 @@ class SubtaskRowWidget(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
-        action_rename = menu.addAction("Rename Subtask")
+        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+        delete_color = "#EF4444"
+
+        action_rename = menu.addAction(
+            get_status_icon("icons/rename.svg", icon_color, 14), "Rename Subtask"
+        )
 
         is_done = (self.subtask.status in ("done", "completed"))
         toggle_label = "Mark Incomplete" if is_done else "Mark Done"
         action_toggle = menu.addAction(toggle_label)
 
         menu.addSeparator()
-        action_delete = menu.addAction("Delete Subtask")
+        action_delete = menu.addAction(
+            get_status_icon("icons/delete.svg", delete_color, 14), "Delete Subtask"
+        )
 
         action = menu.exec(self.mapToGlobal(pos))
         if action == action_rename:
@@ -1131,10 +1138,10 @@ class TaskRowWidget(QWidget):
         self.status_combo.blockSignals(True)
         self.status_combo.clear()
         sub_color = "#A1A1AA" if self.is_dark else "#71717A"
-        self.status_combo.addItem(get_status_icon("status-circle-ring.svg", sub_color, size=13), "Open")
-        self.status_combo.addItem(get_status_icon("in-progress.svg", sub_color, size=13), "In progress")
-        self.status_combo.addItem(get_status_icon("media-media-complete.svg", sub_color, size=13), "Completed")
-        self.status_combo.addItem(get_status_icon("cancelled.svg", sub_color, size=13), "Cancelled")
+        self.status_combo.addItem(get_status_icon("icons/status-circle-ring.svg", sub_color, size=13), "Open")
+        self.status_combo.addItem(get_status_icon("icons/in-progress.svg", sub_color, size=13), "In progress")
+        self.status_combo.addItem(get_status_icon("icons/media-media-complete.svg", sub_color, size=13), "Completed")
+        self.status_combo.addItem(get_status_icon("icons/cancelled.svg", sub_color, size=13), "Cancelled")
         self.status_combo.blockSignals(False)
 
     def set_theme(self, is_dark: bool) -> None:
@@ -1505,7 +1512,11 @@ class NoteRowWidget(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
-        section_menu = menu.addMenu("Move to Section")
+        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+        delete_color = "#EF4444"
+
+        move_icon = get_status_icon("icons/move.svg", icon_color, 14)
+        section_menu = menu.addMenu(move_icon, "Move to Section")
         section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
         curr_proj = self.note.project_tag or "General"
 
@@ -1519,7 +1530,9 @@ class NoteRowWidget(QWidget):
         action_new_sec = section_menu.addAction("+ Create New Section...")
 
         menu.addSeparator()
-        action_delete = menu.addAction("Delete Note")
+        action_delete = menu.addAction(
+            get_status_icon("icons/delete.svg", delete_color, 14), "Delete Note"
+        )
 
         action = menu.exec(global_pos)
         if action == action_new_sec:
