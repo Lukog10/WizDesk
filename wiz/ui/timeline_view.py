@@ -50,7 +50,7 @@ class ResponsiveProjectCombo(ArrowComboBox):
         text_w = self.fontMetrics().horizontalAdvance(self.currentText())
         # Snug content width: 10px left pad + text + 8px gap + 7px arrow + 10px right pad
         w = max(76, text_w + 35)
-        return QSize(w, base_hint.height())
+        return QSize(w, 26)
 
     def minimumSizeHint(self) -> QSize:
         return self.sizeHint()
@@ -353,7 +353,7 @@ class TimelineView(QWidget):
         main_layout.setContentsMargins(0, 4, 0, 0)
         main_layout.setSpacing(8)
 
-        # 1. Top Metrics Strip (individual badges)
+        # 1. Top Metrics Strip & Filter Bar (unified single line: metrics left, filters right)
         self.metrics_bar = QFrame(self)
         self.metrics_bar.setObjectName("MetricsBar")
         metrics_layout = QHBoxLayout(self.metrics_bar)
@@ -363,26 +363,27 @@ class TimelineView(QWidget):
         self.lbl_metric_time = QLabel("Tracked: 0m", self.metrics_bar)
         self.lbl_metric_time.setObjectName("MetricBadge")
         self.lbl_metric_time.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.lbl_metric_time.setFixedHeight(26)
+        self.lbl_metric_time.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_metric_tasks = QLabel("Completed: 0 tasks", self.metrics_bar)
         self.lbl_metric_tasks.setObjectName("MetricBadge")
         self.lbl_metric_tasks.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.lbl_metric_tasks.setFixedHeight(26)
+        self.lbl_metric_tasks.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.lbl_metric_apps = QLabel("Apps: 0", self.metrics_bar)
         self.lbl_metric_apps.setObjectName("MetricBadge")
-        self.lbl_metric_apps.setFont(get_font(9))
+        self.lbl_metric_apps.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.lbl_metric_apps.setFixedHeight(26)
+        self.lbl_metric_apps.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        metrics_layout.addWidget(self.lbl_metric_time)
-        metrics_layout.addWidget(self.lbl_metric_tasks)
-        metrics_layout.addWidget(self.lbl_metric_apps)
+        metrics_layout.addWidget(self.lbl_metric_time, 0, Qt.AlignmentFlag.AlignVCenter)
+        metrics_layout.addWidget(self.lbl_metric_tasks, 0, Qt.AlignmentFlag.AlignVCenter)
+        metrics_layout.addWidget(self.lbl_metric_apps, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        # Stretch pushes filter dropdowns to the right side
         metrics_layout.addStretch(1)
-
-        main_layout.addWidget(self.metrics_bar)
-
-        # 2. Filter Bar (Category Dropdown + Project Dropdown)
-        filter_bar = QHBoxLayout()
-        filter_bar.setContentsMargins(0, 0, 0, 0)
-        filter_bar.setSpacing(8)
 
         # Retained hidden button elements for backward compatibility with automated tests
         self.btn_all = QPushButton("All", self)
@@ -406,25 +407,25 @@ class TimelineView(QWidget):
         self.btn_notes.clicked.connect(lambda: self._set_category_filter("notes"))
         self.btn_notes.setVisible(False)
 
-        # Dropdown to filter All, Apps, Quick Notes, Tasks
+        # Dropdown to filter All, Apps, Quick Notes, Tasks (Right side)
         self.category_combo = ResponsiveProjectCombo(self, is_dark=self.is_dark)
         self.category_combo.setObjectName("CategoryDropdown")
+        self.category_combo.setFixedHeight(26)
         self.category_combo.addItem("All", "all")
         self.category_combo.addItem("Apps", "apps")
         self.category_combo.addItem("Quick Notes", "notes")
         self.category_combo.addItem("Tasks", "tasks")
         self.category_combo.currentIndexChanged.connect(self._on_category_combo_changed)
-        filter_bar.addWidget(self.category_combo)
+        metrics_layout.addWidget(self.category_combo, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # Project Dropdown
+        # Project Dropdown (Right side)
         self.project_combo = ResponsiveProjectCombo(self, is_dark=self.is_dark)
+        self.project_combo.setFixedHeight(26)
         self.project_combo.addItem("All Projects")
         self.project_combo.currentIndexChanged.connect(self._on_project_filter_changed)
-        filter_bar.addWidget(self.project_combo)
+        metrics_layout.addWidget(self.project_combo, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        filter_bar.addStretch(1)
-
-        main_layout.addLayout(filter_bar)
+        main_layout.addWidget(self.metrics_bar)
 
         # 3. Scroll Area for Events
         self.scroll_area = QScrollArea(self)
@@ -466,7 +467,7 @@ class TimelineView(QWidget):
                     color: #E4E4E7;
                     border: 1px solid #333338;
                     border-radius: 6px;
-                    padding: 4px 10px;
+                    padding: 0 10px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
@@ -499,12 +500,16 @@ class TimelineView(QWidget):
                 QComboBox {{
                     background-color: #242427;
                     color: #F4F4F6;
-                    border: 1px solid #3F3F46;
+                    border: 1px solid #333338;
                     border-radius: 6px;
-                    padding: 4px 20px 4px 10px;
+                    padding: 0 22px 0 10px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
+                }}
+                QComboBox:hover {{
+                    background-color: #2A2A2E;
+                    border-color: #3F3F46;
                 }}
                 QComboBox::drop-down {{
                     border: none;
@@ -534,7 +539,7 @@ class TimelineView(QWidget):
                     color: #242220;
                     border: 1px solid #D6D0C5;
                     border-radius: 6px;
-                    padding: 4px 10px;
+                    padding: 0 10px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
@@ -570,13 +575,14 @@ class TimelineView(QWidget):
                     color: #242220;
                     border: 1px solid #D6D0C5;
                     border-radius: 6px;
-                    padding: 4px 20px 4px 10px;
+                    padding: 0 22px 0 10px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
                     font-weight: 500;
                 }}
                 QComboBox:hover {{
-                    border-color: #FF6B3D;
+                    background-color: #F3EFE9;
+                    border-color: #C4BEB4;
                 }}
                 QComboBox::drop-down {{
                     border: none;
