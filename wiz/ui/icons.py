@@ -1,7 +1,9 @@
 """Application icon and SVG asset helper utilities for WizDesk."""
 
+import re
+from pathlib import Path
 from PyQt6.QtGui import QIcon, QPixmap, QPainter
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QByteArray
 from PyQt6.QtSvg import QSvgRenderer
 
 from wiz.core.config import config
@@ -36,3 +38,30 @@ def get_app_icon(asset_name: str = "wiz-idle.svg") -> QIcon:
         if not pm.isNull():
             icon.addPixmap(pm)
     return icon
+
+
+def get_status_icon(svg_name: str, color_hex: str, size: int = 14) -> QIcon:
+    """Load an SVG icon from assets/, dynamically tint it with color_hex, and return a crisp high-DPI QIcon."""
+    asset_path = config.get_asset_path(svg_name)
+    if not asset_path.exists():
+        return QIcon()
+
+    content = asset_path.read_text(encoding="utf-8")
+    if 'fill="' in content:
+        tinted = re.sub(r'fill="[^"]*"', f'fill="{color_hex}"', content)
+    else:
+        tinted = content.replace('<path ', f'<path fill="{color_hex}" ')
+
+    renderer = QSvgRenderer(QByteArray(tinted.encode("utf-8")))
+    pixmap = QPixmap(size * 2, size * 2)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+    renderer.render(painter)
+    painter.end()
+
+    icon = QIcon()
+    icon.addPixmap(pixmap)
+    return icon
+

@@ -44,7 +44,7 @@ from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
-from wiz.ui.icons import get_app_icon
+from wiz.ui.icons import get_app_icon, get_status_icon
 from wiz.sync.obsidian import sync_today_logs
 from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView
@@ -932,10 +932,13 @@ class TaskRowWidget(QWidget):
         self.main_layout.setContentsMargins(0, 2, 0, 2)
         self.main_layout.setSpacing(3)
 
-        # Top row: Checkbox, Title, + Subtask button
+        # Top row: Oval capsule containing Checkbox, Title, + Subtask button
         self.top_widget = QWidget()
+        self.top_widget.setObjectName("taskTopWidget")
+        self.top_widget.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.top_widget.setFixedHeight(34)
         top_layout = QHBoxLayout(self.top_widget)
-        top_layout.setContentsMargins(4, 3, 4, 3)
+        top_layout.setContentsMargins(12, 3, 12, 3)
         top_layout.setSpacing(10)
 
         is_done = (task.status in ("done", "completed"))
@@ -997,18 +1000,19 @@ class TaskRowWidget(QWidget):
         self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
         top_layout.addWidget(self.add_sub_btn)
 
+        self._update_capsule_style()
         self.main_layout.addWidget(self.top_widget)
 
         # Status dropdown & time label directly below task title
         self.status_bar_widget = QWidget()
         status_bar_layout = QHBoxLayout(self.status_bar_widget)
-        status_bar_layout.setContentsMargins(34, 0, 4, 3)
+        status_bar_layout.setContentsMargins(26, 0, 4, 3)
         status_bar_layout.setSpacing(10)
 
         self.status_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.status_combo.setEditable(False)
-        self.status_combo.addItems(["Status", "In progress", "Completed", "Cancelled"])
         self.status_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self._populate_status_combo()
         self.status_combo.currentIndexChanged.connect(self._on_status_combo_changed)
         status_bar_layout.addWidget(self.status_combo)
 
@@ -1126,10 +1130,46 @@ class TaskRowWidget(QWidget):
         self.sub_input.clear()
         self.sub_input_widget.setVisible(False)
 
+    def _populate_status_combo(self) -> None:
+        """Populate the status dropdown with monochrome icons and labels."""
+        self.status_combo.blockSignals(True)
+        self.status_combo.clear()
+        sub_color = "#A1A1AA" if self.is_dark else "#71717A"
+        self.status_combo.addItem(get_status_icon("status-circle-ring.svg", sub_color, size=13), "Open")
+        self.status_combo.addItem(get_status_icon("in-progress.svg", sub_color, size=13), "In progress")
+        self.status_combo.addItem(get_status_icon("media-media-complete.svg", sub_color, size=13), "Completed")
+        self.status_combo.addItem(get_status_icon("cancelled.svg", sub_color, size=13), "Cancelled")
+        self.status_combo.blockSignals(False)
+
+    def _update_capsule_style(self) -> None:
+        """Apply the single smooth oval pill styling with exact theme colors."""
+        task_bg = "#242427" if self.is_dark else "#FFFFFF"
+        task_border = "#333338" if self.is_dark else "#E2DDD3"
+        task_border_hover = "#4A4A52" if self.is_dark else "#D6D0C5"
+        self.top_widget.setStyleSheet(f"""
+            QWidget#taskTopWidget {{
+                background-color: {task_bg};
+                border: 1px solid {task_border};
+                border-radius: 17px;
+            }}
+            QWidget#taskTopWidget:hover {{
+                border-color: {task_border_hover};
+            }}
+        """)
+
+    def set_theme(self, is_dark: bool) -> None:
+        """Dynamically update theme on the task row."""
+        self.is_dark = is_dark
+        self.checkbox.set_theme(is_dark)
+        self.status_combo.set_theme(is_dark)
+        self._populate_status_combo()
+        self._update_capsule_style()
+        self._update_status_ui(self.task.status)
+
     def _on_status_combo_changed(self, index: int) -> None:
         """Handle status selection change from the dropdown."""
         text = self.status_combo.currentText()
-        if text == "In progress":
+        if text in ("In progress", "In Progress"):
             new_status = "in_progress"
             self.task.completed_at = None
         elif text == "Completed":
@@ -1189,7 +1229,7 @@ class TaskRowWidget(QWidget):
         elif is_cancelled:
             self.status_combo.setCurrentText("Cancelled")
         else:
-            self.status_combo.setCurrentText("Status")
+            self.status_combo.setCurrentText("Open")
         self.status_combo.blockSignals(False)
 
         # Text colors
@@ -1200,6 +1240,8 @@ class TaskRowWidget(QWidget):
         if is_done:
             self.label.setStyleSheet(f"""
                 QLabel {{
+                    background: transparent;
+                    border: none;
                     color: {done_color};
                     text-decoration: line-through;
                     font-family: {FONT_SANS};
@@ -1209,6 +1251,8 @@ class TaskRowWidget(QWidget):
         elif is_cancelled:
             self.label.setStyleSheet(f"""
                 QLabel {{
+                    background: transparent;
+                    border: none;
                     color: {done_color};
                     text-decoration: line-through;
                     font-style: italic;
@@ -1219,6 +1263,8 @@ class TaskRowWidget(QWidget):
         elif is_in_progress:
             self.label.setStyleSheet(f"""
                 QLabel {{
+                    background: transparent;
+                    border: none;
                     color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
@@ -1229,6 +1275,8 @@ class TaskRowWidget(QWidget):
         else:
             self.label.setStyleSheet(f"""
                 QLabel {{
+                    background: transparent;
+                    border: none;
                     color: {active_color};
                     text-decoration: none;
                     font-family: {FONT_SANS};
@@ -1237,140 +1285,48 @@ class TaskRowWidget(QWidget):
                 }}
             """)
 
-        # Dropdown popup styling
-        combo_popup_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        # Dropdown popup & monochrome styling without colored fills
+        hover_bg = "#2E2E33" if self.is_dark else "#EBE6DC"
+        hover_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        combo_popup_bg = "#1E1E22" if self.is_dark else "#FAF8F5"
         combo_popup_text = "#F4F4F5" if self.is_dark else "#242220"
-        combo_popup_border = "#27272A" if self.is_dark else "#D6D0C5"
-        combo_popup_sel_bg = "rgba(255, 107, 61, 0.22)" if self.is_dark else "#FEECE5"
-        combo_popup_sel_text = "#FFAB91" if self.is_dark else "#D84315"
+        combo_popup_border = "#333338" if self.is_dark else "#D6D0C5"
+        combo_popup_sel_bg = "rgba(194, 65, 12, 0.22)" if self.is_dark else "#FEECE5"
+        combo_popup_sel_text = "#FFAB91" if self.is_dark else "#BA3F1A"
 
-        # Dropdown styling based on state
-        if is_in_progress:
-            self.status_combo.setStyleSheet(f"""
-                QComboBox {{
-                    background-color: {'rgba(59, 130, 246, 0.20)' if self.is_dark else 'rgba(37, 99, 235, 0.10)'};
-                    color: {'#60A5FA' if self.is_dark else '#2563EB'};
-                    border: 1px solid {'rgba(96, 165, 250, 0.40)' if self.is_dark else 'rgba(37, 99, 235, 0.35)'};
-                    border-radius: 6px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                    font-weight: 600;
-                    padding: 2px 22px 2px 8px;
-                    min-height: 22px;
-                }}
-                QComboBox::drop-down {{
-                    border: none;
-                    width: 0px;
-                }}
-                QComboBox QAbstractItemView {{
-                    background-color: {combo_popup_bg};
-                    color: {combo_popup_text};
-                    border: 1px solid {combo_popup_border};
-                    border-radius: 8px;
-                    selection-background-color: {combo_popup_sel_bg};
-                    selection-color: {combo_popup_sel_text};
-                    padding: 4px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                }}
-            """)
-        elif is_done:
-            self.status_combo.setStyleSheet(f"""
-                QComboBox {{
-                    background-color: {'rgba(52, 211, 153, 0.20)' if self.is_dark else 'rgba(16, 185, 129, 0.10)'};
-                    color: {'#34D399' if self.is_dark else '#059669'};
-                    border: 1px solid {'rgba(52, 211, 153, 0.40)' if self.is_dark else 'rgba(16, 185, 129, 0.35)'};
-                    border-radius: 6px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                    font-weight: 600;
-                    padding: 2px 22px 2px 8px;
-                    min-height: 22px;
-                }}
-                QComboBox::drop-down {{
-                    border: none;
-                    width: 0px;
-                }}
-                QComboBox QAbstractItemView {{
-                    background-color: {combo_popup_bg};
-                    color: {combo_popup_text};
-                    border: 1px solid {combo_popup_border};
-                    border-radius: 8px;
-                    selection-background-color: {combo_popup_sel_bg};
-                    selection-color: {combo_popup_sel_text};
-                    padding: 4px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                }}
-            """)
-        elif is_cancelled:
-            self.status_combo.setStyleSheet(f"""
-                QComboBox {{
-                    background-color: {'rgba(248, 113, 113, 0.20)' if self.is_dark else 'rgba(239, 68, 68, 0.10)'};
-                    color: {'#F87171' if self.is_dark else '#DC2626'};
-                    border: 1px solid {'rgba(248, 113, 113, 0.35)' if self.is_dark else 'rgba(239, 68, 68, 0.30)'};
-                    border-radius: 6px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                    font-weight: 600;
-                    padding: 2px 22px 2px 8px;
-                    min-height: 22px;
-                }}
-                QComboBox::drop-down {{
-                    border: none;
-                    width: 0px;
-                }}
-                QComboBox QAbstractItemView {{
-                    background-color: {combo_popup_bg};
-                    color: {combo_popup_text};
-                    border: 1px solid {combo_popup_border};
-                    border-radius: 8px;
-                    selection-background-color: {combo_popup_sel_bg};
-                    selection-color: {combo_popup_sel_text};
-                    padding: 4px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                }}
-            """)
-        else:
-            default_bg = "#27272A" if self.is_dark else "#EDE9E0"
-            default_color = "#A1A1AA" if self.is_dark else "#57534E"
-            default_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-            hover_border = "#FF6B3D"
-            hover_color = "#FAFAFA" if self.is_dark else "#242220"
-
-            self.status_combo.setStyleSheet(f"""
-                QComboBox {{
-                    background-color: {default_bg};
-                    color: {default_color};
-                    border: 1px solid {default_border};
-                    border-radius: 6px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                    font-weight: 500;
-                    padding: 2px 22px 2px 8px;
-                    min-height: 22px;
-                }}
-                QComboBox:hover {{
-                    color: {hover_color};
-                    border-color: {hover_border};
-                }}
-                QComboBox::drop-down {{
-                    border: none;
-                    width: 0px;
-                }}
-                QComboBox QAbstractItemView {{
-                    background-color: {combo_popup_bg};
-                    color: {combo_popup_text};
-                    border: 1px solid {combo_popup_border};
-                    border-radius: 8px;
-                    selection-background-color: {combo_popup_sel_bg};
-                    selection-color: {combo_popup_sel_text};
-                    padding: 4px;
-                    font-family: {FONT_SANS};
-                    font-size: 11px;
-                }}
-            """)
+        self.status_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: transparent;
+                color: {combo_popup_text};
+                border: 1px solid transparent;
+                border-radius: 6px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 500;
+                padding: 2px 20px 2px 6px;
+                min-height: 22px;
+            }}
+            QComboBox:hover {{
+                background-color: {hover_bg};
+                border: 1px solid {hover_border};
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                width: 0px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {combo_popup_bg};
+                color: {combo_popup_text};
+                border: 1px solid {combo_popup_border};
+                border-radius: 8px;
+                selection-background-color: {combo_popup_sel_bg};
+                selection-color: {combo_popup_sel_text};
+                padding: 4px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+            }}
+        """)
+        self._update_capsule_style()
 
     def start_renaming(self) -> None:
         """Enter inline task renaming mode."""

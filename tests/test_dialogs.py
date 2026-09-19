@@ -206,7 +206,7 @@ def test_task_row_inline_status_toggles(qapp, repo):
 
     # Initial state
     assert not row.checkbox.isChecked
-    assert row.status_combo.currentText() == "Status"
+    assert row.status_combo.currentText() in ("Open", "Status")
 
     # Select 'In progress' from dropdown
     row.status_combo.setCurrentText("In progress")
@@ -225,8 +225,8 @@ def test_task_row_inline_status_toggles(qapp, repo):
     assert row.task.status == "cancelled"
     assert not row.checkbox.isChecked
 
-    # Select 'Status' (default) to reset
-    row.status_combo.setCurrentText("Status")
+    # Select 'Open' (default) to reset
+    row.status_combo.setCurrentText("Open")
     assert emitted_statuses[-1] == "not_started"
     assert row.task.status == "not_started"
 
