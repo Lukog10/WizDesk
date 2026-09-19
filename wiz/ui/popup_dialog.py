@@ -13,7 +13,7 @@ Implements the exact layout hierarchy:
 
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer, QSize
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -910,6 +910,52 @@ class SubtaskRowWidget(QWidget):
             self.delete_requested.emit(self.subtask_id)
 
 
+class SubtaskAddButton(QPushButton):
+    """Icon-only button for toggling inline subtask input."""
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip("Add Subtask")
+        self.setFixedSize(24, 24)
+        self.setIconSize(QSize(14, 14))
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.set_theme(is_dark)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.normal_color = "#71717A" if is_dark else "#78716C"
+        self.hover_color = "#FAFAFA" if is_dark else "#242220"
+        hover_bg = "#27272A" if is_dark else "#EBE6DC"
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                border: none;
+                border-radius: 4px;
+                padding: 0px;
+            }}
+            QPushButton:hover {{
+                background-color: {hover_bg};
+            }}
+        """)
+        self._update_icon(hover=False)
+
+    def _update_icon(self, hover: bool = False) -> None:
+        c = self.hover_color if hover else self.normal_color
+        self.setIcon(get_status_icon("icons/subtask.svg", c, 14))
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._update_icon(hover=True)
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._update_icon(hover=False)
+
+
 class TaskRowWidget(QWidget):
     """
     Parent task row featuring:
@@ -979,30 +1025,10 @@ class TaskRowWidget(QWidget):
         self.edit_input.editing_cancelled.connect(self._cancel_renaming)
         top_layout.addWidget(self.edit_input, stretch=1)
 
-        # "+ subtask" button
-        self.add_sub_btn = QPushButton("+ subtask")
-        self.add_sub_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        sub_btn_color = "#71717A" if self.is_dark else "#78716C"
-        sub_btn_hover_color = "#FAFAFA" if self.is_dark else "#242220"
-        sub_btn_hover_bg = "#27272A" if self.is_dark else "#EBE6DC"
-        self.add_sub_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                color: {sub_btn_color};
-                border: none;
-                font-family: {FONT_SANS};
-                font-size: 11px;
-                font-weight: 500;
-                padding: 2px 6px;
-                border-radius: 4px;
-            }}
-            QPushButton:hover {{
-                color: {sub_btn_hover_color};
-                background-color: {sub_btn_hover_bg};
-            }}
-        """)
+        # Subtask icon-only button
+        self.add_sub_btn = SubtaskAddButton(is_dark=self.is_dark, parent=self.top_widget)
         self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
-        top_layout.addWidget(self.add_sub_btn)
+        top_layout.addWidget(self.add_sub_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.main_layout.addWidget(self.top_widget)
 
@@ -1149,6 +1175,8 @@ class TaskRowWidget(QWidget):
         self.is_dark = is_dark
         self.checkbox.set_theme(is_dark)
         self.status_combo.set_theme(is_dark)
+        if hasattr(self, "add_sub_btn") and hasattr(self.add_sub_btn, "set_theme"):
+            self.add_sub_btn.set_theme(is_dark)
         self._populate_status_combo()
         self._update_status_ui(self.task.status)
 
