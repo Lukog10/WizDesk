@@ -79,12 +79,66 @@ class ProjectRecord:
     description: str = ""
 
 
+DEFAULT_PROJECT_PALETTE: List[str] = [
+    "#FF6B3D",  # Mascot Orange-Red (Brand)
+    "#10B981",  # Emerald
+    "#3B82F6",  # Electric Blue
+    "#8B5CF6",  # Violet
+    "#F59E0B",  # Amber Gold
+    "#EC4899",  # Hot Pink
+    "#06B6D4",  # Cyan
+    "#14B8A6",  # Teal
+    "#F97316",  # Tangerine
+    "#84CC16",  # Lime Green
+    "#6366F1",  # Indigo
+    "#F43F5E",  # Rose
+    "#0EA5E9",  # Sky Blue
+    "#D946EF",  # Fuchsia
+    "#EAB308",  # Sunburst Yellow
+    "#2563EB",  # Cobalt Blue
+    "#FF5722",  # Flame Orange
+    "#059669",  # Forest Jade
+]
+
+
 class StorageRepository:
     """High-level repository for database CRUD operations."""
 
     def __init__(self, db: Optional[Database] = None):
         self.db = db or get_db()
         self._projects_cache: Optional[List[ProjectRecord]] = None
+        self.heal_duplicate_projects()
+
+    def heal_duplicate_projects(self) -> None:
+        """Self-healing migration: resolve known duplicate projects and duplicate colors."""
+        try:
+            with self.db.cursor() as cur:
+                # 1. Merge duplicate Research -> Browsing if both exist
+                cur.execute("SELECT id FROM projects WHERE name = 'Research'")
+                has_res = cur.fetchone()
+                cur.execute("SELECT id FROM projects WHERE name = 'Browsing'")
+                has_brw = cur.fetchone()
+                if has_res and has_brw:
+                    self.rename_project("Research", "Browsing")
+
+                # 2. De-duplicate project colors in DB if any collide
+                cur.execute("SELECT id, name, color FROM projects ORDER BY id ASC")
+                rows = cur.fetchall()
+                used_colors: set[str] = set()
+                palette_idx = 0
+                for r in rows:
+                    col = (r["color"] or "").strip().upper()
+                    if not col or col in used_colors:
+                        while palette_idx < len(DEFAULT_PROJECT_PALETTE) and DEFAULT_PROJECT_PALETTE[palette_idx].upper() in used_colors:
+                            palette_idx += 1
+                        new_col = DEFAULT_PROJECT_PALETTE[palette_idx] if palette_idx < len(DEFAULT_PROJECT_PALETTE) else DEFAULT_PROJECT_PALETTE[len(used_colors) % len(DEFAULT_PROJECT_PALETTE)]
+                        cur.execute("UPDATE projects SET color = ? WHERE id = ?", (new_col, r["id"]))
+                        used_colors.add(new_col.upper())
+                    else:
+                        used_colors.add(col)
+            self._projects_cache = None
+        except Exception:
+            pass
 
     # --- Session Operations ---
 
@@ -484,13 +538,31 @@ class StorageRepository:
         self,
         name: str,
         keywords: List[str],
-        color: str = "#FF6B3D",
+        color: Optional[str] = None,
         description: str = "",
     ) -> int:
         """Create or update a project and its comma-separated keywords, color, and description."""
         self._projects_cache = None  # Invalidate in-memory cache
+        name_clean = name.strip()
         kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()])
         with self.db.cursor() as cur:
+            cur.execute("SELECT color FROM projects WHERE name = ?", (name_clean,))
+            existing = cur.fetchone()
+
+            final_color = color.strip() if (color and color.strip()) else None
+            if not final_color:
+                if existing and existing["color"]:
+                    final_color = existing["color"]
+                else:
+                    cur.execute("SELECT color FROM projects")
+                    used = {r["color"].upper() for r in cur.fetchall() if r["color"]}
+                    for c in DEFAULT_PROJECT_PALETTE:
+                        if c.upper() not in used:
+                            final_color = c
+                            break
+                    if not final_color:
+                        final_color = DEFAULT_PROJECT_PALETTE[0]
+
             cur.execute(
                 """
                 INSERT INTO projects (name, keywords, color, description)
@@ -500,9 +572,99 @@ class StorageRepository:
                     color = excluded.color,
                     description = excluded.description
                 """,
-                (name.strip(), kw_str, color.strip(), description.strip()),
+                (name_clean, kw_str, final_color, description.strip()),
             )
             return cur.lastrowid or 0
+
+    def rename_project(
+        self,
+        old_name: str,
+        new_name: str,
+        color: Optional[str] = None,
+        keywords: Optional[List[str]] = None,
+        description: Optional[str] = None,
+    ) -> bool:
+        """
+        Safely rename a project and cascade changes to sessions, tasks, and notes.
+        If new_name already exists, merge the old project records into new_name and delete the old project.
+        """
+        self._projects_cache = None
+        old_clean = old_name.strip()
+        new_clean = new_name.strip()
+        if not old_clean or not new_clean:
+            return False
+
+        with self.db.cursor() as cur:
+            if old_clean.lower() == new_clean.lower():
+                # Case change or in-place attribute update
+                cur.execute("SELECT id, keywords, color, description FROM projects WHERE name = ?", (old_clean,))
+                current = cur.fetchone()
+                if not current:
+                    return False
+
+                kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()]) if keywords is not None else current["keywords"]
+                c_val = color.strip() if (color and color.strip()) else current["color"]
+                d_val = description.strip() if description is not None else current["description"]
+
+                cur.execute(
+                    "UPDATE projects SET name = ?, keywords = ?, color = ?, description = ? WHERE id = ?",
+                    (new_clean, kw_str, c_val, d_val, current["id"]),
+                )
+                cur.execute("UPDATE sessions SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
+                cur.execute("UPDATE tasks SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
+                cur.execute("UPDATE notes SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
+                return True
+
+            # Check if target new_name already exists in projects table
+            cur.execute("SELECT id, keywords, color, description FROM projects WHERE name = ?", (new_clean,))
+            target_existing = cur.fetchone()
+
+            cur.execute("SELECT id, keywords, color, description FROM projects WHERE name = ?", (old_clean,))
+            source_existing = cur.fetchone()
+
+            if target_existing:
+                # Merge duplicate: update target with source's info or overrides, delete source
+                kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()]) if keywords is not None else (
+                    target_existing["keywords"] or (source_existing["keywords"] if source_existing else "")
+                )
+                c_val = color.strip() if (color and color.strip()) else (
+                    target_existing["color"] if target_existing["color"] and target_existing["color"] != "#FF6B3D"
+                    else (source_existing["color"] if source_existing else "#FF6B3D")
+                )
+                d_val = description.strip() if description is not None else (
+                    target_existing["description"] or (source_existing["description"] if source_existing else "")
+                )
+
+                cur.execute(
+                    "UPDATE projects SET keywords = ?, color = ?, description = ? WHERE id = ?",
+                    (kw_str, c_val, d_val, target_existing["id"]),
+                )
+                if source_existing:
+                    cur.execute("DELETE FROM projects WHERE id = ?", (source_existing["id"],))
+            else:
+                # Direct rename
+                if source_existing:
+                    kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()]) if keywords is not None else source_existing["keywords"]
+                    c_val = color.strip() if (color and color.strip()) else source_existing["color"]
+                    d_val = description.strip() if description is not None else source_existing["description"]
+                    cur.execute(
+                        "UPDATE projects SET name = ?, keywords = ?, color = ?, description = ? WHERE id = ?",
+                        (new_clean, kw_str, c_val, d_val, source_existing["id"]),
+                    )
+                else:
+                    kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()]) if keywords is not None else ""
+                    c_val = color.strip() if (color and color.strip()) else DEFAULT_PROJECT_PALETTE[0]
+                    d_val = description.strip() if description is not None else ""
+                    cur.execute(
+                        "INSERT INTO projects (name, keywords, color, description) VALUES (?, ?, ?, ?)",
+                        (new_clean, kw_str, c_val, d_val),
+                    )
+
+            # Cascade update all historical records
+            cur.execute("UPDATE sessions SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
+            cur.execute("UPDATE tasks SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
+            cur.execute("UPDATE notes SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
+            return True
 
     def delete_project(self, project_id: int) -> bool:
         """Delete a project by its database ID."""
@@ -648,6 +810,20 @@ class StorageRepository:
                     "completion_rate": round(completion_rate, 2),
                     "top_apps": top_apps,
                 })
+
+        # Ensure all project cards and tracking tracks display distinct colors
+        used_overview_colors: set[str] = set()
+        pal_idx = 0
+        for item in results:
+            col = (item.get("color") or "").strip().upper()
+            if not col or col in used_overview_colors:
+                while pal_idx < len(DEFAULT_PROJECT_PALETTE) and DEFAULT_PROJECT_PALETTE[pal_idx].upper() in used_overview_colors:
+                    pal_idx += 1
+                assigned = DEFAULT_PROJECT_PALETTE[pal_idx] if pal_idx < len(DEFAULT_PROJECT_PALETTE) else DEFAULT_PROJECT_PALETTE[len(used_overview_colors) % len(DEFAULT_PROJECT_PALETTE)]
+                item["color"] = assigned
+                used_overview_colors.add(assigned.upper())
+            else:
+                used_overview_colors.add(col)
 
         return results
 

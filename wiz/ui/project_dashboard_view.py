@@ -95,7 +95,21 @@ class ProjectDialog(QDialog):
         super().__init__(parent)
         self.is_dark = is_dark
         self.project = project
-        self.selected_color = project.color if project else PRESET_COLORS[0]
+        if project and project.color:
+            self.selected_color = project.color
+        else:
+            used: set[str] = set()
+            try:
+                from wiz.storage.models import StorageRepository
+                used = {p.color.upper() for p in StorageRepository().get_all_projects() if p.color}
+            except Exception:
+                pass
+            chosen = None
+            for c in PRESET_COLORS:
+                if c.upper() not in used:
+                    chosen = c
+                    break
+            self.selected_color = chosen or PRESET_COLORS[0]
 
         title = "Edit Project" if project else "New Project"
         self.setWindowTitle(title)
@@ -257,11 +271,23 @@ class ProjectDialog(QDialog):
                 color: #A1A1AA;
                 border: 1px solid #3F3F46;
             """)
-            self.save_btn.setStyleSheet("""
-                background-color: #FF5722;
-                color: #FFFFFF;
-                border: 1px solid #FF5722;
-                font-weight: 600;
+            self.save_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #C2410C;
+                    color: #FFFFFF;
+                    border: 1px solid #C2410C;
+                    font-weight: 700;
+                    font-family: {FONT_SANS};
+                    border-radius: 6px;
+                }}
+                QPushButton:hover {{
+                    background-color: #A3360E;
+                    border-color: #A3360E;
+                }}
+                QPushButton:pressed {{
+                    background-color: #9A3412;
+                    border-color: #9A3412;
+                }}
             """)
             if hasattr(self, "btn_custom_color"):
                 self.btn_custom_color.setStyleSheet(f"""
@@ -308,11 +334,23 @@ class ProjectDialog(QDialog):
                 color: #444240;
                 border: 1px solid #D6D0C5;
             """)
-            self.save_btn.setStyleSheet("""
-                background-color: #FF5722;
-                color: #FFFFFF;
-                border: 1px solid #FF5722;
-                font-weight: 600;
+            self.save_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #BA3F1A;
+                    color: #FFFFFF;
+                    border: 1px solid #BA3F1A;
+                    font-weight: 700;
+                    font-family: {FONT_SANS};
+                    border-radius: 6px;
+                }}
+                QPushButton:hover {{
+                    background-color: #9E3414;
+                    border-color: #9E3414;
+                }}
+                QPushButton:pressed {{
+                    background-color: #822B10;
+                    border-color: #822B10;
+                }}
             """)
             if hasattr(self, "btn_custom_color"):
                 self.btn_custom_color.setStyleSheet(f"""
@@ -568,6 +606,7 @@ class ProjectsOverviewPage(QWidget):
 
         self.btn_new_project = QPushButton("+ New Project")
         self.btn_new_project.setObjectName("NewProjectButton")
+        self.btn_new_project.setFont(get_font(11, QFont.Weight.Bold))
         self.btn_new_project.setFixedHeight(28)
         self.btn_new_project.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_new_project.clicked.connect(self.new_project_clicked.emit)
@@ -828,22 +867,22 @@ class ProjectsOverviewPage(QWidget):
             """
             btn_new_style = f"""
                 QPushButton {{
-                    background-color: #FF5722;
+                    background-color: #C2410C;
                     color: #FFFFFF;
-                    border: 1px solid #FF5722;
+                    border: 1px solid #C2410C;
                     border-radius: 8px;
                     padding: 0px 14px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
-                    font-weight: 600;
+                    font-weight: 700;
                 }}
                 QPushButton:hover {{
-                    background-color: #FF6B3D;
-                    border-color: #FF6B3D;
+                    background-color: #A3360E;
+                    border-color: #A3360E;
                 }}
                 QPushButton:pressed {{
-                    background-color: #E64A19;
-                    border-color: #E64A19;
+                    background-color: #9A3412;
+                    border-color: #9A3412;
                 }}
             """
             badge_style = f"""
@@ -894,22 +933,22 @@ class ProjectsOverviewPage(QWidget):
             """
             btn_new_style = f"""
                 QPushButton {{
-                    background-color: #FF5722;
+                    background-color: #BA3F1A;
                     color: #FFFFFF;
-                    border: 1px solid #FF5722;
+                    border: 1px solid #BA3F1A;
                     border-radius: 8px;
                     padding: 0px 14px;
                     font-family: {FONT_SANS};
                     font-size: 11px;
-                    font-weight: 600;
+                    font-weight: 700;
                 }}
                 QPushButton:hover {{
-                    background-color: #E64A19;
-                    border-color: #E64A19;
+                    background-color: #9E3414;
+                    border-color: #9E3414;
                 }}
                 QPushButton:pressed {{
-                    background-color: #D84315;
-                    border-color: #D84315;
+                    background-color: #822B10;
+                    border-color: #822B10;
                 }}
             """
             badge_style = f"""
@@ -1451,10 +1490,15 @@ class ProjectDetailPage(QWidget):
         dlg = ProjectDialog(self, is_dark=self.is_dark, project=target)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             name, color, desc, kws = dlg.get_data()
-            self.repo.create_or_update_project(name, kws, color=color, description=desc)
+            if name != target.name:
+                self.repo.rename_project(target.name, name, color=color, keywords=kws, description=desc)
+            else:
+                self.repo.create_or_update_project(name, kws, color=color, description=desc)
             self.current_project_name = name
             self.load_project(name)
             self.project_updated.emit()
+            from wiz.core.signals import app_signals
+            app_signals.projects_changed.emit()
 
     def _on_delete_project(self) -> None:
         reply = QMessageBox.question(
@@ -1466,6 +1510,8 @@ class ProjectDetailPage(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             self.repo.delete_project_by_name(self.current_project_name)
             self.project_updated.emit()
+            from wiz.core.signals import app_signals
+            app_signals.projects_changed.emit()
             self.back_clicked.emit()
 
     def set_theme(self, is_dark: bool) -> None:
@@ -1737,6 +1783,8 @@ class ProjectDashboardView(QWidget):
     def _on_project_updated(self) -> None:
         self.overview_page.refresh()
         self.project_changed.emit()
+        from wiz.core.signals import app_signals
+        app_signals.projects_changed.emit()
 
     def _create_new_project(self) -> None:
         dlg = ProjectDialog(self, is_dark=self.is_dark)
@@ -1745,6 +1793,8 @@ class ProjectDashboardView(QWidget):
             self.repo.create_or_update_project(name, kws, color=color, description=desc)
             self.overview_page.refresh()
             self.project_changed.emit()
+            from wiz.core.signals import app_signals
+            app_signals.projects_changed.emit()
 
     def load_data(self) -> None:
         """Refresh dashboard view data."""

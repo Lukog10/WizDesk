@@ -2029,6 +2029,7 @@ class QuickEntryDialog(QDialog):
         app_signals.task_created.connect(self._on_background_task_activity)
         app_signals.task_updated.connect(self._on_background_task_activity)
         app_signals.task_completed.connect(self._on_background_task_activity)
+        app_signals.projects_changed.connect(self._on_projects_changed_sync)
 
         # Apply initial theme stylesheet
         self.apply_theme(config.theme)
@@ -2442,6 +2443,18 @@ class QuickEntryDialog(QDialog):
         if self.isVisible():
             if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
                 self.project_dashboard_view.load_data()
+
+    def _on_projects_changed_sync(self) -> None:
+        """Handle real-time project synchronization across all views."""
+        self._populate_projects()
+        if hasattr(self, "refresh_tasks"):
+            self.refresh_tasks()
+        if hasattr(self, "refresh_notes"):
+            self.refresh_notes()
+        if hasattr(self, "project_dashboard_view"):
+            self.project_dashboard_view.load_data()
+        if hasattr(self, "timeline_view"):
+            self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
 
     def _open_calendar(self) -> None:
         """Open popup calendar picker."""

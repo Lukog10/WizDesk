@@ -290,6 +290,7 @@ class SettingsView(QWidget):
 
         for row, p in enumerate(projects):
             name_item = QTableWidgetItem(p.name)
+            name_item.setData(Qt.ItemDataRole.UserRole, p.name)
             name_item.setFont(font_name)
             name_item.setForeground(name_color)
 
@@ -308,11 +309,18 @@ class SettingsView(QWidget):
         kw_item = self.proj_table.item(row, 1)
         if name_item and kw_item:
             pname = name_item.text().strip()
+            old_name = name_item.data(Qt.ItemDataRole.UserRole)
             kw_str = kw_item.text().strip()
             if pname:
                 keywords = [k.strip() for k in kw_str.split(",") if k.strip()]
-                self.repo.create_or_update_project(pname, keywords)
+                if old_name and old_name != pname:
+                    self.repo.rename_project(old_name, pname, keywords=keywords)
+                    name_item.setData(Qt.ItemDataRole.UserRole, pname)
+                else:
+                    self.repo.create_or_update_project(pname, keywords)
                 self.projects_changed.emit()
+                from wiz.core.signals import app_signals
+                app_signals.projects_changed.emit()
 
     def _on_add_project(self) -> None:
         """Add a new project row to table and database."""
@@ -331,6 +339,8 @@ class SettingsView(QWidget):
         )
         self._load_projects()
         self.projects_changed.emit()
+        from wiz.core.signals import app_signals
+        app_signals.projects_changed.emit()
 
     def _on_remove_project(self) -> None:
         """Remove selected project from table and database."""
@@ -339,10 +349,11 @@ class SettingsView(QWidget):
             name_item = self.proj_table.item(row, 0)
             if name_item:
                 proj_name = name_item.text()
-                with self.repo.db.cursor() as cur:
-                    cur.execute("DELETE FROM projects WHERE name = ?", (proj_name,))
+                self.repo.delete_project_by_name(proj_name)
                 self._load_projects()
                 self.projects_changed.emit()
+                from wiz.core.signals import app_signals
+                app_signals.projects_changed.emit()
 
     def save_settings(self) -> None:
         """Persist settings to config and database with visual feedback."""
