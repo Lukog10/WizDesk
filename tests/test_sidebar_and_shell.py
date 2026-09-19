@@ -263,39 +263,54 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
 
 
 def test_help_faq_view_lifecycle(qapp):
-    """Test HelpFaqView shortcut customization, saving, reset, and FAQ accordion."""
+    """Test redesigned HelpFaqView category filtering, accordion expansion, and docs mode."""
     view = HelpFaqView(is_dark=True)
-
-    # Check hotkey input fields
-    assert "hotkey_workspace" in view.hotkey_inputs
-    assert "hotkey_toggle_mascot" in view.hotkey_inputs
-    assert "hotkey_quick_task" in view.hotkey_inputs
-    assert "hotkey_quick_note" in view.hotkey_inputs
 
     # Check FAQ items populated
     assert len(view.faq_items) >= 4
     first_faq = view.faq_items[0]
     assert not first_faq.is_expanded
     assert first_faq.a_lbl.isHidden()
+    assert first_faq.indicator_lbl.text() == "+"
 
     # Test expanding FAQ accordion
     first_faq.header_btn.click()
     assert first_faq.is_expanded
     assert not first_faq.a_lbl.isHidden()
-    assert first_faq.indicator_lbl.text() == "[-]"
+    assert first_faq.indicator_lbl.text() == "—"
 
-    # Test custom hotkey input and saving
-    view.hotkey_inputs["hotkey_quick_task"].setText("Ctrl+Alt+T")
-    view.save_hk_btn.click()
+    # Test collapsing FAQ accordion
+    first_faq.header_btn.click()
+    assert not first_faq.is_expanded
+    assert first_faq.a_lbl.isHidden()
+    assert first_faq.indicator_lbl.text() == "+"
 
-    assert config.get("hotkey_quick_task") == "<ctrl>+<alt>+t"
-    assert "successfully" in view.hk_feedback_lbl.text()
+    # Test FAQ category filtering
+    view.filter_faq_category("mascot")
+    assert view.current_faq_cat == "mascot"
+    mascot_items = [item for item in view.faq_items if item.category == "mascot"]
+    other_items = [item for item in view.faq_items if item.category != "mascot"]
+    for item in mascot_items:
+        assert not item.isHidden()
+    for item in other_items:
+        assert item.isHidden()
 
-    # Test reset to defaults
-    view.reset_hk_btn.click()
-    assert config.get("hotkey_quick_task") == "<ctrl>+<shift>+t"
-    assert config.get("hotkey_workspace") == "<ctrl>+<shift>+w"
-    assert "default" in view.hk_feedback_lbl.text()
+    # Reset to all
+    view.filter_faq_category("all")
+    assert view.current_faq_cat == "all"
+    for item in view.faq_items:
+        assert not item.isHidden()
+
+    # Test Documentation view mode switching
+    view.switch_view_mode("docs")
+    assert view.current_mode == "docs"
+    assert view.stack.currentIndex() == 1
+    assert view.tag_pill.text() == "/ DOCS"
+
+    view.switch_view_mode("faq")
+    assert view.current_mode == "faq"
+    assert view.stack.currentIndex() == 0
+    assert view.tag_pill.text() == "/ FAQS"
 
     # Test theme toggle
     view.set_theme(is_dark=False)

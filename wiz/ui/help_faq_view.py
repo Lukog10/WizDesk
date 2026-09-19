@@ -1,11 +1,11 @@
 """
-Dedicated Help, FAQ, and Global Hotkeys Configuration View for WizDesk.
-Provides comprehensive documentation on how WizDesk works, local privacy guarantees,
-performance footprint, open source licensing, and user-customizable keyboard shortcuts.
-Strictly follows zero-emoji design guidelines with crisp typography and vector accents.
+Modernized Help, FAQ, and Platform Documentation View for WizDesk.
+Implements the clean FAQ accordion layout with category filtering and
+the editorial Platform Documentation guide matching Riddle UI.
+Zero-telemetry and zero-emoji compliance.
 """
 
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QCursor
 from PyQt6.QtWidgets import (
@@ -13,51 +13,65 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QPushButton,
     QFrame,
     QScrollArea,
+    QStackedWidget,
+    QButtonGroup,
 )
 
-from wiz.core.config import config
-from wiz.core.signals import app_signals
 from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
-from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
 
 
 class FaqItemWidget(QFrame):
-    """Collapsible FAQ accordion question card."""
+    """
+    Clean, rounded accordion card for FAQ items.
+    Features modern typography, smooth toggle between '+' and '—',
+    and refined border/background styling.
+    """
 
-    def __init__(self, question: str, answer: str, is_dark: bool = True, parent: Optional[QWidget] = None):
+    def __init__(
+        self,
+        question: str,
+        answer: str,
+        category: str = "general",
+        is_dark: bool = True,
+        parent: Optional[QWidget] = None,
+    ):
         super().__init__(parent)
         self.question_text = question
         self.answer_text = answer
+        self.category = category
         self.is_dark = is_dark
         self.is_expanded = False
 
         self.setObjectName("faqItem")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(14, 12, 14, 12)
-        self.layout.setSpacing(8)
+        self.layout.setContentsMargins(16, 14, 16, 14)
+        self.layout.setSpacing(6)
 
-        # Header Row (Clickable)
+        # Header Button (Entire row clickable)
         self.header_btn = QPushButton(self)
         self.header_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.header_btn.setAutoDefault(False)
+        self.header_btn.setDefault(False)
         self.header_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.header_btn.clicked.connect(self.toggle_expand)
 
         header_layout = QHBoxLayout(self.header_btn)
         header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(8)
+        header_layout.setSpacing(12)
 
         self.q_lbl = QLabel(question, self.header_btn)
         self.q_lbl.setFont(get_font(10, QFont.Weight.DemiBold))
-        header_layout.addWidget(self.q_lbl)
-        header_layout.addStretch()
+        self.q_lbl.setWordWrap(True)
+        header_layout.addWidget(self.q_lbl, stretch=1)
 
-        self.indicator_lbl = QLabel("[+]", self.header_btn)
-        self.indicator_lbl.setFont(QFont(FONT_MONO, 9, QFont.Weight.Bold))
+        # Sleek + / — toggle indicator
+        self.indicator_lbl = QLabel("+", self.header_btn)
+        self.indicator_lbl.setFont(get_font(12, QFont.Weight.Medium))
+        self.indicator_lbl.setFixedWidth(16)
+        self.indicator_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         header_layout.addWidget(self.indicator_lbl)
 
         self.layout.addWidget(self.header_btn)
@@ -73,23 +87,27 @@ class FaqItemWidget(QFrame):
 
     def toggle_expand(self) -> None:
         """Toggle question expansion."""
-        self.is_expanded = not self.is_expanded
+        self.set_expanded(not self.is_expanded)
+
+    def set_expanded(self, expanded: bool) -> None:
+        """Explicitly set expansion state."""
+        self.is_expanded = expanded
         self.a_lbl.setVisible(self.is_expanded)
-        self.indicator_lbl.setText("[-]" if self.is_expanded else "[+]")
+        self.indicator_lbl.setText("—" if self.is_expanded else "+")
 
     def update_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        bg = "#1B1B22" if is_dark else "#F4F1EA"
-        border = "#2B2B38" if is_dark else "#D8D2C6"
-        q_fg = "#F4F4F5" if is_dark else "#242220"
-        a_fg = "#A1A1AA" if is_dark else "#666059"
-        ind_fg = "#FF6B3D" if is_dark else "#E05326"
+        bg = "#18181C" if is_dark else "#F9F7F2"
+        border = "#262630" if is_dark else "#E2DDD4"
+        q_fg = "#F4F4F6" if is_dark else "#1E1C1A"
+        a_fg = "#A1A1AA" if is_dark else "#5E5851"
+        ind_fg = "#FF6B3D" if is_dark else "#D94E23"
 
         self.setStyleSheet(f"""
             QFrame#faqItem {{
                 background-color: {bg};
                 border: 1px solid {border};
-                border-radius: 8px;
+                border-radius: 10px;
             }}
             QPushButton {{
                 background: transparent;
@@ -98,471 +116,648 @@ class FaqItemWidget(QFrame):
                 padding: 0;
             }}
         """)
-        self.q_lbl.setStyleSheet(f"color: {q_fg};")
-        self.a_lbl.setStyleSheet(f"color: {a_fg}; padding-top: 4px; line-height: 140%;")
+        self.q_lbl.setStyleSheet(f"color: {q_fg}; line-height: 130%;")
+        self.a_lbl.setStyleSheet(f"color: {a_fg}; padding-top: 6px; line-height: 145%;")
         self.indicator_lbl.setStyleSheet(f"color: {ind_fg};")
 
 
 class HelpFaqView(QWidget):
     """
-    Comprehensive in-workspace Help, FAQ, and Hotkeys Configuration view.
-    Provides clear technical guides on architecture, security, performance,
-    and allows user configuration of global shortcuts.
+    Modern Help, FAQ & Platform Documentation Hub.
+    Combines:
+    - View Switcher: [ FAQs ] [ Documentation ]
+    - FAQ Page: Category sidebar (General, Mascot, Privacy, Obsidian, View All) + Accordion cards
+    - Documentation Page: Editorial platform guide outline + rich reading canvas
+    - Quick link to Settings > Hotkeys
     """
 
     open_settings_requested = pyqtSignal(str)
 
+    FAQ_CATEGORIES = [
+        ("all", "View all"),
+        ("general", "General"),
+        ("mascot", "Mascot && Tracking"),
+        ("privacy", "Privacy && Security"),
+        ("obsidian", "Obsidian Sync"),
+    ]
+
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
-        self.hotkey_inputs: Dict[str, QLineEdit] = {}
+        self.current_faq_cat = "all"
         self.faq_items: List[FaqItemWidget] = []
+        self.faq_cat_btns: Dict[str, QPushButton] = {}
+        self.doc_topic_btns: List[QPushButton] = []
 
+        self._init_ui()
+
+    def _init_ui(self) -> None:
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(12, 8, 12, 12)
-        self.main_layout.setSpacing(12)
-
-        # Scroll Area for clean view on any resolution
-        self.scroll = QScrollArea(self)
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll.setStyleSheet("QScrollArea { background: transparent; border: none; }")
-
-        self.scroll_content = QWidget()
-        self.scroll_content.setStyleSheet("background: transparent;")
-        self.content_layout = QVBoxLayout(self.scroll_content)
-        self.content_layout.setContentsMargins(4, 4, 12, 12)
-        self.content_layout.setSpacing(16)
+        self.main_layout.setContentsMargins(16, 12, 16, 12)
+        self.main_layout.setSpacing(14)
 
         # --------------------------------------------------------------------
-        # 1. Header Banner
+        # 1. Top Header Bar
         # --------------------------------------------------------------------
-        header_box = QVBoxLayout()
-        header_box.setSpacing(4)
+        header_bar = QHBoxLayout()
+        header_bar.setContentsMargins(0, 0, 0, 0)
+        header_bar.setSpacing(12)
 
-        self.header_title = QLabel("Help & Documentation")
-        self.header_title.setFont(get_font(12, QFont.Weight.Bold))
-        header_box.addWidget(self.header_title)
+        # Title & Subtitle Box
+        header_info = QVBoxLayout()
+        header_info.setSpacing(4)
+
+        tag_row = QHBoxLayout()
+        tag_row.setSpacing(8)
+
+        self.tag_pill = QLabel("/ FAQS", self)
+        self.tag_pill.setFont(get_font(8, QFont.Weight.Bold))
+        self.tag_pill.setContentsMargins(6, 2, 6, 2)
+        self.tag_pill.setObjectName("tagPill")
+        tag_row.addWidget(self.tag_pill)
+        tag_row.addStretch()
+
+        header_info.addLayout(tag_row)
+
+        self.header_title = QLabel("Frequently asked question", self)
+        self.header_title.setFont(get_font(14, QFont.Weight.Bold))
+        header_info.addWidget(self.header_title)
 
         self.header_desc = QLabel(
-            "Reference guide for WizDesk features, global keyboard shortcuts, local privacy architecture, and FAQs."
+            "here's everything you need to know to get started, manage your workspace, and troubleshoot the most frequent issues.",
+            self,
         )
         self.header_desc.setFont(get_font(9))
-        header_box.addWidget(self.header_desc)
-        self.content_layout.addLayout(header_box)
+        self.header_desc.setWordWrap(True)
+        header_info.addWidget(self.header_desc)
+
+        header_bar.addLayout(header_info, stretch=1)
+
+        # Segmented View Switcher: [ FAQs ] [ Documentation ]
+        self.mode_switcher_frame = QFrame(self)
+        self.mode_switcher_frame.setObjectName("modeSwitcher")
+        switcher_layout = QHBoxLayout(self.mode_switcher_frame)
+        switcher_layout.setContentsMargins(3, 3, 3, 3)
+        switcher_layout.setSpacing(4)
+
+        self.faq_tab_btn = QPushButton("FAQs", self.mode_switcher_frame)
+        self.faq_tab_btn.setFont(get_font(9, QFont.Weight.Bold))
+        self.faq_tab_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.faq_tab_btn.setAutoDefault(False)
+        self.faq_tab_btn.setDefault(False)
+        self.faq_tab_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.faq_tab_btn.clicked.connect(lambda: self.switch_view_mode("faq"))
+        switcher_layout.addWidget(self.faq_tab_btn)
+
+        self.docs_tab_btn = QPushButton("Documentation", self.mode_switcher_frame)
+        self.docs_tab_btn.setFont(get_font(9, QFont.Weight.Bold))
+        self.docs_tab_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.docs_tab_btn.setAutoDefault(False)
+        self.docs_tab_btn.setDefault(False)
+        self.docs_tab_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.docs_tab_btn.clicked.connect(lambda: self.switch_view_mode("docs"))
+        switcher_layout.addWidget(self.docs_tab_btn)
+
+        header_bar.addWidget(self.mode_switcher_frame, 0, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+        self.main_layout.addLayout(header_bar)
 
         # --------------------------------------------------------------------
-        # 2. Section: Keyboard Shortcuts (User Configurable)
+        # 2. Main Stacked Container (Page 0: FAQs, Page 1: Documentation)
         # --------------------------------------------------------------------
-        self.hotkeys_card = QFrame()
-        self.hotkeys_card.setObjectName("settingsCard")
-        hk_layout = QVBoxLayout(self.hotkeys_card)
-        hk_layout.setContentsMargins(16, 14, 16, 14)
-        hk_layout.setSpacing(12)
+        self.stack = QStackedWidget(self)
 
-        hk_title_row = QHBoxLayout()
-        hk_title_row.setSpacing(10)
-        self.hk_title = QLabel("Global Keyboard Shortcuts")
-        self.hk_title.setFont(get_font(10, QFont.Weight.Bold))
-        hk_title_row.addWidget(self.hk_title)
+        self.page_faq = self._build_faq_page()
+        self.page_docs = self._build_docs_page()
 
-        self.hk_status_badge = QLabel("Active")
-        self.hk_status_badge.setFont(get_font(8, QFont.Weight.Bold))
-        self.hk_status_badge.setContentsMargins(6, 2, 6, 2)
-        hk_title_row.addWidget(self.hk_status_badge)
+        self.stack.addWidget(self.page_faq)   # Index 0
+        self.stack.addWidget(self.page_docs)  # Index 1
 
-        hk_title_row.addStretch()
+        self.main_layout.addWidget(self.stack, stretch=1)
 
-        self.open_settings_btn = QPushButton("Configure in Settings →", self.hotkeys_card)
-        self.open_settings_btn.setFont(get_font(9, QFont.Weight.DemiBold))
+        # Apply initial theme & view
+        self.current_mode = "faq"
+        self.set_theme(self.is_dark)
+
+    # ------------------------------------------------------------------------
+    # PAGE 1: FAQ INTERFACE (Reference Image 1)
+    # ------------------------------------------------------------------------
+    def _build_faq_page(self) -> QWidget:
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 4, 0, 0)
+        layout.setSpacing(16)
+
+        # Left Column: Category Navigation Pills
+        self.faq_nav_col = QFrame(container)
+        self.faq_nav_col.setFixedWidth(160)
+        self.faq_nav_col.setStyleSheet("background: transparent; border: none;")
+        nav_layout = QVBoxLayout(self.faq_nav_col)
+        nav_layout.setContentsMargins(0, 4, 0, 0)
+        nav_layout.setSpacing(6)
+
+        for cat_id, cat_title in self.FAQ_CATEGORIES:
+            btn = QPushButton(cat_title, self.faq_nav_col)
+            btn.setFont(get_font(9, QFont.Weight.Medium))
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setAutoDefault(False)
+            btn.setDefault(False)
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.clicked.connect(lambda checked, c=cat_id: self.filter_faq_category(c))
+            self.faq_cat_btns[cat_id] = btn
+            nav_layout.addWidget(btn)
+
+        nav_layout.addStretch(1)
+
+        # Quick link to settings at bottom of category nav
+        self.hk_link_box = QFrame(self.faq_nav_col)
+        self.hk_link_box.setObjectName("linkBox")
+        hk_link_layout = QVBoxLayout(self.hk_link_box)
+        hk_link_layout.setContentsMargins(10, 10, 10, 10)
+        hk_link_layout.setSpacing(6)
+
+        hk_lbl = QLabel("Keyboard Shortcuts", self.hk_link_box)
+        hk_lbl.setFont(get_font(8, QFont.Weight.Bold))
+        hk_link_layout.addWidget(hk_lbl)
+
+        hk_sub = QLabel("Customize global keys in Settings.", self.hk_link_box)
+        hk_sub.setFont(get_font(7))
+        hk_sub.setWordWrap(True)
+        hk_link_layout.addWidget(hk_sub)
+
+        self.open_settings_btn = QPushButton("Open Hotkeys →", self.hk_link_box)
+        self.open_settings_btn.setFont(get_font(8, QFont.Weight.DemiBold))
         self.open_settings_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.open_settings_btn.setAutoDefault(False)
         self.open_settings_btn.setDefault(False)
         self.open_settings_btn.clicked.connect(lambda: self.open_settings_requested.emit("hotkeys"))
-        hk_title_row.addWidget(self.open_settings_btn)
+        hk_link_layout.addWidget(self.open_settings_btn)
 
-        hk_layout.addLayout(hk_title_row)
+        nav_layout.addWidget(self.hk_link_box)
+        layout.addWidget(self.faq_nav_col)
 
-        self.hk_desc = QLabel(
-            "Global hotkeys trigger actions across your operating system even when WizDesk is in the background. "
-            "Customize all combinations in the Settings view or edit directly below."
-        )
-        self.hk_desc.setFont(get_font(9))
-        self.hk_desc.setWordWrap(True)
-        hk_layout.addWidget(self.hk_desc)
+        # Right Column: Scrollable Accordion Cards
+        self.faq_scroll = QScrollArea(container)
+        self.faq_scroll.setWidgetResizable(True)
+        self.faq_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.faq_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.faq_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.faq_scroll.setStyleSheet("background: transparent; border: none;")
 
-        # Hotkey Configuration Fields
-        shortcuts_meta = [
-            ("hotkey_workspace", "Open Workspace Window", "<ctrl>+<shift>+w", "Opens the main tasks, notes, and activity dashboard."),
-            ("hotkey_toggle_mascot", "Show / Hide Desktop Mascot", "<ctrl>+<shift>+m", "Quickly toggles the desktop companion on or off screen."),
-            ("hotkey_quick_task", "Quick Add Task Bar", "<ctrl>+<shift>+t", "Summons the lightweight floating bar to capture a task."),
-            ("hotkey_quick_note", "Quick Add Note Bar", "<ctrl>+<shift>+n", "Summons the lightweight floating bar to capture a quick note."),
+        self.faq_list_widget = QWidget()
+        self.faq_list_widget.setStyleSheet("background: transparent;")
+        self.faq_list_layout = QVBoxLayout(self.faq_list_widget)
+        self.faq_list_layout.setContentsMargins(4, 4, 10, 8)
+        self.faq_list_layout.setSpacing(10)
+
+        # FAQ Question Dataset
+        faq_data = [
+            ("general",
+             "What is this platform used for?",
+             "WizDesk is designed to help you organize work tasks, capture quick notes, and track focused time automatically without requiring manual start/stop clocks. Your desktop companion gently reflects your current work mood."),
+            ("general",
+             "How do I add tasks and log quick notes?",
+             "Click '+ Add task' in the Tasks tab or press Enter after typing in the bottom bar. Quick notes can be captured instantly in the Quick Notes tab or summoned globally via your configured shortcuts."),
+            ("general",
+             "How do I completely exit WizDesk?",
+             "Right-click the system tray icon (near the Windows clock) and choose Quit, or close the main workspace window when finished with your work session."),
+            ("mascot",
+             "How does autonomous work categorization work?",
+             "Every 5 seconds, WizDesk checks the active foreground window title against your configured project keywords. When you switch focus (e.g. from editor to browser), the previous session automatically concludes and logs the exact duration."),
+            ("mascot",
+             "What are the desktop companion moods?",
+             "Your companion reacts dynamically: WORKING (typing/clicking on active task), IDLE (inactivity >10s), SLEEP (inactivity >60s), NOTIFY (transient feedback when tasks are added), and COMPLETE (celebration bounce on task completion)."),
+            ("mascot",
+             "Can I hide the desktop mascot and still track work?",
+             "Yes. Toggle the companion anytime using Ctrl+Shift+M (or your customized hotkey in Settings). Window time tracking continues uninterrupted in the background."),
+            ("privacy",
+             "Is my data safe and private on this platform?",
+             "Yes. WizDesk is built on strict zero-telemetry principles. All your task records, subtasks, notes, project allocations, and activity logs are stored strictly on your local device in a standard SQLite database. No data is ever sent to external cloud servers."),
+            ("privacy",
+             "Does WizDesk log my keystrokes or screen?",
+             "No. WizDesk only inspects the active window title bar every 5 seconds to attribute time to projects. Keystrokes, screen recordings, and personal documents are never logged or stored."),
+            ("obsidian",
+             "How does local Obsidian sync work?",
+             "Under Settings > Integrations, configure your local Obsidian vault root folder. Whenever you complete tasks or record notes, WizDesk automatically appends them to daily markdown files in your vault."),
+            ("obsidian",
+             "Can I customize the daily logs subfolder?",
+             "Yes. Under Settings > Integrations, you can set the daily logs subfolder name (defaults to 'WizDesk Logs'). WizDesk creates the folder automatically if it doesn't already exist."),
         ]
 
-        self.hotkey_rows_layout = QVBoxLayout()
-        self.hotkey_rows_layout.setSpacing(8)
-
-        for key_name, label_text, default_val, help_text in shortcuts_meta:
-            row_frame = QFrame()
-            row_frame.setObjectName("subCard")
-            r_layout = QHBoxLayout(row_frame)
-            r_layout.setContentsMargins(12, 8, 12, 8)
-            r_layout.setSpacing(12)
-
-            info_col = QVBoxLayout()
-            info_col.setSpacing(2)
-            lbl = QLabel(label_text)
-            lbl.setFont(get_font(9, QFont.Weight.DemiBold))
-            info_col.addWidget(lbl)
-
-            sub_lbl = QLabel(help_text)
-            sub_lbl.setFont(get_font(8))
-            info_col.addWidget(sub_lbl)
-            r_layout.addLayout(info_col, stretch=1)
-
-            # Input field
-            line_edit = QLineEdit()
-            line_edit.setFixedWidth(160)
-            line_edit.setFont(QFont(FONT_MONO, 9, QFont.Weight.Bold))
-            line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            current_val = config.get(key_name, default_val)
-            line_edit.setText(format_display_shortcut(current_val))
-            line_edit.setPlaceholderText("e.g. Ctrl+Shift+W")
-            self.hotkey_inputs[key_name] = line_edit
-            r_layout.addWidget(line_edit)
-
-            self.hotkey_rows_layout.addWidget(row_frame)
-
-        hk_layout.addLayout(self.hotkey_rows_layout)
-
-        # Buttons Row: Save & Reset
-        btn_row = QHBoxLayout()
-        btn_row.setSpacing(8)
-
-        self.save_hk_btn = QPushButton("Save Shortcuts")
-        self.save_hk_btn.setFont(get_font(9, QFont.Weight.Bold))
-        self.save_hk_btn.setFixedHeight(30)
-        self.save_hk_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.save_hk_btn.clicked.connect(self._on_save_hotkeys)
-        btn_row.addWidget(self.save_hk_btn)
-
-        self.reset_hk_btn = QPushButton("Reset to Defaults")
-        self.reset_hk_btn.setFont(get_font(9))
-        self.reset_hk_btn.setFixedHeight(30)
-        self.reset_hk_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.reset_hk_btn.clicked.connect(self._on_reset_hotkeys)
-        btn_row.addWidget(self.reset_hk_btn)
-
-        btn_row.addStretch()
-
-        self.hk_feedback_lbl = QLabel("")
-        self.hk_feedback_lbl.setFont(get_font(8, QFont.Weight.DemiBold))
-        btn_row.addWidget(self.hk_feedback_lbl)
-
-        hk_layout.addLayout(btn_row)
-        self.content_layout.addWidget(self.hotkeys_card)
-
-        # --------------------------------------------------------------------
-        # 3. Section: How WizDesk Works
-        # --------------------------------------------------------------------
-        self.works_card = QFrame()
-        self.works_card.setObjectName("settingsCard")
-        works_layout = QVBoxLayout(self.works_card)
-        works_layout.setContentsMargins(16, 14, 16, 14)
-        works_layout.setSpacing(10)
-
-        self.works_title = QLabel("How WizDesk Works")
-        self.works_title.setFont(get_font(10, QFont.Weight.Bold))
-        works_layout.addWidget(self.works_title)
-
-        works_items = [
-            ("Autonomous Work Categorization",
-             "WizDesk runs quietly on your desktop without requiring manual start/stop punch clocks. "
-             "Every 5 seconds, it checks the active foreground window title and matches it against your configured project keywords. "
-             "When you switch tasks (e.g. from code editor to browser), WizDesk automatically concludes the prior session and logs the exact duration."),
-            ("Mascot Companion Moods",
-             "Your desktop companion reacts dynamically to your actual working state:\n"
-             "  • WORKING: Active keyboard/mouse activity while focused on a recognized task.\n"
-             "  • IDLE: Brief pause (>10 seconds of inactivity).\n"
-             "  • SLEEP: Extended break (>1 minute of inactivity).\n"
-             "  • NOTIFY: Transient reaction when new tasks or notes are logged.\n"
-             "  • COMPLETE: Celebration bounce when a task is checked off."),
-            ("Custom Project Matching",
-             "Assign custom keywords under the Projects tab (e.g. 'code', 'docs', 'figma'). "
-             "Whenever an active window contains those keywords, activity time is automatically attributed to that project."),
-        ]
-
-        for title, body in works_items:
-            item_box = QVBoxLayout()
-            item_box.setSpacing(2)
-            t_lbl = QLabel(title)
-            t_lbl.setFont(get_font(9, QFont.Weight.DemiBold))
-            item_box.addWidget(t_lbl)
-
-            b_lbl = QLabel(body)
-            b_lbl.setFont(get_font(9))
-            b_lbl.setWordWrap(True)
-            item_box.addWidget(b_lbl)
-            works_layout.addLayout(item_box)
-
-        self.content_layout.addWidget(self.works_card)
-
-        # --------------------------------------------------------------------
-        # 4. Section: Privacy, Performance & Open Source Architecture
-        # --------------------------------------------------------------------
-        self.arch_card = QFrame()
-        self.arch_card.setObjectName("settingsCard")
-        arch_layout = QVBoxLayout(self.arch_card)
-        arch_layout.setContentsMargins(16, 14, 16, 14)
-        arch_layout.setSpacing(12)
-
-        self.arch_title = QLabel("Privacy, Performance & Open Source")
-        self.arch_title.setFont(get_font(10, QFont.Weight.Bold))
-        arch_layout.addWidget(self.arch_title)
-
-        arch_sections = [
-            ("Privacy: 100% Local & Zero Telemetry",
-             "WizDesk is built on strict zero-telemetry principles. All your task records, subtasks, notes, project allocations, "
-             "and activity intervals are stored strictly on your local device in a standard SQLite database (%APPDATA%\\WizDesk\\wizdesk.db on Windows).\n"
-             "WizDesk does NOT send any data to external cloud servers, does NOT transmit analytics or diagnostics, and does NOT access personal files.\n"
-             "No Keylogging: Global shortcuts are evaluated strictly as combination chords by the OS. WizDesk never captures or logs your keystrokes."),
-            ("Performance: Native Desktop Efficiency & Low Footprint",
-             "Unlike resource-intensive Electron or browser-based productivity tools, WizDesk is compiled with native PyQt6.\n"
-             "  • CPU Utilization: Typically less than 0.3% CPU during normal polling cycles.\n"
-             "  • Memory Footprint: Highly optimized binary with deterministic memory release.\n"
-             "  • Hardware Accelerated: Crisp vector graphics rendered cleanly without GPU thrashing."),
-            ("Open Source: Transparent Code & Community Driven",
-             "WizDesk is free, open-source software licensed under the permissive MIT License.\n"
-             "The source code is completely auditable, allowing developers to inspect data handling, customize tracking logic, "
-             "and contribute new companion behaviors or UI enhancements."),
-        ]
-
-        for title, body in arch_sections:
-            sec_box = QVBoxLayout()
-            sec_box.setSpacing(2)
-            st_lbl = QLabel(title)
-            st_lbl.setFont(get_font(9, QFont.Weight.DemiBold))
-            sec_box.addWidget(st_lbl)
-
-            sb_lbl = QLabel(body)
-            sb_lbl.setFont(get_font(9))
-            sb_lbl.setWordWrap(True)
-            sec_box.addWidget(sb_lbl)
-            arch_layout.addLayout(sec_box)
-
-        self.content_layout.addWidget(self.arch_card)
-
-        # --------------------------------------------------------------------
-        # 5. Section: Frequently Asked Questions (FAQ)
-        # --------------------------------------------------------------------
-        self.faq_card = QFrame()
-        self.faq_card.setObjectName("settingsCard")
-        faq_layout = QVBoxLayout(self.faq_card)
-        faq_layout.setContentsMargins(16, 14, 16, 14)
-        faq_layout.setSpacing(10)
-
-        self.faq_title = QLabel("Frequently Asked Questions")
-        self.faq_title.setFont(get_font(10, QFont.Weight.Bold))
-        faq_layout.addWidget(self.faq_title)
-
-        faq_questions = [
-            ("How do I change a keyboard shortcut?",
-             "Type your desired key chord into any field in the Global Keyboard Shortcuts section above "
-             "(for example: 'Ctrl+Shift+T' or 'Alt+Shift+N') and click 'Save Shortcuts'. "
-             "The listener updates immediately without requiring a restart."),
-            ("Can I hide the mascot and still track work?",
-             "Yes. Press Ctrl+Shift+M (or your configured shortcut) to toggle the mascot visibility. "
-             "Background activity tracking continues uninterrupted while the mascot is hidden."),
-            ("How does local Obsidian sync work?",
-             "Under the Settings tab, select your local Obsidian vault directory. "
-             "Whenever you complete tasks or log notes, WizDesk generates a daily markdown file under your vault's 'WizDesk Logs' folder."),
-            ("What should I do if a shortcut conflicts with my code editor?",
-             "You can rebind any shortcut to use alternative modifiers such as Alt+Shift or Ctrl+Alt in the shortcuts table above."),
-            ("Where is my database located and how do I back it up?",
-             "Your entire history is contained in a single SQLite database file located at:\n"
-             "Windows: %APPDATA%\\WizDesk\\wizdesk.db\n"
-             "Linux: ~/.local/share/WizDesk/wizdesk.db\n"
-             "Simply copy this file to any backup storage anytime."),
-            ("How do I quit WizDesk completely?",
-             "You can exit WizDesk at any time using the Quit option in the system tray icon (near the Windows clock) "
-             "or by closing the main workspace window."),
-        ]
-
-        for q, a in faq_questions:
-            item = FaqItemWidget(q, a, is_dark=self.is_dark, parent=self.faq_card)
+        for cat, q, a in faq_data:
+            item = FaqItemWidget(question=q, answer=a, category=cat, is_dark=self.is_dark, parent=self.faq_list_widget)
             self.faq_items.append(item)
-            faq_layout.addWidget(item)
+            self.faq_list_layout.addWidget(item)
 
-        self.content_layout.addWidget(self.faq_card)
+        self.faq_list_layout.addStretch(1)
+        self.faq_scroll.setWidget(self.faq_list_widget)
+        layout.addWidget(self.faq_scroll, stretch=1)
 
-        # Assemble Scroll View
-        self.scroll.setWidget(self.scroll_content)
-        self.main_layout.addWidget(self.scroll)
+        return container
 
-        # Apply Initial Theme
-        self.set_theme(self.is_dark)
+    # ------------------------------------------------------------------------
+    # PAGE 2: DOCUMENTATION INTERFACE (Reference Image 2)
+    # ------------------------------------------------------------------------
+    def _build_docs_page(self) -> QWidget:
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 4, 0, 0)
+        layout.setSpacing(18)
 
-    def _on_save_hotkeys(self) -> None:
-        """Validate and persist user-configured hotkeys."""
-        try:
-            for key_name, input_field in self.hotkey_inputs.items():
-                raw_text = input_field.text().strip()
-                norm = normalize_hotkey_str(raw_text)
-                if norm:
-                    config.set(key_name, norm)
-                    input_field.setText(format_display_shortcut(norm))
+        # Left Column: Documentation Outline Sidebar
+        self.docs_nav_col = QFrame(container)
+        self.docs_nav_col.setFixedWidth(170)
+        self.docs_nav_col.setStyleSheet("background: transparent; border: none;")
+        doc_nav_layout = QVBoxLayout(self.docs_nav_col)
+        doc_nav_layout.setContentsMargins(0, 4, 0, 0)
+        doc_nav_layout.setSpacing(4)
 
-            # Maintain backwards-compatible legacy key
-            if "hotkey_workspace" in self.hotkey_inputs:
-                config.set("global_hotkey", config.get("hotkey_workspace"))
+        doc_structure = [
+            ("Overview", ["Introduction", "Quick Start"]),
+            ("Concepts", ["Autonomous Engine", "Mascot States", "Project Rules"]),
+            ("Architecture", ["Local SQLite", "Zero Telemetry"]),
+            ("Integrations", ["Obsidian Sync", "Shortcuts"]),
+        ]
 
-            config.save()
-            app_signals.hotkeys_changed.emit()
+        for section_title, topics in doc_structure:
+            sec_lbl = QLabel(section_title.upper(), self.docs_nav_col)
+            sec_lbl.setFont(get_font(7, QFont.Weight.Bold))
+            sec_lbl.setObjectName("docSectionHeading")
+            doc_nav_layout.addWidget(sec_lbl)
 
-            self.hk_feedback_lbl.setText("Shortcuts saved and reloaded successfully.")
-            self.hk_feedback_lbl.setStyleSheet("color: #10B981;")
-        except Exception as e:
-            self.hk_feedback_lbl.setText(f"Error: {e}")
-            self.hk_feedback_lbl.setStyleSheet("color: #EF4444;")
+            for topic in topics:
+                t_btn = QPushButton(f"• {topic}", self.docs_nav_col)
+                t_btn.setFont(get_font(8.5, QFont.Weight.Medium))
+                t_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+                t_btn.setAutoDefault(False)
+                t_btn.setDefault(False)
+                t_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+                t_btn.setObjectName("docTopicBtn")
+                t_btn.clicked.connect(lambda checked, t=topic: self._on_doc_topic_clicked(t))
+                self.doc_topic_btns.append(t_btn)
+                doc_nav_layout.addWidget(t_btn)
 
-    def _on_reset_hotkeys(self) -> None:
-        """Reset all shortcuts to Option 1 defaults."""
-        defaults = {
-            "hotkey_workspace": "<ctrl>+<shift>+w",
-            "hotkey_toggle_mascot": "<ctrl>+<shift>+m",
-            "hotkey_quick_task": "<ctrl>+<shift>+t",
-            "hotkey_quick_note": "<ctrl>+<shift>+n",
-        }
-        for k, v in defaults.items():
-            config.set(k, v)
-            if k in self.hotkey_inputs:
-                self.hotkey_inputs[k].setText(format_display_shortcut(v))
+            doc_nav_layout.addSpacing(6)
 
-        config.set("global_hotkey", defaults["hotkey_workspace"])
-        config.save()
-        app_signals.hotkeys_changed.emit()
+        doc_nav_layout.addStretch(1)
+        layout.addWidget(self.docs_nav_col)
 
-        self.hk_feedback_lbl.setText("Reset to default shortcuts.")
-        self.hk_feedback_lbl.setStyleSheet("color: #FF6B3D;")
+        # Right Column: Editorial Platform Guide Reading Canvas
+        self.doc_scroll = QScrollArea(container)
+        self.doc_scroll.setWidgetResizable(True)
+        self.doc_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.doc_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.doc_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.doc_scroll.setStyleSheet("background: transparent; border: none;")
+
+        self.doc_content_widget = QWidget()
+        self.doc_content_widget.setStyleSheet("background: transparent;")
+        self.doc_layout = QVBoxLayout(self.doc_content_widget)
+        self.doc_layout.setContentsMargins(8, 4, 18, 16)
+        self.doc_layout.setSpacing(14)
+
+        # Doc Header
+        self.doc_title = QLabel("Platform Guide", self.doc_content_widget)
+        self.doc_title.setFont(get_font(14, QFont.Weight.Bold))
+        self.doc_layout.addWidget(self.doc_title)
+
+        self.doc_intro = QLabel(
+            "WizDesk is a lightweight, local-first desktop productivity companion and autonomous time intelligence platform. "
+            "It runs quietly in the background, eliminating the need for manual punch clocks and complex time-tracking setups.",
+            self.doc_content_widget,
+        )
+        self.doc_intro.setFont(get_font(9.5))
+        self.doc_intro.setWordWrap(True)
+        self.doc_layout.addWidget(self.doc_intro)
+
+        # Section 1: Autonomous Window Tracking Engine
+        self.sec_tracking = self._create_doc_section(
+            title="Autonomous Window Tracking Engine",
+            body="Instead of requiring manual timers, WizDesk polls your active foreground window every 5 seconds. "
+                 "When a foreground window matches any of your configured project keywords (e.g. 'code', 'docs', 'figma'), "
+                 "time is automatically attributed to that project.\n\n"
+                 "When you switch applications, the previous session is immediately concluded and written to your local database.",
+        )
+        self.doc_layout.addWidget(self.sec_tracking)
+
+        # Section 2: Mascot Companion Behaviors
+        self.sec_mascot = self._create_doc_section(
+            title="Desktop Companion Moods",
+            body="Your companion dynamically animates based on your work state:\n"
+                 "• WORKING: Active keyboard and mouse input while focused on recognized tasks.\n"
+                 "• IDLE: Brief pause in activity (>10 seconds).\n"
+                 "• SLEEP: Extended break (>1 minute of inactivity).\n"
+                 "• NOTIFY: Transient visual feedback when new tasks or notes are logged.\n"
+                 "• COMPLETE: Celebration bounce when a task is checked off.",
+        )
+        self.doc_layout.addWidget(self.sec_mascot)
+
+        # Section 3: Privacy & Zero Telemetry Architecture
+        self.sec_privacy = self._create_doc_section(
+            title="Privacy & 100% Local Storage Architecture",
+            body="WizDesk adheres strictly to zero-telemetry principles. All information is stored in a standard SQLite database on your device:\n\n"
+                 "Windows: %APPDATA%\\WizDesk\\wizdesk.db\n"
+                 "Linux: ~/.local/share/WizDesk/wizdesk.db\n\n"
+                 "WizDesk has no cloud dependency, captures no analytics, and never reads personal files.",
+        )
+        self.doc_layout.addWidget(self.sec_privacy)
+
+        # Section 4: Obsidian Daily Logs Sync
+        self.sec_obsidian = self._create_doc_section(
+            title="Obsidian Vault Daily Logs Sync",
+            body="Connect your local Obsidian Vault under Settings > Integrations. "
+                 "WizDesk formats completed tasks and work session durations into daily Markdown files inside your vault's logs folder.",
+        )
+        self.doc_layout.addWidget(self.sec_obsidian)
+
+        self.doc_layout.addStretch(1)
+        self.doc_scroll.setWidget(self.doc_content_widget)
+        layout.addWidget(self.doc_scroll, stretch=1)
+
+        return container
+
+    def _on_doc_topic_clicked(self, topic: str) -> None:
+        """Handle clicking a topic in the documentation outline."""
+        if topic in ("Introduction", "Quick Start"):
+            self.doc_scroll.verticalScrollBar().setValue(0)
+        elif topic in ("Autonomous Engine", "Project Rules") and hasattr(self, "sec_tracking"):
+            self.doc_scroll.ensureWidgetVisible(self.sec_tracking)
+        elif topic == "Mascot States" and hasattr(self, "sec_mascot"):
+            self.doc_scroll.ensureWidgetVisible(self.sec_mascot)
+        elif topic in ("Local SQLite", "Zero Telemetry") and hasattr(self, "sec_privacy"):
+            self.doc_scroll.ensureWidgetVisible(self.sec_privacy)
+        elif topic == "Obsidian Sync" and hasattr(self, "sec_obsidian"):
+            self.doc_scroll.ensureWidgetVisible(self.sec_obsidian)
+        elif topic == "Shortcuts":
+            self.open_settings_requested.emit("hotkeys")
+
+    def _create_doc_section(self, title: str, body: str) -> QFrame:
+        """Create a styled editorial documentation card."""
+        card = QFrame()
+        card.setObjectName("docCard")
+        c_layout = QVBoxLayout(card)
+        c_layout.setContentsMargins(16, 14, 16, 14)
+        c_layout.setSpacing(6)
+
+        t_lbl = QLabel(title, card)
+        t_lbl.setFont(get_font(10.5, QFont.Weight.Bold))
+        t_lbl.setObjectName("docCardTitle")
+        c_layout.addWidget(t_lbl)
+
+        b_lbl = QLabel(body, card)
+        b_lbl.setFont(get_font(9))
+        b_lbl.setWordWrap(True)
+        b_lbl.setObjectName("docCardBody")
+        c_layout.addWidget(b_lbl)
+
+        return card
+
+    # ------------------------------------------------------------------------
+    # NAVIGATION & CATEGORY FILTERING
+    # ------------------------------------------------------------------------
+    def switch_view_mode(self, mode: str) -> None:
+        """Switch between FAQs and Documentation."""
+        self.current_mode = mode
+        if mode == "faq":
+            self.stack.setCurrentIndex(0)
+            self.tag_pill.setText("/ FAQS")
+            self.header_title.setText("Frequently asked question")
+            self.header_desc.setText(
+                "here's everything you need to know to get started, manage your workspace, and troubleshoot the most frequent issues."
+            )
+        else:
+            self.stack.setCurrentIndex(1)
+            self.tag_pill.setText("/ DOCS")
+            self.header_title.setText("Platform Documentation")
+            self.header_desc.setText(
+                "Comprehensive architecture overview, autonomous tracking engine specifications, and local privacy guarantees."
+            )
+        self.apply_theme()
+
+    def filter_faq_category(self, category: str) -> None:
+        """Filter FAQ items by category."""
+        self.current_faq_cat = category
+        for item in self.faq_items:
+            if category == "all" or item.category == category:
+                item.setVisible(True)
+            else:
+                item.setVisible(False)
+        self.apply_theme()
 
     def load_settings(self) -> None:
-        """Reload configuration from disk."""
-        for key_name, input_field in self.hotkey_inputs.items():
-            val = config.get(key_name, "")
-            input_field.setText(format_display_shortcut(val))
-        self.hk_feedback_lbl.setText("")
+        """Hook called when view is activated."""
+        pass
 
+    # ------------------------------------------------------------------------
+    # THEME ENGINE
+    # ------------------------------------------------------------------------
     def set_theme(self, is_dark: bool) -> None:
-        """Update styles for light or dark mode."""
         self.is_dark = is_dark
+        self.apply_theme()
 
-        card_bg = "#16161C" if is_dark else "#F7F5EE"
-        sub_bg = "#1B1B22" if is_dark else "#ECE7DC"
-        card_border = "#262632" if is_dark else "#D8D2C6"
-        sub_border = "#2B2B38" if is_dark else "#D2CBC0"
-        title_fg = "#F4F4F5" if is_dark else "#242220"
-        desc_fg = "#A1A1AA" if is_dark else "#666059"
-        input_bg = "#21212B" if is_dark else "#E5DFD4"
-        input_border = "#333342" if is_dark else "#C8C0B2"
-        input_fg = "#FFFFFF" if is_dark else "#1A1918"
-        btn_neutral_bg = "#252532" if is_dark else "#E5DFD4"
-        btn_neutral_border = "#353545" if is_dark else "#C8C0B2"
-        btn_neutral_fg = "#E4E4E7" if is_dark else "#2D2A26"
+    def apply_theme(self) -> None:
+        is_dark = self.is_dark
 
+        # Palette
+        title_fg = "#F4F4F6" if is_dark else "#18181B"
+        desc_fg = "#A1A1AA" if is_dark else "#57534E"
+        tag_bg = "rgba(255, 107, 61, 0.12)" if is_dark else "rgba(234, 88, 12, 0.10)"
+        tag_fg = "#FF825C" if is_dark else "#C2410C"
+        tag_border = "rgba(255, 107, 61, 0.28)" if is_dark else "rgba(234, 88, 12, 0.25)"
+
+        switcher_bg = "#18181B" if is_dark else "#ECE7DC"
+        switcher_border = "#27272A" if is_dark else "#D8D2C6"
+        active_tab_bg = "#27272A" if is_dark else "#FFFFFF"
+        active_tab_fg = "#FAFAFA" if is_dark else "#18181B"
+        active_tab_border = "#3F3F46" if is_dark else "#D5CEC2"
+        inactive_tab_fg = "#A1A1AA" if is_dark else "#6B655B"
+
+        card_bg = "#18181C" if is_dark else "#F9F7F2"
+        card_border = "#262630" if is_dark else "#E2DDD4"
+
+        # Headers
         self.header_title.setStyleSheet(f"color: {title_fg};")
         self.header_desc.setStyleSheet(f"color: {desc_fg};")
-        self.hk_title.setStyleSheet(f"color: {title_fg};")
-        self.hk_desc.setStyleSheet(f"color: {desc_fg};")
-        self.works_title.setStyleSheet(f"color: {title_fg};")
-        self.arch_title.setStyleSheet(f"color: {title_fg};")
-        self.faq_title.setStyleSheet(f"color: {title_fg};")
-
-        badge_bg = "#064E3B" if is_dark else "#D1FAE5"
-        badge_fg = "#34D399" if is_dark else "#065F46"
-        self.hk_status_badge.setStyleSheet(f"""
-            background-color: {badge_bg};
-            color: {badge_fg};
-            border: 1px solid #059669;
-            border-radius: 4px;
+        self.tag_pill.setStyleSheet(f"""
+            QLabel#tagPill {{
+                background-color: {tag_bg};
+                color: {tag_fg};
+                border: 1px solid {tag_border};
+                border-radius: 4px;
+            }}
         """)
 
-        btn_link_border = "#432616" if is_dark else "#FED7AA"
-        btn_link_hover_bg = "#27170E" if is_dark else "#FFF7ED"
+        # Switcher Frame
+        self.mode_switcher_frame.setStyleSheet(f"""
+            QFrame#modeSwitcher {{
+                background-color: {switcher_bg};
+                border: 1px solid {switcher_border};
+                border-radius: 8px;
+            }}
+        """)
+
+        # Switcher Tabs
+        for btn, is_active in [
+            (self.faq_tab_btn, self.current_mode == "faq"),
+            (self.docs_tab_btn, self.current_mode == "docs"),
+        ]:
+            if is_active:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {active_tab_bg};
+                        color: {active_tab_fg};
+                        border: 1px solid {active_tab_border};
+                        border-radius: 6px;
+                        padding: 5px 14px;
+                    }}
+                """)
+            else:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: transparent;
+                        color: {inactive_tab_fg};
+                        border: none;
+                        padding: 5px 14px;
+                    }}
+                    QPushButton:hover {{
+                        color: {title_fg};
+                    }}
+                """)
+
+        # FAQ Category Navigation Buttons
+        cat_active_bg = "rgba(255, 107, 61, 0.12)" if is_dark else "rgba(234, 88, 12, 0.10)"
+        cat_active_fg = "#FF825C" if is_dark else "#C2410C"
+        cat_active_border = "rgba(255, 107, 61, 0.28)" if is_dark else "rgba(234, 88, 12, 0.25)"
+        cat_hover_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.04)"
+
+        for cat_id, btn in self.faq_cat_btns.items():
+            is_active = (cat_id == self.current_faq_cat)
+            if is_active:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {cat_active_bg};
+                        color: {cat_active_fg};
+                        border: 1px solid {cat_active_border};
+                        border-radius: 6px;
+                        text-align: left;
+                        padding: 7px 12px;
+                        font-weight: 600;
+                    }}
+                """)
+            else:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: transparent;
+                        color: {inactive_tab_fg};
+                        border: 1px solid transparent;
+                        border-radius: 6px;
+                        text-align: left;
+                        padding: 7px 12px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: {cat_hover_bg};
+                        color: {title_fg};
+                    }}
+                """)
+
+        # Quick link box in FAQ nav
+        link_box_bg = "#16161A" if is_dark else "#F1EBE1"
+        link_box_border = "#24242C" if is_dark else "#DFD8CD"
+        self.hk_link_box.setStyleSheet(f"""
+            QFrame#linkBox {{
+                background-color: {link_box_bg};
+                border: 1px solid {link_box_border};
+                border-radius: 8px;
+            }}
+            QLabel {{
+                color: {desc_fg};
+            }}
+        """)
         self.open_settings_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
                 color: #FF6B3D;
-                border: 1px solid {btn_link_border};
-                border-radius: 6px;
-                padding: 3px 10px;
-                font-family: {FONT_SANS};
-                font-size: 11px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {btn_link_hover_bg};
-                color: #FF855D;
-                border-color: #FF6B3D;
-            }}
-        """)
-
-        card_qss = f"""
-            QFrame#settingsCard {{
-                background-color: {card_bg};
-                border: 1px solid {card_border};
-                border-radius: 10px;
-            }}
-            QFrame#subCard {{
-                background-color: {sub_bg};
-                border: 1px solid {sub_border};
-                border-radius: 6px;
-            }}
-            QLabel {{
-                color: {title_fg};
-            }}
-            QLineEdit {{
-                background-color: {input_bg};
-                border: 1px solid {input_border};
-                border-radius: 6px;
-                color: {input_fg};
+                border: 1px solid {tag_border};
+                border-radius: 4px;
                 padding: 4px 8px;
             }}
-            QLineEdit:focus {{
-                border: 1.5px solid #FF6B3D;
-            }}
-        """
-        self.hotkeys_card.setStyleSheet(card_qss)
-        self.works_card.setStyleSheet(card_qss)
-        self.arch_card.setStyleSheet(card_qss)
-        self.faq_card.setStyleSheet(card_qss)
-
-        self.save_hk_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #FF6B3D;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 6px;
-                padding: 0 14px;
-            }
-            QPushButton:hover {
-                background-color: #E05326;
-            }
-        """)
-
-        self.reset_hk_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {btn_neutral_bg};
-                color: {btn_neutral_fg};
-                border: 1px solid {btn_neutral_border};
-                border-radius: 6px;
-                padding: 0 14px;
-            }}
             QPushButton:hover {{
-                background-color: #FF6B3D;
-                color: #FFFFFF;
-                border-color: #FF6B3D;
+                background-color: {tag_bg};
+                color: #FF855D;
             }}
         """)
 
+        # FAQ Items
         for item in self.faq_items:
             item.update_theme(is_dark)
+
+        # Docs Page Styling
+        if hasattr(self, "doc_title"):
+            self.doc_title.setStyleSheet(f"color: {title_fg};")
+            self.doc_intro.setStyleSheet(f"color: {desc_fg}; line-height: 140%;")
+
+            for btn in self.doc_topic_btns:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background: transparent;
+                        color: {inactive_tab_fg};
+                        border: none;
+                        text-align: left;
+                        padding: 4px 6px;
+                    }}
+                    QPushButton:hover {{
+                        color: {title_fg};
+                    }}
+                """)
+
+            for card in self.findChildren(QFrame, "docCard"):
+                card.setStyleSheet(f"""
+                    QFrame#docCard {{
+                        background-color: {card_bg};
+                        border: 1px solid {card_border};
+                        border-radius: 10px;
+                    }}
+                    QLabel#docCardTitle {{
+                        color: {title_fg};
+                    }}
+                    QLabel#docCardBody {{
+                        color: {desc_fg};
+                        line-height: 145%;
+                    }}
+                """)
+
+            for sec_lbl in self.findChildren(QLabel, "docSectionHeading"):
+                sec_lbl.setStyleSheet(f"color: {'#71717A' if is_dark else '#8C8377'}; padding-top: 4px;")
+
+        # Custom Slim Scrollbars
+        scroll_thumb = "rgba(255, 255, 255, 0.12)" if is_dark else "rgba(0, 0, 0, 0.10)"
+        scroll_thumb_hover = "#FF6B3D" if is_dark else "#EA580C"
+        scrollbar_qss = f"""
+            QScrollArea {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 6px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {scroll_thumb};
+                min-height: 24px;
+                border-radius: 3px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background: {scroll_thumb_hover};
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+                background: none;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
+            }}
+        """
+        if hasattr(self, "faq_scroll"):
+            self.faq_scroll.setStyleSheet(scrollbar_qss)
+        if hasattr(self, "doc_scroll"):
+            self.doc_scroll.setStyleSheet(scrollbar_qss)
