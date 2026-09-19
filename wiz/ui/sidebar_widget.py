@@ -10,8 +10,6 @@ from PyQt6.QtGui import (
     QFont,
     QColor,
     QPainter,
-    QPainterPath,
-    QPen,
     QBrush,
     QCursor,
     QPaintEvent,
@@ -174,52 +172,24 @@ class NavPillButton(QPushButton):
 
     # Mapping from icon_type to SVG asset filename
     _SVG_ICON_MAP = {
-        "tasks": "tasklist-24.svg",
-        "notes": "notes-bold.svg",
-        "activity": "activity-04.svg",
-        "projects": "dashboard-2-outline.svg",
+        "tasks": "icons/tasklist-24.svg",
+        "notes": "icons/notes-bold.svg",
+        "activity": "icons/activity-03.svg",
+        "projects": "icons/dashboard-2-rounded.svg",
+        "settings": "icons/settings.svg",
+        "help": "icons/interface-help-question-circle-circle-faq-frame-help-info-mark-more-query-question.svg",
     }
 
     def _draw_vector_icon(
         self, painter: QPainter, x: int, y: int, size: int, color: QColor
     ) -> None:
-        """Draw crisp icon for each mode — SVG asset for main nav, hand-drawn for utility."""
+        """Draw crisp icon for each mode using SVG assets."""
         svg_name = self._SVG_ICON_MAP.get(self.icon_type)
         if svg_name:
             # Render tinted SVG asset with 2px padding for visual balance
             render_tinted_svg(
                 painter, svg_name, color.name(), float(x + 1), float(y + 1), float(size - 2)
             )
-            return
-
-        # Fallback: hand-drawn QPainter icons for settings & help
-        painter.save()
-        pen_width = 2.0 if self.is_active else 1.6
-        pen = QPen(color, pen_width)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-        painter.setPen(pen)
-        painter.setBrush(Qt.GlobalColor.transparent)
-
-        if self.icon_type == "settings":
-            # Gear / sliders icon
-            painter.drawEllipse(QRectF(x + 4.5, y + 4.5, 7, 7))
-            painter.drawLine(int(x + 8), int(y + 1.5), int(x + 8), int(y + 4.0))
-            painter.drawLine(int(x + 8), int(y + 12.0), int(x + 8), int(y + 14.5))
-            painter.drawLine(int(x + 1.5), int(y + 8), int(x + 4.0), int(y + 8))
-            painter.drawLine(int(x + 12.0), int(y + 8), int(x + 14.5), int(y + 8))
-
-        elif self.icon_type == "help":
-            # Circular help badge with question mark
-            painter.drawEllipse(QRectF(x + 1.5, y + 1.5, 13, 13))
-            path = QPainterPath()
-            path.moveTo(x + 5.5, y + 6.0)
-            path.quadTo(x + 8.0, y + 4.0, x + 10.0, y + 6.0)
-            path.quadTo(x + 10.0, y + 8.0, x + 8.0, y + 9.5)
-            painter.drawPath(path)
-            painter.drawLine(int(x + 8), int(y + 11.5), int(x + 8), int(y + 12.0))
-
-        painter.restore()
 
 
 class SideNavBar(QWidget):

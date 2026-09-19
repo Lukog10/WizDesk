@@ -76,7 +76,7 @@ def get_context_menu_style(is_dark: bool = False) -> str:
             font-size: 12px;
         }}
         QMenu::item {{
-            padding: 6px 32px 6px 14px;
+            padding: 7px 32px 7px 8px;
             border-radius: 4px;
         }}
         QMenu::item:selected {{
@@ -1336,12 +1336,21 @@ class TaskRowWidget(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
-        action_rename = menu.addAction("Rename Task")
-        action_add_sub = menu.addAction("+ Add Subtask")
+        # Theme-aware icon color
+        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+        delete_color = "#EF4444"
+
+        action_rename = menu.addAction(
+            get_status_icon("icons/rename.svg", icon_color, 14), "Rename Task"
+        )
+        action_add_sub = menu.addAction(
+            get_status_icon("icons/subtask.svg", icon_color, 14), "Add Subtask"
+        )
         menu.addSeparator()
 
         # "Move to Section" submenu
-        section_menu = menu.addMenu("Move to Section")
+        move_icon = get_status_icon("icons/move.svg", icon_color, 14)
+        section_menu = menu.addMenu(move_icon, "Move to Section")
         section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
         curr_proj = self.task.project_tag or "General"
 
@@ -1355,12 +1364,9 @@ class TaskRowWidget(QWidget):
         action_new_sec = section_menu.addAction("+ Create New Section...")
 
         menu.addSeparator()
-        action_task = menu.addAction("Move to Task")
-        action_in_progress = menu.addAction("Move to In progress")
-        action_completed = menu.addAction("Move to Completed")
-        action_cancelled = menu.addAction("Move to Cancelled")
-        menu.addSeparator()
-        action_delete = menu.addAction("Delete Task")
+        action_delete = menu.addAction(
+            get_status_icon("icons/delete.svg", delete_color, 14), "Delete Task"
+        )
 
         action = menu.exec(self.mapToGlobal(pos))
         if action == action_rename:
@@ -1371,14 +1377,6 @@ class TaskRowWidget(QWidget):
             name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
                 self.project_changed.emit(self.task_id, name.strip())
-        elif action == action_task:
-            self.status_toggled.emit(self.task_id, "not_started")
-        elif action == action_in_progress:
-            self.status_toggled.emit(self.task_id, "in_progress")
-        elif action == action_completed:
-            self.status_toggled.emit(self.task_id, "done")
-        elif action == action_cancelled:
-            self.status_toggled.emit(self.task_id, "cancelled")
         elif action == action_delete:
             self.action_requested.emit("delete", self.task_id)
 

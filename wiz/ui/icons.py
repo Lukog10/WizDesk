@@ -71,16 +71,21 @@ def render_tinted_svg(
 
 
 def get_status_icon(svg_name: str, color_hex: str, size: int = 14) -> QIcon:
-    """Load an SVG icon from assets/, dynamically tint it with color_hex, and return a crisp high-DPI QIcon."""
+    """Load an SVG icon from assets/, dynamically tint it with color_hex, and return a crisp high-DPI QIcon.
+
+    Handles both fill-based and stroke-based SVGs.
+    """
     asset_path = config.get_asset_path(svg_name)
     if not asset_path.exists():
         return QIcon()
 
     content = asset_path.read_text(encoding="utf-8")
-    if 'fill="' in content:
-        tinted = re.sub(r'fill="[^"]*"', f'fill="{color_hex}"', content)
-    else:
-        tinted = content.replace('<path ', f'<path fill="{color_hex}" ')
+    # Replace fill attributes (but not fill="none")
+    tinted = re.sub(r'fill="(?!none)[^"]*"', f'fill="{color_hex}"', content)
+    # Replace stroke attributes (but not stroke="none")
+    tinted = re.sub(r'stroke="(?!none)[^"]*"', f'stroke="{color_hex}"', tinted)
+    # Replace color="currentColor" for SVGs that use it
+    tinted = tinted.replace('color="currentColor"', f'color="{color_hex}"')
 
     renderer = QSvgRenderer(QByteArray(tinted.encode("utf-8")))
     pixmap = QPixmap(size * 2, size * 2)
