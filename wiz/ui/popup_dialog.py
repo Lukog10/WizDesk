@@ -579,13 +579,13 @@ class CreateSectionDialog(QDialog):
 
 
 class SegmentedFilterBar(QWidget):
-    """Pill capsule segmented filter bar (Task, In progress, Completed, Cancelled) with Light/Dark support."""
+    """Pill capsule segmented filter bar (Task, In progress, Upcoming, Unfinished, Completed, Cancelled) with Light/Dark support."""
 
     filter_changed = pyqtSignal(str)
 
     def __init__(self, parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
-        self.options = ["Task", "In progress", "Completed", "Cancelled"]
+        self.options = ["Task", "In progress", "Upcoming", "Unfinished", "Completed", "Cancelled"]
         self.current_filter = "Task"
         self.is_dark = is_dark
         self._buttons: Dict[str, QPushButton] = {}
@@ -647,9 +647,9 @@ class SegmentedFilterBar(QWidget):
                         border: none;
                         border-radius: 7px;
                         font-family: {FONT_SANS};
-                        font-size: 12px;
+                        font-size: 11px;
                         font-weight: 600;
-                        padding: 0 10px;
+                        padding: 0 8px;
                     }}
                 """)
             else:
@@ -661,9 +661,9 @@ class SegmentedFilterBar(QWidget):
                         border: none;
                         border-radius: 7px;
                         font-family: {FONT_SANS};
-                        font-size: 12px;
+                        font-size: 11px;
                         font-weight: 500;
-                        padding: 0 10px;
+                        padding: 0 8px;
                     }}
                     QPushButton:hover {{
                         color: {hover_color};
@@ -956,10 +956,129 @@ class SubtaskAddButton(QPushButton):
         self._update_icon(hover=False)
 
 
+class ScheduleIconButton(QPushButton):
+    """Icon-only button for scheduling a task with popup date menu."""
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.scheduled_date: Optional[str] = None
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip("Schedule Date")
+        self.setFixedSize(24, 24)
+        self.setIconSize(QSize(14, 14))
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.set_theme(is_dark)
+
+    def set_scheduled_date(self, dt_str: Optional[str]) -> None:
+        self.scheduled_date = dt_str
+        if dt_str:
+            self.setToolTip(f"Scheduled: {dt_str}")
+        else:
+            self.setToolTip("Schedule Date")
+        self._update_icon(hover=False)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.normal_color = "#71717A" if is_dark else "#78716C"
+        self.hover_color = "#FAFAFA" if is_dark else "#242220"
+        self.active_color = "#FF6B3D" if is_dark else "#BA3F1A"
+        hover_bg = "#27272A" if is_dark else "#EBE6DC"
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                border: none;
+                border-radius: 4px;
+                padding: 0px;
+            }}
+            QPushButton:hover {{
+                background-color: {hover_bg};
+            }}
+        """)
+        self._update_icon(hover=False)
+
+    def _update_icon(self, hover: bool = False) -> None:
+        if self.scheduled_date:
+            c = self.hover_color if hover else self.active_color
+        else:
+            c = self.hover_color if hover else self.normal_color
+        self.setIcon(get_status_icon("icons/schedule.svg", c, 14))
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._update_icon(hover=True)
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._update_icon(hover=False)
+
+
+class RepeatIconButton(QPushButton):
+    """Icon-only button for configuring task repeat mode with popup menu."""
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.repeat_mode: str = "none"
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip("Repeat Mode")
+        self.setFixedSize(24, 24)
+        self.setIconSize(QSize(14, 14))
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.set_theme(is_dark)
+
+    def set_repeat_mode(self, mode: str) -> None:
+        self.repeat_mode = mode or "none"
+        if self.repeat_mode != "none":
+            self.setToolTip(f"Repeat: {self.repeat_mode.capitalize()}")
+        else:
+            self.setToolTip("Repeat Mode")
+        self._update_icon(hover=False)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.normal_color = "#71717A" if is_dark else "#78716C"
+        self.hover_color = "#FAFAFA" if is_dark else "#242220"
+        self.active_color = "#38BDF8" if is_dark else "#0284C7"
+        hover_bg = "#27272A" if is_dark else "#EBE6DC"
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                border: none;
+                border-radius: 4px;
+                padding: 0px;
+            }}
+            QPushButton:hover {{
+                background-color: {hover_bg};
+            }}
+        """)
+        self._update_icon(hover=False)
+
+    def _update_icon(self, hover: bool = False) -> None:
+        if self.repeat_mode and self.repeat_mode != "none":
+            c = self.hover_color if hover else self.active_color
+        else:
+            c = self.hover_color if hover else self.normal_color
+        self.setIcon(get_status_icon("icons/repeat.svg", c, 14))
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._update_icon(hover=True)
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._update_icon(hover=False)
+
+
 class TaskRowWidget(QWidget):
     """
     Parent task row featuring:
     - Custom rounded checkbox & task title with inline renaming (double-click or context menu)
+    - Schedule date button & repeat mode button with status badges
     - Nested subtask list with checkboxes & renaming
     - '+ subtask' inline adder
     - Right-click context menu with 'Rename Task', 'Move to Section ->', status moves, and 'Delete Task'
@@ -973,6 +1092,8 @@ class TaskRowWidget(QWidget):
     subtask_toggled = pyqtSignal(int, str)  # subtask_id, new_status
     subtask_deleted = pyqtSignal(int)  # subtask_id
     subtask_renamed = pyqtSignal(int, str)  # subtask_id, new_title
+    schedule_changed = pyqtSignal(int, str)  # task_id, new_scheduled_date
+    repeat_changed = pyqtSignal(int, str)  # task_id, new_repeat_mode
 
     def __init__(self, task: TaskRecord, all_projects: List[str], parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
@@ -985,11 +1106,11 @@ class TaskRowWidget(QWidget):
         self.main_layout.setContentsMargins(0, 2, 0, 2)
         self.main_layout.setSpacing(3)
 
-        # Top row: Checkbox, Title, + Subtask button
+        # Top row: Checkbox, Title, Schedule, Repeat, + Subtask button
         self.top_widget = QWidget()
         top_layout = QHBoxLayout(self.top_widget)
         top_layout.setContentsMargins(4, 3, 4, 3)
-        top_layout.setSpacing(10)
+        top_layout.setSpacing(6)
 
         is_done = (task.status in ("done", "completed"))
         self.checkbox = RoundedCheckbox(checked=is_done, size=20, parent=self.top_widget, is_dark=self.is_dark)
@@ -1025,6 +1146,18 @@ class TaskRowWidget(QWidget):
         self.edit_input.editing_cancelled.connect(self._cancel_renaming)
         top_layout.addWidget(self.edit_input, stretch=1)
 
+        # Schedule icon-only button
+        self.schedule_btn = ScheduleIconButton(is_dark=self.is_dark, parent=self.top_widget)
+        self.schedule_btn.set_scheduled_date(self.task.scheduled_date)
+        self.schedule_btn.clicked.connect(self._pick_schedule)
+        top_layout.addWidget(self.schedule_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        # Repeat icon-only button
+        self.repeat_btn = RepeatIconButton(is_dark=self.is_dark, parent=self.top_widget)
+        self.repeat_btn.set_repeat_mode(self.task.repeat_mode)
+        self.repeat_btn.clicked.connect(self._pick_repeat)
+        top_layout.addWidget(self.repeat_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+
         # Subtask icon-only button
         self.add_sub_btn = SubtaskAddButton(is_dark=self.is_dark, parent=self.top_widget)
         self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
@@ -1032,11 +1165,11 @@ class TaskRowWidget(QWidget):
 
         self.main_layout.addWidget(self.top_widget)
 
-        # Status dropdown & time label directly below task title
+        # Status dropdown, time label, and schedule/repeat badges directly below task title
         self.status_bar_widget = QWidget()
         status_bar_layout = QHBoxLayout(self.status_bar_widget)
         status_bar_layout.setContentsMargins(34, 0, 4, 3)
-        status_bar_layout.setSpacing(10)
+        status_bar_layout.setSpacing(8)
 
         self.status_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.status_combo.setEditable(False)
@@ -1058,8 +1191,21 @@ class TaskRowWidget(QWidget):
         """)
         status_bar_layout.addWidget(self.time_label)
 
+        # Schedule / overdue badge
+        self.schedule_badge = QLabel()
+        self.schedule_badge.setFixedHeight(18)
+        self.schedule_badge.setVisible(False)
+        status_bar_layout.addWidget(self.schedule_badge)
+
+        # Repeat mode badge
+        self.repeat_badge = QLabel()
+        self.repeat_badge.setFixedHeight(18)
+        self.repeat_badge.setVisible(False)
+        status_bar_layout.addWidget(self.repeat_badge)
+
         status_bar_layout.addStretch()
         self.main_layout.addWidget(self.status_bar_widget)
+        self._update_badges()
 
         # Subtasks container
         self.subtasks_container = QWidget()
@@ -1177,8 +1323,189 @@ class TaskRowWidget(QWidget):
         self.status_combo.set_theme(is_dark)
         if hasattr(self, "add_sub_btn") and hasattr(self.add_sub_btn, "set_theme"):
             self.add_sub_btn.set_theme(is_dark)
+        if hasattr(self, "schedule_btn") and hasattr(self.schedule_btn, "set_theme"):
+            self.schedule_btn.set_theme(is_dark)
+        if hasattr(self, "repeat_btn") and hasattr(self.repeat_btn, "set_theme"):
+            self.repeat_btn.set_theme(is_dark)
         self._populate_status_combo()
         self._update_status_ui(self.task.status)
+        self._update_badges()
+
+    def _update_badges(self) -> None:
+        """Update visual badges for scheduled date / overdue status and repeat mode."""
+        today = date.today()
+        today_str = today.strftime("%Y-%m-%d")
+
+        if self.task.scheduled_date:
+            sched_str = self.task.scheduled_date
+            try:
+                sched_dt = date.fromisoformat(sched_str)
+                fmt_date = sched_dt.strftime("%b %d")
+            except Exception:
+                fmt_date = sched_str
+
+            if self.task.is_overdue:
+                text = f"Overdue • {fmt_date}"
+                bg = "rgba(239, 68, 68, 0.15)" if self.is_dark else "#FEE2E2"
+                fg = "#F87171" if self.is_dark else "#DC2626"
+                border = "#EF4444" if self.is_dark else "#FCA5A5"
+            elif sched_str == today_str:
+                text = "Today"
+                bg = "rgba(255, 107, 61, 0.15)" if self.is_dark else "#FEECE5"
+                fg = "#FF8E6B" if self.is_dark else "#BA3F1A"
+                border = "#EA580C" if self.is_dark else "#FDBA74"
+            elif sched_str == (today + timedelta(days=1)).strftime("%Y-%m-%d"):
+                text = "Tomorrow"
+                bg = "rgba(255, 107, 61, 0.12)" if self.is_dark else "#FFF7ED"
+                fg = "#FB923C" if self.is_dark else "#C2410C"
+                border = "rgba(251, 146, 60, 0.3)"
+            else:
+                text = fmt_date
+                bg = "#27272A" if self.is_dark else "#EDE9E0"
+                fg = "#D4D4D8" if self.is_dark else "#57534E"
+                border = "#3F3F46" if self.is_dark else "#D6D0C5"
+
+            self.schedule_badge.setText(text)
+            self.schedule_badge.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {bg};
+                    color: {fg};
+                    border: 1px solid {border};
+                    border-radius: 4px;
+                    padding: 0 6px;
+                    font-family: {FONT_SANS};
+                    font-size: 10px;
+                    font-weight: 600;
+                }}
+            """)
+            self.schedule_badge.setVisible(True)
+            self.schedule_btn.set_scheduled_date(self.task.scheduled_date)
+        else:
+            self.schedule_badge.setVisible(False)
+            self.schedule_btn.set_scheduled_date(None)
+
+        if self.task.is_recurring:
+            mode_display = {
+                "daily": "Daily",
+                "weekdays": "Weekdays",
+                "weekends": "Weekends",
+            }.get(self.task.repeat_mode, self.task.repeat_mode.capitalize())
+
+            bg = "rgba(56, 189, 248, 0.14)" if self.is_dark else "#E0F2FE"
+            fg = "#38BDF8" if self.is_dark else "#0284C7"
+            border = "rgba(56, 189, 248, 0.35)" if self.is_dark else "#BAE6FD"
+
+            self.repeat_badge.setText(mode_display)
+            self.repeat_badge.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {bg};
+                    color: {fg};
+                    border: 1px solid {border};
+                    border-radius: 4px;
+                    padding: 0 6px;
+                    font-family: {FONT_SANS};
+                    font-size: 10px;
+                    font-weight: 600;
+                }}
+            """)
+            self.repeat_badge.setVisible(True)
+            self.repeat_btn.set_repeat_mode(self.task.repeat_mode)
+        else:
+            self.repeat_badge.setVisible(False)
+            self.repeat_btn.set_repeat_mode("none")
+
+    def _pick_schedule(self) -> None:
+        """Open menu to update schedule date for this task."""
+        menu = QMenu(self)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
+        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+
+        today = date.today()
+        tomorrow = today + timedelta(days=1)
+        next_week = today + timedelta(days=7)
+
+        act_today = menu.addAction(f"Today ({today.strftime('%b %d')})")
+        act_tomorrow = menu.addAction(f"Tomorrow ({tomorrow.strftime('%b %d')})")
+        act_next_week = menu.addAction(f"Next Week ({next_week.strftime('%b %d')})")
+        menu.addSeparator()
+        act_pick = menu.addAction(get_status_icon("icons/schedule.svg", icon_color, 14), "Pick Date...")
+
+        if self.task.scheduled_date:
+            menu.addSeparator()
+            act_clear = menu.addAction("Clear Date")
+        else:
+            act_clear = None
+
+        menu_size = menu.sizeHint()
+        btn_pos = self.schedule_btn.mapToGlobal(QPoint(0, 0))
+        target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
+
+        action = menu.exec(target_pos)
+        if action == act_today:
+            new_date = today.strftime("%Y-%m-%d")
+            self.task.scheduled_date = new_date
+            self.schedule_changed.emit(self.task_id, new_date)
+            self._update_badges()
+        elif action == act_tomorrow:
+            new_date = tomorrow.strftime("%Y-%m-%d")
+            self.task.scheduled_date = new_date
+            self.schedule_changed.emit(self.task_id, new_date)
+            self._update_badges()
+        elif action == act_next_week:
+            new_date = next_week.strftime("%Y-%m-%d")
+            self.task.scheduled_date = new_date
+            self.schedule_changed.emit(self.task_id, new_date)
+            self._update_badges()
+        elif action == act_pick:
+            init_dt = today
+            if self.task.scheduled_date:
+                try:
+                    init_dt = date.fromisoformat(self.task.scheduled_date)
+                except Exception:
+                    pass
+            dlg = CalendarPopupDialog(init_dt, self, is_dark=self.is_dark)
+            cal_pos = self.schedule_btn.mapToGlobal(QPoint(0, 0))
+            dlg.move(cal_pos.x() - 100, cal_pos.y() - 360)
+            if dlg.exec() == QDialog.DialogCode.Accepted:
+                new_date = dlg.selected_date.strftime("%Y-%m-%d")
+                self.task.scheduled_date = new_date
+                self.schedule_changed.emit(self.task_id, new_date)
+                self._update_badges()
+        elif act_clear and action == act_clear:
+            self.task.scheduled_date = None
+            self.schedule_changed.emit(self.task_id, "clear")
+            self._update_badges()
+
+    def _pick_repeat(self) -> None:
+        """Open menu to update repeat mode for this task."""
+        menu = QMenu(self)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
+        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+
+        act_none = menu.addAction("None (One-time)")
+        act_daily = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Daily (Every day)")
+        act_weekdays = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekdays (Mon - Fri)")
+        act_weekends = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekends (Sat - Sun)")
+
+        menu_size = menu.sizeHint()
+        btn_pos = self.repeat_btn.mapToGlobal(QPoint(0, 0))
+        target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
+
+        action = menu.exec(target_pos)
+        mode = None
+        if action == act_none:
+            mode = "none"
+        elif action == act_daily:
+            mode = "daily"
+        elif action == act_weekdays:
+            mode = "weekdays"
+        elif action == act_weekends:
+            mode = "weekends"
+
+        if mode is not None:
+            self.task.repeat_mode = mode
+            self.repeat_changed.emit(self.task_id, mode)
+            self._update_badges()
 
     def _on_status_combo_changed(self, index: int) -> None:
         """Handle status selection change from the dropdown."""
@@ -1340,6 +1667,7 @@ class TaskRowWidget(QWidget):
                 font-size: 11px;
             }}
         """)
+        self._update_badges()
 
     def start_renaming(self) -> None:
         """Enter inline task renaming mode."""
@@ -1378,6 +1706,12 @@ class TaskRowWidget(QWidget):
         action_rename = menu.addAction(
             get_status_icon("icons/rename.svg", icon_color, 14), "Rename Task"
         )
+        action_schedule = menu.addAction(
+            get_status_icon("icons/schedule.svg", icon_color, 14), "Schedule Task..."
+        )
+        action_repeat = menu.addAction(
+            get_status_icon("icons/repeat.svg", icon_color, 14), "Repeat Task..."
+        )
         action_add_sub = menu.addAction(
             get_status_icon("icons/subtask.svg", icon_color, 14), "Add Subtask"
         )
@@ -1406,6 +1740,10 @@ class TaskRowWidget(QWidget):
         action = menu.exec(self.mapToGlobal(pos))
         if action == action_rename:
             self.start_renaming()
+        elif action == action_schedule:
+            self._pick_schedule()
+        elif action == action_repeat:
+            self._pick_repeat()
         elif action == action_add_sub:
             self._toggle_subtask_input(force_show=True)
         elif action == action_new_sec:
@@ -1690,7 +2028,10 @@ class QuickEntryDialog(QDialog):
         self.repo = repository or StorageRepository()
         self.current_view_mode = "tasks"
         self.selected_date: date = date.today()
+        self.repo.roll_recurring_tasks(today=self.selected_date)
         self.is_dark = (config.theme == "dark")
+        self._pending_task_schedule: Optional[str] = None
+        self._pending_task_repeat: str = "none"
 
         # Single-shot debounce timer for syncing to Obsidian vault without freezing UI
         self._sync_timer = QTimer(self)
@@ -1894,9 +2235,9 @@ class QuickEntryDialog(QDialog):
         self.scroll_area.setWidget(self.content_widget)
         tasks_page_layout.addWidget(self.scroll_area, stretch=1)
 
-        # 5. Bottom Add Task Bar with Section Selector & Create Section Option
+        # 5. Bottom Add Task Bar with Section Selector, Schedule, Repeat & Create Section Option
         add_task_layout = QHBoxLayout()
-        add_task_layout.setSpacing(8)
+        add_task_layout.setSpacing(6)
 
         self.add_input = QLineEdit()
         self.add_input.setPlaceholderText("+ Add task... (Press Enter)")
@@ -1907,6 +2248,14 @@ class QuickEntryDialog(QDialog):
         self.project_combo.setEditable(False)
         self.project_combo.currentIndexChanged.connect(self._on_project_combo_changed)
         add_task_layout.addWidget(self.project_combo, stretch=1)
+
+        self.add_schedule_btn = ScheduleIconButton(is_dark=self.is_dark, parent=self.tasks_page)
+        self.add_schedule_btn.clicked.connect(self._pick_quick_add_schedule)
+        add_task_layout.addWidget(self.add_schedule_btn)
+
+        self.add_repeat_btn = RepeatIconButton(is_dark=self.is_dark, parent=self.tasks_page)
+        self.add_repeat_btn.clicked.connect(self._pick_quick_add_repeat)
+        add_task_layout.addWidget(self.add_repeat_btn)
 
         self.add_task_btn = QPushButton("Add")
         self.add_task_btn.setFont(get_font(12, QFont.Weight.Bold))
@@ -2225,6 +2574,11 @@ class QuickEntryDialog(QDialog):
         self.note_project_combo.set_theme(self.is_dark)
         self.note_project_combo.setStyleSheet(combo_qss)
 
+        if hasattr(self, "add_schedule_btn"):
+            self.add_schedule_btn.set_theme(self.is_dark)
+        if hasattr(self, "add_repeat_btn"):
+            self.add_repeat_btn.set_theme(self.is_dark)
+
         btn_action_qss = f"""
             QPushButton {{
                 background-color: {btn_action_bg};
@@ -2378,18 +2732,35 @@ class QuickEntryDialog(QDialog):
 
     def _on_filter_changed(self, filter_name: str) -> None:
         """Called when a segmented filter pill is clicked."""
+        self._update_date_display()
         self.refresh_tasks()
 
     def _update_date_display(self) -> None:
         """Update date button label and 'Today' shortcut indicator."""
-        date_str = self.selected_date.strftime("%B %d, %A")
-        self.date_btn.setText(date_str)
-        is_today = (self.selected_date == date.today())
-        self.today_pill_btn.setVisible(not is_today)
+        active_filter = self.filter_bar.current_filter.lower() if hasattr(self, "filter_bar") else ""
+        if active_filter == "upcoming":
+            self.date_btn.setText("Upcoming Scheduled Tasks")
+            self.today_pill_btn.setVisible(True)
+        elif active_filter == "unfinished":
+            self.date_btn.setText("Unfinished Tasks (Overdue)")
+            self.today_pill_btn.setVisible(True)
+        else:
+            date_str = self.selected_date.strftime("%B %d, %A")
+            self.date_btn.setText(date_str)
+            is_today = (self.selected_date == date.today())
+            self.today_pill_btn.setVisible(not is_today)
+
+    def showEvent(self, event) -> None:
+        """Roll recurring tasks when opening or re-showing the dialog."""
+        super().showEvent(event)
+        self.repo.roll_recurring_tasks(today=date.today())
+        if hasattr(self, "current_view_mode") and self.current_view_mode == "tasks":
+            self.refresh_tasks()
 
     def set_selected_date(self, target_date: date) -> None:
         """Set the active view date and refresh tasks, notes, and activity timeline."""
         self.selected_date = target_date
+        self.repo.roll_recurring_tasks(today=date.today())
         self._update_date_display()
         self.refresh_tasks()
         self.refresh_notes()
@@ -2408,6 +2779,8 @@ class QuickEntryDialog(QDialog):
 
     def _on_today_clicked(self) -> None:
         """Jump back to today."""
+        if hasattr(self, "filter_bar") and self.filter_bar.current_filter in ("Upcoming", "Unfinished"):
+            self.filter_bar.set_active_filter("Task")
         self.set_selected_date(date.today())
 
     def _on_background_session_polled(self, app_name: str, window_title: str, project_tag: str) -> None:
@@ -2446,6 +2819,90 @@ class QuickEntryDialog(QDialog):
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self.set_selected_date(dlg.selected_date)
 
+    def _on_task_schedule_changed(self, task_id: int, sched_str: str) -> None:
+        """Handle schedule date update on an existing task."""
+        val = None if (sched_str == "" or sched_str.strip().lower() == "clear") else sched_str.strip()
+        self.repo.update_task_schedule(task_id, scheduled_date=val or "")
+        self.refresh_tasks()
+        self._trigger_debounced_sync()
+
+    def _on_task_repeat_changed(self, task_id: int, mode_str: str) -> None:
+        """Handle repeat mode update on an existing task."""
+        self.repo.update_task_schedule(task_id, repeat_mode=mode_str)
+        self.refresh_tasks()
+        self._trigger_debounced_sync()
+
+    def _pick_quick_add_schedule(self) -> None:
+        """Open popup menu to pick scheduled date for the new task."""
+        menu = QMenu(self)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
+        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+
+        today = date.today()
+        tomorrow = today + timedelta(days=1)
+        next_week = today + timedelta(days=7)
+
+        act_today = menu.addAction(f"Today ({today.strftime('%b %d')})")
+        act_tomorrow = menu.addAction(f"Tomorrow ({tomorrow.strftime('%b %d')})")
+        act_next_week = menu.addAction(f"Next Week ({next_week.strftime('%b %d')})")
+        menu.addSeparator()
+        act_pick = menu.addAction(get_status_icon("icons/schedule.svg", icon_color, 14), "Pick Date...")
+
+        if self._pending_task_schedule:
+            menu.addSeparator()
+            act_clear = menu.addAction("Clear Schedule (One-time today)")
+        else:
+            act_clear = None
+
+        menu_size = menu.sizeHint()
+        btn_pos = self.add_schedule_btn.mapToGlobal(QPoint(0, 0))
+        target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
+
+        action = menu.exec(target_pos)
+        if action == act_today:
+            self._pending_task_schedule = today.strftime("%Y-%m-%d")
+        elif action == act_tomorrow:
+            self._pending_task_schedule = tomorrow.strftime("%Y-%m-%d")
+        elif action == act_next_week:
+            self._pending_task_schedule = next_week.strftime("%Y-%m-%d")
+        elif action == act_pick:
+            dlg = CalendarPopupDialog(today, self, is_dark=self.is_dark)
+            cal_pos = self.add_schedule_btn.mapToGlobal(QPoint(0, 0))
+            dlg.move(cal_pos.x() - 100, cal_pos.y() - 360)
+            if dlg.exec() == QDialog.DialogCode.Accepted:
+                self._pending_task_schedule = dlg.selected_date.strftime("%Y-%m-%d")
+        elif act_clear and action == act_clear:
+            self._pending_task_schedule = None
+
+        self.add_schedule_btn.set_scheduled_date(self._pending_task_schedule)
+
+    def _pick_quick_add_repeat(self) -> None:
+        """Open popup menu to pick repeat mode for the new task."""
+        menu = QMenu(self)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
+        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+
+        act_none = menu.addAction("None (One-time)")
+        act_daily = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Daily (Every day)")
+        act_weekdays = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekdays (Mon - Fri)")
+        act_weekends = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekends (Sat - Sun)")
+
+        menu_size = menu.sizeHint()
+        btn_pos = self.add_repeat_btn.mapToGlobal(QPoint(0, 0))
+        target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
+
+        action = menu.exec(target_pos)
+        if action == act_none:
+            self._pending_task_repeat = "none"
+        elif action == act_daily:
+            self._pending_task_repeat = "daily"
+        elif action == act_weekdays:
+            self._pending_task_repeat = "weekdays"
+        elif action == act_weekends:
+            self._pending_task_repeat = "weekends"
+
+        self.add_repeat_btn.set_repeat_mode(self._pending_task_repeat)
+
     def refresh_tasks(self) -> None:
         """Re-render the task list for the selected date grouped by project under the current filter."""
         while self.content_layout.count() > 0:
@@ -2477,6 +2934,10 @@ class QuickEntryDialog(QDialog):
         if not grouped:
             if active_filter.lower() in ("task", "all"):
                 empty_msg = f"No tasks recorded for {self.selected_date.strftime('%B %d')}."
+            elif active_filter.lower() == "upcoming":
+                empty_msg = "No upcoming tasks scheduled."
+            elif active_filter.lower() == "unfinished":
+                empty_msg = "No unfinished or overdue tasks."
             elif active_filter.lower() == "in progress":
                 empty_msg = f"No in progress tasks for {self.selected_date.strftime('%B %d')}."
             elif active_filter.lower() == "completed":
@@ -2514,6 +2975,8 @@ class QuickEntryDialog(QDialog):
                 row.subtask_toggled.connect(self._on_subtask_toggled)
                 row.subtask_deleted.connect(self._on_subtask_deleted)
                 row.subtask_renamed.connect(self._on_subtask_renamed)
+                row.schedule_changed.connect(self._on_task_schedule_changed)
+                row.repeat_changed.connect(self._on_task_repeat_changed)
                 group_widget.tasks_layout.addWidget(row)
 
             self.content_layout.addWidget(group_widget)
@@ -2667,12 +3130,28 @@ class QuickEntryDialog(QDialog):
         if proj == "+ Create Section..." or not proj:
             proj = "Work"
 
-        # If adding a task while viewing another date, switch to today so user sees their new task
-        if self.selected_date != date.today():
-            self.set_selected_date(date.today())
+        sched = self._pending_task_schedule
+        rep = self._pending_task_repeat
 
-        task_id = self.repo.create_task(title, project_tag=proj)
+        # If user did not pick an explicit schedule and is viewing another date (and not Upcoming/Unfinished):
+        if sched is None and hasattr(self, "filter_bar") and self.filter_bar.current_filter not in ("Upcoming", "Unfinished"):
+            if self.selected_date != date.today():
+                sched = self.selected_date.strftime("%Y-%m-%d")
+
+        task_id = self.repo.create_task(
+            title,
+            project_tag=proj,
+            scheduled_date=sched,
+            repeat_mode=rep,
+        )
         self.add_input.clear()
+        self._pending_task_schedule = None
+        self._pending_task_repeat = "none"
+        if hasattr(self, "add_schedule_btn"):
+            self.add_schedule_btn.set_scheduled_date(None)
+        if hasattr(self, "add_repeat_btn"):
+            self.add_repeat_btn.set_repeat_mode("none")
+
         self.refresh_tasks()
         self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.task_created.emit(task_id)

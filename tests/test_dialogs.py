@@ -1,7 +1,7 @@
 """Unit tests for QuickEntryDialog and SettingsDialog."""
 
 import sys
-from datetime import date
+from datetime import date, timedelta
 import pytest
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
@@ -486,5 +486,70 @@ def test_quick_bar_popup_and_multi_click_gestures(qapp, repo):
 
     popup.close()
     mascot.close()
+
+
+def test_quick_entry_dialog_scheduling_and_repeat_flow(qapp, repo):
+    """Test task scheduling, repeat modes, upcoming/unfinished filters, and quick-add reset."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    yesterday = today - timedelta(days=1)
+
+    # 1. Verify quick-add schedule & repeat default states
+    assert dialog._pending_task_schedule is None
+    assert dialog._pending_task_repeat == "none"
+    assert dialog.add_schedule_btn.scheduled_date is None
+    assert dialog.add_repeat_btn.repeat_mode == "none"
+
+    # 2. Add scheduled future task
+    dialog.add_input.setText("Plan Q4 Roadmap")
+    dialog._pending_task_schedule = tomorrow.strftime("%Y-%m-%d")
+    dialog.add_schedule_btn.set_scheduled_date(tomorrow.strftime("%Y-%m-%d"))
+    dialog._pending_task_repeat = "daily"
+    dialog.add_repeat_btn.set_repeat_mode("daily")
+    dialog._on_quick_add_task()
+
+    # Verify reset after creation
+    assert dialog._pending_task_schedule is None
+    assert dialog._pending_task_repeat == "none"
+    assert dialog.add_schedule_btn.scheduled_date is None
+    assert dialog.add_repeat_btn.repeat_mode == "none"
+
+    # Verify task in DB
+    all_tasks = repo.get_task_hierarchy(status_filter="all")
+    created = [t for t in all_tasks if t.title == "Plan Q4 Roadmap"][0]
+    assert created.scheduled_date == tomorrow.strftime("%Y-%m-%d")
+    assert created.repeat_mode == "daily"
+    assert created.is_recurring is True
+
+    # 3. Test Upcoming Filter
+    dialog.filter_bar.set_active_filter("Upcoming")
+    assert dialog.filter_bar.current_filter == "Upcoming"
+    assert "Upcoming Scheduled Tasks" in dialog.date_btn.text()
+    assert not dialog.today_pill_btn.isHidden()
+
+    # Switch back to Today via today button
+    dialog._on_today_clicked()
+    assert dialog.filter_bar.current_filter == "Task"
+    assert dialog.selected_date == today
+
+    # 4. Test Unfinished Filter
+    # Create overdue task
+    repo.create_task("Submit Tax Forms", project_tag="Work", scheduled_date=yesterday.strftime("%Y-%m-%d"))
+    dialog.filter_bar.set_active_filter("Unfinished")
+    assert dialog.filter_bar.current_filter == "Unfinished"
+    assert "Unfinished Tasks" in dialog.date_btn.text()
+
+    # 5. Test updating schedule and repeat on an existing task via dialog handlers
+    dialog._on_task_schedule_changed(created.id, today.strftime("%Y-%m-%d"))
+    dialog._on_task_repeat_changed(created.id, "weekdays")
+
+    updated = [t for t in repo.get_task_hierarchy(status_filter="all") if t.id == created.id][0]
+    assert updated.scheduled_date == today.strftime("%Y-%m-%d")
+    assert updated.repeat_mode == "weekdays"
+
+    dialog.close()
 
 

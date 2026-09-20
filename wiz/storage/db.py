@@ -38,7 +38,10 @@ CREATE TABLE IF NOT EXISTS tasks (
     project_tag TEXT,
     status TEXT DEFAULT 'not_started',  -- 'not_started' | 'in_progress' | 'done'
     created_at TEXT NOT NULL,
-    completed_at TEXT
+    completed_at TEXT,
+    scheduled_date TEXT DEFAULT NULL,       -- ISO-8601 Date: YYYY-MM-DD
+    repeat_mode TEXT DEFAULT 'none',        -- 'none' | 'daily' | 'weekdays' | 'weekends'
+    last_completed_date TEXT DEFAULT NULL   -- ISO-8601 Date: YYYY-MM-DD
 );
 
 -- Subtasks belonging to a task
@@ -122,6 +125,27 @@ class Database:
                 pass
             try:
                 conn.execute("ALTER TABLE projects ADD COLUMN description TEXT DEFAULT ''")
+            except sqlite3.OperationalError:
+                pass
+            # Safe migrations for tasks table scheduling and repeat extensions
+            try:
+                conn.execute("ALTER TABLE tasks ADD COLUMN scheduled_date TEXT DEFAULT NULL")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE tasks ADD COLUMN repeat_mode TEXT DEFAULT 'none'")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("ALTER TABLE tasks ADD COLUMN last_completed_date TEXT DEFAULT NULL")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_scheduled_date ON tasks(scheduled_date)")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_repeat_mode ON tasks(repeat_mode)")
             except sqlite3.OperationalError:
                 pass
             conn.commit()

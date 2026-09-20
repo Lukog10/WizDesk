@@ -240,3 +240,118 @@ def test_batch_task_hierarchy_performance(repo):
         assert len(t.subtasks[0].logs) == 1
         assert len(t.subtasks[1].logs) == 0
 
+
+def test_task_scheduling_and_repeat_creation(repo):
+    """Test creating tasks with scheduled dates and repeat modes."""
+    t1 = repo.create_task("Review quarterly budget", project_tag="Finance", scheduled_date="2026-09-25", repeat_mode="none")
+    t2 = repo.create_task("Daily Standup", project_tag="Core", scheduled_date="2026-09-20", repeat_mode="daily")
+    t3 = repo.create_task("Weekly Plan", project_tag="Core", scheduled_date="2026-09-21", repeat_mode="weekdays")
+
+    tasks = repo.get_task_hierarchy(status_filter="all")
+    task_map = {t.id: t for t in tasks}
+
+    assert task_map[t1].scheduled_date == "2026-09-25"
+    assert task_map[t1].repeat_mode == "none"
+    assert not task_map[t1].is_recurring
+
+    assert task_map[t2].scheduled_date == "2026-09-20"
+    assert task_map[t2].repeat_mode == "daily"
+    assert task_map[t2].is_recurring
+
+    assert task_map[t3].repeat_mode == "weekdays"
+    assert task_map[t3].is_recurring
+
+
+def test_update_task_schedule(repo):
+    """Test modifying schedule and repeat mode of existing tasks."""
+    t_id = repo.create_task("Draft Roadmap", project_tag="Product")
+    tasks = repo.get_task_hierarchy()
+    assert tasks[0].scheduled_date is None
+    assert tasks[0].repeat_mode == "none"
+
+    # Update schedule and repeat
+    ok = repo.update_task_schedule(t_id, scheduled_date="2026-09-30", repeat_mode="weekdays")
+    assert ok
+    updated = repo.get_task_hierarchy(status_filter="all")[0]
+    assert updated.scheduled_date == "2026-09-30"
+    assert updated.repeat_mode == "weekdays"
+
+    # Clear schedule
+    repo.update_task_schedule(t_id, scheduled_date="clear", repeat_mode="none")
+    cleared = repo.get_task_hierarchy(status_filter="all")[0]
+    assert cleared.scheduled_date is None
+    assert cleared.repeat_mode == "none"
+
+
+def test_task_completion_records_last_completed_date(repo):
+    """Test that completing a task records last_completed_date."""
+    t_id = repo.create_task("Workout", project_tag="Health", repeat_mode="daily")
+    today_str = date.today().strftime("%Y-%m-%d")
+
+    repo.update_task_status(t_id, "done")
+    tasks = repo.get_task_hierarchy(status_filter="all")
+    assert tasks[0].status == "done"
+    assert tasks[0].last_completed_date == today_str
+
+
+def test_roll_recurring_tasks_daily(repo):
+    """Test rolling daily recurring tasks that were completed yesterday or older."""
+    from datetime import date, timedelta
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime("%Y-%m-%d")
+
+    t_id = repo.create_task("Drink 2L Water", project_tag="Health", scheduled_date=yesterday_str, repeat_mode="daily")
+    st_id = repo.create_subtask(t_id, "Morning 1L")
+
+    # Mark parent and subtask done with yesterday's completion date
+    with repo.db.cursor() as cur:
+        cur.execute(
+            "UPDATE tasks SET status = 'done', last_completed_date = ? WHERE id = ?",
+            (yesterday_str, t_id)
+        )
+        cur.execute(
+            "UPDATE subtasks SET status = 'done' WHERE id = ?",
+            (st_id,)
+        )
+
+    # Roll forward to today
+    count = repo.roll_recurring_tasks(today=date.today())
+    assert count == 1
+
+    tasks = repo.get_task_hierarchy(status_filter="all")
+    task = next(t for t in tasks if t.id == t_id)
+    assert task.status == "not_started"
+    assert task.scheduled_date == date.today().strftime("%Y-%m-%d")
+    assert task.subtasks[0].status == "not_started"
+
+
+def test_upcoming_and_unfinished_filters(repo):
+    """Test Upcoming and Unfinished filters."""
+    from datetime import date, timedelta
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    yesterday = today - timedelta(days=1)
+
+    t_future = repo.create_task("Future Sprint Planning", scheduled_date=tomorrow.strftime("%Y-%m-%d"))
+    t_overdue = repo.create_task("Old Overdue Bug", scheduled_date=yesterday.strftime("%Y-%m-%d"))
+    t_today = repo.create_task("Today's Task", scheduled_date=today.strftime("%Y-%m-%d"))
+    t_done_overdue = repo.create_task("Old Completed Task", scheduled_date=yesterday.strftime("%Y-%m-%d"))
+    repo.update_task_status(t_done_overdue, "done")
+
+    # Upcoming filter
+    upcoming_tasks = repo.get_task_hierarchy(status_filter="upcoming")
+    upcoming_ids = [t.id for t in upcoming_tasks]
+    assert t_future in upcoming_ids
+    assert t_overdue not in upcoming_ids
+    assert t_today not in upcoming_ids
+    assert t_done_overdue not in upcoming_ids
+
+    # Unfinished filter
+    unfinished_tasks = repo.get_task_hierarchy(status_filter="unfinished")
+    unfinished_ids = [t.id for t in unfinished_tasks]
+    assert t_overdue in unfinished_ids
+    assert t_future not in unfinished_ids
+    assert t_today not in unfinished_ids
+    assert t_done_overdue not in unfinished_ids
+
+

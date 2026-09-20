@@ -65,8 +65,31 @@ class TaskRecord:
     status: str = "not_started"  # 'not_started' | 'in_progress' | 'done'
     created_at: datetime = field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
+    scheduled_date: Optional[str] = None       # ISO-8601 Date: YYYY-MM-DD
+    repeat_mode: str = "none"                  # 'none' | 'daily' | 'weekdays' | 'weekends'
+    last_completed_date: Optional[str] = None  # ISO-8601 Date: YYYY-MM-DD
     subtasks: List[SubtaskRecord] = field(default_factory=list)
     task_logs: List[TaskLogRecord] = field(default_factory=list)
+
+    @property
+    def is_recurring(self) -> bool:
+        """Returns True if the task has an active recurring schedule."""
+        return bool(self.repeat_mode and self.repeat_mode != "none")
+
+    @property
+    def effective_date_str(self) -> str:
+        """Return scheduled_date if set, else creation date (YYYY-MM-DD)."""
+        if self.scheduled_date:
+            return self.scheduled_date
+        return self.created_at.strftime("%Y-%m-%d")
+
+    @property
+    def is_overdue(self) -> bool:
+        """Returns True if the task has an effective date earlier than today and is not completed."""
+        if self.status in ("done", "completed", "cancelled", "canceled"):
+            return False
+        today_str = date.today().strftime("%Y-%m-%d")
+        return self.effective_date_str < today_str
 
 
 @dataclass
@@ -287,35 +310,158 @@ class StorageRepository:
 
     # --- Task & Subtask Operations ---
 
-    def create_task(self, title: str, project_tag: Optional[str] = None) -> int:
-        """Create a new parent task."""
+    def create_task(
+        self,
+        title: str,
+        project_tag: Optional[str] = None,
+        scheduled_date: Optional[str] = None,
+        repeat_mode: str = "none",
+    ) -> int:
+        """Create a new parent task with optional scheduled date and repeat mode."""
         now = datetime.now()
+        mode = repeat_mode.strip().lower() if repeat_mode else "none"
+        if mode not in ("none", "daily", "weekdays", "weekends"):
+            mode = "none"
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO tasks (title, project_tag, status, created_at)
-                VALUES (?, ?, 'not_started', ?)
+                INSERT INTO tasks (title, project_tag, status, created_at, scheduled_date, repeat_mode)
+                VALUES (?, ?, 'not_started', ?, ?, ?)
                 """,
-                (title.strip(), project_tag, now.isoformat()),
+                (title.strip(), project_tag, now.isoformat(), scheduled_date or None, mode),
             )
             return cur.lastrowid or 0
 
     def update_task_status(self, task_id: int, status: str, completed_at: Optional[datetime] = None) -> bool:
         """Update status of a task ('not_started', 'in_progress', 'done', 'cancelled')."""
+        is_done = status in ("done", "completed", "cancelled", "canceled")
         if completed_at is not None:
             comp_str = completed_at.isoformat()
         else:
-            comp_str = datetime.now().isoformat() if status in ("done", "completed", "cancelled", "canceled") else None
+            comp_str = datetime.now().isoformat() if is_done else None
+        today_str = date.today().strftime("%Y-%m-%d") if is_done else None
+        with self.db.cursor() as cur:
+            if is_done:
+                cur.execute(
+                    """
+                    UPDATE tasks
+                    SET status = ?, completed_at = ?, last_completed_date = ?
+                    WHERE id = ?
+                    """,
+                    (status, comp_str, today_str, task_id),
+                )
+            else:
+                cur.execute(
+                    """
+                    UPDATE tasks
+                    SET status = ?, completed_at = ?
+                    WHERE id = ?
+                    """,
+                    (status, comp_str, task_id),
+                )
+            return cur.rowcount > 0
+
+    def update_task_schedule(
+        self,
+        task_id: int,
+        scheduled_date: Optional[str] = None,
+        repeat_mode: Optional[str] = None,
+    ) -> bool:
+        """Update scheduled_date and/or repeat_mode for an existing task."""
+        with self.db.cursor() as cur:
+            updates = []
+            params = []
+            if scheduled_date is not None:
+                val = None if (scheduled_date == "" or scheduled_date.strip().lower() == "clear") else scheduled_date.strip()
+                updates.append("scheduled_date = ?")
+                params.append(val)
+            if repeat_mode is not None:
+                mode = repeat_mode.strip().lower()
+                if mode not in ("none", "daily", "weekdays", "weekends"):
+                    mode = "none"
+                updates.append("repeat_mode = ?")
+                params.append(mode)
+            if not updates:
+                return False
+            params.append(task_id)
+            cur.execute(f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?", params)
+            return cur.rowcount > 0
+
+    def roll_recurring_tasks(self, today: Optional[date] = None) -> int:
+        """
+        Advance recurring tasks to today if a new day has arrived.
+        - If completed before today, resets status to 'not_started' and resets subtasks.
+        - If scheduled_date is in the past, advances scheduled_date to today (or next matching day).
+        """
+        current_day = today or date.today()
+        today_str = current_day.strftime("%Y-%m-%d")
+        updated_count = 0
+
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                UPDATE tasks
-                SET status = ?, completed_at = ?
-                WHERE id = ?
-                """,
-                (status, comp_str, task_id),
+                SELECT id, repeat_mode, scheduled_date, status, last_completed_date
+                FROM tasks
+                WHERE repeat_mode IS NOT NULL AND repeat_mode != 'none'
+                """
             )
-            return cur.rowcount > 0
+            recurring_tasks = cur.fetchall()
+
+            for row in recurring_tasks:
+                task_id = row["id"]
+                repeat_mode = row["repeat_mode"]
+                last_comp = row["last_completed_date"]
+                sched = row["scheduled_date"]
+                status = row["status"]
+
+                needs_status_reset = False
+                needs_sched_advance = False
+
+                if status in ("done", "completed") and last_comp and last_comp < today_str:
+                    needs_status_reset = True
+
+                if sched and sched < today_str:
+                    needs_sched_advance = True
+
+                if needs_status_reset or needs_sched_advance:
+                    new_status = "not_started" if needs_status_reset else status
+                    new_sched = sched
+                    if needs_sched_advance or (sched and needs_status_reset):
+                        check_day = current_day
+                        for _ in range(7):
+                            wd = check_day.weekday()  # 0=Mon, 6=Sun
+                            if repeat_mode == "daily":
+                                break
+                            elif repeat_mode == "weekdays" and wd < 5:
+                                break
+                            elif repeat_mode == "weekends" and wd >= 5:
+                                break
+                            check_day += timedelta(days=1)
+                        new_sched = check_day.strftime("%Y-%m-%d")
+
+                    cur.execute(
+                        """
+                        UPDATE tasks
+                        SET status = ?,
+                            completed_at = CASE WHEN ? = 'not_started' THEN NULL ELSE completed_at END,
+                            scheduled_date = ?
+                        WHERE id = ?
+                        """,
+                        (new_status, new_status, new_sched, task_id),
+                    )
+
+                    if needs_status_reset:
+                        cur.execute(
+                            """
+                            UPDATE subtasks
+                            SET status = 'not_started', completed_at = NULL
+                            WHERE task_id = ?
+                            """,
+                            (task_id,),
+                        )
+                    updated_count += 1
+
+        return updated_count
 
     def update_task_title(self, task_id: int, new_title: str) -> bool:
         """Update the title of a task."""
@@ -415,47 +561,73 @@ class StorageRepository:
         include_completed: bool = True,
         project_tag: Optional[str] = None,
     ) -> List[TaskRecord]:
-        """Fetch all tasks with their nested subtasks and log entries, with optional status and project filtering."""
+        """Fetch all tasks with their nested subtasks and log entries, with optional status, schedule, and project filtering."""
         with self.db.cursor() as cur:
             query = "SELECT * FROM tasks WHERE 1=1 "
             params: list = []
+            today_str = date.today().strftime("%Y-%m-%d")
 
             if project_tag is not None:
                 query += "AND project_tag = ? "
                 params.append(project_tag)
 
-            if target_date is not None:
-                day_str = target_date.strftime("%Y-%m-%d")
-                query += "AND substr(created_at, 1, 10) = ? "
-                params.append(day_str)
+            filter_key = status_filter.strip().lower() if status_filter else None
 
-            if status_filter:
-                filter_key = status_filter.strip().lower()
-                if filter_key in ("task", "all"):
-                    # Shows all tasks regardless of status
-                    pass
-                else:
-                    # Map friendly UI filter names to database status values
-                    status_map = {
-                        "in progress": ["in_progress", "pending", "ongoing"],
-                        "in_progress": ["in_progress", "pending", "ongoing"],
-                        "ongoing": ["in_progress", "pending", "ongoing"],
-                        "pending": ["in_progress", "pending", "ongoing"],
-                        "completed": ["done", "completed"],
-                        "done": ["done", "completed"],
-                        "on hold": ["on_hold"],
-                        "on_hold": ["on_hold"],
-                        "cancelled": ["cancelled", "canceled"],
-                        "canceled": ["cancelled", "canceled"],
-                    }
-                    valid_statuses = status_map.get(filter_key, [filter_key])
-                    placeholders = ",".join("?" for _ in valid_statuses)
-                    query += f"AND status IN ({placeholders}) "
-                    params.extend(valid_statuses)
-            elif not include_completed:
+            # Special views: upcoming and unfinished
+            if filter_key == "upcoming":
+                # Tasks scheduled for future dates that are not finished
+                query += "AND scheduled_date IS NOT NULL AND scheduled_date > ? "
+                params.append(today_str)
                 query += "AND status NOT IN ('done', 'completed', 'cancelled', 'canceled') "
+                query += "ORDER BY scheduled_date ASC, created_at ASC"
+            elif filter_key == "unfinished":
+                # Overdue tasks (scheduled or created before today) that are not finished
+                query += "AND COALESCE(scheduled_date, substr(created_at, 1, 10)) < ? "
+                params.append(today_str)
+                query += "AND status NOT IN ('done', 'completed', 'cancelled', 'canceled') "
+                query += "ORDER BY COALESCE(scheduled_date, substr(created_at, 1, 10)) ASC, created_at ASC"
+            else:
+                # Normal target date and status filtering
+                if target_date is not None:
+                    day_str = target_date.strftime("%Y-%m-%d")
+                    wd = target_date.weekday()
+                    if wd < 5:
+                        valid_repeat = "('daily', 'weekdays')"
+                    else:
+                        valid_repeat = "('daily', 'weekends')"
 
-            query += "ORDER BY created_at DESC"
+                    query += f"""AND (
+                        ( (repeat_mode IS NULL OR repeat_mode = 'none') AND COALESCE(scheduled_date, substr(created_at, 1, 10)) = ? )
+                        OR
+                        ( repeat_mode IN {valid_repeat} AND COALESCE(scheduled_date, substr(created_at, 1, 10)) <= ? )
+                    ) """
+                    params.extend([day_str, day_str])
+
+                if filter_key:
+                    if filter_key in ("task", "all"):
+                        pass
+                    else:
+                        status_map = {
+                            "in progress": ["in_progress", "pending", "ongoing"],
+                            "in_progress": ["in_progress", "pending", "ongoing"],
+                            "ongoing": ["in_progress", "pending", "ongoing"],
+                            "pending": ["in_progress", "pending", "ongoing"],
+                            "completed": ["done", "completed"],
+                            "done": ["done", "completed"],
+                            "on hold": ["on_hold"],
+                            "on_hold": ["on_hold"],
+                            "cancelled": ["cancelled", "canceled"],
+                            "canceled": ["cancelled", "canceled"],
+                        }
+                        valid_statuses = status_map.get(filter_key, [filter_key])
+                        placeholders = ",".join("?" for _ in valid_statuses)
+                        query += f"AND status IN ({placeholders}) "
+                        params.extend(valid_statuses)
+                elif not include_completed:
+                    query += "AND status NOT IN ('done', 'completed', 'cancelled', 'canceled') "
+
+                query += "ORDER BY created_at DESC"
+
             cur.execute(query, params)
             task_rows = cur.fetchall()
 
@@ -517,6 +689,9 @@ class StorageRepository:
             # Assemble TaskRecord list
             for t_row in task_rows:
                 t_id = t_row["id"]
+                sched = t_row["scheduled_date"] if "scheduled_date" in t_row.keys() else None
+                rep = t_row["repeat_mode"] if "repeat_mode" in t_row.keys() and t_row["repeat_mode"] else "none"
+                last_c = t_row["last_completed_date"] if "last_completed_date" in t_row.keys() else None
                 tasks.append(
                     TaskRecord(
                         id=t_id,
@@ -525,6 +700,9 @@ class StorageRepository:
                         status=t_row["status"],
                         created_at=datetime.fromisoformat(t_row["created_at"]),
                         completed_at=datetime.fromisoformat(t_row["completed_at"]) if t_row["completed_at"] else None,
+                        scheduled_date=sched,
+                        repeat_mode=rep,
+                        last_completed_date=last_c,
                         subtasks=task_subtasks_map.get(t_id, []),
                         task_logs=parent_logs_map.get(t_id, []),
                     )
