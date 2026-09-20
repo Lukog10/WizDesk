@@ -2384,21 +2384,41 @@ class QuickEntryDialog(QDialog):
     def _on_sidebar_toggled(self, collapsed: bool) -> None:
         """Handle sidebar toggle and persist user preference."""
         config.set_sidebar_collapsed(collapsed)
-        if hasattr(self, "sidebar"):
-            self.sidebar.updateGeometry()
-        if hasattr(self, "workspace_container"):
-            self.workspace_container.updateGeometry()
+        # Defer the heavy visual refresh to the next event-loop iteration so
+        # the layout system finishes recalculating *before* we flush the
+        # QGraphicsDropShadowEffect pixel cache.  Without the deferral the
+        # effect may snapshot an intermediate (half-laid-out) state.
+        QTimer.singleShot(0, self._flush_sidebar_repaint)
+
+    def _flush_sidebar_repaint(self) -> None:
+        """Force layout recalculation and recreate the drop shadow effect.
+
+        QGraphicsDropShadowEffect renders all children of outer_frame into an
+        internal offscreen pixmap.  When child widgets resize (sidebar
+        collapse/expand) this buffer retains stale pixels from the *previous*
+        layout, producing a visible ghosting flash on Windows DWM combined with
+        WA_TranslucentBackground.  The only reliable cross-platform fix is to
+        detach and re-create the effect, which forces Qt to allocate a fresh
+        buffer at the correct dimensions.
+        """
+        # 1. Force parent layout recalculation
         if hasattr(self, "frame_layout"):
+            self.frame_layout.invalidate()
             self.frame_layout.activate()
-        if hasattr(self, "workspace_layout"):
-            self.workspace_layout.activate()
-        if hasattr(self, "_shadow_effect") and self._shadow_effect:
-            self._shadow_effect.update()
+
+        # 2. Recreate the shadow effect to flush its internal pixel cache
         if hasattr(self, "outer_frame"):
-            self.outer_frame.update()
-        if hasattr(self, "workspace_container"):
-            self.workspace_container.update()
-        self.update()
+            self.outer_frame.setGraphicsEffect(None)
+            self._shadow_effect = QGraphicsDropShadowEffect(self)
+            self._shadow_effect.setBlurRadius(28)
+            self._shadow_effect.setColor(
+                QColor(0, 0, 0, 50 if self.is_dark else 35)
+            )
+            self._shadow_effect.setOffset(0, 6)
+            self.outer_frame.setGraphicsEffect(self._shadow_effect)
+            self.outer_frame.repaint()
+
+        self.repaint()
 
     def toggle_theme(self) -> None:
         """Toggle between light and dark themes and broadcast."""

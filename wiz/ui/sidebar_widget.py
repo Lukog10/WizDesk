@@ -431,7 +431,17 @@ class SideNavBar(QWidget):
         self.set_collapsed(not self.is_collapsed)
 
     def set_collapsed(self, collapsed: bool) -> None:
-        """Set collapsed state."""
+        """Set collapsed state.
+
+        Wraps all child-widget mutations in setUpdatesEnabled(False/True) so
+        that Qt does not paint any intermediate partially-changed layout frame
+        (e.g. sidebar width already 58 px but pills still 170 px wide).
+        Without this guard, DWM composites each partial frame and the user
+        sees a brief but visible flash of mismatched geometry ("glitch").
+        """
+        # Suppress intermediate paints while we batch-modify child sizes
+        self.setUpdatesEnabled(False)
+
         self.is_collapsed = collapsed
         if self.is_collapsed:
             self.setFixedWidth(58)
@@ -468,7 +478,11 @@ class SideNavBar(QWidget):
 
         self.main_layout.activate()
         self.updateGeometry()
-        self.update()
+
+        # Re-enable updates and force a single, synchronous repaint of the
+        # fully-consistent final state (repaint is synchronous; update is not).
+        self.setUpdatesEnabled(True)
+        self.repaint()
         self.sidebar_toggled.emit(self.is_collapsed)
 
     def _on_pill_selected(self, mode: str) -> None:
