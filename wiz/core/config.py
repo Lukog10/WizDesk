@@ -66,6 +66,7 @@ class Config:
             "auto_start_on_login": False,
             "sound_effects": False,
             "theme": "light",
+            "sidebar_collapsed": False,
         }
 
         self._data: Dict[str, Any] = self._defaults.copy()
@@ -162,6 +163,15 @@ class Config:
         """Set and persist the application theme ('light' or 'dark')."""
         clean_theme = "dark" if theme_name.lower() == "dark" else "light"
         self.set("theme", clean_theme)
+
+    @property
+    def sidebar_collapsed(self) -> bool:
+        """Return whether the workspace sidebar is currently collapsed."""
+        return bool(self.get("sidebar_collapsed", False))
+
+    def set_sidebar_collapsed(self, collapsed: bool) -> None:
+        """Set and persist the workspace sidebar collapsed state."""
+        self.set("sidebar_collapsed", bool(collapsed))
 
 
 # Global singleton instance

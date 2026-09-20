@@ -5,7 +5,7 @@ Strictly adheres to WizDesk brand colors (#FF6B3D Mascot Orange-Red, #10B981 Eme
 """
 
 from typing import Optional, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QRectF
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QSize
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -21,9 +21,11 @@ from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
     QFrame,
+    QSizePolicy,
+    QSpacerItem,
 )
 
-from wiz.ui.icons import get_app_pixmap, render_tinted_svg
+from wiz.ui.icons import get_app_pixmap, render_tinted_svg, get_status_icon
 from wiz.ui.fonts import FONT_SANS, get_font
 
 
@@ -31,7 +33,7 @@ class NavPillButton(QPushButton):
     """
     Ergonomic navigation pill button inheriting from QPushButton.
     Features integrated vector icon, text label, count badge,
-    and a 3px active indicator bar.
+    and supports both expanded and collapsed icon-only modes.
     """
 
     mode_selected = pyqtSignal(str)
@@ -53,6 +55,7 @@ class NavPillButton(QPushButton):
         self.is_dark = is_dark
         self.is_active = False
         self.is_hovered = False
+        self.is_collapsed = False
 
         self.setFixedHeight(42)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -61,7 +64,22 @@ class NavPillButton(QPushButton):
         self.setAutoDefault(False)
         self.setDefault(False)
 
+        self._update_tooltip()
         self.clicked.connect(lambda: self.mode_selected.emit(self.mode_id))
+
+    def _update_tooltip(self) -> None:
+        """Update tooltip to show label and count."""
+        if self.badge_count > 0:
+            self.setToolTip(f"{self.label} ({self.badge_count})")
+        else:
+            self.setToolTip(self.label)
+
+    def set_collapsed(self, collapsed: bool) -> None:
+        """Toggle between expanded pill and collapsed icon-only state."""
+        if self.is_collapsed != collapsed:
+            self.is_collapsed = collapsed
+            self._update_tooltip()
+            self.update()
 
     def set_active(self, active: bool) -> None:
         if self.is_active != active:
@@ -71,6 +89,7 @@ class NavPillButton(QPushButton):
     def set_badge_count(self, count: int) -> None:
         if self.badge_count != count:
             self.badge_count = max(0, count)
+            self._update_tooltip()
             self.update()
 
     def set_theme(self, is_dark: bool) -> None:
@@ -115,58 +134,72 @@ class NavPillButton(QPushButton):
             painter.setBrush(QBrush(bg_color))
             painter.drawRoundedRect(QRectF(2, 2, w - 4, h - 4), 10, 10)
 
-        # 2. Vector Icon (Crisp geometric icon, bolder stroke when active)
-        self._draw_vector_icon(painter, 16, (h - 16) // 2, 16, icon_color)
+        # 2. Vector Icon (Crisp geometric icon, centered when collapsed)
+        if self.is_collapsed:
+            icon_x = (w - 16) // 2
+        else:
+            icon_x = 16
+        self._draw_vector_icon(painter, icon_x, (h - 16) // 2, 16, icon_color)
 
-        # 3. Text Label
-        painter.setPen(text_color)
-        font = get_font(10, QFont.Weight.Bold if self.is_active else QFont.Weight.Medium)
-        painter.setFont(font)
+        # 3. Text Label (drawn only when expanded)
+        if not self.is_collapsed:
+            painter.setPen(text_color)
+            font = get_font(10, QFont.Weight.Bold if self.is_active else QFont.Weight.Medium)
+            painter.setFont(font)
 
-        text_x = 42
-        text_w = w - text_x - (46 if self.badge_count > 0 else 10)
-        text_rect = QRectF(text_x, 0, text_w, h)
-        painter.drawText(
-            text_rect,
-            int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft),
-            self.label,
-        )
-
-        # 4. Badge Pill (Right aligned if badge_count > 0)
-        if self.badge_count > 0:
-            badge_str = str(self.badge_count) if self.badge_count < 100 else "99+"
-            b_font = get_font(8, QFont.Weight.Bold)
-            painter.setFont(b_font)
-
-            badge_text_w = max(20.0, float(len(badge_str) * 7 + 10))
-            badge_h = 20.0
-            badge_x = float(w - badge_text_w - 10)
-            badge_y = float((h - badge_h) / 2)
-
-            if self.is_active:
-                badge_bg = QColor(255, 255, 255, 65)
-                badge_fg = QColor("#FFFFFF")
-            elif self.is_hovered:
-                badge_bg = QColor(255, 255, 255, 30) if self.is_dark else QColor(0, 0, 0, 22)
-                badge_fg = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
-            else:
-                badge_bg = QColor(255, 255, 255, 20) if self.is_dark else QColor(0, 0, 0, 16)
-                badge_fg = QColor("#D4D4D8") if self.is_dark else QColor("#57534E")
-
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QBrush(badge_bg))
-            painter.drawRoundedRect(
-                QRectF(badge_x, badge_y, badge_text_w, badge_h),
-                10,
-                10,
-            )
-
-            painter.setPen(badge_fg)
+            text_x = 42
+            text_w = w - text_x - (46 if self.badge_count > 0 else 10)
+            text_rect = QRectF(text_x, 0, text_w, h)
             painter.drawText(
-                QRectF(badge_x, badge_y, badge_text_w, badge_h),
-                int(Qt.AlignmentFlag.AlignCenter),
-                badge_str,
+                text_rect,
+                int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft),
+                self.label,
             )
+
+        # 4. Badge Indicator (Pill in expanded mode, mini dot in collapsed mode)
+        if self.badge_count > 0:
+            if self.is_collapsed:
+                # Mini dot indicator at top-right of the icon
+                dot_x = float((w - 16) // 2 + 13)
+                dot_y = float((h - 16) // 2 - 1)
+                dot_color = QColor("#FFFFFF") if self.is_active else (QColor("#FF6B3D") if self.is_dark else QColor("#BA3F1A"))
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QBrush(dot_color))
+                painter.drawEllipse(QRectF(dot_x, dot_y, 6.0, 6.0))
+            else:
+                badge_str = str(self.badge_count) if self.badge_count < 100 else "99+"
+                b_font = get_font(8, QFont.Weight.Bold)
+                painter.setFont(b_font)
+
+                badge_text_w = max(20.0, float(len(badge_str) * 7 + 10))
+                badge_h = 20.0
+                badge_x = float(w - badge_text_w - 10)
+                badge_y = float((h - badge_h) / 2)
+
+                if self.is_active:
+                    badge_bg = QColor(255, 255, 255, 65)
+                    badge_fg = QColor("#FFFFFF")
+                elif self.is_hovered:
+                    badge_bg = QColor(255, 255, 255, 30) if self.is_dark else QColor(0, 0, 0, 22)
+                    badge_fg = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
+                else:
+                    badge_bg = QColor(255, 255, 255, 20) if self.is_dark else QColor(0, 0, 0, 16)
+                    badge_fg = QColor("#D4D4D8") if self.is_dark else QColor("#57534E")
+
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(QBrush(badge_bg))
+                painter.drawRoundedRect(
+                    QRectF(badge_x, badge_y, badge_text_w, badge_h),
+                    10,
+                    10,
+                )
+
+                painter.setPen(badge_fg)
+                painter.drawText(
+                    QRectF(badge_x, badge_y, badge_text_w, badge_h),
+                    int(Qt.AlignmentFlag.AlignCenter),
+                    badge_str,
+                )
 
         painter.end()
 
@@ -192,20 +225,75 @@ class NavPillButton(QPushButton):
             )
 
 
-class SideNavBar(QWidget):
-    """
-    Dedicated Left Side Navigation Bar.
-    Fixed width 190px, houses WizDesk branding with tracking status dot,
-    middle navigation pills (Tasks, Notes, Activity, Projects),
-    and bottom utility footer (Settings, Theme toggle).
-    """
-
-    mode_changed = pyqtSignal(str)
-    theme_toggle_requested = pyqtSignal()
+class SidebarToggleButton(QPushButton):
+    """Clean icon button using side-bar-fill.svg to collapse and expand the sidebar."""
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
+        self.is_collapsed = False
+        self.setFixedSize(28, 28)
+        self.setIconSize(QSize(16, 16))
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.setToolTip("Collapse sidebar")
+        self.update_style()
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.update_style()
+
+    def set_collapsed(self, collapsed: bool) -> None:
+        self.is_collapsed = collapsed
+        self.setToolTip("Expand sidebar" if collapsed else "Collapse sidebar")
+        self.update_style()
+
+    def update_style(self, hover: bool = False) -> None:
+        normal_fg = "#9CA3AF" if self.is_dark else "#78716C"
+        hover_fg = "#FAFAFA" if self.is_dark else "#18181B"
+        hover_bg = "#27272A" if self.is_dark else "#DAD5CB"
+        c = hover_fg if hover else normal_fg
+        self.setIcon(get_status_icon("icons/side-bar-fill.svg", c, 16))
+        self.setIconSize(QSize(16, 16))
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                border: none;
+                border-radius: 6px;
+                padding: 0px;
+            }}
+            QPushButton:hover {{
+                background-color: {hover_bg};
+            }}
+        """)
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self.update_style(hover=True)
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self.update_style(hover=False)
+
+
+class SideNavBar(QWidget):
+    """
+    Dedicated Left Side Navigation Bar.
+    Supports full width 190px (expanded) and compact 58px (collapsed icon-only),
+    houses WizDesk branding, sidebar toggle button, navigation pills (Tasks, Notes, Activity, Projects),
+    and bottom utility footer (Settings, Help & FAQ, Theme toggle).
+    """
+
+    mode_changed = pyqtSignal(str)
+    theme_toggle_requested = pyqtSignal()
+    sidebar_toggled = pyqtSignal(bool)  # emits is_collapsed
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.is_collapsed = False
         self.current_mode = "tasks"
         self.pills: Dict[str, NavPillButton] = {}
 
@@ -217,28 +305,44 @@ class SideNavBar(QWidget):
         self.main_layout.setContentsMargins(10, 14, 10, 14)
         self.main_layout.setSpacing(6)
 
-        # 1. Brand Header
-        brand_layout = QHBoxLayout()
-        brand_layout.setContentsMargins(6, 2, 6, 12)
-        brand_layout.setSpacing(8)
+        # 1. Brand Header & Collapse Toggle
+        self.brand_layout = QHBoxLayout()
+        self.brand_layout.setContentsMargins(4, 2, 4, 12)
+        self.brand_layout.setSpacing(6)
+
+        self.brand_container = QWidget()
+        brand_c_layout = QHBoxLayout(self.brand_container)
+        brand_c_layout.setContentsMargins(0, 0, 0, 0)
+        brand_c_layout.setSpacing(8)
 
         self.logo_lbl = QLabel()
         self.logo_lbl.setFixedSize(24, 24)
         pix = get_app_pixmap(24, "wiz-idle.svg")
         if not pix.isNull():
             self.logo_lbl.setPixmap(pix)
-        brand_layout.addWidget(self.logo_lbl)
+        brand_c_layout.addWidget(self.logo_lbl)
 
         self.brand_title = QLabel("WizDesk")
         self.brand_title.setFont(get_font(11, QFont.Weight.Bold))
-        brand_layout.addWidget(self.brand_title)
-        brand_layout.addStretch()
+        brand_c_layout.addWidget(self.brand_title)
+
+        self.brand_layout.addWidget(self.brand_container)
+
+        self.header_spacer_left = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.brand_layout.addItem(self.header_spacer_left)
+
+        self.toggle_btn = SidebarToggleButton(is_dark=self.is_dark, parent=self)
+        self.toggle_btn.clicked.connect(self.toggle_sidebar)
+        self.brand_layout.addWidget(self.toggle_btn)
+
+        self.header_spacer_right = QSpacerItem(0, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self.brand_layout.addItem(self.header_spacer_right)
 
         # Status dot removed per user request (preserved hidden for backwards compatibility)
         self.status_dot = QLabel()
         self.status_dot.hide()
 
-        self.main_layout.addLayout(brand_layout)
+        self.main_layout.addLayout(self.brand_layout)
 
         # 2. Section Header: Workspace
         self.workspace_lbl = QLabel("WORKSPACE")
@@ -299,9 +403,9 @@ class SideNavBar(QWidget):
         self.main_layout.addWidget(self.help_pill)
 
         # 6. Theme Toggle Row
-        theme_row = QHBoxLayout()
-        theme_row.setContentsMargins(6, 4, 6, 0)
-        theme_row.setSpacing(8)
+        self.theme_row = QHBoxLayout()
+        self.theme_row.setContentsMargins(6, 4, 6, 0)
+        self.theme_row.setSpacing(8)
 
         self.theme_btn = QPushButton()
         self.theme_btn.setFixedHeight(30)
@@ -310,13 +414,53 @@ class SideNavBar(QWidget):
         self.theme_btn.setDefault(False)
         self.theme_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.theme_btn.clicked.connect(self.theme_toggle_requested.emit)
-        theme_row.addWidget(self.theme_btn)
+        self.theme_row.addWidget(self.theme_btn)
 
-        self.main_layout.addLayout(theme_row)
+        self.main_layout.addLayout(self.theme_row)
 
         # Apply initial theme & active state
         self.set_theme(self.is_dark)
         self.set_active_mode("tasks")
+
+    def toggle_sidebar(self) -> None:
+        """Toggle between expanded and collapsed sidebar."""
+        self.set_collapsed(not self.is_collapsed)
+
+    def set_collapsed(self, collapsed: bool) -> None:
+        """Set collapsed state."""
+        self.is_collapsed = collapsed
+        if self.is_collapsed:
+            self.setFixedWidth(58)
+            self.main_layout.setContentsMargins(7, 14, 7, 14)
+            self.brand_container.hide()
+            self.workspace_lbl.hide()
+            self.brand_layout.setContentsMargins(0, 2, 0, 12)
+            self.header_spacer_right.changeSize(1, 1, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            self.toggle_btn.set_collapsed(True)
+            self.theme_row.setContentsMargins(0, 4, 0, 0)
+            theme_symbol = "☀" if self.is_dark else "☾"
+            self.theme_btn.setText(theme_symbol)
+            self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
+        else:
+            self.setFixedWidth(190)
+            self.main_layout.setContentsMargins(10, 14, 10, 14)
+            self.brand_container.show()
+            self.workspace_lbl.show()
+            self.brand_layout.setContentsMargins(4, 2, 4, 12)
+            self.header_spacer_right.changeSize(0, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+            self.toggle_btn.set_collapsed(False)
+            self.theme_row.setContentsMargins(6, 4, 6, 0)
+            theme_text = "Light Mode" if self.is_dark else "Dark Mode"
+            theme_symbol = "☀" if self.is_dark else "☾"
+            self.theme_btn.setText(f"{theme_symbol}  {theme_text}")
+            self.theme_btn.setToolTip("")
+
+        self.brand_layout.invalidate()
+
+        for pill in self.pills.values():
+            pill.set_collapsed(self.is_collapsed)
+
+        self.sidebar_toggled.emit(self.is_collapsed)
 
     def _on_pill_selected(self, mode: str) -> None:
         self.set_active_mode(mode)
@@ -357,9 +501,17 @@ class SideNavBar(QWidget):
         self.workspace_lbl.setStyleSheet(f"color: {sub_color}; background: transparent; padding-left: 8px; margin-bottom: 2px;")
         self.divider.setStyleSheet(f"background-color: {border_color}; border: none;")
 
+        self.toggle_btn.set_theme(is_dark)
+
         theme_text = "Light Mode" if is_dark else "Dark Mode"
         theme_symbol = "☀" if is_dark else "☾"
-        self.theme_btn.setText(f"{theme_symbol}  {theme_text}")
+        if self.is_collapsed:
+            self.theme_btn.setText(theme_symbol)
+            self.theme_btn.setToolTip(f"Switch to {theme_text}")
+        else:
+            self.theme_btn.setText(f"{theme_symbol}  {theme_text}")
+            self.theme_btn.setToolTip("")
+
         self.theme_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_bg};
@@ -369,7 +521,7 @@ class SideNavBar(QWidget):
                 font-family: {FONT_SANS};
                 font-size: 11px;
                 font-weight: 500;
-                padding: 0 10px;
+                padding: 0 4px;
                 text-align: center;
             }}
             QPushButton:hover {{

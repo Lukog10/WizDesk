@@ -9,7 +9,7 @@ from wiz.core.config import config
 from wiz.core.state_machine import StateMachine
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
-from wiz.ui.popup_dialog import QuickEntryDialog
+from wiz.ui.popup_dialog import QuickEntryDialog, SegmentedFilterBar
 from wiz.ui.sidebar_widget import SideNavBar, NavPillButton
 from wiz.ui.settings_view import SettingsView, SettingsCheckbox
 from wiz.ui.help_faq_view import HelpFaqView, FaqItemWidget
@@ -28,11 +28,14 @@ def reset_config():
     old_vault = config.get("obsidian_vault_path", "")
     old_anim = config.get("enable_floating_animation", True)
     old_interval = config.get("tracking_interval_seconds", 300)
+    old_sidebar = config.sidebar_collapsed
+    config.set_sidebar_collapsed(False)
     yield
     config.set_theme(old_theme)
     config.set("obsidian_vault_path", old_vault)
     config.set("enable_floating_animation", old_anim)
     config.set("tracking_interval_seconds", old_interval)
+    config.set_sidebar_collapsed(old_sidebar)
 
 
 def test_sidebar_nav_pill_button(qapp):
@@ -339,4 +342,68 @@ def test_help_to_settings_navigation(qapp, repo: StorageRepository):
     assert dialog.settings_view.category_bar.current_category == "hotkeys"
 
     dialog.close()
+
+
+def test_sidebar_collapse_and_workspace_expansion(qapp, repo: StorageRepository):
+    """Test sidebar collapsing to 58px, icon-only pills, toggle button, and workspace expansion."""
+    sm = StateMachine()
+    config.set_sidebar_collapsed(False)
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    assert not dialog.sidebar.is_collapsed
+    assert dialog.sidebar.width() == 190
+    assert not dialog.sidebar.brand_container.isHidden()
+    assert not dialog.sidebar.workspace_lbl.isHidden()
+
+    # Initial workspace width
+    initial_sidebar_w = dialog.sidebar.width()
+    assert initial_sidebar_w == 190
+
+    # Toggle sidebar via the toggle button
+    dialog.sidebar.toggle_btn.click()
+
+    assert dialog.sidebar.is_collapsed
+    assert dialog.sidebar.width() == 58
+    assert dialog.sidebar.brand_container.isHidden()
+    assert dialog.sidebar.workspace_lbl.isHidden()
+    assert config.sidebar_collapsed is True
+
+    # Check that each nav pill is collapsed and has tooltip
+    for m_id, pill in dialog.sidebar.pills.items():
+        assert pill.is_collapsed
+        assert pill.toolTip() != ""
+
+    # Re-expand sidebar
+    dialog.sidebar.toggle_btn.click()
+    assert not dialog.sidebar.is_collapsed
+    assert dialog.sidebar.width() == 190
+    assert not dialog.sidebar.brand_container.isHidden()
+    assert not dialog.sidebar.workspace_lbl.isHidden()
+    assert config.sidebar_collapsed is False
+
+    dialog.close()
+
+
+def test_task_filter_bar_faq_styling(qapp):
+    """Test SegmentedFilterBar styling, options, active tab, and theme switching matching FAQ style."""
+    bar = SegmentedFilterBar(is_dark=True)
+    assert bar.options == ["Task", "In progress", "Upcoming", "Unfinished", "Completed", "Cancelled"]
+    assert bar.current_filter == "Task"
+
+    # Verify buttons created
+    for opt in bar.options:
+        assert opt in bar._buttons
+
+    # Switch active filter
+    emitted = []
+    bar.filter_changed.connect(lambda f: emitted.append(f))
+    bar.set_active_filter("Upcoming")
+    assert bar.current_filter == "Upcoming"
+    assert emitted == ["Upcoming"]
+
+    # Toggle theme
+    bar.set_dark_mode(is_dark=False)
+    assert not bar.is_dark
+    bar.set_dark_mode(is_dark=True)
+    assert bar.is_dark
 

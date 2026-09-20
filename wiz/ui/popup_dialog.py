@@ -579,7 +579,7 @@ class CreateSectionDialog(QDialog):
 
 
 class SegmentedFilterBar(QWidget):
-    """Pill capsule segmented filter bar (Task, In progress, Upcoming, Unfinished, Completed, Cancelled) with Light/Dark support."""
+    """Pill capsule segmented filter bar matching the FAQ & Documentation switcher style."""
 
     filter_changed = pyqtSignal(str)
 
@@ -593,13 +593,16 @@ class SegmentedFilterBar(QWidget):
         self.setFixedHeight(38)
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(3, 3, 3, 3)
-        self.layout.setSpacing(2)
+        self.layout.setSpacing(3)
 
         for opt in self.options:
             btn = QPushButton(opt)
-            btn.setFixedHeight(32)
+            btn.setFixedHeight(30)
             btn.setFont(get_font(11, QFont.Weight.DemiBold))
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setAutoDefault(False)
+            btn.setDefault(False)
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             btn.clicked.connect(lambda checked, o=opt: self.set_active_filter(o))
             self._buttons[opt] = btn
             self.layout.addWidget(btn)
@@ -614,11 +617,13 @@ class SegmentedFilterBar(QWidget):
             self._update_button_styles()
 
     def _update_container_style(self) -> None:
-        bg = "#27272A" if self.is_dark else "#E6E1D7"
+        switcher_bg = "#18181B" if self.is_dark else "#ECE7DC"
+        switcher_border = "#27272A" if self.is_dark else "#D8D2C6"
         self.setStyleSheet(f"""
             QWidget {{
-                background-color: {bg};
-                border-radius: 9px;
+                background-color: {switcher_bg};
+                border: 1px solid {switcher_border};
+                border-radius: 8px;
             }}
         """)
 
@@ -630,26 +635,28 @@ class SegmentedFilterBar(QWidget):
             self.filter_changed.emit(filter_name)
 
     def _update_button_styles(self) -> None:
-        """Update button styles to give the active button an elevated pill look."""
-        active_bg = "#18181B" if self.is_dark else "#FAF8F4"
-        active_color = "#F4F4F5" if self.is_dark else "#242220"
-        inactive_color = "#A1A1AA" if self.is_dark else "#78716C"
-        hover_color = "#FAFAFA" if self.is_dark else "#242220"
-        hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.05)"
+        """Update button styles to match the elevated FAQ & Documentation switcher tabs."""
+        is_dark = self.is_dark
+        active_tab_bg = "#27272A" if is_dark else "#FFFFFF"
+        active_tab_fg = "#FAFAFA" if is_dark else "#18181B"
+        active_tab_border = "#3F3F46" if is_dark else "#D5CEC2"
+        inactive_tab_fg = "#A1A1AA" if is_dark else "#6B655B"
+        hover_fg = "#FAFAFA" if is_dark else "#18181B"
+        hover_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.04)"
 
         for opt, btn in self._buttons.items():
             if opt == self.current_filter:
                 btn.setFont(get_font(11, QFont.Weight.Bold))
                 btn.setStyleSheet(f"""
                     QPushButton {{
-                        background-color: {active_bg};
-                        color: {active_color};
-                        border: none;
-                        border-radius: 7px;
+                        background-color: {active_tab_bg};
+                        color: {active_tab_fg};
+                        border: 1px solid {active_tab_border};
+                        border-radius: 6px;
                         font-family: {FONT_SANS};
                         font-size: 11px;
                         font-weight: 600;
-                        padding: 0 8px;
+                        padding: 0 10px;
                     }}
                 """)
             else:
@@ -657,16 +664,16 @@ class SegmentedFilterBar(QWidget):
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: transparent;
-                        color: {inactive_color};
-                        border: none;
-                        border-radius: 7px;
+                        color: {inactive_tab_fg};
+                        border: 1px solid transparent;
+                        border-radius: 6px;
                         font-family: {FONT_SANS};
                         font-size: 11px;
                         font-weight: 500;
-                        padding: 0 8px;
+                        padding: 0 10px;
                     }}
                     QPushButton:hover {{
-                        color: {hover_color};
+                        color: {hover_fg};
                         background-color: {hover_bg};
                     }}
                 """)
@@ -2077,10 +2084,11 @@ class QuickEntryDialog(QDialog):
         self.frame_layout.setContentsMargins(0, 0, 0, 0)
         self.frame_layout.setSpacing(0)
 
-        # 1. Left Side Navigation Bar (190px)
+        # 1. Left Side Navigation Bar (190px or 58px)
         self.sidebar = SideNavBar(is_dark=self.is_dark, parent=self.outer_frame)
         self.sidebar.mode_changed.connect(self._set_view_mode)
         self.sidebar.theme_toggle_requested.connect(self.toggle_theme)
+        self.sidebar.sidebar_toggled.connect(self._on_sidebar_toggled)
         self.frame_layout.addWidget(self.sidebar)
 
         # Backwards-compatible aliases for mode buttons
@@ -2364,10 +2372,18 @@ class QuickEntryDialog(QDialog):
         self._populate_projects()
         self._set_view_mode("tasks")
 
+        # Restore saved sidebar collapsed state
+        if config.sidebar_collapsed:
+            self.sidebar.set_collapsed(True)
+
         # Disable autoDefault and default on all child QPushButton widgets to prevent Enter key activations
         for btn in self.findChildren(QPushButton):
             btn.setAutoDefault(False)
             btn.setDefault(False)
+
+    def _on_sidebar_toggled(self, collapsed: bool) -> None:
+        """Handle sidebar toggle and persist user preference."""
+        config.set_sidebar_collapsed(collapsed)
 
     def toggle_theme(self) -> None:
         """Toggle between light and dark themes and broadcast."""
@@ -2384,6 +2400,10 @@ class QuickEntryDialog(QDialog):
         # Update sidebar theme
         if hasattr(self, "sidebar"):
             self.sidebar.set_theme(self.is_dark)
+
+        # Update filter bar theme
+        if hasattr(self, "filter_bar"):
+            self.filter_bar.set_dark_mode(self.is_dark)
 
         # Color tokens - Brand aligned & Softer Light Mode
         outer_bg = "#121214" if self.is_dark else "#E8E4DC"
