@@ -2384,6 +2384,21 @@ class QuickEntryDialog(QDialog):
     def _on_sidebar_toggled(self, collapsed: bool) -> None:
         """Handle sidebar toggle and persist user preference."""
         config.set_sidebar_collapsed(collapsed)
+        if hasattr(self, "sidebar"):
+            self.sidebar.updateGeometry()
+        if hasattr(self, "workspace_container"):
+            self.workspace_container.updateGeometry()
+        if hasattr(self, "frame_layout"):
+            self.frame_layout.activate()
+        if hasattr(self, "workspace_layout"):
+            self.workspace_layout.activate()
+        if hasattr(self, "_shadow_effect") and self._shadow_effect:
+            self._shadow_effect.update()
+        if hasattr(self, "outer_frame"):
+            self.outer_frame.update()
+        if hasattr(self, "workspace_container"):
+            self.workspace_container.update()
+        self.update()
 
     def toggle_theme(self) -> None:
         """Toggle between light and dark themes and broadcast."""

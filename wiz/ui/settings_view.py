@@ -73,6 +73,8 @@ class SettingsCategoryBar(QFrame):
 
         for cat_id, cat_label in self.CATEGORIES:
             btn = QPushButton(cat_label, self)
+            btn.setFixedHeight(30)
+            btn.setFont(get_font(11, QFont.Weight.DemiBold))
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             btn.setAutoDefault(False)
@@ -127,26 +129,28 @@ class SettingsCategoryBar(QFrame):
         for cid, btn in self.buttons.items():
             is_active = (cid == self.active_category)
             if is_active:
+                btn.setFont(get_font(11, QFont.Weight.Bold))
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: {active_bg};
                         color: {active_color};
                         border: 1px solid {active_border};
                         border-radius: 6px;
-                        padding: 5px 16px;
+                        padding: 0 14px;
                         font-family: {FONT_SANS};
                         font-size: 11px;
                         font-weight: 600;
                     }}
                 """)
             else:
+                btn.setFont(get_font(11, QFont.Weight.DemiBold))
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: transparent;
                         color: {btn_color};
-                        border: none;
+                        border: 1px solid transparent;
                         border-radius: 6px;
-                        padding: 5px 16px;
+                        padding: 0 14px;
                         font-family: {FONT_SANS};
                         font-size: 11px;
                         font-weight: 500;

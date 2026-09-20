@@ -8,6 +8,8 @@ from datetime import date
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 
+from PyQt6.QtNetwork import QLocalServer, QLocalSocket
+
 from wiz.core.config import config
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.core.signals import app_signals
@@ -22,6 +24,8 @@ from wiz.ui.fonts import init_fonts, get_font, FONT_SANS
 from wiz.tracker.window_tracker import WindowTracker
 from wiz.sync.obsidian import ObsidianSync
 from wiz.utils.hotkey import GlobalHotkeyListener
+
+SINGLE_INSTANCE_SERVER_NAME = "lukog_wizdesk_single_instance_pipe"
 
 
 def set_windows_app_id() -> None:
@@ -48,6 +52,7 @@ class WizApplication:
         self._quick_entry_dialog: Optional[QuickEntryDialog] = None
         self._quick_bar_dialog: Optional[QuickBarPopup] = None
         self._settings_dialog: Optional[SettingsDialog] = None
+        self._local_server: Optional[QLocalServer] = None
 
         # Background Services
         self.tracker = WindowTracker(self.repo)
@@ -84,9 +89,11 @@ class WizApplication:
 
     def show_quick_entry(self) -> None:
         """Open or focus the full Quick-Entry workspace dialog."""
-        if self._quick_entry_dialog is None or not self._quick_entry_dialog.isVisible():
+        if self._quick_entry_dialog is None:
             self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo)
-            self._quick_entry_dialog.show()
+        if self._quick_entry_dialog.isMinimized():
+            self._quick_entry_dialog.showNormal()
+        self._quick_entry_dialog.show()
         self._quick_entry_dialog.raise_()
         self._quick_entry_dialog.activateWindow()
 
@@ -103,12 +110,10 @@ class WizApplication:
         self._quick_bar_dialog.show_mode("note", mascot_rect=self.mascot_window.geometry())
 
     def show_settings(self) -> None:
-        """Open or focus the settings dialog."""
-        if self._settings_dialog is None or not self._settings_dialog.isVisible():
-            self._settings_dialog = SettingsDialog(self.repo)
-            self._settings_dialog.show()
-        self._settings_dialog.raise_()
-        self._settings_dialog.activateWindow()
+        """Open or focus the embedded settings view inside the workspace."""
+        self.show_quick_entry()
+        if self._quick_entry_dialog:
+            self._quick_entry_dialog._set_view_mode("settings")
 
     def trigger_sync(self) -> None:
         """Run manual or scheduled Obsidian sync."""
@@ -137,6 +142,9 @@ class WizApplication:
     def quit(self) -> None:
         """Gracefully shut down background services, hide tray, and exit application."""
         self.shutdown()
+        if self._local_server:
+            self._local_server.close()
+            QLocalServer.removeServer(SINGLE_INSTANCE_SERVER_NAME)
         if self.tray_icon:
             self.tray_icon.hide()
         if self.mascot_window:
@@ -163,6 +171,24 @@ def main() -> None:
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
 
     app = QApplication(sys.argv)
+
+    # Enforce Single-Instance application lock
+    test_socket = QLocalSocket()
+    test_socket.connectToServer(SINGLE_INSTANCE_SERVER_NAME)
+    if test_socket.waitForConnected(400):
+        # Existing instance is alive: request it to focus the workspace and exit
+        test_socket.write(b"show_workspace\n")
+        test_socket.flush()
+        test_socket.waitForBytesWritten(600)
+        test_socket.close()
+        print("[WizDesk] Another instance is already running. Focused active window.")
+        sys.exit(0)
+
+    # Initialize local server on primary instance
+    QLocalServer.removeServer(SINGLE_INSTANCE_SERVER_NAME)
+    local_server = QLocalServer()
+    local_server.listen(SINGLE_INSTANCE_SERVER_NAME)
+
     init_fonts()
     app.setFont(get_font(10))
     # Global stylesheet: ensures font-family cascades to every widget,
@@ -174,6 +200,20 @@ def main() -> None:
     app.setQuitOnLastWindowClosed(False)
 
     wiz_app = WizApplication()
+    wiz_app._local_server = local_server
+
+    def _handle_instance_message():
+        sock = local_server.nextPendingConnection()
+        if sock:
+            sock.readyRead.connect(lambda: _on_socket_read(sock))
+
+    def _on_socket_read(sock: QLocalSocket):
+        data = bytes(sock.readAll()).decode("utf-8", errors="ignore")
+        if "show_workspace" in data:
+            wiz_app.show_quick_entry()
+        sock.close()
+
+    local_server.newConnection.connect(_handle_instance_message)
     wiz_app.start()
 
     # Handle graceful exit on OS signals

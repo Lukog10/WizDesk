@@ -368,10 +368,12 @@ def test_sidebar_collapse_and_workspace_expansion(qapp, repo: StorageRepository)
     assert dialog.sidebar.workspace_lbl.isHidden()
     assert config.sidebar_collapsed is True
 
-    # Check that each nav pill is collapsed and has tooltip
+    # Check that each nav pill is collapsed, has tooltip, and is sized 44px
     for m_id, pill in dialog.sidebar.pills.items():
         assert pill.is_collapsed
+        assert pill.width() == 44
         assert pill.toolTip() != ""
+    assert dialog.sidebar.theme_btn.width() == 44
 
     # Re-expand sidebar
     dialog.sidebar.toggle_btn.click()
@@ -380,6 +382,10 @@ def test_sidebar_collapse_and_workspace_expansion(qapp, repo: StorageRepository)
     assert not dialog.sidebar.brand_container.isHidden()
     assert not dialog.sidebar.workspace_lbl.isHidden()
     assert config.sidebar_collapsed is False
+    for m_id, pill in dialog.sidebar.pills.items():
+        assert not pill.is_collapsed
+        assert pill.width() == 170
+    assert dialog.sidebar.theme_btn.width() == 170
 
     dialog.close()
 
@@ -406,4 +412,47 @@ def test_task_filter_bar_faq_styling(qapp):
     assert not bar.is_dark
     bar.set_dark_mode(is_dark=True)
     assert bar.is_dark
+
+
+def test_quick_entry_dialog_reuse_and_settings_tabs(qapp, repo: StorageRepository):
+    """Verify WizApplication reuses the dialog instance and category bar buttons remain stable."""
+    from wiz.__main__ import WizApplication
+    from wiz.ui.settings_view import SettingsCategoryBar
+
+    # Test SettingsCategoryBar dimensions and stability
+    cat_bar = SettingsCategoryBar(is_dark=True)
+    assert cat_bar.height() == 38
+    for cat_id in ["general", "hotkeys", "projects", "integrations"]:
+        assert cat_id in cat_bar.buttons
+        btn = cat_bar.buttons[cat_id]
+        assert btn.height() == 30
+
+    cat_bar.set_active_category("hotkeys")
+    assert cat_bar.current_category == "hotkeys"
+    assert cat_bar.buttons["hotkeys"].height() == 30
+
+    cat_bar.set_theme(is_dark=False)
+    assert not cat_bar.is_dark
+    assert cat_bar.buttons["general"].height() == 30
+
+    # Test WizApplication dialog reuse
+    app_instance = WizApplication()
+    assert app_instance._quick_entry_dialog is None
+
+    app_instance.show_quick_entry()
+    dlg_ref1 = app_instance._quick_entry_dialog
+    assert dlg_ref1 is not None
+    assert dlg_ref1.isVisible()
+
+    # Second call must reuse the existing dialog, not instantiate a duplicate
+    app_instance.show_quick_entry()
+    dlg_ref2 = app_instance._quick_entry_dialog
+    assert dlg_ref1 is dlg_ref2
+
+    # show_settings must also reuse the same dialog and switch mode
+    app_instance.show_settings()
+    assert app_instance._quick_entry_dialog is dlg_ref1
+    assert dlg_ref1.current_view_mode == "settings"
+
+    app_instance.quit()
 

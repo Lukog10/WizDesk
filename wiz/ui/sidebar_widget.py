@@ -57,7 +57,7 @@ class NavPillButton(QPushButton):
         self.is_hovered = False
         self.is_collapsed = False
 
-        self.setFixedHeight(42)
+        self.setFixedSize(170, 42)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -76,10 +76,14 @@ class NavPillButton(QPushButton):
 
     def set_collapsed(self, collapsed: bool) -> None:
         """Toggle between expanded pill and collapsed icon-only state."""
-        if self.is_collapsed != collapsed:
-            self.is_collapsed = collapsed
-            self._update_tooltip()
-            self.update()
+        self.is_collapsed = collapsed
+        if collapsed:
+            self.setFixedSize(44, 42)
+        else:
+            self.setFixedSize(170, 42)
+        self._update_tooltip()
+        self.updateGeometry()
+        self.update()
 
     def set_active(self, active: bool) -> None:
         if self.is_active != active:
@@ -408,7 +412,7 @@ class SideNavBar(QWidget):
         self.theme_row.setSpacing(8)
 
         self.theme_btn = QPushButton()
-        self.theme_btn.setFixedHeight(30)
+        self.theme_btn.setFixedSize(170, 30)
         self.theme_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.theme_btn.setAutoDefault(False)
         self.theme_btn.setDefault(False)
@@ -438,6 +442,7 @@ class SideNavBar(QWidget):
             self.header_spacer_right.changeSize(1, 1, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             self.toggle_btn.set_collapsed(True)
             self.theme_row.setContentsMargins(0, 4, 0, 0)
+            self.theme_btn.setFixedSize(44, 30)
             theme_symbol = "☀" if self.is_dark else "☾"
             self.theme_btn.setText(theme_symbol)
             self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
@@ -450,6 +455,7 @@ class SideNavBar(QWidget):
             self.header_spacer_right.changeSize(0, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
             self.toggle_btn.set_collapsed(False)
             self.theme_row.setContentsMargins(6, 4, 6, 0)
+            self.theme_btn.setFixedSize(170, 30)
             theme_text = "Light Mode" if self.is_dark else "Dark Mode"
             theme_symbol = "☀" if self.is_dark else "☾"
             self.theme_btn.setText(f"{theme_symbol}  {theme_text}")
@@ -460,6 +466,9 @@ class SideNavBar(QWidget):
         for pill in self.pills.values():
             pill.set_collapsed(self.is_collapsed)
 
+        self.main_layout.activate()
+        self.updateGeometry()
+        self.update()
         self.sidebar_toggled.emit(self.is_collapsed)
 
     def _on_pill_selected(self, mode: str) -> None:
@@ -506,9 +515,11 @@ class SideNavBar(QWidget):
         theme_text = "Light Mode" if is_dark else "Dark Mode"
         theme_symbol = "☀" if is_dark else "☾"
         if self.is_collapsed:
+            self.theme_btn.setFixedSize(44, 30)
             self.theme_btn.setText(theme_symbol)
             self.theme_btn.setToolTip(f"Switch to {theme_text}")
         else:
+            self.theme_btn.setFixedSize(170, 30)
             self.theme_btn.setText(f"{theme_symbol}  {theme_text}")
             self.theme_btn.setToolTip("")
 
