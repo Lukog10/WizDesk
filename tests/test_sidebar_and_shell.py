@@ -75,6 +75,7 @@ def test_sidebar_widget_modes_and_signals(qapp):
     sidebar = SideNavBar(is_dark=True)
     assert sidebar.current_mode == "tasks"
     assert "tasks" in sidebar.pills
+    assert "calendar" in sidebar.pills
     assert "notes" in sidebar.pills
     assert "activity" in sidebar.pills
     assert "projects" in sidebar.pills
@@ -200,19 +201,27 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
     assert isinstance(dialog.sidebar, SideNavBar)
     assert dialog.sidebar.width() == 190
 
-    # Check 6 views in stack
-    assert dialog.stack.count() == 6
+    # Check 7 views in stack
+    assert dialog.stack.count() == 7
     assert dialog.stack.widget(0) == dialog.tasks_page
     assert dialog.stack.widget(1) == dialog.notes_page
-    assert dialog.stack.widget(2) == dialog.timeline_view
-    assert dialog.stack.widget(3) == dialog.project_dashboard_view
-    assert dialog.stack.widget(4) == dialog.settings_view
-    assert dialog.stack.widget(5) == dialog.help_faq_view
+    assert dialog.stack.widget(2) == dialog.calendar_view
+    assert dialog.stack.widget(3) == dialog.timeline_view
+    assert dialog.stack.widget(4) == dialog.project_dashboard_view
+    assert dialog.stack.widget(5) == dialog.settings_view
+    assert dialog.stack.widget(6) == dialog.help_faq_view
 
     # Initial view is Tasks
     assert dialog.current_view_mode == "tasks"
     assert dialog.page_title_lbl.text() == "Tasks & To-Dos"
     assert dialog.sidebar.current_mode == "tasks"
+
+    # Switch to Calendar via sidebar pill
+    dialog.sidebar.pills["calendar"].click()
+    assert dialog.current_view_mode == "calendar"
+    assert dialog.page_title_lbl.text() == "Calendar & Schedule"
+    assert dialog.stack.currentWidget() == dialog.calendar_view
+    assert dialog.date_header_container.isHidden()
 
     # Switch to Quick Notes via sidebar pill
     dialog.sidebar.pills["notes"].click()
@@ -393,7 +402,7 @@ def test_sidebar_collapse_and_workspace_expansion(qapp, repo: StorageRepository)
 def test_task_filter_bar_faq_styling(qapp):
     """Test SegmentedFilterBar styling, options, active tab, and theme switching matching FAQ style."""
     bar = SegmentedFilterBar(is_dark=True)
-    assert bar.options == ["Task", "In progress", "Upcoming", "Unfinished", "Completed", "Cancelled"]
+    assert bar.options == ["Task", "In progress", "Completed", "Cancelled"]
     assert bar.current_filter == "Task"
 
     # Verify buttons created
@@ -403,9 +412,9 @@ def test_task_filter_bar_faq_styling(qapp):
     # Switch active filter
     emitted = []
     bar.filter_changed.connect(lambda f: emitted.append(f))
-    bar.set_active_filter("Upcoming")
-    assert bar.current_filter == "Upcoming"
-    assert emitted == ["Upcoming"]
+    bar.set_active_filter("In progress")
+    assert bar.current_filter == "In progress"
+    assert emitted == ["In progress"]
 
     # Toggle theme
     bar.set_dark_mode(is_dark=False)

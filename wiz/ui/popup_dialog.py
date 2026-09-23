@@ -51,6 +51,7 @@ from wiz.ui.project_dashboard_view import ProjectDashboardView
 from wiz.ui.sidebar_widget import SideNavBar
 from wiz.ui.settings_view import SettingsView
 from wiz.ui.help_faq_view import HelpFaqView
+from wiz.ui.calendar_view import CalendarView
 from wiz.ui.arrow_combo import ArrowComboBox
 
 
@@ -585,7 +586,7 @@ class SegmentedFilterBar(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
-        self.options = ["Task", "In progress", "Upcoming", "Unfinished", "Completed", "Cancelled"]
+        self.options = ["Task", "In progress", "Completed", "Cancelled"]
         self.current_filter = "Task"
         self.is_dark = is_dark
         self._buttons: Dict[str, QPushButton] = {}
@@ -2328,11 +2329,17 @@ class QuickEntryDialog(QDialog):
         notes_page_layout.addLayout(add_note_layout)
         self.stack.addWidget(self.notes_page)
 
-        # 3. Activity Timeline Page
+        # 3. Dedicated Calendar & Scheduling Page
+        self.calendar_view = CalendarView(self.repo, is_dark=self.is_dark, parent=self.stack)
+        self.calendar_view.task_created.connect(self._on_calendar_task_activity)
+        self.calendar_view.task_updated.connect(self._on_calendar_task_activity)
+        self.stack.addWidget(self.calendar_view)
+
+        # 4. Activity Timeline Page
         self.timeline_view = TimelineView(self.repo, is_dark=self.is_dark, parent=self.stack)
         self.stack.addWidget(self.timeline_view)
 
-        # 4. Projects Dashboard Page
+        # 5. Projects Dashboard Page
         self.project_dashboard_view = ProjectDashboardView(self.repo, parent=self.stack, is_dark=self.is_dark)
         self.project_dashboard_view.project_changed.connect(self._populate_projects)
         self.stack.addWidget(self.project_dashboard_view)
@@ -2657,6 +2664,8 @@ class QuickEntryDialog(QDialog):
         # 7. Update timeline, project dashboard & settings view themes
         if hasattr(self, "timeline_view"):
             self.timeline_view.set_theme(self.is_dark)
+        if hasattr(self, "calendar_view"):
+            self.calendar_view.set_dark_mode(self.is_dark)
         if hasattr(self, "project_dashboard_view"):
             self.project_dashboard_view.set_theme(self.is_dark)
         if hasattr(self, "settings_view"):
@@ -2676,6 +2685,7 @@ class QuickEntryDialog(QDialog):
 
         titles = {
             "tasks": "Tasks & To-Dos",
+            "calendar": "Calendar & Schedule",
             "notes": "Quick Notes",
             "activity": "Activity Timeline",
             "projects": "Projects Dashboard",
@@ -2686,11 +2696,14 @@ class QuickEntryDialog(QDialog):
             self.page_title_lbl.setText(titles.get(mode, "WizDesk"))
 
         if hasattr(self, "date_header_container"):
-            self.date_header_container.setVisible(mode not in ("projects", "settings", "help"))
+            self.date_header_container.setVisible(mode not in ("projects", "settings", "help", "calendar"))
 
         if mode == "tasks":
             self.stack.setCurrentWidget(self.tasks_page)
             self.refresh_tasks()
+        elif mode == "calendar" and hasattr(self, "calendar_view"):
+            self.stack.setCurrentWidget(self.calendar_view)
+            self.calendar_view.load_data()
         elif mode == "notes":
             self.stack.setCurrentWidget(self.notes_page)
             self.refresh_notes()
@@ -2792,18 +2805,10 @@ class QuickEntryDialog(QDialog):
 
     def _update_date_display(self) -> None:
         """Update date button label and 'Today' shortcut indicator."""
-        active_filter = self.filter_bar.current_filter.lower() if hasattr(self, "filter_bar") else ""
-        if active_filter == "upcoming":
-            self.date_btn.setText("Upcoming Scheduled Tasks")
-            self.today_pill_btn.setVisible(True)
-        elif active_filter == "unfinished":
-            self.date_btn.setText("Unfinished Tasks (Overdue)")
-            self.today_pill_btn.setVisible(True)
-        else:
-            date_str = self.selected_date.strftime("%B %d, %A")
-            self.date_btn.setText(date_str)
-            is_today = (self.selected_date == date.today())
-            self.today_pill_btn.setVisible(not is_today)
+        date_str = self.selected_date.strftime("%B %d, %A")
+        self.date_btn.setText(date_str)
+        is_today = (self.selected_date == date.today())
+        self.today_pill_btn.setVisible(not is_today)
 
     def showEvent(self, event) -> None:
         """Roll recurring tasks when opening or re-showing the dialog."""
@@ -2834,9 +2839,13 @@ class QuickEntryDialog(QDialog):
 
     def _on_today_clicked(self) -> None:
         """Jump back to today."""
-        if hasattr(self, "filter_bar") and self.filter_bar.current_filter in ("Upcoming", "Unfinished"):
-            self.filter_bar.set_active_filter("Task")
         self.set_selected_date(date.today())
+
+    def _on_calendar_task_activity(self, task_id: int) -> None:
+        """Handle task activity originating from Calendar view."""
+        self.refresh_tasks()
+        if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
+            self.project_dashboard_view.load_data()
 
     def _on_background_session_polled(self, app_name: str, window_title: str, project_tag: str) -> None:
         """Handle background activity tracker polling to update active views in real-time."""
@@ -2847,10 +2856,14 @@ class QuickEntryDialog(QDialog):
                 self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
 
     def _on_background_task_activity(self, task_id: int) -> None:
-        """Refresh dashboard or task views when tasks change."""
+        """Refresh dashboard, calendar, or task views when tasks change."""
         if self.isVisible():
+            if hasattr(self, "calendar_view") and self.current_view_mode == "calendar":
+                self.calendar_view.load_data()
             if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
                 self.project_dashboard_view.load_data()
+            elif hasattr(self, "current_view_mode") and self.current_view_mode == "tasks":
+                self.refresh_tasks()
 
     def _on_projects_changed_sync(self) -> None:
         """Handle real-time project synchronization across all views."""
@@ -2989,10 +3002,6 @@ class QuickEntryDialog(QDialog):
         if not grouped:
             if active_filter.lower() in ("task", "all"):
                 empty_msg = f"No tasks recorded for {self.selected_date.strftime('%B %d')}."
-            elif active_filter.lower() == "upcoming":
-                empty_msg = "No upcoming tasks scheduled."
-            elif active_filter.lower() == "unfinished":
-                empty_msg = "No unfinished or overdue tasks."
             elif active_filter.lower() == "in progress":
                 empty_msg = f"No in progress tasks for {self.selected_date.strftime('%B %d')}."
             elif active_filter.lower() == "completed":
@@ -3188,8 +3197,8 @@ class QuickEntryDialog(QDialog):
         sched = self._pending_task_schedule
         rep = self._pending_task_repeat
 
-        # If user did not pick an explicit schedule and is viewing another date (and not Upcoming/Unfinished):
-        if sched is None and hasattr(self, "filter_bar") and self.filter_bar.current_filter not in ("Upcoming", "Unfinished"):
+        # If user did not pick an explicit schedule and is viewing another date:
+        if sched is None:
             if self.selected_date != date.today():
                 sched = self.selected_date.strftime("%Y-%m-%d")
 

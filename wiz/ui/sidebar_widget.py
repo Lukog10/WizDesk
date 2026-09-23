@@ -210,6 +210,7 @@ class NavPillButton(QPushButton):
     # Mapping from icon_type to SVG asset filename
     _SVG_ICON_MAP = {
         "tasks": "icons/tasklist-24.svg",
+        "calendar": "icons/schedule.svg",
         "notes": "icons/notes-bold.svg",
         "activity": "icons/activity-03.svg",
         "projects": "icons/dashboard-2-rounded.svg",
@@ -357,6 +358,7 @@ class SideNavBar(QWidget):
         # 3. Main Navigation Pills
         nav_defs = [
             ("tasks", "Tasks", "tasks"),
+            ("calendar", "Calendar", "calendar"),
             ("notes", "Quick Notes", "notes"),
             ("activity", "Activity", "activity"),
             ("projects", "Projects", "projects"),

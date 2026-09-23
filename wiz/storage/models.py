@@ -710,6 +710,37 @@ class StorageRepository:
 
             return tasks
 
+    def get_scheduled_summary_for_month(self, year: int, month: int) -> Dict[str, str]:
+        """Return a mapping of 'YYYY-MM-DD' -> 'active' | 'completed' for dates in the month.
+        
+        If a day has at least one active (not done/completed/cancelled) task, it is marked 'active'.
+        If all tasks for that day are completed, it is marked 'completed'.
+        """
+        month_prefix = f"{year:04d}-{month:02d}%"
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT scheduled_date, status
+                FROM tasks
+                WHERE scheduled_date LIKE ?
+                ORDER BY scheduled_date ASC
+                """,
+                (month_prefix,),
+            )
+            rows = cur.fetchall()
+            date_status: Dict[str, str] = {}
+            for r in rows:
+                dt = r["scheduled_date"]
+                if not dt:
+                    continue
+                st = (r["status"] or "not_started").lower()
+                if dt not in date_status:
+                    date_status[dt] = "completed" if st in ("done", "completed") else "active"
+                else:
+                    if st not in ("done", "completed", "cancelled", "canceled"):
+                        date_status[dt] = "active"
+            return date_status
+
     # --- Project Keyword Mapping Operations ---
 
     def create_or_update_project(

@@ -524,23 +524,28 @@ def test_quick_entry_dialog_scheduling_and_repeat_flow(qapp, repo):
     assert created.repeat_mode == "daily"
     assert created.is_recurring is True
 
-    # 3. Test Upcoming Filter
-    dialog.filter_bar.set_active_filter("Upcoming")
-    assert dialog.filter_bar.current_filter == "Upcoming"
-    assert "Upcoming Scheduled Tasks" in dialog.date_btn.text()
-    assert not dialog.today_pill_btn.isHidden()
+    # 3. Test Calendar View Upcoming Preset
+    dialog._set_view_mode("calendar")
+    assert dialog.current_view_mode == "calendar"
+    dialog.calendar_view.btn_upcoming_preset.click()
+    assert dialog.calendar_view.active_preset == "upcoming"
+    assert "Upcoming Scheduled Tasks" in dialog.calendar_view.agenda_title.text()
 
-    # Switch back to Today via today button
-    dialog._on_today_clicked()
-    assert dialog.filter_bar.current_filter == "Task"
-    assert dialog.selected_date == today
+    # Switch back to Today via today preset
+    dialog.calendar_view.btn_today_preset.click()
+    assert dialog.calendar_view.active_preset is None
+    assert dialog.calendar_view.selected_date == today
 
-    # 4. Test Unfinished Filter
-    # Create overdue task
+    # 4. Test Overdue Preset
     repo.create_task("Submit Tax Forms", project_tag="Work", scheduled_date=yesterday.strftime("%Y-%m-%d"))
-    dialog.filter_bar.set_active_filter("Unfinished")
-    assert dialog.filter_bar.current_filter == "Unfinished"
-    assert "Unfinished Tasks" in dialog.date_btn.text()
+    dialog.calendar_view.btn_overdue_preset.click()
+    assert dialog.calendar_view.active_preset == "overdue"
+    assert "Overdue Tasks" in dialog.calendar_view.agenda_title.text()
+
+    # Switch back to Tasks view
+    dialog._set_view_mode("tasks")
+    assert dialog.current_view_mode == "tasks"
+    assert dialog.filter_bar.current_filter == "Task"
 
     # 5. Test updating schedule and repeat on an existing task via dialog handlers
     dialog._on_task_schedule_changed(created.id, today.strftime("%Y-%m-%d"))
