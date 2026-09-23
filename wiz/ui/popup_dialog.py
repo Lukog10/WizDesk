@@ -3268,17 +3268,17 @@ class QuickEntryDialog(QDialog):
     # --- Mouse drag for frameless window movement ---
 
     def _is_in_draggable_area(self, global_pos: QPoint) -> bool:
-        """Only allow dragging from the top title bar or window header, never from workspace content."""
+        """Allow dragging ONLY from the top title bar header or sidebar brand header, never from workspace content."""
         if self.isMaximized():
             return False
 
-        # NEVER allow dragging from anywhere inside the inner workspace content card
+        # 1. NEVER allow dragging from anywhere inside the workspace content card
         if hasattr(self, "inner_card") and self.inner_card.isVisible():
             inner_local = self.inner_card.mapFromGlobal(global_pos)
             if self.inner_card.rect().contains(inner_local):
                 return False
 
-        # Don't drag if clicking interactive controls (buttons, inputs, combos, checkboxes, scrollbars, etc.)
+        # 2. Exclude interactive controls (buttons, inputs, combos, checkboxes, scrollbars, etc.)
         local_pos = self.mapFromGlobal(global_pos)
         child = self.childAt(local_pos)
         if child is not None:
@@ -3293,7 +3293,26 @@ class QuickEntryDialog(QDialog):
             if isinstance(child, (QAbstractButton, QAbstractSpinBox, QComboBox, QLineEdit, QTextEdit, QScrollBar)):
                 return False
 
-        return True
+        # 3. Page Title Label ("Tasks & To-Dos", "Calendar & Schedule", etc.)
+        if hasattr(self, "page_title_lbl"):
+            title_local = self.page_title_lbl.mapFromGlobal(global_pos)
+            if self.page_title_lbl.rect().contains(title_local):
+                return True
+
+        # 4. Top Title Bar Header strip (the area in workspace_container above inner_card)
+        if hasattr(self, "workspace_container") and hasattr(self, "inner_card"):
+            ws_local = self.workspace_container.mapFromGlobal(global_pos)
+            inner_top_y = self.inner_card.y()
+            if 0 <= ws_local.y() < inner_top_y and 0 <= ws_local.x() <= self.workspace_container.width():
+                return True
+
+        # 5. Top Brand Area of the Sidebar (top 42px of sidebar)
+        if hasattr(self, "sidebar"):
+            sb_local = self.sidebar.mapFromGlobal(global_pos)
+            if 0 <= sb_local.y() < 42 and 0 <= sb_local.x() <= self.sidebar.width():
+                return True
+
+        return False
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:

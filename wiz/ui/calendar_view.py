@@ -95,6 +95,12 @@ class MonthCalendarGridWidget(QWidget):
             return
         super().mousePressEvent(event)
 
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        event.accept()
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        event.accept()
+
     def paintEvent(self, event: QPaintEvent) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -518,6 +524,15 @@ class CalendarView(QWidget):
         self.main_layout.addWidget(self.agenda_card, stretch=1)
 
         self._apply_theme()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        event.accept()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        event.accept()
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        event.accept()
 
     def set_dark_mode(self, is_dark: bool) -> None:
         """Switch dark / light mode styles."""

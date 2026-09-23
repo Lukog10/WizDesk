@@ -157,3 +157,63 @@ def test_calendar_view_category_filtering(qapp, repo):
     cal_view.category_buttons["Coding"].click()
     assert cal_view.selected_category_filter is None
     assert "3 tasks" in cal_view.task_count_badge.text()
+
+
+def test_calendar_view_mouse_clicks_do_not_move_window(qapp, repo):
+    """Verify that clicking calendar dates one by one cannot trigger window dragging."""
+    from PyQt6.QtGui import QMouseEvent
+    from PyQt6.QtCore import QPointF, QPoint
+
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+    dialog._set_view_mode("calendar")
+    dialog.show()
+    qapp.processEvents()
+
+    init_pos = dialog.pos()
+    grid = dialog.calendar_view.grid_widget
+
+    # Click every rendered date in the grid one by one
+    for target_date, cell_rect in list(grid._cell_rects.items()):
+        center_pt = cell_rect.center()
+        global_pt = grid.mapToGlobal(center_pt.toPoint())
+
+        # Press
+        press_ev = QMouseEvent(
+            QMouseEvent.Type.MouseButtonPress,
+            QPointF(center_pt),
+            QPointF(global_pt),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+        grid.mousePressEvent(press_ev)
+
+        # Move slightly (jitter / micro-drag)
+        move_ev = QMouseEvent(
+            QMouseEvent.Type.MouseMove,
+            QPointF(center_pt + QPointF(5, 5)),
+            QPointF(global_pt + QPoint(5, 5)),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+        grid.mouseMoveEvent(move_ev)
+
+        # Release
+        release_ev = QMouseEvent(
+            QMouseEvent.Type.MouseButtonRelease,
+            QPointF(center_pt),
+            QPointF(global_pt),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.NoButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+        grid.mouseReleaseEvent(release_ev)
+
+        # Ensure window position never altered
+        assert dialog.pos() == init_pos
+        assert dialog._drag_start_pos is None
+        assert dialog._is_dragging is False
+
+    dialog.close()
