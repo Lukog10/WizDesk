@@ -67,6 +67,11 @@ class Config:
             "sound_effects": False,
             "theme": "light",
             "sidebar_collapsed": False,
+            "encryption_enabled": False,
+            "auto_backup_enabled": True,
+            "auto_backup_interval_days": 1,
+            "max_backups_retained": 5,
+            "last_backup_date": "",
         }
 
         self._data: Dict[str, Any] = self._defaults.copy()

@@ -87,6 +87,26 @@ class WizApplication:
         else:
             self.sync_engine.sync_date(date.today(), emit_signal=False)
 
+        # Check and perform automated database backup if scheduled
+        if config.get("auto_backup_enabled", True):
+            try:
+                from wiz.storage.backup import backup_manager
+                last_bak = config.get("last_backup_date", "")
+                today_str = date.today().isoformat()
+                interval = int(config.get("auto_backup_interval_days", 1))
+                should_backup = False
+                if not last_bak:
+                    should_backup = True
+                else:
+                    last_date = date.fromisoformat(last_bak)
+                    if (date.today() - last_date).days >= interval:
+                        should_backup = True
+                if should_backup:
+                    backup_manager.create_backup(self.repo.db, tag="auto")
+                    config.set("last_backup_date", today_str)
+            except Exception as e:
+                print(f"[WizDesk] Auto-backup notice: {e}")
+
     def show_quick_entry(self) -> None:
         """Open or focus the full Quick-Entry workspace dialog."""
         if self._quick_entry_dialog is None:

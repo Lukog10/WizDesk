@@ -5,9 +5,10 @@ Global Hotkeys, Project Auto-Tagging Keywords, and Obsidian Vault Integration.
 Styled to match the Untitled UI design with clean category tabs and two-column setting rows.
 """
 
+from pathlib import Path
 from typing import Optional, Dict, Any, List
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize
-from PyQt6.QtGui import QFont, QColor, QCursor
+from PyQt6.QtGui import QFont, QColor, QCursor, QGuiApplication
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -25,10 +26,14 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QStackedWidget,
     QSizePolicy,
+    QDialog,
+    QMessageBox,
 )
 
 from wiz.core.config import config
+from wiz.core.crypto import CryptoManager, crypto_manager
 from wiz.core.signals import app_signals
+from wiz.storage.backup import backup_manager
 from wiz.storage.models import StorageRepository
 from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
@@ -36,6 +41,125 @@ from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
 
 # Shared component alias for backwards compatibility and tests
 SettingsCheckbox = RoundedCheckbox
+
+
+class KeyDisplayDialog(QDialog):
+    """Untitled UI modal displaying the user's personal private encryption key."""
+
+    def __init__(self, key_str: str, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.key_str = key_str
+        self.is_dark = is_dark
+        self.setWindowTitle("Personal Private Key")
+        self.setFixedSize(580, 270)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+        self._init_ui()
+
+    def _init_ui(self) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(14)
+
+        title = QLabel("Personal Master Recovery Key", self)
+        title.setFont(get_font(13, QFont.Weight.Bold))
+        layout.addWidget(title)
+
+        subtitle = QLabel(
+            "This 256-bit recovery key decrypts your WizDesk database. "
+            "Keep it stored securely. You can use it to recover your data on any computer.",
+            self,
+        )
+        subtitle.setFont(get_font(9))
+        subtitle.setWordWrap(True)
+        layout.addWidget(subtitle)
+
+        # Key display box
+        self.key_edit = QLineEdit(self.key_str, self)
+        self.key_edit.setReadOnly(True)
+        self.key_edit.setFont(QFont(FONT_MONO, 10, QFont.Weight.Bold))
+        self.key_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.key_edit.setFixedHeight(44)
+        layout.addWidget(self.key_edit)
+
+        # Action buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(10)
+
+        self.copy_btn = QPushButton("Copy Key", self)
+        self.copy_btn.setFont(get_font(10, QFont.Weight.Bold))
+        self.copy_btn.setFixedHeight(36)
+        self.copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.copy_btn.clicked.connect(self._copy_key)
+        btn_layout.addWidget(self.copy_btn)
+
+        self.close_btn = QPushButton("Done", self)
+        self.close_btn.setFont(get_font(10, QFont.Weight.Medium))
+        self.close_btn.setFixedHeight(36)
+        self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.close_btn.clicked.connect(self.accept)
+        btn_layout.addWidget(self.close_btn)
+
+        layout.addLayout(btn_layout)
+        self._apply_styling()
+
+    def _copy_key(self) -> None:
+        clipboard = QGuiApplication.clipboard()
+        if clipboard:
+            clipboard.setText(self.key_str)
+        self.copy_btn.setText("Copied to Clipboard!")
+        QTimer.singleShot(2000, lambda: self.copy_btn.setText("Copy Key"))
+
+    def _apply_styling(self) -> None:
+        bg = "#18181B" if self.is_dark else "#FAF8F5"
+        text = "#F4F4F5" if self.is_dark else "#242220"
+        subtext = "#A1A1AA" if self.is_dark else "#78716C"
+        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
+        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        accent = "#C2410C" if self.is_dark else "#BA3F1A"
+        btn_bg = "#27272A" if self.is_dark else "#EBE6DC"
+
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {bg};
+                color: {text};
+            }}
+            QLabel {{
+                color: {text};
+            }}
+            QLineEdit {{
+                background-color: {input_bg};
+                color: {accent};
+                border: 1px solid {input_border};
+                border-radius: 6px;
+                padding: 4px 8px;
+            }}
+            QPushButton {{
+                border-radius: 6px;
+                padding: 6px 14px;
+            }}
+        """)
+        self.copy_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {accent};
+                color: #FFFFFF;
+                border: none;
+                border-radius: 6px;
+            }}
+            QPushButton:hover {{
+                background-color: #EA580C;
+            }}
+        """)
+        self.close_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_bg};
+                color: {text};
+                border: 1px solid {input_border};
+                border-radius: 6px;
+            }}
+            QPushButton:hover {{
+                background-color: {input_border};
+            }}
+        """)
 
 
 class SettingsCategoryBar(QFrame):
@@ -51,6 +175,7 @@ class SettingsCategoryBar(QFrame):
         ("hotkeys", "Hotkeys"),
         ("projects", "Projects"),
         ("integrations", "Integrations"),
+        ("security", "Security & Backup"),
     ]
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
@@ -216,11 +341,13 @@ class SettingsView(QWidget):
         self.page_hotkeys = self._build_hotkeys_page()
         self.page_projects = self._build_projects_page()
         self.page_integrations = self._build_integrations_page()
+        self.page_security = self._build_security_page()
 
         self.stack.addWidget(self.page_general)       # index 0: general
         self.stack.addWidget(self.page_hotkeys)       # index 1: hotkeys
         self.stack.addWidget(self.page_projects)      # index 2: projects
         self.stack.addWidget(self.page_integrations)  # index 3: integrations
+        self.stack.addWidget(self.page_security)      # index 4: security
 
         self.main_layout.addWidget(self.stack, stretch=1)
 
@@ -779,6 +906,264 @@ class SettingsView(QWidget):
         self._apply_badge_style(self.sync_status_badge, is_active=is_set)
 
     # ----------------------------------------------------------------
+    # Category Page 5: Security & Database Backup
+    # ----------------------------------------------------------------
+    def _build_security_page(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("background: transparent; border: none;")
+
+        container = QWidget()
+        container.setStyleSheet("background: transparent;")
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(4, 6, 12, 6)
+        layout.setSpacing(10)
+
+        self.sec_heading = QLabel("Database Security & Backups", container)
+        self.sec_heading.setFont(get_font(11, QFont.Weight.Bold))
+        layout.addWidget(self.sec_heading)
+
+        self.sec_subheading = QLabel(
+            "Protect your tasks and logs with hardware-backed AES-256-GCM encryption at rest, and manage point-in-time database backups.",
+            container,
+        )
+        self.sec_subheading.setFont(get_font(9))
+        self.sec_subheading.setWordWrap(True)
+        layout.addWidget(self.sec_subheading)
+
+        # Row 1: Encryption Status & Toggle
+        enc_ctrl = QWidget()
+        enc_layout = QHBoxLayout(enc_ctrl)
+        enc_layout.setContentsMargins(0, 0, 0, 0)
+        enc_layout.setSpacing(8)
+
+        self.enc_status_badge = QLabel("STANDARD", enc_ctrl)
+        self.enc_status_badge.setFont(get_font(8, QFont.Weight.Bold))
+        self.enc_status_badge.setObjectName("SecurityBadge")
+        enc_layout.addWidget(self.enc_status_badge)
+
+        self.toggle_enc_btn = QPushButton("Enable Encryption", enc_ctrl)
+        self.toggle_enc_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.toggle_enc_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.toggle_enc_btn.clicked.connect(self._on_toggle_encryption)
+        enc_layout.addWidget(self.toggle_enc_btn)
+
+        self._create_setting_row(
+            title="Database Encryption (AES-256-GCM)",
+            description="Encrypt all tasks, notes, sessions, and logs at rest. Master key is secured by Windows DPAPI for instant zero-prompt login.",
+            control_widget=enc_ctrl,
+            parent_layout=layout,
+        )
+
+        # Row 2: Personal Master Key
+        self.view_key_btn = QPushButton("View / Export Key", container)
+        self.view_key_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.view_key_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.view_key_btn.clicked.connect(self._on_view_private_key)
+
+        self._create_setting_row(
+            title="Personal Master Key",
+            description="View or copy your 256-bit private key. Store this safely to recover or migrate your database on other machines.",
+            control_widget=self.view_key_btn,
+            parent_layout=layout,
+        )
+
+        # Row 3: Automated Backups Checkbox
+        self.auto_backup_check = SettingsCheckbox(
+            checked=config.get("auto_backup_enabled", True),
+            size=18,
+            parent=container,
+            is_dark=self.is_dark,
+        )
+        self._create_setting_row(
+            title="Automated Backups",
+            description="Create daily rolling snapshot backups of your database automatically.",
+            control_widget=self.auto_backup_check,
+            parent_layout=layout,
+        )
+
+        # Row 4: Retention Count SpinBox
+        self.backup_retention_spin = QSpinBox(container)
+        self.backup_retention_spin.setRange(1, 30)
+        self.backup_retention_spin.setValue(int(config.get("max_backups_retained", 5)))
+        self.backup_retention_spin.setSuffix(" snapshots")
+        self.backup_retention_spin.setFixedWidth(130)
+
+        self._create_setting_row(
+            title="Retention Limit",
+            description="Number of automated backup snapshots to keep before pruning older files.",
+            control_widget=self.backup_retention_spin,
+            parent_layout=layout,
+        )
+
+        # Row 5: Backup & Restore Actions
+        actions_ctrl = QWidget()
+        act_layout = QHBoxLayout(actions_ctrl)
+        act_layout.setContentsMargins(0, 0, 0, 0)
+        act_layout.setSpacing(8)
+
+        self.create_backup_btn = QPushButton("Create Backup Now", actions_ctrl)
+        self.create_backup_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.create_backup_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.create_backup_btn.clicked.connect(self._on_create_backup_now)
+        act_layout.addWidget(self.create_backup_btn)
+
+        self.restore_backup_btn = QPushButton("Restore from File...", actions_ctrl)
+        self.restore_backup_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.restore_backup_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.restore_backup_btn.clicked.connect(self._on_restore_backup)
+        act_layout.addWidget(self.restore_backup_btn)
+
+        self._create_setting_row(
+            title="Backup & Restore",
+            description="Generate a new point-in-time backup snapshot or restore from a .bak / .wbak file.",
+            control_widget=actions_ctrl,
+            parent_layout=layout,
+        )
+
+        # Backups List Header & Table
+        table_hdr = QLabel("Available Local Backups", container)
+        table_hdr.setFont(get_font(10, QFont.Weight.Bold))
+        table_hdr.setObjectName("SettingRowTitle")
+        layout.addWidget(table_hdr)
+
+        self.backup_table = QTableWidget(0, 4, container)
+        self.backup_table.setHorizontalHeaderLabels(["Snapshot File", "Created Date", "Size", "Format"])
+        self.backup_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.backup_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.backup_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.backup_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.backup_table.verticalHeader().setVisible(False)
+        self.backup_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.backup_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.backup_table.setFixedHeight(160)
+        layout.addWidget(self.backup_table)
+
+        layout.addStretch(1)
+        scroll.setWidget(container)
+        return scroll
+
+    def _refresh_encryption_ui(self) -> None:
+        """Update encryption badge, button text, and key visibility."""
+        is_enc = bool(self.repo.db.is_encrypted)
+        if is_enc:
+            self.enc_status_badge.setText("ENCRYPTED")
+            self._apply_badge_style(self.enc_status_badge, is_active=True)
+            self.toggle_enc_btn.setText("Disable Encryption")
+            self.view_key_btn.setEnabled(True)
+        else:
+            self.enc_status_badge.setText("STANDARD")
+            self._apply_badge_style(self.enc_status_badge, is_active=False)
+            self.toggle_enc_btn.setText("Enable Encryption")
+            self.view_key_btn.setEnabled(crypto_manager.has_stored_key())
+
+    def _load_backups_table(self) -> None:
+        """Populate the recent backups table from disk."""
+        backups = backup_manager.list_backups()
+        self.backup_table.setRowCount(len(backups))
+        for row, item in enumerate(backups):
+            name_item = QTableWidgetItem(item["filename"])
+            name_item.setToolTip(str(item["path"]))
+            date_item = QTableWidgetItem(item["created_at"])
+            size_item = QTableWidgetItem(item["size_str"])
+            fmt_str = "AES-256-GCM (.wbak)" if item["is_encrypted"] else "Plaintext SQLite (.bak)"
+            fmt_item = QTableWidgetItem(fmt_str)
+
+            for it in (name_item, date_item, size_item, fmt_item):
+                it.setFlags(it.flags() & ~Qt.ItemFlag.ItemIsEditable)
+
+            self.backup_table.setItem(row, 0, name_item)
+            self.backup_table.setItem(row, 1, date_item)
+            self.backup_table.setItem(row, 2, size_item)
+            self.backup_table.setItem(row, 3, fmt_item)
+
+    def _on_toggle_encryption(self) -> None:
+        """Toggle AES-256-GCM database encryption at rest."""
+        if not self.repo.db.is_encrypted:
+            ok, key_str = self.repo.db.enable_encryption()
+            if ok:
+                self._refresh_encryption_ui()
+                self._load_backups_table()
+                self.status_pill.setText("Database encrypted with AES-256-GCM")
+                dlg = KeyDisplayDialog(key_str, is_dark=self.is_dark, parent=self)
+                dlg.exec()
+        else:
+            reply = QMessageBox.question(
+                self,
+                "Disable Encryption",
+                "Are you sure you want to decrypt your database?\n\n"
+                "The database will be stored as standard plaintext SQLite on disk.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                ok, msg = self.repo.db.disable_encryption()
+                if ok:
+                    self._refresh_encryption_ui()
+                    self._load_backups_table()
+                    self.status_pill.setText("Database decrypted to standard format")
+
+    def _on_view_private_key(self) -> None:
+        """Open the personal private key export modal."""
+        key = crypto_manager.load_key_dpapi()
+        if key:
+            key_str = CryptoManager.format_key_for_display(key)
+            dlg = KeyDisplayDialog(key_str, is_dark=self.is_dark, parent=self)
+            dlg.exec()
+        else:
+            QMessageBox.information(
+                self,
+                "Private Key",
+                "No encryption key found. Encryption is currently disabled.",
+            )
+
+    def _on_create_backup_now(self) -> None:
+        """Trigger an immediate point-in-time snapshot backup."""
+        try:
+            path = backup_manager.create_backup(self.repo.db, tag="manual")
+            self._load_backups_table()
+            self.status_pill.setText(f"Snapshot created: {path.name}")
+        except Exception as e:
+            QMessageBox.warning(self, "Backup Error", f"Failed to create backup: {e}")
+
+    def _on_restore_backup(self) -> None:
+        """Prompt user for backup file and restore database state."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Backup File",
+            str(backup_manager.backup_dir),
+            "Backup Files (*.bak *.wbak);;All Files (*)",
+        )
+        if not file_path:
+            return
+
+        chosen = Path(file_path)
+        reply = QMessageBox.question(
+            self,
+            "Restore Database",
+            f"Restore database from '{chosen.name}'?\n\n"
+            "Your current tasks and notes will be replaced. "
+            "A pre-restore safety snapshot will be taken automatically before restoring.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                # 1. Take safety snapshot
+                backup_manager.create_backup(self.repo.db, tag="pre-restore")
+                # 2. Restore
+                backup_manager.restore_backup(chosen, self.repo.db)
+                self._load_backups_table()
+                self._refresh_encryption_ui()
+                self._load_projects()
+                self.projects_changed.emit()
+                app_signals.tasks_changed.emit()
+                self.status_pill.setText("Database restored successfully!")
+            except Exception as e:
+                QMessageBox.critical(self, "Restore Failed", f"Failed to restore backup: {e}")
+
+    # ----------------------------------------------------------------
     # Navigation & Lifecycle
     # ----------------------------------------------------------------
     def switch_to_category(self, cat_id: str) -> None:
@@ -788,6 +1173,7 @@ class SettingsView(QWidget):
             "hotkeys": 1,
             "projects": 2,
             "integrations": 3,
+            "security": 4,
         }
         idx = cat_map.get(cat_id.lower(), 0)
         self.stack.setCurrentIndex(idx)
@@ -801,6 +1187,12 @@ class SettingsView(QWidget):
         self.always_on_top_check.setChecked(config.get("always_on_top", True))
         self.autostart_check.setChecked(config.get("auto_start_on_login", False))
         self.sound_check.setChecked(config.get("sound_effects", False))
+
+        # Security & Backups
+        self.auto_backup_check.setChecked(config.get("auto_backup_enabled", True))
+        self.backup_retention_spin.setValue(int(config.get("max_backups_retained", 5)))
+        self._refresh_encryption_ui()
+        self._load_backups_table()
 
         curr_interval_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
         self.interval_spin.setValue(curr_interval_min)
@@ -825,6 +1217,10 @@ class SettingsView(QWidget):
         # Integrations
         config.set("obsidian_vault_path", self.vault_path_input.text().strip())
         config.set("obsidian_logs_folder", self.vault_logs_folder_input.text().strip() or "WizDesk Logs")
+
+        # Security & Backups
+        config.set("auto_backup_enabled", bool(self.auto_backup_check.isChecked()))
+        config.set("max_backups_retained", int(self.backup_retention_spin.value()))
 
         # Hotkeys
         for key_name, input_field in self.hotkey_inputs.items():
@@ -885,6 +1281,7 @@ class SettingsView(QWidget):
         self.always_on_top_check.set_dark_mode(is_dark)
         self.autostart_check.set_dark_mode(is_dark)
         self.sound_check.set_dark_mode(is_dark)
+        self.auto_backup_check.set_dark_mode(is_dark)
         self.category_bar.set_theme(is_dark)
         self.apply_theme()
 
@@ -930,10 +1327,13 @@ class SettingsView(QWidget):
         self.proj_subheading.setStyleSheet(f"color: {text_secondary};")
         self.obs_heading.setStyleSheet(f"color: {text_primary};")
         self.obs_subheading.setStyleSheet(f"color: {text_secondary};")
+        self.sec_heading.setStyleSheet(f"color: {text_primary};")
+        self.sec_subheading.setStyleSheet(f"color: {text_secondary};")
 
         self._refresh_status_pill_style()
         self._apply_badge_style(self.hk_active_badge, is_active=True)
         self._update_sync_status()
+        self._refresh_encryption_ui()
 
         # Setting row titles and descriptions via parent container style
         for lbl in self.findChildren(QLabel, "SettingRowTitle"):
