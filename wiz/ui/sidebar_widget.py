@@ -26,7 +26,7 @@ from PyQt6.QtWidgets import (
 )
 
 from wiz.ui.icons import get_app_pixmap, render_tinted_svg, get_status_icon
-from wiz.ui.fonts import FONT_SANS, get_font
+from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, get_font
 
 
 class NavPillButton(QPushButton):
@@ -328,7 +328,7 @@ class SideNavBar(QWidget):
         brand_c_layout.addWidget(self.logo_lbl)
 
         self.brand_title = QLabel("WizDesk")
-        self.brand_title.setFont(get_font(11, QFont.Weight.Bold))
+        self.brand_title.setFont(get_font(12, QFont.Weight.Bold, display=True))
         brand_c_layout.addWidget(self.brand_title)
 
         self.brand_layout.addWidget(self.brand_container)
@@ -351,7 +351,7 @@ class SideNavBar(QWidget):
 
         # 2. Section Header: Workspace
         self.workspace_lbl = QLabel("WORKSPACE")
-        self.workspace_lbl.setFont(get_font(8, QFont.Weight.Bold))
+        self.workspace_lbl.setFont(get_font(8, QFont.Weight.Bold, display=True))
         self.workspace_lbl.setStyleSheet("padding-left: 8px; margin-bottom: 2px;")
         self.main_layout.addWidget(self.workspace_lbl)
 

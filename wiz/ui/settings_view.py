@@ -35,7 +35,7 @@ from wiz.core.crypto import CryptoManager, crypto_manager
 from wiz.core.signals import app_signals
 from wiz.storage.backup import backup_manager
 from wiz.storage.models import StorageRepository
-from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
 from wiz.ui.pill_number_picker import DurationPillSelector, PillSpinBox
 from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
@@ -321,7 +321,7 @@ class SettingsView(QWidget):
         header_layout.setSpacing(2)
 
         self.title_lbl = QLabel("Settings", self)
-        self.title_lbl.setFont(get_font(14, QFont.Weight.Bold))
+        self.title_lbl.setFont(get_font(15, QFont.Weight.Bold, display=True))
         header_layout.addWidget(self.title_lbl)
 
         self.subtitle_lbl = QLabel("Manage your desktop preferences, keyboard shortcuts, and project workflows.", self)
@@ -449,7 +449,7 @@ class SettingsView(QWidget):
 
         # Section Heading
         self.gen_heading = QLabel("General & Companion Behavior", container)
-        self.gen_heading.setFont(get_font(11, QFont.Weight.Bold))
+        self.gen_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
         layout.addWidget(self.gen_heading)
 
         self.gen_subheading = QLabel("Configure desktop mascot animations, window tracking behavior, and app startup.", container)
@@ -555,7 +555,7 @@ class SettingsView(QWidget):
         header_vbox.setSpacing(2)
 
         self.hk_heading = QLabel("Global Keyboard Shortcuts", container)
-        self.hk_heading.setFont(get_font(11, QFont.Weight.Bold))
+        self.hk_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
         header_vbox.addWidget(self.hk_heading)
 
         self.hk_subheading = QLabel(
@@ -692,7 +692,7 @@ class SettingsView(QWidget):
         layout.setSpacing(10)
 
         self.proj_heading = QLabel("Project Auto-Tagging Keywords", container)
-        self.proj_heading.setFont(get_font(11, QFont.Weight.Bold))
+        self.proj_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
         layout.addWidget(self.proj_heading)
 
         self.proj_subheading = QLabel(
@@ -832,7 +832,7 @@ class SettingsView(QWidget):
         layout.setSpacing(10)
 
         self.obs_heading = QLabel("Obsidian Vault Integration", container)
-        self.obs_heading.setFont(get_font(11, QFont.Weight.Bold))
+        self.obs_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
         layout.addWidget(self.obs_heading)
 
         self.obs_subheading = QLabel(
@@ -928,7 +928,7 @@ class SettingsView(QWidget):
         layout.setSpacing(10)
 
         self.sec_heading = QLabel("Database Security & Backups", container)
-        self.sec_heading.setFont(get_font(11, QFont.Weight.Bold))
+        self.sec_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
         layout.addWidget(self.sec_heading)
 
         self.sec_subheading = QLabel(

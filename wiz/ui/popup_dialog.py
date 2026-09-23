@@ -57,7 +57,7 @@ from wiz.ui.calendar_view import CalendarView
 from wiz.ui.arrow_combo import ArrowComboBox
 
 
-from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
 
 
@@ -1197,7 +1197,7 @@ class TaskRowWidget(QWidget):
         self.time_label.setStyleSheet(f"""
             QLabel {{
                 color: {time_color};
-                font-family: {FONT_SANS};
+                font-family: {FONT_MONO};
                 font-size: 11px;
                 font-weight: 500;
             }}
@@ -2015,7 +2015,7 @@ class ProjectGroupWidget(QWidget):
                 background: transparent;
                 border: none;
                 text-align: left;
-                font-family: {FONT_SANS};
+                font-family: {FONT_DISPLAY};
                 font-size: 14px;
                 font-weight: 700;
                 color: {header_color};
@@ -2061,7 +2061,7 @@ class ProjectGroupWidget(QWidget):
                 background: transparent;
                 border: none;
                 text-align: left;
-                font-family: {FONT_SANS};
+                font-family: {FONT_DISPLAY};
                 font-size: 14px;
                 font-weight: 700;
                 color: {header_color};
@@ -2181,7 +2181,7 @@ class QuickEntryDialog(QDialog):
 
         # Dynamic Page Title
         self.page_title_lbl = QLabel("Tasks & To-Dos")
-        self.page_title_lbl.setFont(get_font(12, QFont.Weight.Bold))
+        self.page_title_lbl.setFont(get_font(13, QFont.Weight.Bold, display=True))
         top_bar.addWidget(self.page_title_lbl)
 
         # Contextual Date Header (visible in tasks & activity)
