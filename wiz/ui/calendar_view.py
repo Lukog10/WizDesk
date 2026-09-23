@@ -1,11 +1,12 @@
 """Calendar and Scheduling view for WizDesk.
 
-Provides a dedicated two-pane layout:
-1. Left Pane (~250px): Interactive Month Calendar grid with dot indicators (Orange = active, Emerald = completed),
-   month navigation (<, >), and quick jump presets (Today, Upcoming 7 Days, Overdue).
-2. Right Pane (~500px+): Scheduled Agenda showing tasks for the selected date or preset,
-   with inline fast task scheduling (+ Add task for this day...), full TaskRowWidget interaction,
-   and clean typography with zero emojis.
+Implements card-based borders matching WizDesk design standards:
+1. Left Column (~285px):
+   - Calendar Card: Rounded container holding month navigation and month grid.
+   - Quick Views Card: Rounded container holding Today, Upcoming (7 Days), and Overdue Tasks presets.
+2. Right Column (Agenda Card):
+   - Rounded container with top header (Active Date / Preset + count badge),
+     middle scrollable task list, and bottom-pinned scheduling add bar (matching Tasks & Notes).
 """
 
 from datetime import datetime, date, timedelta
@@ -56,7 +57,7 @@ class MonthCalendarGridWidget(QWidget):
         self.date_status_map: Dict[str, str] = {}  # "YYYY-MM-DD" -> "active" | "completed"
         self._cell_rects: Dict[date, QRectF] = {}
 
-        self.setFixedHeight(210)
+        self.setFixedHeight(215)
         self.setMouseTracking(True)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
@@ -148,7 +149,7 @@ class MonthCalendarGridWidget(QWidget):
             has_tasks = d_str in self.date_status_map
 
             # Selection Pill or Today Ring
-            pill_size = min(col_w - 4, row_h - 4, 26.0)
+            pill_size = min(col_w - 6, row_h - 4, 28.0)
             pill_rect = QRectF(
                 cell_rect.center().x() - pill_size / 2.0,
                 cell_rect.center().y() - pill_size / 2.0 - 1.0,
@@ -195,8 +196,106 @@ class MonthCalendarGridWidget(QWidget):
         painter.end()
 
 
+class CategoryFilterButton(QPushButton):
+    """Category filter button displaying project name and task count badge."""
+
+    def __init__(self, name: str, count: int, is_active: bool, is_dark: bool, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.category_name = name
+        self.count = count
+        self.is_active = is_active
+        self.is_dark = is_dark
+        self.setFixedHeight(30)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(10, 0, 8, 0)
+        layout.setSpacing(6)
+
+        self.name_label = QLabel(name)
+        self.name_label.setObjectName("catName")
+        self.name_label.setFont(get_font(9, QFont.Weight.Medium))
+        self.name_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        layout.addWidget(self.name_label)
+
+        layout.addStretch()
+
+        self.count_badge = QLabel(str(count))
+        self.count_badge.setObjectName("catCount")
+        self.count_badge.setFont(get_font(8, QFont.Weight.Bold))
+        self.count_badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.count_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.count_badge.setFixedHeight(18)
+        self.count_badge.setMinimumWidth(20)
+        layout.addWidget(self.count_badge)
+
+        self.update_appearance(count, is_active, is_dark)
+
+    def update_appearance(self, count: int, is_active: bool, is_dark: bool) -> None:
+        self.count = count
+        self.is_active = is_active
+        self.is_dark = is_dark
+        self.count_badge.setText(str(count))
+
+        text_primary = "#FAFAFA" if self.is_dark else "#18181B"
+        text_muted = "#A1A1AA" if self.is_dark else "#71717A"
+        active_bg = "#FF6B3D"
+
+        if self.is_active:
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {active_bg};
+                    border: none;
+                    border-radius: 6px;
+                }}
+            """)
+            self.name_label.setStyleSheet("color: #FFFFFF; background: transparent; border: none;")
+            self.count_badge.setStyleSheet("""
+                background-color: rgba(255, 255, 255, 0.28);
+                color: #FFFFFF;
+                border-radius: 9px;
+                padding: 0 4px;
+                border: none;
+            """)
+        else:
+            hover_bg = "#27272A" if self.is_dark else "#F4F0E8"
+            badge_bg = "#27272A" if self.is_dark else "#E4E4E7"
+            badge_fg = "#A1A1AA" if self.is_dark else "#71717A"
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: transparent;
+                    border: 1px solid transparent;
+                    border-radius: 6px;
+                }}
+                QPushButton:hover {{
+                    background-color: {hover_bg};
+                }}
+            """)
+            self.name_label.setStyleSheet(f"color: {text_muted}; background: transparent; border: none;")
+            self.count_badge.setStyleSheet(f"""
+                background-color: {badge_bg};
+                color: {badge_fg};
+                border-radius: 9px;
+                padding: 0 4px;
+                border: none;
+            """)
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        if not self.is_active:
+            text_primary = "#FAFAFA" if self.is_dark else "#18181B"
+            self.name_label.setStyleSheet(f"color: {text_primary}; background: transparent; border: none;")
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        if not self.is_active:
+            text_muted = "#A1A1AA" if self.is_dark else "#71717A"
+            self.name_label.setStyleSheet(f"color: {text_muted}; background: transparent; border: none;")
+
+
 class CalendarView(QWidget):
-    """Dedicated Calendar and Schedule View for WizDesk."""
+    """Dedicated Calendar and Schedule View for WizDesk with card-based borders."""
 
     task_created = pyqtSignal(int)
     task_updated = pyqtSignal(int)
@@ -207,26 +306,35 @@ class CalendarView(QWidget):
         self.is_dark = is_dark
         self.selected_date = date.today()
         self.active_preset: Optional[str] = None  # None (specific date), "upcoming", "overdue"
+        self.selected_category_filter: Optional[str] = None  # None = "All"
+        self.category_buttons: Dict[str, CategoryFilterButton] = {}
 
         self._init_ui()
         self.load_data()
 
     def _init_ui(self) -> None:
-        """Build the master-detail two-pane layout."""
+        """Build the card-based master-detail layout."""
         self.main_layout = QHBoxLayout(self)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.setSpacing(0)
+        self.main_layout.setContentsMargins(6, 6, 6, 6)
+        self.main_layout.setSpacing(10)
 
         # -------------------------------------------------------------
-        # Left Pane: Month Navigator, Grid, and Quick Presets (~250px)
+        # Left Column (~275px): Calendar Card + Quick Views Card + Categories Card
         # -------------------------------------------------------------
-        self.left_pane = QWidget(self)
-        self.left_pane.setFixedWidth(250)
-        left_layout = QVBoxLayout(self.left_pane)
-        left_layout.setContentsMargins(14, 14, 14, 14)
-        left_layout.setSpacing(10)
+        self.left_column = QWidget(self)
+        self.left_column.setFixedWidth(275)
+        left_col_layout = QVBoxLayout(self.left_column)
+        left_col_layout.setContentsMargins(0, 0, 0, 0)
+        left_col_layout.setSpacing(10)
 
-        # 1. Month Navigation Header: [ < ] Month Year [ > ] + Today
+        # 1. Calendar Card
+        self.calendar_card = QFrame(self.left_column)
+        self.calendar_card.setObjectName("calendarCard")
+        cal_card_layout = QVBoxLayout(self.calendar_card)
+        cal_card_layout.setContentsMargins(12, 12, 12, 12)
+        cal_card_layout.setSpacing(10)
+
+        # Month Navigation Header: [ < ] Month Year [ > ]
         month_nav_layout = QHBoxLayout()
         month_nav_layout.setContentsMargins(0, 0, 0, 0)
         month_nav_layout.setSpacing(6)
@@ -250,25 +358,26 @@ class CalendarView(QWidget):
         self.next_month_btn.clicked.connect(self._on_next_month)
         month_nav_layout.addWidget(self.next_month_btn)
 
-        left_layout.addLayout(month_nav_layout)
+        cal_card_layout.addLayout(month_nav_layout)
 
-        # 2. Interactive Month Calendar Grid
-        self.grid_widget = MonthCalendarGridWidget(self.selected_date, parent=self.left_pane, is_dark=self.is_dark)
+        # Interactive Month Calendar Grid
+        self.grid_widget = MonthCalendarGridWidget(self.selected_date, parent=self.calendar_card, is_dark=self.is_dark)
         self.grid_widget.date_selected.connect(self._on_grid_date_selected)
-        left_layout.addWidget(self.grid_widget)
+        cal_card_layout.addWidget(self.grid_widget)
 
-        # 3. Subtle horizontal separator
-        left_sep = QFrame()
-        left_sep.setFrameShape(QFrame.Shape.HLine)
-        left_sep.setFixedHeight(1)
-        self.left_sep = left_sep
-        left_layout.addWidget(left_sep)
+        left_col_layout.addWidget(self.calendar_card)
 
-        # 4. Quick Views Header & Preset Buttons
+        # 2. Quick Views Card
+        self.quick_views_card = QFrame(self.left_column)
+        self.quick_views_card.setObjectName("quickViewsCard")
+        qv_card_layout = QVBoxLayout(self.quick_views_card)
+        qv_card_layout.setContentsMargins(12, 12, 12, 12)
+        qv_card_layout.setSpacing(6)
+
         views_lbl = QLabel("QUICK VIEWS")
         views_lbl.setFont(get_font(8, QFont.Weight.Bold))
         self.views_lbl = views_lbl
-        left_layout.addWidget(views_lbl)
+        qv_card_layout.addWidget(views_lbl)
 
         presets_layout = QVBoxLayout()
         presets_layout.setContentsMargins(0, 0, 0, 0)
@@ -298,26 +407,40 @@ class CalendarView(QWidget):
         self.btn_overdue_preset.clicked.connect(self._on_select_overdue_preset)
         presets_layout.addWidget(self.btn_overdue_preset)
 
-        left_layout.addLayout(presets_layout)
-        left_layout.addStretch()
+        qv_card_layout.addLayout(presets_layout)
 
-        self.main_layout.addWidget(self.left_pane)
+        left_col_layout.addWidget(self.quick_views_card)
+
+        # 3. Project / Task Categories Card (Below Quick Views)
+        self.categories_card = QFrame(self.left_column)
+        self.categories_card.setObjectName("categoriesCard")
+        cat_card_layout = QVBoxLayout(self.categories_card)
+        cat_card_layout.setContentsMargins(12, 12, 12, 12)
+        cat_card_layout.setSpacing(6)
+
+        self.categories_lbl = QLabel("CATEGORIES")
+        self.categories_lbl.setFont(get_font(8, QFont.Weight.Bold))
+        cat_card_layout.addWidget(self.categories_lbl)
+
+        self.cat_buttons_layout = QVBoxLayout()
+        self.cat_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self.cat_buttons_layout.setSpacing(5)
+        cat_card_layout.addLayout(self.cat_buttons_layout)
+        cat_card_layout.addStretch()
+
+        left_col_layout.addWidget(self.categories_card)
+        left_col_layout.addStretch()
+
+        self.main_layout.addWidget(self.left_column)
 
         # -------------------------------------------------------------
-        # Vertical Divider
+        # Right Column: Agenda Card (Header, Tasks list, Bottom Add Bar)
         # -------------------------------------------------------------
-        self.v_divider = QFrame()
-        self.v_divider.setFrameShape(QFrame.Shape.VLine)
-        self.v_divider.setFixedWidth(1)
-        self.main_layout.addWidget(self.v_divider)
-
-        # -------------------------------------------------------------
-        # Right Pane: Scheduled Agenda & Task Creation (~500px+)
-        # -------------------------------------------------------------
-        self.right_pane = QWidget(self)
-        right_layout = QVBoxLayout(self.right_pane)
-        right_layout.setContentsMargins(16, 14, 16, 14)
-        right_layout.setSpacing(10)
+        self.agenda_card = QFrame(self)
+        self.agenda_card.setObjectName("agendaCard")
+        agenda_layout = QVBoxLayout(self.agenda_card)
+        agenda_layout.setContentsMargins(14, 12, 14, 12)
+        agenda_layout.setSpacing(10)
 
         # 1. Agenda Header (Date title + count badge)
         header_row = QHBoxLayout()
@@ -334,12 +457,34 @@ class CalendarView(QWidget):
         header_row.addWidget(self.task_count_badge)
 
         header_row.addStretch()
-        right_layout.addLayout(header_row)
+        agenda_layout.addLayout(header_row)
 
-        # 2. Inline Fast Task Scheduling Bar
-        self.add_bar_container = QWidget(self.right_pane)
+        # 2. Task List Scroll Area (Middle)
+        self.scroll_area = QScrollArea(self.agenda_card)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.task_list_container = QWidget()
+        self.task_list_layout = QVBoxLayout(self.task_list_container)
+        self.task_list_layout.setContentsMargins(0, 2, 0, 2)
+        self.task_list_layout.setSpacing(6)
+        self.task_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        self.scroll_area.setWidget(self.task_list_container)
+        agenda_layout.addWidget(self.scroll_area, stretch=1)
+
+        # Empty State Label
+        self.empty_label = QLabel()
+        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty_label.setFont(get_font(11))
+        self.empty_label.hide()
+        agenda_layout.addWidget(self.empty_label)
+
+        # 3. Bottom Task Scheduling Add Bar (Pinned at bottom like Tasks & Notes)
+        self.add_bar_container = QWidget(self.agenda_card)
         add_bar_layout = QHBoxLayout(self.add_bar_container)
-        add_bar_layout.setContentsMargins(0, 0, 0, 0)
+        add_bar_layout.setContentsMargins(0, 4, 0, 0)
         add_bar_layout.setSpacing(8)
 
         self.add_input = QLineEdit()
@@ -349,9 +494,9 @@ class CalendarView(QWidget):
         self.add_input.returnPressed.connect(self._on_submit_task)
         add_bar_layout.addWidget(self.add_input, stretch=1)
 
-        self.section_combo = ArrowComboBox()
+        self.section_combo = ArrowComboBox(self.add_bar_container, is_dark=self.is_dark)
         self.section_combo.setFixedHeight(34)
-        self.section_combo.setFixedWidth(140)
+        self.section_combo.setFixedWidth(130)
         self.section_combo.setFont(get_font(10))
         add_bar_layout.addWidget(self.section_combo)
 
@@ -364,31 +509,9 @@ class CalendarView(QWidget):
         self.add_btn.clicked.connect(self._on_submit_task)
         add_bar_layout.addWidget(self.add_btn)
 
-        right_layout.addWidget(self.add_bar_container)
+        agenda_layout.addWidget(self.add_bar_container)
 
-        # 3. Task List Scroll Area
-        self.scroll_area = QScrollArea(self.right_pane)
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-        self.task_list_container = QWidget()
-        self.task_list_layout = QVBoxLayout(self.task_list_container)
-        self.task_list_layout.setContentsMargins(0, 4, 0, 4)
-        self.task_list_layout.setSpacing(6)
-        self.task_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        self.scroll_area.setWidget(self.task_list_container)
-        right_layout.addWidget(self.scroll_area, stretch=1)
-
-        # 4. Empty State Label
-        self.empty_label = QLabel()
-        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.empty_label.setFont(get_font(11))
-        self.empty_label.hide()
-        right_layout.addWidget(self.empty_label)
-
-        self.main_layout.addWidget(self.right_pane, stretch=1)
+        self.main_layout.addWidget(self.agenda_card, stretch=1)
 
         self._apply_theme()
 
@@ -401,9 +524,9 @@ class CalendarView(QWidget):
             self._refresh_agenda()
 
     def _apply_theme(self) -> None:
-        """Apply CSS styling matching WizDesk palette."""
-        bg_pane = "#18181B" if self.is_dark else "#FAF8F5"
-        border_color = "#27272A" if self.is_dark else "#E4E4E7"
+        """Apply CSS styling matching WizDesk card and border palette."""
+        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        card_border = "#27272A" if self.is_dark else "#E4E4E7"
         text_primary = "#FAFAFA" if self.is_dark else "#18181B"
         text_muted = "#71717A" if self.is_dark else "#A1A1AA"
         btn_nav_bg = "#27272A" if self.is_dark else "#E4E4E7"
@@ -415,23 +538,29 @@ class CalendarView(QWidget):
             }}
         """)
 
-        # Left pane background
-        self.left_pane.setStyleSheet(f"""
-            background-color: {bg_pane};
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        """)
+        card_qss = f"""
+            background-color: {card_bg};
+            border: 1px solid {card_border};
+            border-radius: 12px;
+        """
+        self.calendar_card.setStyleSheet(f"QFrame#calendarCard {{ {card_qss} }}")
+        self.quick_views_card.setStyleSheet(f"QFrame#quickViewsCard {{ {card_qss} }}")
+        self.agenda_card.setStyleSheet(f"QFrame#agendaCard {{ {card_qss} }}")
+        self.categories_card.setStyleSheet(f"QFrame#categoriesCard {{ {card_qss} }}")
 
-        self.month_label.setStyleSheet(f"color: {text_primary};")
-        self.views_lbl.setStyleSheet(f"color: {text_muted}; letter-spacing: 0.5px; padding-left: 2px;")
-        self.left_sep.setStyleSheet(f"background-color: {border_color};")
-        self.v_divider.setStyleSheet(f"background-color: {border_color};")
+        self.month_label.setStyleSheet(f"color: {text_primary}; border: none; background: transparent;")
+        self.views_lbl.setStyleSheet(f"color: {text_muted}; letter-spacing: 0.5px; padding-left: 2px; border: none; background: transparent;")
+        self.categories_lbl.setStyleSheet(f"color: {text_muted}; letter-spacing: 0.5px; padding-left: 2px; border: none; background: transparent;")
+
+        for cat, btn in self.category_buttons.items():
+            is_active = (self.selected_category_filter is None and cat == "All") or (self.selected_category_filter == cat)
+            btn.update_appearance(btn.count, is_active, self.is_dark)
 
         nav_btn_qss = f"""
             QPushButton {{
                 background-color: {btn_nav_bg};
                 color: {text_primary};
-                border: 1px solid {border_color};
+                border: 1px solid {card_border};
                 border-radius: 6px;
                 font-size: 14px;
                 font-weight: bold;
@@ -443,22 +572,50 @@ class CalendarView(QWidget):
         self.prev_month_btn.setStyleSheet(nav_btn_qss)
         self.next_month_btn.setStyleSheet(nav_btn_qss)
 
+        # Transparent containers inside cards
+        self.left_column.setStyleSheet("background: transparent; border: none;")
+        self.task_list_container.setStyleSheet("background: transparent; border: none;")
+        self.add_bar_container.setStyleSheet("background: transparent; border: none;")
+
+        scroll_bar_handle = "#3F3F46" if self.is_dark else "#D4D4D8"
+        self.scroll_area.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 6px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {scroll_bar_handle};
+                border-radius: 3px;
+                min-height: 20px;
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+        """)
+        self.scroll_area.viewport().setStyleSheet("background-color: transparent; border: none;")
+
         # Preset buttons styling
         self._update_preset_button_styles()
 
-        # Right pane styling
-        self.right_pane.setStyleSheet("background-color: transparent;")
-        self.agenda_title.setStyleSheet(f"color: {text_primary};")
+        # Agenda header styling
+        self.agenda_title.setStyleSheet(f"color: {text_primary}; border: none; background: transparent;")
 
         badge_bg = "#27272A" if self.is_dark else "#E4E4E7"
         badge_fg = "#A1A1AA" if self.is_dark else "#52525B"
         self.task_count_badge.setStyleSheet(f"""
             background-color: {badge_bg};
             color: {badge_fg};
+            border: none;
             border-radius: 10px;
             padding: 2px 8px;
         """)
 
+        # Add bar inputs
         input_bg = "#27272A" if self.is_dark else "#EDE9E0"
         input_fg = "#F4F4F5" if self.is_dark else "#242220"
         input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
@@ -476,6 +633,11 @@ class CalendarView(QWidget):
             }}
         """)
 
+        self.section_combo.set_theme(self.is_dark)
+        combo_popup_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        combo_popup_border = "#27272A" if self.is_dark else "#D6D0C5"
+        combo_popup_sel_bg = "rgba(194, 65, 12, 0.22)" if self.is_dark else "#FEECE5"
+        combo_popup_sel_text = "#FFAB91" if self.is_dark else "#BA3F1A"
         self.section_combo.setStyleSheet(f"""
             QComboBox {{
                 background-color: {input_bg};
@@ -485,6 +647,24 @@ class CalendarView(QWidget):
                 padding-left: 10px;
                 padding-right: 24px;
                 font-family: {FONT_SANS};
+            }}
+            QComboBox:hover {{
+                border: 1px solid {"#FF6B3D" if self.is_dark else "#BA3F1A"};
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                width: 0px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {combo_popup_bg};
+                color: {input_fg};
+                border: 1px solid {combo_popup_border};
+                border-radius: 6px;
+                selection-background-color: {combo_popup_sel_bg};
+                selection-color: {combo_popup_sel_text};
+                padding: 4px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
             }}
         """)
 
@@ -500,7 +680,7 @@ class CalendarView(QWidget):
             }}
         """)
 
-        self.empty_label.setStyleSheet(f"color: {text_muted}; padding: 40px 0;")
+        self.empty_label.setStyleSheet(f"color: {text_muted}; padding: 40px 0; border: none; background: transparent;")
 
     def _update_preset_button_styles(self) -> None:
         """Update active/inactive styles of the quick preset buttons."""
@@ -604,6 +784,7 @@ class CalendarView(QWidget):
         """User clicked a date in the month grid."""
         self.selected_date = target_date
         self.active_preset = None
+        self.selected_category_filter = None
         self._update_preset_button_styles()
         self._refresh_agenda()
 
@@ -611,6 +792,7 @@ class CalendarView(QWidget):
         """Preset shortcut: Today."""
         self.selected_date = date.today()
         self.active_preset = None
+        self.selected_category_filter = None
         self.grid_widget.set_selected_date(self.selected_date)
         self._refresh_month_grid()
         self._update_preset_button_styles()
@@ -619,17 +801,62 @@ class CalendarView(QWidget):
     def _on_select_upcoming_preset(self) -> None:
         """Preset shortcut: Upcoming."""
         self.active_preset = "upcoming"
+        self.selected_category_filter = None
         self._update_preset_button_styles()
         self._refresh_agenda()
 
     def _on_select_overdue_preset(self) -> None:
         """Preset shortcut: Overdue."""
         self.active_preset = "overdue"
+        self.selected_category_filter = None
         self._update_preset_button_styles()
         self._refresh_agenda()
 
+    def _on_category_clicked(self, cat: str) -> None:
+        """Filter agenda by clicked project category, or toggle back to All."""
+        if cat == "All" or self.selected_category_filter == cat:
+            self.selected_category_filter = None
+        else:
+            self.selected_category_filter = cat
+        self._refresh_agenda()
+
+    def _refresh_categories(self, counts: Dict[str, int], total_count: int) -> None:
+        """Populate or update category buttons displaying task counts."""
+        projects = [p.name for p in self.repo.get_all_projects()]
+        if not projects:
+            projects = ["Work", "Personal Projects"]
+        for p in counts.keys():
+            if p not in projects and p != "General":
+                projects.append(p)
+
+        cat_names = ["All"] + sorted(list(set(projects)))
+
+        # Rebuild if the set of categories has changed
+        if set(self.category_buttons.keys()) != set(cat_names):
+            while self.cat_buttons_layout.count() > 0:
+                item = self.cat_buttons_layout.takeAt(0)
+                w = item.widget()
+                if w is not None:
+                    w.setParent(None)
+                    w.deleteLater()
+            self.category_buttons.clear()
+
+            for cat in cat_names:
+                count = total_count if cat == "All" else counts.get(cat, 0)
+                is_active = (self.selected_category_filter is None and cat == "All") or (self.selected_category_filter == cat)
+                btn = CategoryFilterButton(cat, count, is_active, self.is_dark, parent=self.categories_card)
+                btn.clicked.connect(lambda checked, c=cat: self._on_category_clicked(c))
+                self.category_buttons[cat] = btn
+                self.cat_buttons_layout.addWidget(btn)
+        else:
+            for cat in cat_names:
+                count = total_count if cat == "All" else counts.get(cat, 0)
+                is_active = (self.selected_category_filter is None and cat == "All") or (self.selected_category_filter == cat)
+                if cat in self.category_buttons:
+                    self.category_buttons[cat].update_appearance(count, is_active, self.is_dark)
+
     def _refresh_agenda(self) -> None:
-        """Render the scheduled tasks according to the active date or preset."""
+        """Render the scheduled tasks according to the active date, preset, and category filter."""
         # Clear existing items
         while self.task_list_layout.count() > 0:
             item = self.task_list_layout.takeAt(0)
@@ -650,24 +877,42 @@ class CalendarView(QWidget):
             tasks = self.repo.get_task_hierarchy(status_filter="unfinished")
             empty_text = "No overdue tasks! You're completely caught up."
         else:
-            # Single day view
+            # Single day view: remove double dash per user request
             is_today = (self.selected_date == date.today())
-            date_str = self.selected_date.strftime("%B %d, %A")
             if is_today:
-                date_str = f"Today — {date_str}"
+                date_str = f"Today, {self.selected_date.strftime('%B %d')}"
+            else:
+                date_str = self.selected_date.strftime("%B %d, %A")
             self.agenda_title.setText(date_str)
             self.add_bar_container.show()
-            self.add_input.setPlaceholderText(f"+ Add task for {self.selected_date.strftime('%b %d')}... (Press Enter)")
+            self.add_input.setPlaceholderText("+ Add task... (Enter)")
             tasks = self.repo.get_task_hierarchy(target_date=self.selected_date, status_filter="task")
             empty_text = f"No tasks scheduled for {self.selected_date.strftime('%B %d')}."
 
+        # Calculate counts per project category for all tasks in the current view
+        counts_by_project: Dict[str, int] = {}
+        for t in tasks:
+            tag = t.project_tag or "General"
+            counts_by_project[tag] = counts_by_project.get(tag, 0) + 1
+
+        self._refresh_categories(counts_by_project, len(tasks))
+
+        # Filter by selected category if active
+        if self.selected_category_filter:
+            display_tasks = [t for t in tasks if (t.project_tag or "General") == self.selected_category_filter]
+        else:
+            display_tasks = tasks
+
         # Update counter badge
-        count = len(tasks)
+        count = len(display_tasks)
         self.task_count_badge.setText(f"{count} {'task' if count == 1 else 'tasks'}")
 
         # Render tasks
-        if not tasks:
-            self.empty_label.setText(empty_text)
+        if not display_tasks:
+            if self.selected_category_filter:
+                self.empty_label.setText(f"No tasks in '{self.selected_category_filter}'.")
+            else:
+                self.empty_label.setText(empty_text)
             self.empty_label.show()
             self.scroll_area.hide()
         else:
@@ -681,7 +926,7 @@ class CalendarView(QWidget):
             if not projects:
                 projects = ["Work", "Personal Projects"]
 
-            for task in tasks:
+            for task in display_tasks:
                 row = TaskRowWidget(task=task, all_projects=projects, is_dark=self.is_dark, parent=self.task_list_container)
                 self._connect_task_row(row)
                 self.task_list_layout.addWidget(row)

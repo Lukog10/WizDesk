@@ -57,11 +57,20 @@ def test_calendar_view_initialization_and_layout(qapp, repo):
     cal_view = CalendarView(repo, is_dark=True)
     assert cal_view.selected_date == date.today()
     assert cal_view.active_preset is None
-    assert cal_view.left_pane.width() == 250
+    assert cal_view.left_column.width() == 275
+    assert hasattr(cal_view, "calendar_card")
+    assert hasattr(cal_view, "quick_views_card")
+    assert hasattr(cal_view, "agenda_card")
+    assert hasattr(cal_view, "categories_card")
     assert cal_view.grid_widget is not None
     assert cal_view.add_input is not None
     assert cal_view.section_combo is not None
     assert cal_view.add_btn is not None
+
+    # Test headline does not have double dash
+    assert "—" not in cal_view.agenda_title.text()
+    assert "--" not in cal_view.agenda_title.text()
+    assert "Today, " in cal_view.agenda_title.text()
 
     # Test theme switching
     cal_view.set_dark_mode(False)
@@ -120,3 +129,32 @@ def test_calendar_view_inline_task_scheduling(qapp, repo):
     summary = repo.get_scheduled_summary_for_month(target_dt.year, target_dt.month)
     assert target_dt.strftime("%Y-%m-%d") in summary
     assert summary[target_dt.strftime("%Y-%m-%d")] == "active"
+
+
+def test_calendar_view_category_filtering(qapp, repo):
+    """Test category breakdown and filtering by project category in CalendarView."""
+    today = date.today()
+    repo.create_task("Code API Endpoint", project_tag="Coding", scheduled_date=today.strftime("%Y-%m-%d"))
+    repo.create_task("Browse Design Inspo", project_tag="Browsing", scheduled_date=today.strftime("%Y-%m-%d"))
+    repo.create_task("WizDesk Architecture", project_tag="WizDesk", scheduled_date=today.strftime("%Y-%m-%d"))
+
+    cal_view = CalendarView(repo, is_dark=True)
+    assert "All" in cal_view.category_buttons
+    assert "Coding" in cal_view.category_buttons
+    assert "Browsing" in cal_view.category_buttons
+    assert "WizDesk" in cal_view.category_buttons
+
+    # Category counts
+    assert cal_view.category_buttons["Coding"].count >= 1
+    assert cal_view.category_buttons["Browsing"].count >= 1
+    assert cal_view.category_buttons["WizDesk"].count >= 1
+
+    # Filter to Coding
+    cal_view.category_buttons["Coding"].click()
+    assert cal_view.selected_category_filter == "Coding"
+    assert "1 task" in cal_view.task_count_badge.text()
+
+    # Click Coding again to toggle back to All
+    cal_view.category_buttons["Coding"].click()
+    assert cal_view.selected_category_filter is None
+    assert "3 tasks" in cal_view.task_count_badge.text()
