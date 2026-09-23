@@ -39,6 +39,7 @@ from PyQt6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QStackedWidget,
     QCalendarWidget,
+    QSizePolicy,
 )
 
 from wiz.core.config import config
@@ -592,6 +593,8 @@ class SegmentedFilterBar(QWidget):
         self.is_dark = is_dark
         self._buttons: Dict[str, QPushButton] = {}
 
+        self.setObjectName("SegmentedFilterBar")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setFixedHeight(38)
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(3, 3, 3, 3)
@@ -605,9 +608,10 @@ class SegmentedFilterBar(QWidget):
             btn.setAutoDefault(False)
             btn.setDefault(False)
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             btn.clicked.connect(lambda checked, o=opt: self.set_active_filter(o))
             self._buttons[opt] = btn
-            self.layout.addWidget(btn)
+            self.layout.addWidget(btn, stretch=1)
 
         self._update_container_style()
         self._update_button_styles()
@@ -620,9 +624,9 @@ class SegmentedFilterBar(QWidget):
 
     def _update_container_style(self) -> None:
         switcher_bg = "#18181B" if self.is_dark else "#ECE7DC"
-        switcher_border = "#27272A" if self.is_dark else "#D8D2C6"
+        switcher_border = "#3F3F46" if self.is_dark else "#D6D0C5"
         self.setStyleSheet(f"""
-            QWidget {{
+            QWidget#SegmentedFilterBar, SegmentedFilterBar {{
                 background-color: {switcher_bg};
                 border: 1px solid {switcher_border};
                 border-radius: 8px;

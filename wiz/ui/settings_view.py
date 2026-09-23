@@ -192,11 +192,10 @@ class SettingsCategoryBar(QFrame):
 
     def _init_ui(self) -> None:
         self.setObjectName("SettingsCategoryBar")
-        self.setFrameShape(QFrame.Shape.NoFrame)
         self.setFixedHeight(38)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+        layout.setContentsMargins(3, 3, 3, 3)
+        layout.setSpacing(3)
 
         for cat_id, cat_label in self.CATEGORIES:
             btn = QPushButton(cat_label, self)
@@ -206,11 +205,11 @@ class SettingsCategoryBar(QFrame):
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             btn.setAutoDefault(False)
             btn.setDefault(False)
+            btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             btn.clicked.connect(lambda checked, c=cat_id: self._on_btn_clicked(c))
             self.buttons[cat_id] = btn
-            layout.addWidget(btn)
+            layout.addWidget(btn, stretch=1)
 
-        layout.addStretch(1)
         self.apply_theme()
 
     def _on_btn_clicked(self, cat_id: str) -> None:
@@ -228,7 +227,7 @@ class SettingsCategoryBar(QFrame):
     def apply_theme(self) -> None:
         if self.is_dark:
             container_bg = "#18181B"
-            container_border = "#27272A"
+            container_border = "#3F3F46"
             btn_color = "#A1A1AA"
             btn_hover_bg = "rgba(255, 255, 255, 0.05)"
             btn_hover_color = "#F4F4F6"
@@ -236,7 +235,7 @@ class SettingsCategoryBar(QFrame):
             active_color = "#FAFAFA"
             active_border = "#3F3F46"
         else:
-            container_bg = "#EDE8DF"
+            container_bg = "#ECE7DC"
             container_border = "#D6D0C5"
             btn_color = "#57534E"
             btn_hover_bg = "rgba(0, 0, 0, 0.04)"
@@ -245,11 +244,12 @@ class SettingsCategoryBar(QFrame):
             active_color = "#18181B"
             active_border = "#D5CEC2"
 
-        self.setStyleSheet("""
-            QFrame#SettingsCategoryBar {
-                background-color: transparent;
-                border: none;
-            }
+        self.setStyleSheet(f"""
+            QFrame#SettingsCategoryBar {{
+                background-color: {container_bg};
+                border: 1px solid {container_border};
+                border-radius: 8px;
+            }}
         """)
 
         for cid, btn in self.buttons.items():
