@@ -436,7 +436,7 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
@@ -537,7 +537,7 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
@@ -679,7 +679,7 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
@@ -719,12 +719,14 @@ class SettingsView(QWidget):
 
         self.add_proj_btn = QPushButton("+ Add Project", container)
         self.add_proj_btn.setFont(get_font(10, QFont.Weight.Bold))
+        self.add_proj_btn.setFixedHeight(30)
         self.add_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_proj_btn.clicked.connect(self._on_add_project)
         proj_btn_layout.addWidget(self.add_proj_btn)
 
         self.del_proj_btn = QPushButton("Remove Selected", container)
         self.del_proj_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.del_proj_btn.setFixedHeight(30)
         self.del_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.del_proj_btn.clicked.connect(self._on_remove_project)
         proj_btn_layout.addWidget(self.del_proj_btn)
@@ -817,7 +819,7 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
@@ -852,6 +854,7 @@ class SettingsView(QWidget):
         vault_ctrl_layout.addWidget(self.vault_path_input)
 
         self.browse_btn = QPushButton("Browse", vault_ctrl)
+        self.browse_btn.setFixedHeight(30)
         self.browse_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.browse_btn.clicked.connect(self._on_browse_vault)
         vault_ctrl_layout.addWidget(self.browse_btn)
@@ -912,7 +915,7 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
@@ -940,13 +943,14 @@ class SettingsView(QWidget):
         enc_layout.setContentsMargins(0, 0, 0, 0)
         enc_layout.setSpacing(8)
 
-        self.enc_status_badge = QLabel("STANDARD", enc_ctrl)
+        self.enc_status_badge = QLabel("Not Configured", enc_ctrl)
         self.enc_status_badge.setFont(get_font(8, QFont.Weight.Bold))
         self.enc_status_badge.setObjectName("SecurityBadge")
         enc_layout.addWidget(self.enc_status_badge)
 
         self.toggle_enc_btn = QPushButton("Enable Encryption", enc_ctrl)
         self.toggle_enc_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.toggle_enc_btn.setFixedHeight(30)
         self.toggle_enc_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.toggle_enc_btn.clicked.connect(self._on_toggle_encryption)
         enc_layout.addWidget(self.toggle_enc_btn)
@@ -961,6 +965,7 @@ class SettingsView(QWidget):
         # Row 2: Personal Master Key
         self.view_key_btn = QPushButton("View / Export Key", container)
         self.view_key_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.view_key_btn.setFixedHeight(30)
         self.view_key_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.view_key_btn.clicked.connect(self._on_view_private_key)
 
@@ -980,7 +985,7 @@ class SettingsView(QWidget):
         )
         self._create_setting_row(
             title="Automated Backups",
-            description="Create daily rolling snapshot backups of your database automatically.",
+            description="Create daily rolling snapshot backups of your database automatically on application start.",
             control_widget=self.auto_backup_check,
             parent_layout=layout,
         )
@@ -1007,40 +1012,25 @@ class SettingsView(QWidget):
 
         self.create_backup_btn = QPushButton("Create Backup Now", actions_ctrl)
         self.create_backup_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.create_backup_btn.setFixedHeight(30)
         self.create_backup_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.create_backup_btn.clicked.connect(self._on_create_backup_now)
         act_layout.addWidget(self.create_backup_btn)
 
         self.restore_backup_btn = QPushButton("Restore from File...", actions_ctrl)
         self.restore_backup_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.restore_backup_btn.setFixedHeight(30)
         self.restore_backup_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.restore_backup_btn.clicked.connect(self._on_restore_backup)
         act_layout.addWidget(self.restore_backup_btn)
 
         self._create_setting_row(
-            title="Backup & Restore",
+            title="Database Snapshots",
             description="Generate a new point-in-time backup snapshot or restore from a .bak / .wbak file.",
             control_widget=actions_ctrl,
             parent_layout=layout,
+            include_divider=False,
         )
-
-        # Backups List Header & Table
-        table_hdr = QLabel("Available Local Backups", container)
-        table_hdr.setFont(get_font(10, QFont.Weight.Bold))
-        table_hdr.setObjectName("SettingRowTitle")
-        layout.addWidget(table_hdr)
-
-        self.backup_table = QTableWidget(0, 4, container)
-        self.backup_table.setHorizontalHeaderLabels(["Snapshot File", "Created Date", "Size", "Format"])
-        self.backup_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.backup_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        self.backup_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        self.backup_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        self.backup_table.verticalHeader().setVisible(False)
-        self.backup_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.backup_table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self.backup_table.setFixedHeight(160)
-        layout.addWidget(self.backup_table)
 
         layout.addStretch(1)
         scroll.setWidget(container)
@@ -1050,35 +1040,15 @@ class SettingsView(QWidget):
         """Update encryption badge, button text, and key visibility."""
         is_enc = bool(self.repo.db.is_encrypted)
         if is_enc:
-            self.enc_status_badge.setText("ENCRYPTED")
+            self.enc_status_badge.setText("Active")
             self._apply_badge_style(self.enc_status_badge, is_active=True)
             self.toggle_enc_btn.setText("Disable Encryption")
             self.view_key_btn.setEnabled(True)
         else:
-            self.enc_status_badge.setText("STANDARD")
+            self.enc_status_badge.setText("Not Configured")
             self._apply_badge_style(self.enc_status_badge, is_active=False)
             self.toggle_enc_btn.setText("Enable Encryption")
             self.view_key_btn.setEnabled(crypto_manager.has_stored_key())
-
-    def _load_backups_table(self) -> None:
-        """Populate the recent backups table from disk."""
-        backups = backup_manager.list_backups()
-        self.backup_table.setRowCount(len(backups))
-        for row, item in enumerate(backups):
-            name_item = QTableWidgetItem(item["filename"])
-            name_item.setToolTip(str(item["path"]))
-            date_item = QTableWidgetItem(item["created_at"])
-            size_item = QTableWidgetItem(item["size_str"])
-            fmt_str = "AES-256-GCM (.wbak)" if item["is_encrypted"] else "Plaintext SQLite (.bak)"
-            fmt_item = QTableWidgetItem(fmt_str)
-
-            for it in (name_item, date_item, size_item, fmt_item):
-                it.setFlags(it.flags() & ~Qt.ItemFlag.ItemIsEditable)
-
-            self.backup_table.setItem(row, 0, name_item)
-            self.backup_table.setItem(row, 1, date_item)
-            self.backup_table.setItem(row, 2, size_item)
-            self.backup_table.setItem(row, 3, fmt_item)
 
     def _on_toggle_encryption(self) -> None:
         """Toggle AES-256-GCM database encryption at rest."""
@@ -1086,8 +1056,14 @@ class SettingsView(QWidget):
             ok, key_str = self.repo.db.enable_encryption()
             if ok:
                 self._refresh_encryption_ui()
-                self._load_backups_table()
                 self.status_pill.setText("Database encrypted with AES-256-GCM")
+                self.status_pill.setStyleSheet(
+                    f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+                )
+                QTimer.singleShot(
+                    2500,
+                    lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+                )
                 dlg = KeyDisplayDialog(key_str, is_dark=self.is_dark, parent=self)
                 dlg.exec()
         else:
@@ -1102,8 +1078,14 @@ class SettingsView(QWidget):
                 ok, msg = self.repo.db.disable_encryption()
                 if ok:
                     self._refresh_encryption_ui()
-                    self._load_backups_table()
                     self.status_pill.setText("Database decrypted to standard format")
+                    self.status_pill.setStyleSheet(
+                        f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+                    )
+                    QTimer.singleShot(
+                        2500,
+                        lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+                    )
 
     def _on_view_private_key(self) -> None:
         """Open the personal private key export modal."""
@@ -1123,8 +1105,14 @@ class SettingsView(QWidget):
         """Trigger an immediate point-in-time snapshot backup."""
         try:
             path = backup_manager.create_backup(self.repo.db, tag="manual")
-            self._load_backups_table()
             self.status_pill.setText(f"Snapshot created: {path.name}")
+            self.status_pill.setStyleSheet(
+                f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+            )
+            QTimer.singleShot(
+                2500,
+                lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+            )
         except Exception as e:
             QMessageBox.warning(self, "Backup Error", f"Failed to create backup: {e}")
 
@@ -1154,12 +1142,18 @@ class SettingsView(QWidget):
                 backup_manager.create_backup(self.repo.db, tag="pre-restore")
                 # 2. Restore
                 backup_manager.restore_backup(chosen, self.repo.db)
-                self._load_backups_table()
                 self._refresh_encryption_ui()
                 self._load_projects()
                 self.projects_changed.emit()
                 app_signals.tasks_changed.emit()
                 self.status_pill.setText("Database restored successfully!")
+                self.status_pill.setStyleSheet(
+                    f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+                )
+                QTimer.singleShot(
+                    2500,
+                    lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+                )
             except Exception as e:
                 QMessageBox.critical(self, "Restore Failed", f"Failed to restore backup: {e}")
 
@@ -1192,7 +1186,6 @@ class SettingsView(QWidget):
         self.auto_backup_check.setChecked(config.get("auto_backup_enabled", True))
         self.backup_retention_spin.setValue(int(config.get("max_backups_retained", 5)))
         self._refresh_encryption_ui()
-        self._load_backups_table()
 
         curr_interval_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
         self.interval_spin.setValue(curr_interval_min)
@@ -1370,6 +1363,7 @@ class SettingsView(QWidget):
         self.vault_path_input.setStyleSheet(input_qss)
         self.vault_logs_folder_input.setStyleSheet(input_qss)
         self.interval_spin.setStyleSheet(input_qss)
+        self.backup_retention_spin.setStyleSheet(input_qss)
         for inp in self.hotkey_inputs.values():
             inp.setStyleSheet(f"""
                 QLineEdit {{
@@ -1408,6 +1402,10 @@ class SettingsView(QWidget):
         self.browse_btn.setStyleSheet(neutral_btn_qss)
         self.add_proj_btn.setStyleSheet(neutral_btn_qss)
         self.reset_hk_btn.setStyleSheet(neutral_btn_qss)
+        self.toggle_enc_btn.setStyleSheet(neutral_btn_qss)
+        self.view_key_btn.setStyleSheet(neutral_btn_qss)
+        self.create_backup_btn.setStyleSheet(neutral_btn_qss)
+        self.restore_backup_btn.setStyleSheet(neutral_btn_qss)
 
         # Danger button
         self.del_proj_btn.setStyleSheet(f"""
