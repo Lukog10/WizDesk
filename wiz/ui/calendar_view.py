@@ -89,7 +89,10 @@ class MonthCalendarGridWidget(QWidget):
                     self.selected_date = d
                     self.update()
                     self.date_selected.emit(d)
+                    event.accept()
                     return
+            event.accept()
+            return
         super().mousePressEvent(event)
 
     def paintEvent(self, event: QPaintEvent) -> None:

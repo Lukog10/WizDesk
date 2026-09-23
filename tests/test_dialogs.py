@@ -558,3 +558,118 @@ def test_quick_entry_dialog_scheduling_and_repeat_flow(qapp, repo):
     dialog.close()
 
 
+def test_quick_entry_dialog_restricted_window_dragging(qapp, repo):
+    """Verify that clicks inside workspace content cannot move the window, and title bar drag has distance threshold."""
+    from PyQt6.QtGui import QMouseEvent
+    from PyQt6.QtCore import QPointF, QPoint
+
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+    dialog.show()
+    qapp.processEvents()
+
+    initial_pos = dialog.pos()
+
+    # 1. Clicks inside the workspace content card (inner_card) MUST NOT be draggable
+    inner_card_center = dialog.inner_card.mapToGlobal(dialog.inner_card.rect().center())
+    assert not dialog._is_in_draggable_area(inner_card_center)
+
+    # Simulate mouse press + move inside inner_card
+    press_event = QMouseEvent(
+        QMouseEvent.Type.MouseButtonPress,
+        QPointF(dialog.mapFromGlobal(inner_card_center)),
+        QPointF(inner_card_center),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    dialog.mousePressEvent(press_event)
+    assert dialog._drag_start_pos is None
+    assert dialog._is_dragging is False
+
+    # Move inside inner_card: window must NOT move
+    move_event = QMouseEvent(
+        QMouseEvent.Type.MouseMove,
+        QPointF(dialog.mapFromGlobal(inner_card_center) + QPoint(50, 50)),
+        QPointF(inner_card_center + QPoint(50, 50)),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    dialog.mouseMoveEvent(move_event)
+    assert dialog.pos() == initial_pos
+
+    # Release
+    release_event = QMouseEvent(
+        QMouseEvent.Type.MouseButtonRelease,
+        QPointF(dialog.mapFromGlobal(inner_card_center)),
+        QPointF(inner_card_center),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    dialog.mouseReleaseEvent(release_event)
+    assert dialog._drag_start_pos is None
+
+    # 2. Clicks in title bar area (page_title_lbl) ARE draggable
+    title_center = dialog.page_title_lbl.mapToGlobal(dialog.page_title_lbl.rect().center())
+    assert dialog._is_in_draggable_area(title_center)
+
+    press_title = QMouseEvent(
+        QMouseEvent.Type.MouseButtonPress,
+        QPointF(dialog.mapFromGlobal(title_center)),
+        QPointF(title_center),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    dialog.mousePressEvent(press_title)
+    assert dialog._drag_start_pos == title_center
+    assert dialog._is_dragging is False
+
+    # Micro-jitter (< startDragDistance) must NOT move window
+    jitter_pos = title_center + QPoint(1, 1)
+    jitter_move = QMouseEvent(
+        QMouseEvent.Type.MouseMove,
+        QPointF(dialog.mapFromGlobal(jitter_pos)),
+        QPointF(jitter_pos),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    dialog.mouseMoveEvent(jitter_move)
+    assert dialog._is_dragging is False
+    assert dialog.pos() == initial_pos
+
+    # Deliberate drag (>= startDragDistance) DOES move window
+    drag_pos = title_center + QPoint(40, 30)
+    drag_move = QMouseEvent(
+        QMouseEvent.Type.MouseMove,
+        QPointF(dialog.mapFromGlobal(drag_pos)),
+        QPointF(drag_pos),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    dialog.mouseMoveEvent(drag_move)
+    assert dialog._is_dragging is True
+    assert dialog.pos() == initial_pos + QPoint(40, 30)
+
+    # Release ends dragging and clears state
+    release_title = QMouseEvent(
+        QMouseEvent.Type.MouseButtonRelease,
+        QPointF(dialog.mapFromGlobal(drag_pos)),
+        QPointF(drag_pos),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    dialog.mouseReleaseEvent(release_title)
+    assert dialog._drag_start_pos is None
+    assert dialog._window_start_pos is None
+    assert dialog._is_dragging is False
+
+    dialog.close()
+
+
+

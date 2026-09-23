@@ -25,6 +25,7 @@ from PyQt6.QtGui import (
     QGuiApplication,
 )
 from PyQt6.QtWidgets import (
+    QApplication,
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
@@ -2062,6 +2063,11 @@ class QuickEntryDialog(QDialog):
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
 
+        # Frameless window dragging state
+        self._drag_start_pos: Optional[QPoint] = None
+        self._window_start_pos: Optional[QPoint] = None
+        self._is_dragging: bool = False
+
         # Main Outer Container Layout
         self.outer_layout = QVBoxLayout(self)
         self.outer_layout.setContentsMargins(12, 12, 12, 12)
@@ -3261,12 +3267,48 @@ class QuickEntryDialog(QDialog):
 
     # --- Mouse drag for frameless window movement ---
 
+    def _is_in_draggable_area(self, global_pos: QPoint) -> bool:
+        """Only allow dragging from the top title bar or window header, never from workspace content."""
+        if self.isMaximized():
+            return False
+
+        # NEVER allow dragging from anywhere inside the inner workspace content card
+        if hasattr(self, "inner_card") and self.inner_card.isVisible():
+            inner_local = self.inner_card.mapFromGlobal(global_pos)
+            if self.inner_card.rect().contains(inner_local):
+                return False
+
+        # Don't drag if clicking interactive controls (buttons, inputs, combos, checkboxes, scrollbars, etc.)
+        local_pos = self.mapFromGlobal(global_pos)
+        child = self.childAt(local_pos)
+        if child is not None:
+            from PyQt6.QtWidgets import (
+                QAbstractButton,
+                QAbstractSpinBox,
+                QComboBox,
+                QLineEdit,
+                QTextEdit,
+                QScrollBar,
+            )
+            if isinstance(child, (QAbstractButton, QAbstractSpinBox, QComboBox, QLineEdit, QTextEdit, QScrollBar)):
+                return False
+
+        return True
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
-            event.accept()
-        else:
-            super().mousePressEvent(event)
+            global_pt = event.globalPosition().toPoint()
+            if self._is_in_draggable_area(global_pt):
+                self._drag_start_pos = global_pt
+                self._window_start_pos = self.frameGeometry().topLeft()
+                self._is_dragging = False
+                event.accept()
+                return
+            else:
+                self._drag_start_pos = None
+                self._window_start_pos = None
+                self._is_dragging = False
+        super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -3275,11 +3317,29 @@ class QuickEntryDialog(QDialog):
             super().mouseDoubleClickEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if event.buttons() & Qt.MouseButton.LeftButton and not self._drag_pos.isNull() and not self.isMaximized():
-            self.move(event.globalPosition().toPoint() - self._drag_pos)
-            event.accept()
-        else:
-            super().mouseMoveEvent(event)
+        if (
+            event.buttons() & Qt.MouseButton.LeftButton
+            and self._drag_start_pos is not None
+            and self._window_start_pos is not None
+            and not self.isMaximized()
+        ):
+            current_pt = event.globalPosition().toPoint()
+            delta = current_pt - self._drag_start_pos
+            if not self._is_dragging:
+                # Require drag threshold before actually moving window (prevents click jitter)
+                if delta.manhattanLength() >= QApplication.startDragDistance():
+                    self._is_dragging = True
+            if self._is_dragging:
+                self.move(self._window_start_pos + delta)
+                event.accept()
+                return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self._drag_start_pos = None
+        self._window_start_pos = None
+        self._is_dragging = False
+        super().mouseReleaseEvent(event)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Escape:
