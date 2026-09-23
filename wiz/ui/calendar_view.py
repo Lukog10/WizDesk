@@ -464,6 +464,7 @@ class CalendarView(QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self.task_list_container = QWidget()
         self.task_list_layout = QVBoxLayout(self.task_list_container)
@@ -577,25 +578,21 @@ class CalendarView(QWidget):
         self.task_list_container.setStyleSheet("background: transparent; border: none;")
         self.add_bar_container.setStyleSheet("background: transparent; border: none;")
 
-        scroll_bar_handle = "#3F3F46" if self.is_dark else "#D4D4D8"
-        self.scroll_area.setStyleSheet(f"""
-            QScrollArea {{
+        self.scroll_area.setStyleSheet("""
+            QScrollArea {
                 background-color: transparent;
                 border: none;
-            }}
-            QScrollBar:vertical {{
+            }
+            QScrollBar:vertical {
                 background: transparent;
-                width: 6px;
+                width: 0px;
                 margin: 0px;
-            }}
-            QScrollBar::handle:vertical {{
-                background: {scroll_bar_handle};
-                border-radius: 3px;
-                min-height: 20px;
-            }}
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+            }
+            QScrollBar:horizontal {
+                background: transparent;
                 height: 0px;
-            }}
+                margin: 0px;
+            }
         """)
         self.scroll_area.viewport().setStyleSheet("background-color: transparent; border: none;")
 

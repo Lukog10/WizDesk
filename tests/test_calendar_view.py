@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 import pytest
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
 
 from wiz.core.state_machine import StateMachine
@@ -62,10 +63,8 @@ def test_calendar_view_initialization_and_layout(qapp, repo):
     assert hasattr(cal_view, "quick_views_card")
     assert hasattr(cal_view, "agenda_card")
     assert hasattr(cal_view, "categories_card")
-    assert cal_view.grid_widget is not None
-    assert cal_view.add_input is not None
-    assert cal_view.section_combo is not None
-    assert cal_view.add_btn is not None
+    assert cal_view.scroll_area.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    assert cal_view.scroll_area.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
 
     # Test headline does not have double dash
     assert "—" not in cal_view.agenda_title.text()
