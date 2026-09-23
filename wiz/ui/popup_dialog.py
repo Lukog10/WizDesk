@@ -1986,7 +1986,7 @@ class NoteRowWidget(QWidget):
 
 
 class ProjectGroupWidget(QWidget):
-    """Collapsible project section with chevron header (e.g. ▼ Work)."""
+    """Collapsible project section with SVG arrow header and divider line."""
 
     def __init__(self, project_name: str, tasks: List[TaskRecord], parent: Optional[QWidget] = None, is_dark: bool = False):
         super().__init__(parent)
@@ -1996,14 +1996,19 @@ class ProjectGroupWidget(QWidget):
         self._is_expanded = True
 
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(0, 8, 0, 8)
+        self.main_layout.setContentsMargins(0, 6, 0, 10)
         self.main_layout.setSpacing(6)
 
         # Header bar
         header_color = "#F4F4F5" if self.is_dark else "#242220"
         header_hover = "#A1A1AA" if self.is_dark else "#57534E"
 
-        self.header_btn = QPushButton(f"v {project_name}")
+        self.header_btn = QPushButton(f"  {project_name}", self)
+        self.header_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.header_btn.setAutoDefault(False)
+        self.header_btn.setDefault(False)
+        self.header_btn.setIcon(get_status_icon("icons/arrow-down-2-duotone.svg", header_color, 14))
+        self.header_btn.setIconSize(QSize(14, 14))
         self.header_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.header_btn.setStyleSheet(f"""
             QPushButton {{
@@ -2023,19 +2028,53 @@ class ProjectGroupWidget(QWidget):
         self.header_btn.clicked.connect(self.toggle_collapse)
         self.main_layout.addWidget(self.header_btn)
 
+        # Medium transparent divider line below project header
+        divider_color = "rgba(255, 255, 255, 0.12)" if self.is_dark else "rgba(0, 0, 0, 0.10)"
+        self.divider = QFrame(self)
+        self.divider.setFixedHeight(1)
+        self.divider.setObjectName("ProjectDivider")
+        self.divider.setStyleSheet(f"background-color: {divider_color}; border: none;")
+        self.main_layout.addWidget(self.divider)
+
         # Tasks container
         self.tasks_container = QWidget()
         self.tasks_layout = QVBoxLayout(self.tasks_container)
-        self.tasks_layout.setContentsMargins(12, 0, 0, 0)
+        self.tasks_layout.setContentsMargins(12, 6, 0, 0)
         self.tasks_layout.setSpacing(6)
         self.main_layout.addWidget(self.tasks_container)
 
     def toggle_collapse(self) -> None:
-        """Toggle section expansion."""
+        """Toggle section expansion and swap down/up arrow icons."""
         self._is_expanded = not self._is_expanded
         self.tasks_container.setVisible(self._is_expanded)
-        arrow = "v" if self._is_expanded else ">"
-        self.header_btn.setText(f"{arrow} {self.project_name}")
+        header_color = "#F4F4F5" if self.is_dark else "#242220"
+        icon_name = "icons/arrow-down-2-duotone.svg" if self._is_expanded else "icons/arrow-up-2-duotone.svg"
+        self.header_btn.setIcon(get_status_icon(icon_name, header_color, 14))
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        header_color = "#F4F4F5" if self.is_dark else "#242220"
+        header_hover = "#A1A1AA" if self.is_dark else "#57534E"
+        divider_color = "rgba(255, 255, 255, 0.12)" if self.is_dark else "rgba(0, 0, 0, 0.10)"
+        self.header_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                border: none;
+                text-align: left;
+                font-family: {FONT_SANS};
+                font-size: 14px;
+                font-weight: 700;
+                color: {header_color};
+                padding: 4px 0;
+            }}
+            QPushButton:hover {{
+                color: {header_hover};
+            }}
+        """)
+        icon_name = "icons/arrow-down-2-duotone.svg" if self._is_expanded else "icons/arrow-up-2-duotone.svg"
+        self.header_btn.setIcon(get_status_icon(icon_name, header_color, 14))
+        if hasattr(self, "divider"):
+            self.divider.setStyleSheet(f"background-color: {divider_color}; border: none;")
 
 
 class QuickEntryDialog(QDialog):
