@@ -26,6 +26,7 @@ from wiz.ui.icons import get_app_icon
 from wiz.ui.popup_dialog import RoundedCheckbox
 
 from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.pill_number_picker import DurationPillSelector
 
 # Backwards-compatible alias for RoundedCheckbox
 SettingsCheckbox = RoundedCheckbox
@@ -192,12 +193,14 @@ class SettingsDialog(QDialog):
         self.interval_lbl.setFont(get_font(9, QFont.Weight.Medium))
         pref_row_2.addWidget(self.interval_lbl)
 
-        self.interval_spin = QSpinBox()
-        self.interval_spin.setRange(1, 120)
         curr_interval_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
-        self.interval_spin.setValue(curr_interval_min)
-        self.interval_spin.setSuffix(" min")
-        self.interval_spin.setFixedWidth(90)
+        self.interval_spin = DurationPillSelector(
+            min_minutes=1,
+            max_minutes=720,
+            default_minutes=curr_interval_min,
+            is_dark=self.is_dark,
+            parent=self,
+        )
         pref_row_2.addWidget(self.interval_spin)
         pref_row_2.addStretch()
 
@@ -421,7 +424,7 @@ class SettingsDialog(QDialog):
             }}
         """
         self.vault_path_input.setStyleSheet(input_qss)
-        self.interval_spin.setStyleSheet(input_qss)
+        self.interval_spin.set_theme(self.is_dark)
 
         # 5. Buttons
         self.browse_btn.setStyleSheet(f"""

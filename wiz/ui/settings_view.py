@@ -37,6 +37,7 @@ from wiz.storage.backup import backup_manager
 from wiz.storage.models import StorageRepository
 from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
+from wiz.ui.pill_number_picker import DurationPillSelector, PillSpinBox
 from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
 
 # Shared component alias for backwards compatibility and tests
@@ -483,13 +484,15 @@ class SettingsView(QWidget):
             parent_layout=layout,
         )
 
-        # Row 3: Tracking interval
-        self.interval_spin = QSpinBox(container)
-        self.interval_spin.setRange(1, 120)
-        curr_min = max(1, config.get("tracking_interval_seconds", 300) // 60)
-        self.interval_spin.setValue(curr_min)
-        self.interval_spin.setSuffix(" min")
-        self.interval_spin.setFixedWidth(100)
+        # Row 3: Tracking interval (Duration Pill Selector: [ 0 Hr. ] [ 5 Min. ] [ ✓ ])
+        self.interval_spin = DurationPillSelector(
+            min_minutes=1,
+            max_minutes=720,
+            default_minutes=max(1, config.get("tracking_interval_seconds", 300) // 60),
+            is_dark=self.is_dark,
+            parent=container,
+        )
+        self.interval_spin.confirmed.connect(self._on_interval_confirmed)
         self._create_setting_row(
             title="Activity Tracking Interval",
             description="Frequency of active window polling and automatic session chunk logging.",
@@ -529,6 +532,22 @@ class SettingsView(QWidget):
         layout.addStretch(1)
         scroll.setWidget(container)
         return scroll
+
+    def _on_interval_confirmed(self, val: int) -> None:
+        """Handle inline check confirmation for tracking interval."""
+        config.set("tracking_interval_seconds", val * 60)
+        config.save()
+        hrs = val // 60
+        mins = val % 60
+        dur_str = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m"
+        self.status_pill.setText(f"Tracking interval set to {dur_str}")
+        self.status_pill.setStyleSheet(
+            f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+        )
+        QTimer.singleShot(
+            2500,
+            lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+        )
 
     # ----------------------------------------------------------------
     # Category Page 2: Keyboard Shortcuts (Hotkeys)
@@ -990,13 +1009,16 @@ class SettingsView(QWidget):
             parent_layout=layout,
         )
 
-        # Row 4: Retention Count SpinBox
-        self.backup_retention_spin = QSpinBox(container)
-        self.backup_retention_spin.setRange(1, 30)
-        self.backup_retention_spin.setValue(int(config.get("max_backups_retained", 5)))
-        self.backup_retention_spin.setSuffix(" snapshots")
-        self.backup_retention_spin.setFixedWidth(130)
-
+        # Row 4: Retention Count (Pill SpinBox: [ 5 snapshots ] [ ✓ ])
+        self.backup_retention_spin = PillSpinBox(
+            min_val=1,
+            max_val=30,
+            default_val=int(config.get("max_backups_retained", 5)),
+            unit="snapshots",
+            is_dark=self.is_dark,
+            parent=container,
+        )
+        self.backup_retention_spin.confirmed.connect(self._on_retention_confirmed)
         self._create_setting_row(
             title="Retention Limit",
             description="Number of automated backup snapshots to keep before pruning older files.",
@@ -1035,6 +1057,19 @@ class SettingsView(QWidget):
         layout.addStretch(1)
         scroll.setWidget(container)
         return scroll
+
+    def _on_retention_confirmed(self, val: int) -> None:
+        """Handle inline check confirmation for snapshot retention count."""
+        config.set("max_backups_retained", val)
+        config.save()
+        self.status_pill.setText(f"Retention limit set to {val} snapshots")
+        self.status_pill.setStyleSheet(
+            f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+        )
+        QTimer.singleShot(
+            2500,
+            lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+        )
 
     def _refresh_encryption_ui(self) -> None:
         """Update encryption badge, button text, and key visibility."""
@@ -1275,6 +1310,8 @@ class SettingsView(QWidget):
         self.autostart_check.set_dark_mode(is_dark)
         self.sound_check.set_dark_mode(is_dark)
         self.auto_backup_check.set_dark_mode(is_dark)
+        self.interval_spin.set_theme(is_dark)
+        self.backup_retention_spin.set_theme(is_dark)
         self.category_bar.set_theme(is_dark)
         self.apply_theme()
 
@@ -1362,8 +1399,8 @@ class SettingsView(QWidget):
         """
         self.vault_path_input.setStyleSheet(input_qss)
         self.vault_logs_folder_input.setStyleSheet(input_qss)
-        self.interval_spin.setStyleSheet(input_qss)
-        self.backup_retention_spin.setStyleSheet(input_qss)
+        self.interval_spin.set_theme(is_dark)
+        self.backup_retention_spin.set_theme(is_dark)
         for inp in self.hotkey_inputs.values():
             inp.setStyleSheet(f"""
                 QLineEdit {{
