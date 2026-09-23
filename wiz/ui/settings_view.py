@@ -192,9 +192,10 @@ class SettingsCategoryBar(QFrame):
 
     def _init_ui(self) -> None:
         self.setObjectName("SettingsCategoryBar")
+        self.setFrameShape(QFrame.Shape.NoFrame)
         self.setFixedHeight(38)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(3, 3, 3, 3)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
         for cat_id, cat_label in self.CATEGORIES:
@@ -244,12 +245,11 @@ class SettingsCategoryBar(QFrame):
             active_color = "#18181B"
             active_border = "#D5CEC2"
 
-        self.setStyleSheet(f"""
-            QFrame#SettingsCategoryBar {{
-                background-color: {container_bg};
-                border: 1px solid {container_border};
-                border-radius: 8px;
-            }}
+        self.setStyleSheet("""
+            QFrame#SettingsCategoryBar {
+                background-color: transparent;
+                border: none;
+            }
         """)
 
         for cid, btn in self.buttons.items():
@@ -484,7 +484,7 @@ class SettingsView(QWidget):
             parent_layout=layout,
         )
 
-        # Row 3: Tracking interval (Duration Pill Selector: [ 0 Hr. ] [ 5 Min. ] [ ✓ ])
+        # Row 3: Tracking interval (Compact Pill: [ 5 min ])
         self.interval_spin = DurationPillSelector(
             min_minutes=1,
             max_minutes=720,
@@ -492,7 +492,6 @@ class SettingsView(QWidget):
             is_dark=self.is_dark,
             parent=container,
         )
-        self.interval_spin.confirmed.connect(self._on_interval_confirmed)
         self._create_setting_row(
             title="Activity Tracking Interval",
             description="Frequency of active window polling and automatic session chunk logging.",
@@ -532,22 +531,6 @@ class SettingsView(QWidget):
         layout.addStretch(1)
         scroll.setWidget(container)
         return scroll
-
-    def _on_interval_confirmed(self, val: int) -> None:
-        """Handle inline check confirmation for tracking interval."""
-        config.set("tracking_interval_seconds", val * 60)
-        config.save()
-        hrs = val // 60
-        mins = val % 60
-        dur_str = f"{hrs}h {mins}m" if hrs > 0 else f"{mins}m"
-        self.status_pill.setText(f"Tracking interval set to {dur_str}")
-        self.status_pill.setStyleSheet(
-            f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
-        )
-        QTimer.singleShot(
-            2500,
-            lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
-        )
 
     # ----------------------------------------------------------------
     # Category Page 2: Keyboard Shortcuts (Hotkeys)
@@ -1009,7 +992,7 @@ class SettingsView(QWidget):
             parent_layout=layout,
         )
 
-        # Row 4: Retention Count (Pill SpinBox: [ 5 snapshots ] [ ✓ ])
+        # Row 4: Retention Count (Compact Pill: [ 5 snapshots ])
         self.backup_retention_spin = PillSpinBox(
             min_val=1,
             max_val=30,
@@ -1018,7 +1001,6 @@ class SettingsView(QWidget):
             is_dark=self.is_dark,
             parent=container,
         )
-        self.backup_retention_spin.confirmed.connect(self._on_retention_confirmed)
         self._create_setting_row(
             title="Retention Limit",
             description="Number of automated backup snapshots to keep before pruning older files.",
@@ -1057,19 +1039,6 @@ class SettingsView(QWidget):
         layout.addStretch(1)
         scroll.setWidget(container)
         return scroll
-
-    def _on_retention_confirmed(self, val: int) -> None:
-        """Handle inline check confirmation for snapshot retention count."""
-        config.set("max_backups_retained", val)
-        config.save()
-        self.status_pill.setText(f"Retention limit set to {val} snapshots")
-        self.status_pill.setStyleSheet(
-            f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
-        )
-        QTimer.singleShot(
-            2500,
-            lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
-        )
 
     def _refresh_encryption_ui(self) -> None:
         """Update encryption badge, button text, and key visibility."""
