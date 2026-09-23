@@ -226,23 +226,23 @@ class SettingsCategoryBar(QFrame):
 
     def apply_theme(self) -> None:
         if self.is_dark:
-            container_bg = "#18181B"
-            container_border = "#3F3F46"
+            container_bg = "rgba(255, 255, 255, 0.03)"
+            container_border = "rgba(255, 255, 255, 0.12)"
             btn_color = "#A1A1AA"
             btn_hover_bg = "rgba(255, 255, 255, 0.05)"
             btn_hover_color = "#F4F4F6"
-            active_bg = "#27272A"
+            active_bg = "rgba(255, 255, 255, 0.08)"
             active_color = "#FAFAFA"
-            active_border = "#3F3F46"
+            active_border = "rgba(255, 255, 255, 0.14)"
         else:
-            container_bg = "#ECE7DC"
-            container_border = "#D6D0C5"
+            container_bg = "rgba(0, 0, 0, 0.03)"
+            container_border = "rgba(0, 0, 0, 0.10)"
             btn_color = "#57534E"
             btn_hover_bg = "rgba(0, 0, 0, 0.04)"
             btn_hover_color = "#18181B"
             active_bg = "#FFFFFF"
             active_color = "#18181B"
-            active_border = "#D5CEC2"
+            active_border = "rgba(0, 0, 0, 0.10)"
 
         self.setStyleSheet(f"""
             QFrame#SettingsCategoryBar {{

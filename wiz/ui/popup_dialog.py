@@ -623,8 +623,8 @@ class SegmentedFilterBar(QWidget):
             self._update_button_styles()
 
     def _update_container_style(self) -> None:
-        switcher_bg = "#18181B" if self.is_dark else "#ECE7DC"
-        switcher_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        switcher_bg = "rgba(255, 255, 255, 0.03)" if self.is_dark else "rgba(0, 0, 0, 0.03)"
+        switcher_border = "rgba(255, 255, 255, 0.12)" if self.is_dark else "rgba(0, 0, 0, 0.10)"
         self.setStyleSheet(f"""
             QWidget#SegmentedFilterBar, SegmentedFilterBar {{
                 background-color: {switcher_bg};
@@ -643,9 +643,9 @@ class SegmentedFilterBar(QWidget):
     def _update_button_styles(self) -> None:
         """Update button styles to match the elevated FAQ & Documentation switcher tabs."""
         is_dark = self.is_dark
-        active_tab_bg = "#27272A" if is_dark else "#FFFFFF"
+        active_tab_bg = "rgba(255, 255, 255, 0.08)" if is_dark else "#FFFFFF"
         active_tab_fg = "#FAFAFA" if is_dark else "#18181B"
-        active_tab_border = "#3F3F46" if is_dark else "#D5CEC2"
+        active_tab_border = "rgba(255, 255, 255, 0.14)" if is_dark else "rgba(0, 0, 0, 0.10)"
         inactive_tab_fg = "#A1A1AA" if is_dark else "#6B655B"
         hover_fg = "#FAFAFA" if is_dark else "#18181B"
         hover_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.04)"
