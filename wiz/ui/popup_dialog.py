@@ -1437,15 +1437,27 @@ class TaskRowWidget(QWidget):
         tomorrow = today + timedelta(days=1)
         next_week = today + timedelta(days=7)
 
-        act_today = menu.addAction(f"Today ({today.strftime('%b %d')})")
-        act_tomorrow = menu.addAction(f"Tomorrow ({tomorrow.strftime('%b %d')})")
-        act_next_week = menu.addAction(f"Next Week ({next_week.strftime('%b %d')})")
+        act_today = menu.addAction(
+            get_status_icon("icons/icons8-today-100.png", icon_color, 14),
+            f"Today ({today.strftime('%b %d')})",
+        )
+        act_tomorrow = menu.addAction(
+            get_status_icon("icons/icons8-plus-1-day-100.png", icon_color, 14),
+            f"Tomorrow ({tomorrow.strftime('%b %d')})",
+        )
+        act_next_week = menu.addAction(
+            get_status_icon("icons/icons8-week-view-100.png", icon_color, 14),
+            f"Next Week ({next_week.strftime('%b %d')})",
+        )
         menu.addSeparator()
         act_pick = menu.addAction(get_status_icon("icons/schedule.svg", icon_color, 14), "Pick Date...")
 
         if self.task.scheduled_date:
             menu.addSeparator()
-            act_clear = menu.addAction("Clear Date")
+            act_clear = menu.addAction(
+                get_status_icon("icons/icons8-no-entry-100.png", icon_color, 14),
+                "Clear Date",
+            )
         else:
             act_clear = None
 
@@ -1495,7 +1507,10 @@ class TaskRowWidget(QWidget):
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
         icon_color = "#D4D4D8" if self.is_dark else "#44403C"
 
-        act_none = menu.addAction("None (One-time)")
+        act_none = menu.addAction(
+            get_status_icon("icons/icons8-no-entry-100.png", icon_color, 14),
+            "None (One-time)",
+        )
         act_daily = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Daily (Every day)")
         act_weekdays = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekdays (Mon - Fri)")
         act_weekends = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekends (Sat - Sun)")
@@ -2210,7 +2225,7 @@ class QuickEntryDialog(QDialog):
         self.inner_card.setObjectName("innerCard")
         self.inner_layout = QVBoxLayout(self.inner_card)
         self.inner_layout.setContentsMargins(14, 10, 14, 10)
-        self.inner_layout.setSpacing(8)
+        self.inner_layout.setSpacing(12)
 
         # Contextual Date Header inside inner card (visible in tasks, notes, activity)
         self.inner_layout.addWidget(self.date_header_container, 0, Qt.AlignmentFlag.AlignCenter)
@@ -2223,7 +2238,7 @@ class QuickEntryDialog(QDialog):
         # ==========================================
         self.tasks_page = QWidget()
         tasks_page_layout = QVBoxLayout(self.tasks_page)
-        tasks_page_layout.setContentsMargins(0, 0, 0, 0)
+        tasks_page_layout.setContentsMargins(0, 10, 0, 0)
         tasks_page_layout.setSpacing(12)
 
         # 3. Status Filter Capsule Bar (Below the Date)
@@ -2920,15 +2935,27 @@ class QuickEntryDialog(QDialog):
         tomorrow = today + timedelta(days=1)
         next_week = today + timedelta(days=7)
 
-        act_today = menu.addAction(f"Today ({today.strftime('%b %d')})")
-        act_tomorrow = menu.addAction(f"Tomorrow ({tomorrow.strftime('%b %d')})")
-        act_next_week = menu.addAction(f"Next Week ({next_week.strftime('%b %d')})")
+        act_today = menu.addAction(
+            get_status_icon("icons/icons8-today-100.png", icon_color, 14),
+            f"Today ({today.strftime('%b %d')})",
+        )
+        act_tomorrow = menu.addAction(
+            get_status_icon("icons/icons8-plus-1-day-100.png", icon_color, 14),
+            f"Tomorrow ({tomorrow.strftime('%b %d')})",
+        )
+        act_next_week = menu.addAction(
+            get_status_icon("icons/icons8-week-view-100.png", icon_color, 14),
+            f"Next Week ({next_week.strftime('%b %d')})",
+        )
         menu.addSeparator()
         act_pick = menu.addAction(get_status_icon("icons/schedule.svg", icon_color, 14), "Pick Date...")
 
         if self._pending_task_schedule:
             menu.addSeparator()
-            act_clear = menu.addAction("Clear Schedule (One-time today)")
+            act_clear = menu.addAction(
+                get_status_icon("icons/icons8-no-entry-100.png", icon_color, 14),
+                "Clear Schedule (One-time today)",
+            )
         else:
             act_clear = None
 
@@ -2960,7 +2987,10 @@ class QuickEntryDialog(QDialog):
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
         icon_color = "#D4D4D8" if self.is_dark else "#44403C"
 
-        act_none = menu.addAction("None (One-time)")
+        act_none = menu.addAction(
+            get_status_icon("icons/icons8-no-entry-100.png", icon_color, 14),
+            "None (One-time)",
+        )
         act_daily = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Daily (Every day)")
         act_weekdays = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekdays (Mon - Fri)")
         act_weekends = menu.addAction(get_status_icon("icons/repeat.svg", icon_color, 14), "Weekends (Sat - Sun)")

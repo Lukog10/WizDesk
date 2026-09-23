@@ -2,7 +2,7 @@
 
 import re
 from pathlib import Path
-from PyQt6.QtGui import QIcon, QPixmap, QPainter
+from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QImage
 from PyQt6.QtCore import Qt, QByteArray
 from PyQt6.QtSvg import QSvgRenderer
 
@@ -70,14 +70,39 @@ def render_tinted_svg(
         renderer.render(painter, QRectF(x, y, size, size))
 
 
-def get_status_icon(svg_name: str, color_hex: str, size: int = 14) -> QIcon:
-    """Load an SVG icon from assets/, dynamically tint it with color_hex, and return a crisp high-DPI QIcon.
-
-    Handles both fill-based and stroke-based SVGs.
-    """
-    asset_path = config.get_asset_path(svg_name)
+def get_status_icon(asset_name: str, color_hex: str, size: int = 14) -> QIcon:
+    """Load an icon (SVG or PNG) from assets/, dynamically tint it with color_hex, and return a crisp high-DPI QIcon."""
+    asset_path = config.get_asset_path(asset_name)
     if not asset_path.exists():
         return QIcon()
+
+    if asset_name.lower().endswith(".png"):
+        img = QImage(str(asset_path))
+        if "no-entry" in asset_name.lower():
+            img = img.convertToFormat(QImage.Format.Format_ARGB32)
+            for y in range(img.height()):
+                for x in range(img.width()):
+                    c = img.pixelColor(x, y)
+                    if c.red() > 220 and c.green() > 220 and c.blue() > 220:
+                        img.setPixelColor(x, y, QColor(0, 0, 0, 0))
+
+        src = QPixmap.fromImage(img).scaled(
+            size * 2,
+            size * 2,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        if not color_hex:
+            return QIcon(src)
+
+        tinted = QPixmap(src.size())
+        tinted.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(tinted)
+        painter.drawPixmap(0, 0, src)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+        painter.fillRect(tinted.rect(), QColor(color_hex))
+        painter.end()
+        return QIcon(tinted)
 
     content = asset_path.read_text(encoding="utf-8")
     # Replace fill attributes (but not fill="none")
