@@ -484,12 +484,13 @@ class CalendarView(QWidget):
         self.scroll_area.setWidget(self.task_list_container)
         agenda_layout.addWidget(self.scroll_area, stretch=1)
 
-        # Empty State Label
+        # Empty State Label (takes stretch=1 so bottom add bar stays statically pinned at the bottom)
         self.empty_label = QLabel()
         self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.empty_label.setFont(get_font(11))
+        self.empty_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.empty_label.hide()
-        agenda_layout.addWidget(self.empty_label)
+        agenda_layout.addWidget(self.empty_label, stretch=1)
 
         # 3. Bottom Task Scheduling Add Bar (Pinned at bottom like Tasks & Notes)
         self.add_bar_container = QWidget(self.agenda_card)
@@ -695,7 +696,7 @@ class CalendarView(QWidget):
             }}
         """)
 
-        self.empty_label.setStyleSheet(f"color: {text_muted}; padding: 40px 0; border: none; background: transparent;")
+        self.empty_label.setStyleSheet(f"color: {text_muted}; border: none; background: transparent;")
 
     def _update_preset_button_styles(self) -> None:
         """Update active/inactive styles of the quick preset buttons."""
