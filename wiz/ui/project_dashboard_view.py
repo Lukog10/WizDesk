@@ -927,7 +927,7 @@ class ProjectsOverviewPage(QWidget):
                 }}
                 QPushButton:hover:!checked {{
                     background-color: #E2DDD4;
-                    border-color: #FF6B3D;
+                    border-color: #BA3F1A;
                     color: #242220;
                 }}
             """
@@ -962,7 +962,7 @@ class ProjectsOverviewPage(QWidget):
                     font-size: 10px;
                 }}
                 QLabel#DirectoryBadge:hover {{
-                    border-color: #FF6B3D;
+                    border-color: #BA3F1A;
                     color: #242220;
                 }}
                 QFrame#EmptyCard {{
@@ -984,7 +984,7 @@ class ProjectsOverviewPage(QWidget):
 
         combo_bg = "#242427" if self.is_dark else "#FAF8F5"
         combo_border = "#333338" if self.is_dark else "#D6D0C5"
-        combo_hover_border = "#FF6B3D"
+        combo_hover_border = "#C2410C" if self.is_dark else "#BA3F1A"
         combo_text = "#F4F4F6" if self.is_dark else "#242220"
         combo_popup_bg = "#242427" if self.is_dark else "#FAF8F5"
         combo_popup_border = "#3F3F46" if self.is_dark else "#D6D0C5"
@@ -1611,7 +1611,7 @@ class ProjectDetailPage(QWidget):
                 }}
                 QPushButton:hover {{
                     background-color: #EDE7DC;
-                    border-color: #FF6B3D;
+                    border-color: #BA3F1A;
                     color: #242220;
                 }}
             """
@@ -1634,7 +1634,7 @@ class ProjectDetailPage(QWidget):
                 }}
                 QPushButton:hover:!checked {{
                     background-color: #E2DDD4;
-                    border-color: #FF6B3D;
+                    border-color: #BA3F1A;
                     color: #242220;
                 }}
             """
@@ -1658,7 +1658,7 @@ class ProjectDetailPage(QWidget):
                     border-radius: 3px;
                 }
                 QProgressBar::chunk {
-                    background-color: #FF5722;
+                    background-color: #BA3F1A;
                     border-radius: 3px;
                 }
             """
@@ -1687,7 +1687,7 @@ class ProjectDetailPage(QWidget):
 
         combo_bg = "#242427" if self.is_dark else "#FAF8F5"
         combo_border = "#333338" if self.is_dark else "#D6D0C5"
-        combo_hover_border = "#FF6B3D"
+        combo_hover_border = "#C2410C" if self.is_dark else "#BA3F1A"
         combo_text = "#F4F4F6" if self.is_dark else "#242220"
         combo_popup_bg = "#242427" if self.is_dark else "#FAF8F5"
         combo_popup_border = "#3F3F46" if self.is_dark else "#D6D0C5"

@@ -113,13 +113,13 @@ class MonthCalendarGridWidget(QWidget):
         row_h = (h - header_h) / 6.0
 
         # Colors
-        header_text_color = QColor("#71717A" if self.is_dark else "#A1A1AA")
-        day_text_color = QColor("#E4E4E7" if self.is_dark else "#27272A")
-        dim_text_color = QColor("#3F3F46" if self.is_dark else "#D4D4D8")
-        today_border_color = QColor("#FF6B3D")
-        selected_bg_color = QColor("#FF6B3D")
+        header_text_color = QColor("#71717A" if self.is_dark else "#78716C")
+        day_text_color = QColor("#E4E4E7" if self.is_dark else "#242220")
+        dim_text_color = QColor("#3F3F46" if self.is_dark else "#C8C2B6")
+        today_border_color = QColor("#C2410C" if self.is_dark else "#BA3F1A")
+        selected_bg_color = QColor("#C2410C" if self.is_dark else "#BA3F1A")
         selected_text_color = QColor("#FFFFFF")
-        dot_active_color = QColor("#FF6B3D")
+        dot_active_color = QColor("#C2410C" if self.is_dark else "#BA3F1A")
         dot_completed_color = QColor("#10B981")
 
         # 1. Weekday headers (Mo, Tu, We, Th, Fr, Sa, Su)
@@ -247,9 +247,9 @@ class CategoryFilterButton(QPushButton):
         self.is_dark = is_dark
         self.count_badge.setText(str(count))
 
-        text_primary = "#FAFAFA" if self.is_dark else "#18181B"
-        text_muted = "#A1A1AA" if self.is_dark else "#71717A"
-        active_bg = "#FF6B3D"
+        text_primary = "#FAFAFA" if self.is_dark else "#242220"
+        text_muted = "#A1A1AA" if self.is_dark else "#78716C"
+        active_bg = "#C2410C" if self.is_dark else "#BA3F1A"
 
         if self.is_active:
             self.setStyleSheet(f"""
@@ -268,9 +268,9 @@ class CategoryFilterButton(QPushButton):
                 border: none;
             """)
         else:
-            hover_bg = "#27272A" if self.is_dark else "#F4F0E8"
-            badge_bg = "#27272A" if self.is_dark else "#E4E4E7"
-            badge_fg = "#A1A1AA" if self.is_dark else "#71717A"
+            hover_bg = "#27272A" if self.is_dark else "#EDE8DF"
+            badge_bg = "#27272A" if self.is_dark else "#EDE8DF"
+            badge_fg = "#A1A1AA" if self.is_dark else "#78716C"
             self.setStyleSheet(f"""
                 QPushButton {{
                     background-color: transparent;
@@ -545,12 +545,12 @@ class CalendarView(QWidget):
 
     def _apply_theme(self) -> None:
         """Apply CSS styling matching WizDesk card and border palette."""
-        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        card_border = "#27272A" if self.is_dark else "#E4E4E7"
-        text_primary = "#FAFAFA" if self.is_dark else "#18181B"
-        text_muted = "#71717A" if self.is_dark else "#A1A1AA"
-        btn_nav_bg = "#27272A" if self.is_dark else "#E4E4E7"
-        btn_nav_hover = "#3F3F46" if self.is_dark else "#D4D4D8"
+        card_bg = "#18181B" if self.is_dark else "#FAF8F5"
+        card_border = "#27272A" if self.is_dark else "#DFD9CE"
+        text_primary = "#FAFAFA" if self.is_dark else "#242220"
+        text_muted = "#71717A" if self.is_dark else "#78716C"
+        btn_nav_bg = "#27272A" if self.is_dark else "#EDE7DC"
+        btn_nav_hover = "#3F3F46" if self.is_dark else "#E2DDD4"
 
         self.setStyleSheet(f"""
             QWidget#CalendarView {{
@@ -621,8 +621,8 @@ class CalendarView(QWidget):
         # Agenda header styling
         self.agenda_title.setStyleSheet(f"color: {text_primary}; border: none; background: transparent;")
 
-        badge_bg = "#27272A" if self.is_dark else "#E4E4E7"
-        badge_fg = "#A1A1AA" if self.is_dark else "#52525B"
+        badge_bg = "#27272A" if self.is_dark else "#EDE8DF"
+        badge_fg = "#A1A1AA" if self.is_dark else "#78716C"
         self.task_count_badge.setStyleSheet(f"""
             background-color: {badge_bg};
             color: {badge_fg};
@@ -645,7 +645,7 @@ class CalendarView(QWidget):
                 font-family: {FONT_SANS};
             }}
             QLineEdit:focus {{
-                border: 1.5px solid #FF6B3D;
+                border: 1.5px solid {"#C2410C" if self.is_dark else "#BA3F1A"};
             }}
         """)
 
@@ -665,7 +665,7 @@ class CalendarView(QWidget):
                 font-family: {FONT_SANS};
             }}
             QComboBox:hover {{
-                border: 1px solid {"#FF6B3D" if self.is_dark else "#BA3F1A"};
+                border: 1px solid {"#C2410C" if self.is_dark else "#BA3F1A"};
             }}
             QComboBox::drop-down {{
                 border: none;
@@ -684,15 +684,17 @@ class CalendarView(QWidget):
             }}
         """)
 
+        btn_action_bg = "#C2410C" if self.is_dark else "#BA3F1A"
+        btn_action_hover = "#A3360E" if self.is_dark else "#9E3414"
         self.add_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: #FF6B3D;
+                background-color: {btn_action_bg};
                 color: #FFFFFF;
                 border: none;
                 border-radius: 6px;
             }}
             QPushButton:hover {{
-                background-color: #E05326;
+                background-color: {btn_action_hover};
             }}
         """)
 
@@ -700,10 +702,10 @@ class CalendarView(QWidget):
 
     def _update_preset_button_styles(self) -> None:
         """Update active/inactive styles of the quick preset buttons."""
-        border_color = "#27272A" if self.is_dark else "#E4E4E7"
-        text_primary = "#FAFAFA" if self.is_dark else "#18181B"
-        text_muted = "#A1A1AA" if self.is_dark else "#71717A"
-        active_bg = "#FF6B3D"
+        border_color = "#27272A" if self.is_dark else "#DFD9CE"
+        text_primary = "#FAFAFA" if self.is_dark else "#242220"
+        text_muted = "#A1A1AA" if self.is_dark else "#78716C"
+        active_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         active_fg = "#FFFFFF"
 
         presets = [
@@ -736,7 +738,7 @@ class CalendarView(QWidget):
                         padding-left: 12px;
                     }}
                     QPushButton:hover {{
-                        background-color: {"#27272A" if self.is_dark else "#F4F0E8"};
+                        background-color: {"#27272A" if self.is_dark else "#EDE8DF"};
                         color: {text_primary};
                     }}
                 """)

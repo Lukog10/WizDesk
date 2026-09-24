@@ -680,17 +680,19 @@ class HelpFaqView(QWidget):
                 color: {desc_fg};
             }}
         """)
+        github_fg = "#FF855D" if is_dark else "#BA3F1A"
+        github_hover_fg = "#FFA07A" if is_dark else "#9E3414"
         self.github_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
-                color: #FF6B3D;
+                color: {github_fg};
                 border: 1px solid {tag_border};
                 border-radius: 4px;
                 padding: 4px 8px;
             }}
             QPushButton:hover {{
                 background-color: {tag_bg};
-                color: #FF855D;
+                color: {github_hover_fg};
             }}
         """)
 

@@ -133,16 +133,16 @@ class CalendarPopupDialog(QDialog):
         combo_border = "#3F3F46" if self.is_dark else "#D6D0C5"
         combo_text = "#F4F4F5" if self.is_dark else "#242220"
         nav_btn_color = "#A1A1AA" if self.is_dark else "#666460"
-        nav_btn_hover_color = "#FF8E6B" if self.is_dark else "#FF5722"
+        nav_btn_hover_color = "#FF8E6B" if self.is_dark else "#BA3F1A"
         nav_btn_hover_bg = "#27272A" if self.is_dark else "#EDE7DC"
         table_text = "#F4F4F5" if self.is_dark else "#242220"
         table_hover_bg = "rgba(255, 107, 61, 40)" if self.is_dark else "#FEECE5"
-        table_sel_bg = "#FF5722"
+        table_sel_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         table_sel_text = "#FFFFFF"
         today_btn_bg = "#27272A" if self.is_dark else "#EDE7DC"
         today_btn_border = "#3F3F46" if self.is_dark else "#D6D0C5"
         today_btn_text = "#F4F4F5" if self.is_dark else "#242220"
-        today_btn_hover_bg = "#FF5722"
+        today_btn_hover_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         today_btn_hover_text = "#FFFFFF"
 
         card = QFrame()
@@ -165,7 +165,7 @@ class CalendarPopupDialog(QDialog):
             }}
             QComboBox:hover {{
                 background-color: {nav_btn_hover_bg};
-                border-color: #FF6B3D;
+                border-color: {"#C2410C" if self.is_dark else "#BA3F1A"};
             }}
             QComboBox::drop-down {{
                 border: none;
@@ -196,7 +196,7 @@ class CalendarPopupDialog(QDialog):
             QPushButton#calNavBtn:hover {{
                 background-color: {nav_btn_hover_bg};
                 color: {nav_btn_hover_color};
-                border: 1px solid #FF6B3D;
+                border: 1px solid {"#C2410C" if self.is_dark else "#BA3F1A"};
             }}
             QCalendarWidget {{
                 background-color: {card_bg};
