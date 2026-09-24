@@ -6,8 +6,8 @@ Zero-telemetry and zero-emoji compliance.
 """
 
 from typing import Optional, Dict, List, Tuple
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QCursor
+from PyQt6.QtCore import Qt, pyqtSignal, QUrl
+from PyQt6.QtGui import QFont, QCursor, QDesktopServices
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -268,31 +268,35 @@ class HelpFaqView(QWidget):
 
         nav_layout.addStretch(1)
 
-        # Quick link to settings at bottom of category nav
-        self.hk_link_box = QFrame(self.faq_nav_col)
-        self.hk_link_box.setObjectName("linkBox")
-        hk_link_layout = QVBoxLayout(self.hk_link_box)
-        hk_link_layout.setContentsMargins(10, 10, 10, 10)
-        hk_link_layout.setSpacing(6)
+        # Contribute link box at bottom of category nav
+        self.contribute_box = QFrame(self.faq_nav_col)
+        self.contribute_box.setObjectName("contributeBox")
+        contribute_layout = QVBoxLayout(self.contribute_box)
+        contribute_layout.setContentsMargins(10, 10, 10, 10)
+        contribute_layout.setSpacing(6)
 
-        hk_lbl = QLabel("Keyboard Shortcuts", self.hk_link_box)
-        hk_lbl.setFont(get_font(8, QFont.Weight.Bold))
-        hk_link_layout.addWidget(hk_lbl)
+        contribute_lbl = QLabel("Contribute", self.contribute_box)
+        contribute_lbl.setFont(get_font(8.5, QFont.Weight.Bold))
+        contribute_layout.addWidget(contribute_lbl)
 
-        hk_sub = QLabel("Customize global keys in Settings.", self.hk_link_box)
-        hk_sub.setFont(get_font(7))
-        hk_sub.setWordWrap(True)
-        hk_link_layout.addWidget(hk_sub)
+        contribute_sub = QLabel("WizDesk is open-source. Report issues or contribute on GitHub.", self.contribute_box)
+        contribute_sub.setFont(get_font(7.5))
+        contribute_sub.setWordWrap(True)
+        contribute_layout.addWidget(contribute_sub)
 
-        self.open_settings_btn = QPushButton("Open Hotkeys →", self.hk_link_box)
-        self.open_settings_btn.setFont(get_font(8, QFont.Weight.DemiBold))
-        self.open_settings_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.open_settings_btn.setAutoDefault(False)
-        self.open_settings_btn.setDefault(False)
-        self.open_settings_btn.clicked.connect(lambda: self.open_settings_requested.emit("hotkeys"))
-        hk_link_layout.addWidget(self.open_settings_btn)
+        self.github_btn = QPushButton("Contribute on GitHub →", self.contribute_box)
+        self.github_btn.setFont(get_font(8, QFont.Weight.DemiBold))
+        self.github_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.github_btn.setAutoDefault(False)
+        self.github_btn.setDefault(False)
+        self.github_btn.clicked.connect(self._open_github)
+        contribute_layout.addWidget(self.github_btn)
 
-        nav_layout.addWidget(self.hk_link_box)
+        # Backwards-compatibility aliases
+        self.open_settings_btn = self.github_btn
+        self.hk_link_box = self.contribute_box
+
+        nav_layout.addWidget(self.contribute_box)
         layout.addWidget(self.faq_nav_col)
 
         # Right Column: Scrollable Accordion Cards
@@ -490,6 +494,10 @@ class HelpFaqView(QWidget):
         elif topic == "Shortcuts":
             self.open_settings_requested.emit("hotkeys")
 
+    def _open_github(self) -> None:
+        """Open the official WizDesk GitHub repository in the default web browser."""
+        QDesktopServices.openUrl(QUrl("https://github.com/Lukog10/WizDesk"))
+
     def _create_doc_section(self, title: str, body: str) -> QFrame:
         """Create a styled editorial documentation card."""
         card = QFrame()
@@ -659,11 +667,11 @@ class HelpFaqView(QWidget):
                     }}
                 """)
 
-        # Quick link box in FAQ nav
+        # Contribute link box in FAQ nav
         link_box_bg = "#16161A" if is_dark else "#F1EBE1"
         link_box_border = "#24242C" if is_dark else "#DFD8CD"
-        self.hk_link_box.setStyleSheet(f"""
-            QFrame#linkBox {{
+        self.contribute_box.setStyleSheet(f"""
+            QFrame#contributeBox {{
                 background-color: {link_box_bg};
                 border: 1px solid {link_box_border};
                 border-radius: 8px;
@@ -672,7 +680,7 @@ class HelpFaqView(QWidget):
                 color: {desc_fg};
             }}
         """)
-        self.open_settings_btn.setStyleSheet(f"""
+        self.github_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
                 color: #FF6B3D;

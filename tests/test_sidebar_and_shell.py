@@ -331,8 +331,8 @@ def test_help_faq_view_lifecycle(qapp):
     assert view.is_dark
 
 
-def test_help_to_settings_navigation(qapp, repo: StorageRepository):
-    """Test clicking 'Configure in Settings →' navigates to settings hotkey category."""
+def test_help_to_settings_navigation(qapp, repo: StorageRepository, monkeypatch):
+    """Test clicking GitHub contribute button and documentation shortcut navigation."""
     sm = StateMachine()
     dialog = QuickEntryDialog(sm, repository=repo)
 
@@ -341,10 +341,21 @@ def test_help_to_settings_navigation(qapp, repo: StorageRepository):
     assert dialog.current_view_mode == "help"
     assert dialog.stack.currentWidget() == dialog.help_faq_view
 
-    # Click Configure in Settings button
-    dialog.help_faq_view.open_settings_btn.click()
+    # Verify contribute box and button exist
+    assert hasattr(dialog.help_faq_view, "contribute_box")
+    assert hasattr(dialog.help_faq_view, "github_btn")
 
-    # Verify dialog switched to Settings and activated the hotkeys tab
+    opened_urls = []
+    from PyQt6.QtGui import QDesktopServices
+    monkeypatch.setattr(QDesktopServices, "openUrl", lambda url: opened_urls.append(url.toString()))
+
+    # Click Contribute on GitHub button
+    dialog.help_faq_view.github_btn.click()
+    assert len(opened_urls) == 1
+    assert opened_urls[0] == "https://github.com/Lukog10/WizDesk"
+
+    # Verify documentation Shortcuts topic navigates to settings hotkey category
+    dialog.help_faq_view._on_doc_topic_clicked("Shortcuts")
     assert dialog.current_view_mode == "settings"
     assert dialog.stack.currentWidget() == dialog.settings_view
     assert dialog.settings_view.stack.currentIndex() == 1  # Hotkeys tab
