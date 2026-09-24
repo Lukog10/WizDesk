@@ -229,8 +229,8 @@ class MascotWidget(QWidget):
         # Draw delicate, thin spinning arcs
         # Stroke width thinned down from 5.0 to 1.8px
         stroke_w = max(1.5, 3.2 * scale_x)
-        # Brand terracotta / warm focused accent
-        spinner_color = QColor("#BA3F1A")
+        # Standard eye color matching normal/idle and notice states (#111111)
+        spinner_color = QColor("#111111")
         pen = QPen(spinner_color, stroke_w, Qt.PenStyle.CustomDashLine, Qt.PenCapStyle.RoundCap)
         pen.setDashPattern([3.6, 2.2])
         painter.setPen(pen)

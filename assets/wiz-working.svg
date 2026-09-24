@@ -10,8 +10,8 @@
            Z"
         fill="#F7F3EA" stroke="#111111" stroke-width="6" stroke-linejoin="round"/>
   <!-- loading spinner eyes -->
-  <circle cx="82" cy="128" r="9" fill="none" stroke="#5B564C" stroke-width="5"
+  <circle cx="82" cy="128" r="9" fill="none" stroke="#111111" stroke-width="5"
           stroke-dasharray="20 13" stroke-linecap="round"/>
-  <circle cx="118" cy="128" r="9" fill="none" stroke="#5B564C" stroke-width="5"
+  <circle cx="118" cy="128" r="9" fill="none" stroke="#111111" stroke-width="5"
           stroke-dasharray="20 13" stroke-linecap="round" transform="rotate(90 118 128)"/>
 </svg>
