@@ -307,6 +307,22 @@ def test_help_faq_view_lifecycle(qapp):
     for item in other_items:
         assert item.isHidden()
 
+    # Test Backup category filtering
+    view.filter_faq_category("backup")
+    assert view.current_faq_cat == "backup"
+    backup_items = [item for item in view.faq_items if item.category == "backup"]
+    assert len(backup_items) >= 4
+    for item in backup_items:
+        assert not item.isHidden()
+
+    # Test Privacy category filtering
+    view.filter_faq_category("privacy")
+    assert view.current_faq_cat == "privacy"
+    privacy_items = [item for item in view.faq_items if item.category == "privacy"]
+    assert len(privacy_items) >= 4
+    for item in privacy_items:
+        assert not item.isHidden()
+
     # Reset to all
     view.filter_faq_category("all")
     assert view.current_faq_cat == "all"
@@ -318,6 +334,11 @@ def test_help_faq_view_lifecycle(qapp):
     assert view.current_mode == "docs"
     assert view.stack.currentIndex() == 1
     assert view.tag_pill.text() == "/ DOCS"
+
+    # Test security & backup doc topic navigation
+    view._on_doc_topic_clicked("AES-256 Encryption")
+    view._on_doc_topic_clicked("Database Backups")
+    view._on_doc_topic_clicked("Restore & Migration")
 
     view.switch_view_mode("faq")
     assert view.current_mode == "faq"

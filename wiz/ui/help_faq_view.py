@@ -138,6 +138,7 @@ class HelpFaqView(QWidget):
         ("general", "General"),
         ("mascot", "Mascot && Tracking"),
         ("privacy", "Privacy && Security"),
+        ("backup", "Backup && Restore"),
         ("obsidian", "Obsidian Sync"),
     ]
 
@@ -329,7 +330,13 @@ class HelpFaqView(QWidget):
              "Every 5 seconds, WizDesk checks the active foreground window title against your configured project keywords. When you switch focus (e.g. from editor to browser), the previous session automatically concludes and logs the exact duration."),
             ("mascot",
              "What are the desktop companion moods?",
-             "Your companion reacts dynamically: WORKING (typing/clicking on active task), IDLE (inactivity >10s), SLEEP (inactivity >60s), NOTIFY (transient feedback when tasks are added), and COMPLETE (celebration bounce on task completion)."),
+             "Your companion reacts dynamically: WORKING (typing/clicking on active task with spinning eyes), IDLE (monitoring focus with cursor-tracking eyes), SLEEP (inactivity >60s), NOTIFY (transient feedback when tasks are added), and COMPLETE (celebration bounce on task completion)."),
+            ("mascot",
+             "How do cursor-tracking dot eyes work?",
+             "In the Monitor / IDLE state, the desktop mascot's eyes smoothly track your mouse cursor coordinates across the screen in real time. When window activity is detected and tasks are actively being logged, the eyes seamlessly transition into thin, spinning circular eyes in WORKING mode."),
+            ("mascot",
+             "Does WizDesk have sound effects and can I customize them?",
+             "Yes. WizDesk includes a built-in procedural sound engine generating 16-bit PCM WAV chimes for wake up, sleep, completion, cancellations, work logs, and mascot pokes/drags. You can toggle audio on or off and calibrate volume under Settings > General."),
             ("mascot",
              "Can I hide the desktop mascot and still track work?",
              "Yes. Toggle the companion anytime using Ctrl+Shift+M (or your customized hotkey in Settings). Window time tracking continues uninterrupted in the background."),
@@ -339,6 +346,30 @@ class HelpFaqView(QWidget):
             ("privacy",
              "Does WizDesk log my keystrokes or screen?",
              "No. WizDesk only inspects the active window title bar every 5 seconds to attribute time to projects. Keystrokes, screen recordings, and personal documents are never logged or stored."),
+            ("privacy",
+             "How does Database Encryption (AES-256-GCM) work?",
+             "WizDesk supports hardware-backed AES-256-GCM authenticated encryption at rest. When enabled under Settings > Security, your database is decrypted into secure memory on startup and written to disk encrypted with atomic replacement. Zero unencrypted plaintext remains on disk."),
+            ("privacy",
+             "How do I enable encryption and what is my Personal Master Key?",
+             "Navigate to Settings > Security and click 'Enable Encryption'. WizDesk generates a cryptographically secure 256-bit key and binds it to your Windows user account via Windows DPAPI for instant, zero-prompt login. You also receive an exportable master key ('WIZK-XXXX-...') which you can back up safely for disaster recovery or machine migration."),
+            ("privacy",
+             "Can I disable database encryption later?",
+             "Yes. Click 'Disable Encryption' under Settings > Security. WizDesk safely decrypts your encrypted payload and restores it as a standard SQLite database on disk."),
+            ("backup",
+             "How do automated database backups work?",
+             "When Automated Backups is toggled on under Settings > Security, WizDesk automatically creates a rolling snapshot of your database every day when the app starts. If encryption is enabled, backups are securely encrypted as .wbak files; otherwise they are saved as standard .bak files."),
+            ("backup",
+             "How do I create an immediate manual backup?",
+             "Go to Settings > Security and click 'Create Backup Now'. WizDesk instantly snapshots your current database with a timestamp and 'manual' tag in your local backups directory (%APPDATA%\\WizDesk\\backups). Manual snapshots are never auto-pruned."),
+            ("backup",
+             "What is the backup retention limit and how does pruning work?",
+             "You can set a retention limit (1 to 30 snapshots) under Settings > Security. When your automated backups exceed this number, the oldest automatic snapshots are pruned to conserve disk space. Manual and pre-restore snapshots are always preserved."),
+            ("backup",
+             "How do I restore my database from a backup file?",
+             "Under Settings > Security, click 'Restore from File...' and select any .bak or .wbak file. WizDesk verifies SQLite integrity (PRAGMA integrity_check) and takes an automatic safety 'pre-restore' snapshot of your active database before applying the restore."),
+            ("backup",
+             "How do I export and migrate data to another computer?",
+             "Copy your .bak or .wbak snapshot files from %APPDATA%\\WizDesk\\backups to your new device. If your backups are encrypted (.wbak), export your Personal Master Key from Settings > Security ('View / Export Key') and use it to decrypt and restore your data on the target system."),
             ("obsidian",
              "How does local Obsidian sync work?",
              "Under Settings > Integrations, configure your local Obsidian vault root folder. Whenever you complete tasks or record notes, WizDesk automatically appends them to daily markdown files in your vault."),
@@ -377,7 +408,8 @@ class HelpFaqView(QWidget):
 
         doc_structure = [
             ("Overview", ["Introduction", "Quick Start"]),
-            ("Concepts", ["Autonomous Engine", "Mascot States", "Project Rules"]),
+            ("Concepts", ["Autonomous Engine", "Mascot States & Audio", "Project Rules"]),
+            ("Security & Backups", ["AES-256 Encryption", "Database Backups", "Restore & Migration"]),
             ("Architecture", ["Local SQLite", "Zero Telemetry"]),
             ("Integrations", ["Obsidian Sync", "Shortcuts"]),
         ]
@@ -443,19 +475,50 @@ class HelpFaqView(QWidget):
         )
         self.doc_layout.addWidget(self.sec_tracking)
 
-        # Section 2: Mascot Companion Behaviors
+        # Section 2: Mascot Companion Behaviors, Eye-Tracking & Audio
         self.sec_mascot = self._create_doc_section(
-            title="Desktop Companion Moods",
-            body="Your companion dynamically animates based on your work state:\n"
-                 "• WORKING: Active keyboard and mouse input while focused on recognized tasks.\n"
-                 "• IDLE: Brief pause in activity (>10 seconds).\n"
-                 "• SLEEP: Extended break (>1 minute of inactivity).\n"
+            title="Desktop Companion Moods, Eye-Tracking & Sound Engine",
+            body="Your companion dynamically animates based on your work state:\n\n"
+                 "• WORKING: Active keyboard and mouse input while focused on recognized tasks. Mascot displays thin spinning circular eyes.\n"
+                 "• IDLE: Brief pause in activity (>10 seconds). Mascot eyes smoothly follow your mouse cursor coordinates across the screen.\n"
+                 "• SLEEP: Extended break (>1 minute or custom inactivity timeout). Mascot curls up to rest.\n"
                  "• NOTIFY: Transient visual feedback when new tasks or notes are logged.\n"
-                 "• COMPLETE: Celebration bounce when a task is checked off.",
+                 "• COMPLETE: Celebration bounce when a task is checked off.\n\n"
+                 "Procedural Sound Engine: Organic 16-bit PCM WAV audio chimes trigger on state transitions (wake, sleep, complete, cancel, work log, poke/drag). Audio can be toggled and volume adjusted in Settings > General.",
         )
         self.doc_layout.addWidget(self.sec_mascot)
 
-        # Section 3: Privacy & Zero Telemetry Architecture
+        # Section 3: Database Encryption (AES-256-GCM)
+        self.sec_encryption = self._create_doc_section(
+            title="Database Encryption (AES-256-GCM) & Key Management",
+            body="Protect all tasks, subtasks, notes, project allocations, and activity logs at rest using authenticated AES-256-GCM encryption.\n\n"
+                 "• In-Memory Decryption: On application launch, the database payload is decrypted into secure memory and runs with high throughput. Data is committed back to disk encrypted with atomic replacement. Zero unencrypted plaintext remains on disk.\n"
+                 "• Windows DPAPI: Your 256-bit encryption key is securely stored using Windows Data Protection API, bound to your Windows user account credentials for seamless zero-prompt unlock.\n"
+                 "• Personal Master Key: Export your 64-character hex master key (formatted as WIZK-XXXX-...) anytime under Settings > Security to maintain disaster recovery capability.",
+        )
+        self.doc_layout.addWidget(self.sec_encryption)
+
+        # Section 4: Automated & On-Demand Backup System
+        self.sec_backups = self._create_doc_section(
+            title="Automated & On-Demand Backup System",
+            body="Keep your workspace data safe from accidental loss with automated and manual point-in-time snapshots:\n\n"
+                 "• Automated Rolling Backups: Automatically creates daily snapshots on application startup. Saved as .wbak (when encrypted) or .bak (standard SQLite).\n"
+                 "• Configurable Retention Limit: Set between 1 and 30 snapshots under Settings > Security. Old automatic snapshots are pruned to conserve disk space, while manual backups are never deleted.\n"
+                 "• Storage Location: Snapshots are stored locally in %APPDATA%\\WizDesk\\backups (Windows) or ~/.local/share/WizDesk/backups (Linux).",
+        )
+        self.doc_layout.addWidget(self.sec_backups)
+
+        # Section 5: Data Restoration & Migration
+        self.sec_restore = self._create_doc_section(
+            title="Data Export, Restoration & Machine Migration",
+            body="Restore or migrate your entire workspace with complete confidence:\n\n"
+                 "• Pre-Restore Safety Snapshot: WizDesk automatically captures a 'pre-restore' backup of your existing database before overwriting, ensuring zero risk of accidental data loss.\n"
+                 "• SQLite Integrity Validation: Every restored database undergoes rigorous validation (PRAGMA integrity_check) before being activated.\n"
+                 "• Machine Migration: Copy your backup file to any computer and restore it via Settings > Security > 'Restore from File...'. For encrypted databases, provide your Personal Master Key to decrypt.",
+        )
+        self.doc_layout.addWidget(self.sec_restore)
+
+        # Section 6: Privacy & Zero Telemetry Architecture
         self.sec_privacy = self._create_doc_section(
             title="Privacy & 100% Local Storage Architecture",
             body="WizDesk adheres strictly to zero-telemetry principles. All information is stored in a standard SQLite database on your device:\n\n"
@@ -465,7 +528,7 @@ class HelpFaqView(QWidget):
         )
         self.doc_layout.addWidget(self.sec_privacy)
 
-        # Section 4: Obsidian Daily Logs Sync
+        # Section 7: Obsidian Daily Logs Sync
         self.sec_obsidian = self._create_doc_section(
             title="Obsidian Vault Daily Logs Sync",
             body="Connect your local Obsidian Vault under Settings > Integrations. "
@@ -485,8 +548,14 @@ class HelpFaqView(QWidget):
             self.doc_scroll.verticalScrollBar().setValue(0)
         elif topic in ("Autonomous Engine", "Project Rules") and hasattr(self, "sec_tracking"):
             self.doc_scroll.ensureWidgetVisible(self.sec_tracking)
-        elif topic == "Mascot States" and hasattr(self, "sec_mascot"):
+        elif topic in ("Mascot States", "Mascot States & Audio", "Sound Engine") and hasattr(self, "sec_mascot"):
             self.doc_scroll.ensureWidgetVisible(self.sec_mascot)
+        elif topic == "AES-256 Encryption" and hasattr(self, "sec_encryption"):
+            self.doc_scroll.ensureWidgetVisible(self.sec_encryption)
+        elif topic == "Database Backups" and hasattr(self, "sec_backups"):
+            self.doc_scroll.ensureWidgetVisible(self.sec_backups)
+        elif topic == "Restore & Migration" and hasattr(self, "sec_restore"):
+            self.doc_scroll.ensureWidgetVisible(self.sec_restore)
         elif topic in ("Local SQLite", "Zero Telemetry") and hasattr(self, "sec_privacy"):
             self.doc_scroll.ensureWidgetVisible(self.sec_privacy)
         elif topic == "Obsidian Sync" and hasattr(self, "sec_obsidian"):
