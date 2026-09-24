@@ -68,8 +68,7 @@ class WizApplication:
         sound_manager.set_enabled(config.sound_effects_enabled)
         sound_manager.update_volume(config.sound_volume)
 
-        # Mascot state sound effects & inactivity sleep transition
-        self.state_machine.state_changed.connect(self._on_mascot_state_changed)
+        # Inactivity sleep transition
         app_signals.inactivity_detected.connect(self.state_machine.on_inactivity_detected)
         app_signals.activity_resumed.connect(self.state_machine.on_activity_resumed)
 
@@ -80,29 +79,11 @@ class WizApplication:
         app_signals.request_sync.connect(self.trigger_sync)
         app_signals.sync_finished.connect(self._on_sync_finished)
         app_signals.session_polled.connect(self._on_session_polled)
-        app_signals.task_created.connect(self._on_task_created)
-        app_signals.task_completed.connect(lambda _: sound_manager.play_task_complete())
-        app_signals.task_deleted.connect(lambda _: sound_manager.play_task_delete())
+        app_signals.task_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
+        app_signals.task_completed.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
+        app_signals.task_deleted.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
         app_signals.note_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
         app_signals.quit_application.connect(self.quit)
-
-    def _on_task_created(self, task_id: int) -> None:
-        """Play task add chime and trigger background daily sync."""
-        sound_manager.play_task_add()
-        self.sync_engine.sync_date(date.today(), emit_signal=False)
-
-    def _on_mascot_state_changed(self, new_state: MascotState) -> None:
-        """Play organic audio cues on mascot state transitions."""
-        if new_state == MascotState.WORKING:
-            sound_manager.play_state_working()
-        elif new_state == MascotState.SLEEP:
-            sound_manager.play_state_sleep()
-        elif new_state == MascotState.IDLE:
-            sound_manager.play_state_wake()
-        elif new_state == MascotState.COMPLETE:
-            sound_manager.play_task_complete()
-        elif new_state == MascotState.NOTIFY:
-            sound_manager.play_chime()
 
     def start(self) -> None:
         """Launch UI and background worker threads."""

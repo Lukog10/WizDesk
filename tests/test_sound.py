@@ -62,6 +62,14 @@ def test_sound_manager_methods_exist(qapp):
         sm.play_mascot_poke,
         sm.play_mascot_drag_start,
         sm.play_mascot_drag_end,
+        sm.play_state_wake,
+        sm.play_state_sleep,
+        sm.play_state_working,
+        sm.play_chime,
+        sm.play_task_add,
+        sm.play_task_delete,
     ]
     for method in methods:
         assert callable(method)
+        # Verify calling does not crash
+        method()

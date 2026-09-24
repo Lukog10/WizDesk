@@ -263,6 +263,31 @@ class SoundManager(QObject):
         """Play mascot drop tap."""
         self.play("mascot_drag_end")
 
+    # State and action aliases for backwards compatibility and safety
+    def play_state_wake(self) -> None:
+        """Alias for play_wake."""
+        self.play_wake()
+
+    def play_state_sleep(self) -> None:
+        """Alias for play_sleep."""
+        self.play_sleep()
+
+    def play_state_working(self) -> None:
+        """Alias for play_work_log."""
+        self.play_work_log()
+
+    def play_chime(self) -> None:
+        """Alias for play_task_notify."""
+        self.play_task_notify()
+
+    def play_task_add(self) -> None:
+        """Alias for play_task_notify."""
+        self.play_task_notify()
+
+    def play_task_delete(self) -> None:
+        """Alias for play_task_cancel."""
+        self.play_task_cancel()
+
     def update_volume(self, volume: float) -> None:
         """Update playback volume across all sound effects."""
         config.set_sound_volume(volume)
