@@ -64,7 +64,10 @@ class Config:
             "hotkey_quick_task": "<ctrl>+<shift>+t",
             "hotkey_quick_note": "<ctrl>+<shift>+n",
             "auto_start_on_login": False,
-            "sound_effects": False,
+            "sound_effects": True,
+            "sound_effects_enabled": True,
+            "sound_volume": 0.65,
+            "sleep_inactivity_sec": 60.0,
             "theme": "light",
             "sidebar_collapsed": False,
             "encryption_enabled": False,
@@ -177,6 +180,37 @@ class Config:
     def set_sidebar_collapsed(self, collapsed: bool) -> None:
         """Set and persist the workspace sidebar collapsed state."""
         self.set("sidebar_collapsed", bool(collapsed))
+
+
+    @property
+    def sound_effects_enabled(self) -> bool:
+        """Return whether companion sound effects are enabled."""
+        return bool(self.get("sound_effects_enabled", self.get("sound_effects", True)))
+
+    def set_sound_effects_enabled(self, enabled: bool) -> None:
+        """Set and persist sound effects toggle."""
+        self.set("sound_effects_enabled", bool(enabled))
+        self.set("sound_effects", bool(enabled))
+
+    @property
+    def sound_volume(self) -> float:
+        """Return master sound volume (0.0 to 1.0)."""
+        return float(self.get("sound_volume", 0.65))
+
+    def set_sound_volume(self, volume: float) -> None:
+        """Set and persist master sound volume clamped between 0.0 and 1.0."""
+        clamped = max(0.0, min(1.0, float(volume)))
+        self.set("sound_volume", clamped)
+
+    @property
+    def sleep_inactivity_sec(self) -> float:
+        """Return inactivity threshold before mascot sleeps (in seconds)."""
+        return float(self.get("sleep_inactivity_sec", 60.0))
+
+    def set_sleep_inactivity_sec(self, seconds: float) -> None:
+        """Set and persist inactivity sleep timeout clamped between 10s and 3600s."""
+        val = max(10.0, min(3600.0, float(seconds)))
+        self.set("sleep_inactivity_sec", val)
 
 
 # Global singleton instance

@@ -367,3 +367,13 @@ class QuickBarPopup(QDialog):
             event.accept()
         else:
             super().keyPressEvent(event)
+
+    def hideEvent(self, event) -> None:
+        """Play sound cue when popup is dismissed."""
+        try:
+            from wiz.core.sound import sound_manager
+            sound_manager.play_window_close()
+        except Exception:
+            pass
+        super().hideEvent(event)
+

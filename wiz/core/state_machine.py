@@ -1,19 +1,22 @@
-"""Mascot state machine managing companion states, triggers, and auto-reversion."""
+"""Mascot state machine managing companion states, triggers, signals, and auto-reversion."""
 
 from enum import Enum
 from typing import Optional, Callable
 from PyQt6.QtCore import QObject, QTimer, pyqtSignal
 
+from wiz.core.config import config
 from wiz.core.idle_detector import get_system_idle_seconds
+from wiz.core.signals import app_signals
+from wiz.core.sound import sound_manager
 
 
 class MascotState(str, Enum):
     """Enumeration of all visual & behavioral mascot states."""
-    IDLE = "idle"
-    WORKING = "working"
-    NOTIFY = "notify"
-    COMPLETE = "complete"
-    SLEEP = "sleep"
+    IDLE = "idle"          # Monitor / Active gaze tracking
+    WORKING = "working"    # Active work logging (thin spinner)
+    NOTIFY = "notify"      # Task operation acknowledgment (sparkles)
+    COMPLETE = "complete"  # Celebration arpeggio
+    SLEEP = "sleep"        # Resting nap
 
     @property
     def asset_filename(self) -> str:
@@ -30,8 +33,9 @@ class MascotState(str, Enum):
 
 class StateMachine(QObject):
     """
-    Manages the current state of Wiz, automated idle transitions (10s -> IDLE, 1m -> SLEEP),
-    activity recovery (User input -> WORKING), and transient notification/celebration states.
+    Manages companion mascot state, reactive event listeners via app_signals,
+    cursor monitoring baseline (IDLE), activity logging (WORKING),
+    task notifications (NOTIFY), celebrations (COMPLETE), and inactivity sleep (SLEEP).
     """
 
     # Signal emitted when state changes: (new_state: MascotState, old_state: MascotState)
@@ -41,7 +45,7 @@ class StateMachine(QObject):
         self,
         initial_state: MascotState = MascotState.IDLE,
         idle_threshold_sec: float = 10.0,
-        sleep_threshold_sec: float = 60.0,
+        sleep_threshold_sec: Optional[float] = None,
         enable_idle_monitoring: bool = True,
         parent: Optional[QObject] = None,
     ):
@@ -50,20 +54,53 @@ class StateMachine(QObject):
         self._previous_state: MascotState = initial_state
 
         self.idle_threshold_sec: float = idle_threshold_sec
-        self.sleep_threshold_sec: float = sleep_threshold_sec
+        self.sleep_threshold_sec: float = (
+            sleep_threshold_sec if sleep_threshold_sec is not None else 60.0
+        )
         self._custom_idle_getter: Optional[Callable[[], float]] = None
 
-        # Auto-revert timer for transient states like COMPLETE and NOTIFY
+        # Auto-revert timer for transient states like COMPLETE, NOTIFY, WORKING
         self._revert_timer = QTimer(self)
         self._revert_timer.setSingleShot(True)
         self._revert_timer.timeout.connect(self._on_revert_timeout)
 
-        # Background idle checking timer (runs every 500ms for responsive state updates)
+        # Background idle checking timer (runs every 500ms)
         self._idle_timer = QTimer(self)
         self._idle_timer.setInterval(500)
         self._idle_timer.timeout.connect(self._check_idle_state)
         if enable_idle_monitoring:
             self._idle_timer.start()
+
+        # Connect application event bus to companion triggers
+        self._connect_app_signals()
+
+    def _connect_app_signals(self) -> None:
+        """Subscribe state machine to decoupled app_signals."""
+        app_signals.activity_logged.connect(self._on_activity_logged)
+        app_signals.task_created.connect(self._on_task_action)
+        app_signals.task_updated.connect(self._on_task_action)
+        app_signals.task_deleted.connect(self._on_task_action)
+        app_signals.task_completed.connect(self._on_task_completed)
+        app_signals.task_cancelled.connect(self._on_task_cancelled)
+
+    def _on_activity_logged(self, app_name: str, duration_sec: int) -> None:
+        """Trigger WORKING state when window tracker records an activity session."""
+        self.trigger_working(duration_ms=2500)
+        sound_manager.play_work_log()
+
+    def _on_task_action(self, task_id: int) -> None:
+        """Trigger NOTIFY state when a task is created, updated, or deleted."""
+        self.trigger_notify(duration_ms=2000)
+        sound_manager.play_task_notify()
+
+    def _on_task_completed(self, task_id: int) -> None:
+        """Trigger COMPLETE state celebration when a task is completed."""
+        self.trigger_complete(duration_ms=3500)
+        sound_manager.play_task_complete()
+
+    def _on_task_cancelled(self, task_id: int) -> None:
+        """Play soft cancellation sound when a task is cancelled."""
+        sound_manager.play_task_cancel()
 
     @property
     def current_state(self) -> MascotState:
@@ -110,19 +147,19 @@ class StateMachine(QObject):
         self.set_state(new_state, duration_ms=duration_ms)
 
     def trigger_idle(self) -> None:
-        """Set mascot to IDLE resting state."""
+        """Set mascot to IDLE (Monitor) state."""
         self.set_state(MascotState.IDLE)
 
-    def trigger_working(self) -> None:
-        """Set mascot to WORKING state (loading-spinner eyes / tracking active)."""
-        self.set_state(MascotState.WORKING)
+    def trigger_working(self, duration_ms: int = 2500) -> None:
+        """Set mascot to WORKING state (work logging animation) for duration."""
+        self.set_state(MascotState.WORKING, duration_ms=duration_ms)
 
-    def trigger_notify(self, duration_ms: int = 3500) -> None:
-        """Set mascot to NOTIFY state (attention sparkles) for the given duration."""
+    def trigger_notify(self, duration_ms: int = 2000) -> None:
+        """Set mascot to NOTIFY state (attention sparkles) for duration."""
         self.set_state(MascotState.NOTIFY, duration_ms=duration_ms)
 
     def trigger_complete(self, duration_ms: int = 3500) -> None:
-        """Set mascot to COMPLETE state (celebration flash) for the given duration."""
+        """Set mascot to COMPLETE state (celebration flash) for duration."""
         self.set_state(MascotState.COMPLETE, duration_ms=duration_ms)
 
     def trigger_sleep(self) -> None:
@@ -130,14 +167,13 @@ class StateMachine(QObject):
         self.set_state(MascotState.SLEEP)
 
     def revert_to_baseline(self) -> None:
-        """Revert state based on current user activity and idle duration."""
+        """Revert state based on current system idle duration."""
         idle_sec = self.get_idle_seconds()
-        if idle_sec >= self.sleep_threshold_sec:
+        sleep_limit = self.sleep_threshold_sec
+        if idle_sec >= sleep_limit:
             target = MascotState.SLEEP
-        elif idle_sec >= self.idle_threshold_sec:
-            target = MascotState.IDLE
         else:
-            target = MascotState.WORKING
+            target = MascotState.IDLE
 
         self.set_state(target)
 
@@ -145,26 +181,42 @@ class StateMachine(QObject):
         """Revert back to baseline state upon transient timer expiration."""
         self.revert_to_baseline()
 
+    def on_inactivity_detected(self) -> None:
+        """Handle signal when system becomes inactive (transition to SLEEP)."""
+        if self._current_state != MascotState.SLEEP:
+            self.set_state(MascotState.SLEEP)
+            sound_manager.play_sleep()
+
+    def on_activity_resumed(self) -> None:
+        """Handle signal when system activity resumes (transition from SLEEP to IDLE)."""
+        if self._current_state == MascotState.SLEEP:
+            self.set_state(MascotState.IDLE)
+            sound_manager.play_wake()
+
     def _check_idle_state(self) -> None:
         """
-        Evaluate system idle time and transition between WORKING, IDLE, and SLEEP states:
-        - Active user input (< 10s idle) -> WORKING
-        - Idle for 10s (>= 10s and < 60s) -> IDLE
-        - Idle for 1m (>= 60s) -> SLEEP
+        Evaluate system idle time and handle SLEEP and wake transitions:
+        - If idle >= sleep_inactivity_sec -> transition to SLEEP and play sleep sound.
+        - If waking from SLEEP (idle < sleep_inactivity_sec) -> transition to IDLE and play wake sound.
+        - Otherwise remain in IDLE (Monitor) or let transient states finish.
         """
-        # If currently in a transient state (COMPLETE or NOTIFY), let the animation finish
-        if self._revert_timer.isActive() or self._current_state in (MascotState.COMPLETE, MascotState.NOTIFY):
+        # If currently in a transient state (COMPLETE, NOTIFY, WORKING), let animation finish
+        if self._revert_timer.isActive() or self._current_state in (
+            MascotState.COMPLETE,
+            MascotState.NOTIFY,
+            MascotState.WORKING,
+        ):
             return
 
         idle_sec = self.get_idle_seconds()
+        sleep_limit = self.sleep_threshold_sec
 
-        if idle_sec >= self.sleep_threshold_sec:
+        if idle_sec >= sleep_limit:
             if self._current_state != MascotState.SLEEP:
                 self.set_state(MascotState.SLEEP)
-        elif idle_sec >= self.idle_threshold_sec:
-            if self._current_state != MascotState.IDLE:
-                self.set_state(MascotState.IDLE)
+                sound_manager.play_sleep()
         else:
-            # User is actively working
-            if self._current_state != MascotState.WORKING:
-                self.set_state(MascotState.WORKING)
+            # User is active on the computer
+            if self._current_state == MascotState.SLEEP:
+                self.set_state(MascotState.IDLE)
+                sound_manager.play_wake()

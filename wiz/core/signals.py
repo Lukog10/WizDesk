@@ -20,12 +20,17 @@ class AppSignals(QObject):
     # Tracking & Activity signals
     # session_polled: (app_name: str, window_title: str, project_tag: str)
     session_polled = pyqtSignal(str, str, str)
+    activity_logged = pyqtSignal(str, int)  # (app_name: str, duration_sec: int)
+    inactivity_detected = pyqtSignal()
+    activity_resumed = pyqtSignal()
 
     # Note / Task / Project logging events
     note_created = pyqtSignal(int)      # note_id
     task_created = pyqtSignal(int)      # task_id
     task_updated = pyqtSignal(int)      # task_id
     task_completed = pyqtSignal(int)    # task_id
+    task_deleted = pyqtSignal(int)      # task_id
+    task_cancelled = pyqtSignal(int)    # task_id
     projects_changed = pyqtSignal()     # emitted when a project is added, renamed, edited, or deleted
 
     # Obsidian sync status

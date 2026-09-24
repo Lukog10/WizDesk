@@ -3442,3 +3442,12 @@ class QuickEntryDialog(QDialog):
         else:
             super().keyPressEvent(event)
 
+    def closeEvent(self, event) -> None:
+        try:
+            from wiz.core.sound import sound_manager
+            sound_manager.play_window_close()
+        except Exception:
+            pass
+        super().closeEvent(event)
+
+

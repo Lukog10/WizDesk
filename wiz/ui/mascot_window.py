@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from wiz.core.config import config
 from wiz.core.state_machine import MascotState, StateMachine
 from wiz.core.signals import app_signals
+from wiz.core.sound import sound_manager
 from wiz.ui.mascot_widget import MascotWidget
 from wiz.ui.icons import get_app_icon
 
@@ -110,6 +111,7 @@ class MascotWindow(QWidget):
                     self._click_count = 0
                     self._click_timer.stop()
                     self.setCursor(QCursor(Qt.CursorShape.ClosedHandCursor))
+                    sound_manager.play_mascot_drag_start()
 
                 new_pos = event.globalPosition().toPoint() - self._drag_start_position
                 clamped_pos = self._clamp_to_screens(new_pos)
@@ -127,6 +129,7 @@ class MascotWindow(QWidget):
                 self._click_timer.stop()
                 self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
                 config.save_window_position(self.x(), self.y())
+                sound_manager.play_mascot_drag_end()
                 event.accept()
                 return
             else:
@@ -149,7 +152,10 @@ class MascotWindow(QWidget):
         count = self._click_count
         self._click_count = 0
 
-        if count >= 2:
+        if count == 1:
+            # Single click: playful companion poke squeak
+            sound_manager.play_mascot_poke()
+        elif count >= 2:
             # Double-click: directly open the main workspace window
             app_signals.request_quick_entry.emit()
 

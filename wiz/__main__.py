@@ -13,6 +13,7 @@ from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from wiz.core.config import config
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.core.signals import app_signals
+from wiz.core.sound import sound_manager
 from wiz.storage.models import StorageRepository
 from wiz.ui.mascot_window import MascotWindow
 from wiz.ui.tray_icon import TrayIcon
@@ -63,6 +64,15 @@ class WizApplication:
 
     def _connect_signals(self) -> None:
         """Bind global signals to UI handlers and actions."""
+        # Sound manager initial state
+        sound_manager.set_enabled(config.sound_effects_enabled)
+        sound_manager.update_volume(config.sound_volume)
+
+        # Mascot state sound effects & inactivity sleep transition
+        self.state_machine.state_changed.connect(self._on_mascot_state_changed)
+        app_signals.inactivity_detected.connect(self.state_machine.on_inactivity_detected)
+        app_signals.activity_resumed.connect(self.state_machine.on_activity_resumed)
+
         app_signals.request_quick_entry.connect(self.show_quick_entry)
         app_signals.request_quick_task_bar.connect(self.show_quick_task_bar)
         app_signals.request_quick_note_bar.connect(self.show_quick_note_bar)
@@ -70,9 +80,29 @@ class WizApplication:
         app_signals.request_sync.connect(self.trigger_sync)
         app_signals.sync_finished.connect(self._on_sync_finished)
         app_signals.session_polled.connect(self._on_session_polled)
-        app_signals.task_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
+        app_signals.task_created.connect(self._on_task_created)
+        app_signals.task_completed.connect(lambda _: sound_manager.play_task_complete())
+        app_signals.task_deleted.connect(lambda _: sound_manager.play_task_delete())
         app_signals.note_created.connect(lambda _: self.sync_engine.sync_date(date.today(), emit_signal=False))
         app_signals.quit_application.connect(self.quit)
+
+    def _on_task_created(self, task_id: int) -> None:
+        """Play task add chime and trigger background daily sync."""
+        sound_manager.play_task_add()
+        self.sync_engine.sync_date(date.today(), emit_signal=False)
+
+    def _on_mascot_state_changed(self, new_state: MascotState) -> None:
+        """Play organic audio cues on mascot state transitions."""
+        if new_state == MascotState.WORKING:
+            sound_manager.play_state_working()
+        elif new_state == MascotState.SLEEP:
+            sound_manager.play_state_sleep()
+        elif new_state == MascotState.IDLE:
+            sound_manager.play_state_wake()
+        elif new_state == MascotState.COMPLETE:
+            sound_manager.play_task_complete()
+        elif new_state == MascotState.NOTIFY:
+            sound_manager.play_chime()
 
     def start(self) -> None:
         """Launch UI and background worker threads."""
@@ -109,6 +139,7 @@ class WizApplication:
 
     def show_quick_entry(self) -> None:
         """Open or focus the full Quick-Entry workspace dialog."""
+        sound_manager.play_window_open()
         if self._quick_entry_dialog is None:
             self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo)
         if self._quick_entry_dialog.isMinimized():
@@ -119,12 +150,14 @@ class WizApplication:
 
     def show_quick_task_bar(self) -> None:
         """Open the compact Quick Task bar positioned near the mascot (Double-click gesture)."""
+        sound_manager.play_window_open()
         if self._quick_bar_dialog is None:
             self._quick_bar_dialog = QuickBarPopup(self.state_machine, self.repo)
         self._quick_bar_dialog.show_mode("task", mascot_rect=self.mascot_window.geometry())
 
     def show_quick_note_bar(self) -> None:
         """Open the compact Quick Note bar positioned near the mascot (Triple-click gesture)."""
+        sound_manager.play_window_open()
         if self._quick_bar_dialog is None:
             self._quick_bar_dialog = QuickBarPopup(self.state_machine, self.repo)
         self._quick_bar_dialog.show_mode("note", mascot_rect=self.mascot_window.geometry())

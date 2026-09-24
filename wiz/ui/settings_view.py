@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QSpinBox,
+    QSlider,
     QFileDialog,
     QTableWidget,
     QTableWidgetItem,
@@ -33,6 +34,7 @@ from PyQt6.QtWidgets import (
 from wiz.core.config import config
 from wiz.core.crypto import CryptoManager, crypto_manager
 from wiz.core.signals import app_signals
+from wiz.core.sound import sound_manager
 from wiz.storage.backup import backup_manager
 from wiz.storage.models import StorageRepository
 from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
@@ -513,17 +515,67 @@ class SettingsView(QWidget):
             parent_layout=layout,
         )
 
-        # Row 5: Sound effects
+        # Row 5: Sound effects toggle
         self.sound_check = SettingsCheckbox(
-            checked=config.get("sound_effects", False),
+            checked=config.sound_effects_enabled,
             size=18,
             parent=container,
             is_dark=self.is_dark,
         )
         self._create_setting_row(
-            title="Sound Effects & Chimes",
-            description="Play a subtle, crisp sound chime upon completing tasks or timers.",
+            title="Mascot Sound Effects",
+            description="Play subtle organic chimes on state transitions, task actions, and interactions.",
             control_widget=self.sound_check,
+            parent_layout=layout,
+            include_divider=True,
+        )
+
+        # Row 6: Sound Volume Slider
+        vol_ctrl = QWidget(container)
+        vol_layout = QHBoxLayout(vol_ctrl)
+        vol_layout.setContentsMargins(0, 0, 0, 0)
+        vol_layout.setSpacing(10)
+
+        self.sound_volume_slider = QSlider(Qt.Orientation.Horizontal, vol_ctrl)
+        self.sound_volume_slider.setRange(0, 100)
+        self.sound_volume_slider.setValue(int(config.sound_volume * 100))
+        self.sound_volume_slider.setFixedWidth(120)
+        self.sound_volume_slider.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+        self.sound_volume_label = QLabel(f"{int(config.sound_volume * 100)}%", vol_ctrl)
+        self.sound_volume_label.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.sound_volume_label.setFixedWidth(36)
+        self.sound_volume_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+
+        def _on_vol_slide(val: int) -> None:
+            self.sound_volume_label.setText(f"{val}%")
+            sound_manager.update_volume(val / 100.0)
+
+        self.sound_volume_slider.valueChanged.connect(_on_vol_slide)
+        vol_layout.addWidget(self.sound_volume_slider)
+        vol_layout.addWidget(self.sound_volume_label)
+
+        self._create_setting_row(
+            title="Sound Volume",
+            description="Master playback volume for companion alerts and interaction sounds.",
+            control_widget=vol_ctrl,
+            parent_layout=layout,
+            include_divider=True,
+        )
+
+        # Row 7: Sleep Inactivity Timeout (PillSpinBox matching exact Untitled UI style)
+        self.sleep_timeout_spin = PillSpinBox(
+            min_val=15,
+            max_val=600,
+            default_val=int(config.sleep_inactivity_sec),
+            unit="sec",
+            is_dark=self.is_dark,
+            parent=container,
+        )
+        self._create_setting_row(
+            title="Sleep Inactivity Timeout",
+            description="Duration of keyboard and mouse inactivity before Wiz drifts to sleep.",
+            control_widget=self.sleep_timeout_spin,
             parent_layout=layout,
             include_divider=False,
         )
@@ -1184,7 +1236,10 @@ class SettingsView(QWidget):
         self.float_anim_check.setChecked(config.get("enable_floating_animation", True))
         self.always_on_top_check.setChecked(config.get("always_on_top", True))
         self.autostart_check.setChecked(config.get("auto_start_on_login", False))
-        self.sound_check.setChecked(config.get("sound_effects", False))
+        self.sound_check.setChecked(config.sound_effects_enabled)
+        self.sound_volume_slider.setValue(int(config.sound_volume * 100))
+        self.sound_volume_label.setText(f"{int(config.sound_volume * 100)}%")
+        self.sleep_timeout_spin.setValue(int(config.sleep_inactivity_sec))
 
         # Security & Backups
         self.auto_backup_check.setChecked(config.get("auto_backup_enabled", True))
@@ -1209,7 +1264,16 @@ class SettingsView(QWidget):
         config.set("always_on_top", bool(self.always_on_top_check.isChecked()))
         config.set("tracking_interval_seconds", self.interval_spin.value() * 60)
         config.set("auto_start_on_login", bool(self.autostart_check.isChecked()))
-        config.set("sound_effects", bool(self.sound_check.isChecked()))
+        
+        # Audio & Inactivity settings
+        is_sound_on = bool(self.sound_check.isChecked())
+        vol = float(self.sound_volume_slider.value() / 100.0)
+        sleep_sec = float(self.sleep_timeout_spin.value())
+        config.set_sound_effects_enabled(is_sound_on)
+        config.set_sound_volume(vol)
+        config.set_sleep_inactivity_sec(sleep_sec)
+        sound_manager.set_enabled(is_sound_on)
+        sound_manager.update_volume(vol)
 
         # Integrations
         config.set("obsidian_vault_path", self.vault_path_input.text().strip())
@@ -1370,6 +1434,34 @@ class SettingsView(QWidget):
         self.vault_logs_folder_input.setStyleSheet(input_qss)
         self.interval_spin.set_theme(is_dark)
         self.backup_retention_spin.set_theme(is_dark)
+        self.sleep_timeout_spin.set_theme(is_dark)
+
+        slider_groove = "#27272A" if is_dark else "#E4E4E7"
+        slider_sub = "#BA3F1A"
+        slider_handle = "#FFFFFF"
+        self.sound_volume_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                height: 4px;
+                background: {slider_groove};
+                border-radius: 2px;
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {slider_sub};
+                border-radius: 2px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {slider_handle};
+                border: 2px solid {slider_sub};
+                width: 12px;
+                height: 12px;
+                margin: -4px 0;
+                border-radius: 6px;
+            }}
+            QSlider::handle:horizontal:hover {{
+                background: #FDF2E9;
+            }}
+        """)
+        self.sound_volume_label.setStyleSheet(f"color: {text_secondary}; font-family: {FONT_SANS}; font-size: 11px;")
         for inp in self.hotkey_inputs.values():
             inp.setStyleSheet(f"""
                 QLineEdit {{

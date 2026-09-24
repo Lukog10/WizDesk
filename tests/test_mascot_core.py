@@ -88,38 +88,44 @@ def test_tray_icon_init(qapp):
 def test_automated_idle_and_sleep_state_transitions(qapp):
     """
     Test exact state transition requirements:
-    - 0s idle (User at work) -> WORKING
-    - 10s idle -> IDLE
-    - 1m (60s) idle -> SLEEP
-    - Resume work -> WORKING
+    - User awake (< 60s idle) -> IDLE (Monitor state)
+    - Activity logged -> WORKING
+    - 60s idle -> SLEEP
+    - Resume work -> wakes up to IDLE
+    - Task actions -> NOTIFY
+    - Task completion -> COMPLETE
     """
+    from wiz.core.signals import app_signals
     sm = StateMachine(initial_state=MascotState.IDLE, enable_idle_monitoring=False)
     
     current_simulated_idle = 0.0
     sm.set_idle_getter(lambda: current_simulated_idle)
 
-    # 1. User starts working (0.0s idle)
+    # 1. User active on desktop -> IDLE (Monitor state)
     current_simulated_idle = 0.0
-    sm._check_idle_state()
-    assert sm.current_state == MascotState.WORKING
-
-    # 2. Idle for 10 seconds -> IDLE
-    current_simulated_idle = 10.0
     sm._check_idle_state()
     assert sm.current_state == MascotState.IDLE
 
-    # 3. Idle for 1 minute (60s) -> SLEEP
+    # 2. WindowTracker logs activity -> WORKING state
+    app_signals.activity_logged.emit("VS Code", 120)
+    assert sm.current_state == MascotState.WORKING
+
+    # After working duration expires, reverts to IDLE (Monitor)
+    sm._on_revert_timeout()
+    assert sm.current_state == MascotState.IDLE
+
+    # 3. Idle for 60s -> SLEEP
     current_simulated_idle = 60.0
     sm._check_idle_state()
     assert sm.current_state == MascotState.SLEEP
 
-    # 4. User resumes activity (0.5s idle) -> WORKING
+    # 4. User resumes activity (0.5s idle) -> Wakes to IDLE
     current_simulated_idle = 0.5
     sm._check_idle_state()
-    assert sm.current_state == MascotState.WORKING
+    assert sm.current_state == MascotState.IDLE
 
-    # 5. Adding task/subtask triggers NOTIFY
-    sm.trigger_notify(duration_ms=100)
+    # 5. Task actions trigger NOTIFY
+    app_signals.task_created.emit(42)
     assert sm.current_state == MascotState.NOTIFY
 
     # While in NOTIFY, idle check does not interrupt
@@ -127,18 +133,17 @@ def test_automated_idle_and_sleep_state_transitions(qapp):
     sm._check_idle_state()
     assert sm.current_state == MascotState.NOTIFY
 
-    # After revert, transitions to IDLE based on 15s idle
+    # After revert, transitions to IDLE
     sm._on_revert_timeout()
     assert sm.current_state == MascotState.IDLE
 
-    # 6. Completing / cancelling task triggers COMPLETE
-    sm.trigger_complete(duration_ms=100)
+    # 6. Completing task triggers COMPLETE celebration
+    app_signals.task_completed.emit(42)
     assert sm.current_state == MascotState.COMPLETE
 
-    # Revert back to working when user is active
-    current_simulated_idle = 0.0
+    # After celebration revert, transitions to IDLE
     sm._on_revert_timeout()
-    assert sm.current_state == MascotState.WORKING
+    assert sm.current_state == MascotState.IDLE
 
 
 def test_application_quit_signal(qapp):

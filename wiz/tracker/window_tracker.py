@@ -2,6 +2,7 @@
 
 import sys
 import time
+import ctypes
 from datetime import datetime
 from dataclasses import dataclass
 from typing import Optional
@@ -23,6 +24,25 @@ if sys.platform == "win32":
         HAS_WIN32 = False
 else:
     HAS_WIN32 = False
+
+
+class LASTINPUTINFO(ctypes.Structure):
+    _fields_ = [("cbSize", ctypes.c_uint), ("dwTime", ctypes.c_uint)]
+
+
+def get_system_idle_seconds() -> float:
+    """Return idle seconds since last user input on Windows."""
+    if sys.platform != "win32":
+        return 0.0
+    try:
+        lii = LASTINPUTINFO()
+        lii.cbSize = ctypes.sizeof(LASTINPUTINFO)
+        if ctypes.windll.user32.GetLastInputInfo(ctypes.byref(lii)):
+            millis = ctypes.windll.kernel32.GetTickCount() - lii.dwTime
+            return max(0.0, millis / 1000.0)
+    except Exception:
+        pass
+    return 0.0
 
 
 @dataclass
@@ -78,6 +98,7 @@ class WindowTracker(QThread):
         super().__init__(parent)
         self.repo = repository or StorageRepository()
         self._is_running: bool = True
+        self._is_inactive: bool = False
 
         # Session tracking state
         self._current_app: Optional[str] = None
@@ -102,6 +123,17 @@ class WindowTracker(QThread):
         while self._is_running:
             try:
                 now = datetime.now()
+
+                # User inactivity check for mascot sleep transition
+                idle_sec = get_system_idle_seconds()
+                sleep_sec = config.sleep_inactivity_sec
+                if idle_sec >= sleep_sec and not self._is_inactive:
+                    self._is_inactive = True
+                    app_signals.inactivity_detected.emit()
+                elif idle_sec < 3.0 and self._is_inactive:
+                    self._is_inactive = False
+                    app_signals.activity_resumed.emit()
+
                 info = get_active_window_info()
 
                 if info:
@@ -128,6 +160,10 @@ class WindowTracker(QThread):
                                 self._current_app,
                                 self._current_title or "",
                                 self._current_project or "",
+                            )
+                            app_signals.activity_logged.emit(
+                                self._current_app,
+                                int(elapsed),
                             )
 
                         # Reset session start
