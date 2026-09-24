@@ -289,7 +289,7 @@ def test_help_faq_view_lifecycle(qapp):
     first_faq.header_btn.click()
     assert first_faq.is_expanded
     assert not first_faq.a_lbl.isHidden()
-    assert first_faq.indicator_lbl.text() == "—"
+    assert first_faq.indicator_lbl.text() == "-"
 
     # Test collapsing FAQ accordion
     first_faq.header_btn.click()

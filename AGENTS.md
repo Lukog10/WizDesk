@@ -40,12 +40,12 @@ The agent should automatically map user intent to skills:
 
 The agent must internally follow this lifecycle for non-trivial work:
 
-1. **DEFINE** — Clarify what needs to be built (spec)
-2. **PLAN** — Break down into tasks
-3. **BUILD** — Implement incrementally
-4. **VERIFY** — Test and debug
-5. **REVIEW** — Self-review for quality
-6. **SHIP** — Deliver and commit
+1. **DEFINE**: Clarify what needs to be built (spec)
+2. **PLAN**: Break down into tasks
+3. **BUILD**: Implement incrementally
+4. **VERIFY**: Test and debug
+5. **REVIEW**: Self-review for quality
+6. **SHIP**: Deliver and commit
 
 ### Execution Model
 
@@ -114,9 +114,9 @@ description: >
 
 ### Best Practices
 
-- **Keep SKILL.md under 500 lines** — put detailed reference material in separate files
-- **Write specific descriptions** — helps the agent know exactly when to activate
-- **Use progressive disclosure** — reference supporting files that get read only when needed
+- **Keep SKILL.md under 500 lines**: put detailed reference material in separate files
+- **Write specific descriptions**: helps the agent know exactly when to activate
+- **Use progressive disclosure**: reference supporting files that get read only when needed
 
 ## Full Output Enforcement
 

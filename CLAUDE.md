@@ -1,4 +1,4 @@
-# claude.md — Workflow Principles
+# claude.md: Workflow Principles
 
 > This file defines **how** the agent thinks and works. It complements `instructions.md` (the execution loop) and `AGENTS.md` (skill rules).
 >
@@ -30,7 +30,7 @@
 - Write the simplest correct solution.
 - Don't add abstractions until they're needed at least twice.
 - Prefer standard library / built-in solutions over third-party packages.
-- Every line should earn its place — if removing it doesn't break anything, remove it.
+- Every line should earn its place: if removing it doesn't break anything, remove it.
 
 ### Minimal Impact
 - Change as few files as possible to achieve the goal.
@@ -50,11 +50,11 @@
 
 When a bug or error occurs:
 
-1. **Read the error message** — the answer is usually in it.
-2. **Find the root cause** — don't patch symptoms. Trace the issue to its origin.
-3. **Make the smallest fix** — don't rewrite the module. Fix the line that's wrong.
-4. **Verify the fix** — prove it works by running the relevant test or dev server.
-5. **Check for regressions** — make sure you didn't break something else.
+1. **Read the error message**: the answer is usually in it.
+2. **Find the root cause**: don't patch symptoms. Trace the issue to its origin.
+3. **Make the smallest fix**: don't rewrite the module. Fix the line that's wrong.
+4. **Verify the fix**: prove it works by running the relevant test or dev server.
+5. **Check for regressions**: make sure you didn't break something else.
 
 ### Common Pitfalls
 - Don't guess at the problem. Read logs, check types, trace execution.
@@ -90,7 +90,7 @@ If the user corrects your work:
 ### Lesson Format in `tasks/lessons.md`
 
 ```markdown
-### [Date] — [Short description]
+### [Date]: [Short description]
 - **What happened**: [What went wrong]
 - **Root cause**: [Why it went wrong]
 - **Rule**: [The principle to follow next time]
@@ -98,7 +98,7 @@ If the user corrects your work:
 
 ### At Session Start
 - Always check `tasks/lessons.md` for relevant past mistakes before starting work.
-- Apply learned patterns proactively — don't wait to be corrected twice.
+- Apply learned patterns proactively: don't wait to be corrected twice.
 
 ---
 
@@ -114,7 +114,7 @@ If the user corrects your work:
 
 ### File Organization
 - Co-locate related files (component + styles + tests in the same directory).
-- Keep files focused — one component / module per file.
+- Keep files focused: one component / module per file.
 - Use index files for clean public APIs, not for dumping everything.
 
 ---
@@ -124,7 +124,7 @@ If the user corrects your work:
 - Never commit secrets, API keys, or credentials.
 - Never log sensitive data (passwords, tokens, PII).
 - Always validate and sanitize user input.
-- Use parameterized queries — never concatenate SQL.
+- Use parameterized queries; never concatenate SQL.
 - When in doubt, ask the user before running destructive operations.
 
 ---

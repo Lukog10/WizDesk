@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Author** | Gokul R |
-| **Status** | Draft — MVP Definition |
+| **Status** | Draft: MVP Definition |
 | **Platform (MVP)** | Windows |
 | **Platform (Long-term)** | Cross-platform (Windows / macOS / Linux) |
 | **Last Updated** | August 2026 |
@@ -14,7 +14,7 @@
 
 ## 1. Overview
 
-**Wiz** is a desktop companion — a small animated mascot that lives on the user's screen — designed to help individuals track their work, log project activity, and stay aware of how their time is spent across tasks and projects. Wiz combines passive activity tracking with manual note-taking, surfaces that information through a friendly on-screen presence, and stores logs directly into the user's Obsidian vault for long-term reference.
+**Wiz** is a desktop companion: a small animated mascot that lives on the user's screen: designed to help individuals track their work, log project activity, and stay aware of how their time is spent across tasks and projects. Wiz combines passive activity tracking with manual note-taking, surfaces that information through a friendly on-screen presence, and stores logs directly into the user's Obsidian vault for long-term reference.
 
 ### 1.1 Problem Statement
 
@@ -46,7 +46,7 @@ Wiz sits on the desktop as a lightweight, expressive companion that:
 - Run reliably on Windows as a lightweight background app
 
 ### 2.2 Non-Goals (MVP)
-- Cross-platform support (macOS/Linux) — planned for a later phase
+- Cross-platform support (macOS/Linux): planned for a later phase
 - Full desktop file/folder management features
 - Cloud sync or multi-device support
 - Team/multi-user collaboration features
@@ -56,7 +56,7 @@ Wiz sits on the desktop as a lightweight, expressive companion that:
 
 ## 3. Target User
 
-- Primary user: the developer/creator themself — someone managing multiple concurrent projects (e.g. personal ML projects, job applications, freelance work) who wants a lightweight, always-present way to know "what did I actually do today/this week."
+- Primary user: the developer/creator themself: someone managing multiple concurrent projects (e.g. personal ML projects, job applications, freelance work) who wants a lightweight, always-present way to know "what did I actually do today/this week."
 - Secondary (future): other users who want a similarly lightweight, mascot-driven work tracker.
 
 ---
@@ -82,11 +82,11 @@ Wiz sits on the desktop as a lightweight, expressive companion that:
 - Notes can be tagged to a project and marked complete/incomplete
 
 ### 4.4 Task & Subtask Management
-Manual entries aren't limited to flat notes — a single task can be broken down and tracked over time:
+Manual entries aren't limited to flat notes: a single task can be broken down and tracked over time:
 - Create a task (e.g. "Build TurfLine booking flow")
-- Split it into subtasks at any point — up front or as work progresses
+- Split it into subtasks at any point: up front or as work progresses
 - Each task/subtask has a status: **not started / in progress / done**
-- Append timestamped **log entries** to a task or a specific subtask — a running trail of updates ("hit CORS issue, debugging" → "fixed, testing now"), independent of marking something complete
+- Append timestamped **log entries** to a task or a specific subtask: a running trail of updates ("hit CORS issue, debugging" → "fixed, testing now"), independent of marking something complete
 - Task status can be inferred automatically once all subtasks are done, or set manually
 
 This gives Wiz two complementary logging layers: the lightweight one-off **note** (Section 4.3) for quick capture, and the structured **task → subtask → log** hierarchy for anything that needs to be tracked over multiple sessions.
@@ -94,12 +94,12 @@ This gives Wiz two complementary logging layers: the lightweight one-off **note*
 **Example flow:**
 1. User creates a task: *"Frontend work"*
 2. Adds subtasks as the work becomes clear: *"Build navbar"*, *"Style login page"*, *"Fix responsive layout"*
-3. Starts working on *"Build navbar"* — status moves to **in progress**
-4. Finishes it — manually marks that subtask **done**
+3. Starts working on *"Build navbar"*: status moves to **in progress**
+4. Finishes it: manually marks that subtask **done**
 5. Moves to the next subtask (*"Style login page"*) and repeats
 6. Once all subtasks are done, the parent task *"Frontend work"* is marked **done** (auto-inferred or manual)
 
-Each step above is a manual update from the user — Wiz doesn't guess subtask completion, it just makes logging each step fast (a couple of taps/clicks) and keeps the full history so the user can later see exactly what was done and when.
+Each step above is a manual update from the user: Wiz doesn't guess subtask completion, it just makes logging each step fast (a couple of taps/clicks) and keeps the full history so the user can later see exactly what was done and when.
 
 ### 4.5 Project Tagging
 - Simple keyword-based mapping (e.g. app/window title containing "TurfLine" → tagged to TurfLine project)
@@ -108,7 +108,7 @@ Each step above is a manual update from the user — Wiz doesn't guess subtask c
 ### 4.6 Obsidian Sync (Log Storage)
 - All logs (auto-tracked sessions + manual notes) are written directly into the user's **Obsidian vault**
 - Format: one Markdown daily note per day (e.g. `/Wiz Logs/2026-08-21.md`), with auto-tracked sessions and notes appended under clear headings
-- A local SQLite database acts as a working buffer/cache before batched writes to the vault — this avoids file-lock conflicts if Obsidian has the vault open, and speeds up internal queries for reporting
+- A local SQLite database acts as a working buffer/cache before batched writes to the vault: this avoids file-lock conflicts if Obsidian has the vault open, and speeds up internal queries for reporting
 
 **Example log format:**
 ```markdown
@@ -118,13 +118,13 @@ Each step above is a manual update from the user — Wiz doesn't guess subtask c
 - [ ] Build TurfLine booking flow
   - [x] Design booking UI
   - [~] Wire up backend API
-    - 10:15 — hit CORS issue, debugging
-    - 11:40 — fixed, testing now
+    - 10:15: hit CORS issue, debugging
+    - 11:40: fixed, testing now
   - [ ] Write tests
 
 ### Auto-tracked
-- 09:00–09:30 — VS Code (TurfLine)
-- 09:30–10:00 — Chrome (research)
+- 09:00–09:30: VS Code (TurfLine)
+- 09:30–10:00: Chrome (research)
 
 ### Notes
 - [x] Fixed booking bug in TurfLine (10:15)
@@ -146,7 +146,7 @@ The mascot changes appearance to reflect what's happening:
 
 ## 5. Technical Architecture
 
-### 5.1 Stack (MVP — Windows)
+### 5.1 Stack (MVP: Windows)
 
 | Layer | Technology |
 |---|---|
@@ -244,7 +244,7 @@ CREATE TABLE projects (
 ## 6. Design
 
 ### 6.1 Mascot Concept
-Wiz is represented as a minimalist ghost character — a flat-vector, rounded blob body with a wavy/dripping bottom edge. The design is intentionally simple: monochrome outline style, expressive purely through eye/face changes rather than complex animation, so it stays legible even at small (tray-icon) sizes.
+Wiz is represented as a minimalist ghost character: a flat-vector, rounded blob body with a wavy/dripping bottom edge. The design is intentionally simple: monochrome outline style, expressive purely through eye/face changes rather than complex animation, so it stays legible even at small (tray-icon) sizes.
 
 ### 6.2 Finalized Visual Style (v1, locked)
 - **Body:** rounded dome top, straight sides, 4-wave dripping bottom edge
@@ -257,28 +257,28 @@ Wiz is represented as a minimalist ghost character — a flat-vector, rounded bl
 | State | Visual Treatment |
 |---|---|
 | **Idle** | Two simple black dot eyes |
-| **Working** | Two grey loading-spinner ring eyes (dashed circles, rotate via animation in-app) — signals active tracking |
+| **Working** | Two grey loading-spinner ring eyes (dashed circles, rotate via animation in-app): signals active tracking |
 | **Notify** | One dash + one sparkle eye, small attention-burst accents near the head |
-| **Complete** | Inverted color scheme (dark body, gradient pink→orange outline), white dot eyes, sparkle accents — celebratory flash |
+| **Complete** | Inverted color scheme (dark body, gradient pink→orange outline), white dot eyes, sparkle accents: celebratory flash |
 | **Sleep/Away** | Dimmed opacity (55%), closed-dash eyes, small "z" marks above the head |
 
 ### 6.4 Asset Format
 - Delivered as SVG (vector, scales cleanly from tray-icon size up to full companion widget size)
 - 5 state files: `wiz-idle.svg`, `wiz-working.svg`, `wiz-notify.svg`, `wiz-complete.svg`, `wiz-sleep.svg`
-- Shared body path across all states — only eyes/accents/fill differ, keeping the character visually consistent
+- Shared body path across all states: only eyes/accents/fill differ, keeping the character visually consistent
 - In-app, the working state's spinner eyes should be given a subtle rotation animation (CSS/Qt transform) rather than shipped as a static image, to reinforce the "loading/tracking" feel
 
 ---
 
 ## 7. MVP Build Order
 
-1. **Tray + always-on-top window shell** — static mascot image floating on screen, draggable, right-click tray menu (Show/Hide/Quit)
-2. **SQLite schema + auto-tracker thread** — poll active window every 30 minutes, log session start/end
-3. **Manual note popup** — hotkey/tray-triggered quick-entry dialog, saves to `notes` table
-4. **Task & subtask management** — create tasks, break into subtasks, append running log entries per task/subtask, track status
-5. **Animation states** — swap mascot art based on current state; add spinner rotation for "working"
-6. **Obsidian sync module** — batched writer that appends buffered sessions/tasks/notes into the daily vault note
-7. **Project tagging** — keyword-match config mapping apps/window titles to project names
+1. **Tray + always-on-top window shell**: static mascot image floating on screen, draggable, right-click tray menu (Show/Hide/Quit)
+2. **SQLite schema + auto-tracker thread**: poll active window every 30 minutes, log session start/end
+3. **Manual note popup**: hotkey/tray-triggered quick-entry dialog, saves to `notes` table
+4. **Task & subtask management**: create tasks, break into subtasks, append running log entries per task/subtask, track status
+5. **Animation states**: swap mascot art based on current state; add spinner rotation for "working"
+6. **Obsidian sync module**: batched writer that appends buffered sessions/tasks/notes into the daily vault note
+7. **Project tagging**: keyword-match config mapping apps/window titles to project names
 
 ---
 

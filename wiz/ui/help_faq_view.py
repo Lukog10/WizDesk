@@ -26,8 +26,8 @@ from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 class FaqItemWidget(QFrame):
     """
     Clean, rounded accordion card for FAQ items.
-    Features modern typography, smooth toggle between '+' and '—',
-    and refined border/background styling.
+    Features modern typography, smooth toggle between '+' and '-',
+    and refined border/background styling with generous body padding.
     """
 
     def __init__(
@@ -47,8 +47,8 @@ class FaqItemWidget(QFrame):
 
         self.setObjectName("faqItem")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(16, 14, 16, 14)
-        self.layout.setSpacing(6)
+        self.layout.setContentsMargins(20, 18, 20, 18)
+        self.layout.setSpacing(10)
 
         # Header Button (Entire row clickable)
         self.header_btn = QPushButton(self)
@@ -63,24 +63,26 @@ class FaqItemWidget(QFrame):
         header_layout.setSpacing(12)
 
         self.q_lbl = QLabel(question, self.header_btn)
-        self.q_lbl.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.q_lbl.setFont(get_font(10.5, QFont.Weight.DemiBold))
         self.q_lbl.setWordWrap(True)
         header_layout.addWidget(self.q_lbl, stretch=1)
 
-        # Sleek + / — toggle indicator
+        # Sleek + / - toggle indicator
         self.indicator_lbl = QLabel("+", self.header_btn)
-        self.indicator_lbl.setFont(get_font(12, QFont.Weight.Medium))
-        self.indicator_lbl.setFixedWidth(16)
+        self.indicator_lbl.setFont(get_font(13, QFont.Weight.Medium))
+        self.indicator_lbl.setFixedWidth(18)
         self.indicator_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         header_layout.addWidget(self.indicator_lbl)
 
         self.layout.addWidget(self.header_btn)
 
         # Answer Label (Hidden by default)
-        self.a_lbl = QLabel(answer, self)
-        self.a_lbl.setFont(get_font(9))
+        self.a_lbl = QLabel(self)
+        self.a_lbl.setTextFormat(Qt.TextFormat.RichText)
+        self.a_lbl.setFont(get_font(9.5))
         self.a_lbl.setWordWrap(True)
         self.a_lbl.setVisible(False)
+        self.a_lbl.setContentsMargins(0, 6, 0, 2)
         self.layout.addWidget(self.a_lbl)
 
         self.update_theme(self.is_dark)
@@ -93,7 +95,7 @@ class FaqItemWidget(QFrame):
         """Explicitly set expansion state."""
         self.is_expanded = expanded
         self.a_lbl.setVisible(self.is_expanded)
-        self.indicator_lbl.setText("—" if self.is_expanded else "+")
+        self.indicator_lbl.setText("-" if self.is_expanded else "+")
 
     def update_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
@@ -116,9 +118,13 @@ class FaqItemWidget(QFrame):
                 padding: 0;
             }}
         """)
-        self.q_lbl.setStyleSheet(f"color: {q_fg}; line-height: 130%;")
-        self.a_lbl.setStyleSheet(f"color: {a_fg}; padding-top: 6px; line-height: 145%;")
+        self.q_lbl.setStyleSheet(f"color: {q_fg};")
         self.indicator_lbl.setStyleSheet(f"color: {ind_fg};")
+        self.a_lbl.setText(
+            f"<div style='color: {a_fg}; line-height: 1.6; font-size: 13px; font-family: {FONT_SANS};'>"
+            f"{self.answer_text}"
+            f"</div>"
+        )
 
 
 class HelpFaqView(QWidget):
@@ -180,15 +186,15 @@ class HelpFaqView(QWidget):
 
         header_info.addLayout(tag_row)
 
-        self.header_title = QLabel("Frequently asked question", self)
+        self.header_title = QLabel("Frequently Asked Questions", self)
         self.header_title.setFont(get_font(14, QFont.Weight.Bold))
         header_info.addWidget(self.header_title)
 
         self.header_desc = QLabel(
-            "here's everything you need to know to get started, manage your workspace, and troubleshoot the most frequent issues.",
+            "Answers to common questions about tracking, encryption, backups, and setup.",
             self,
         )
-        self.header_desc.setFont(get_font(9))
+        self.header_desc.setFont(get_font(9.5))
         self.header_desc.setWordWrap(True)
         header_info.addWidget(self.header_desc)
 
@@ -317,65 +323,65 @@ class HelpFaqView(QWidget):
         # FAQ Question Dataset
         faq_data = [
             ("general",
-             "What is this platform used for?",
-             "WizDesk is designed to help you organize work tasks, capture quick notes, and track focused time automatically without requiring manual start/stop clocks. Your desktop companion gently reflects your current work mood."),
+             "What does WizDesk do?",
+             "WizDesk is a desktop task manager and automated time tracker. It logs time to your projects by checking active window titles, lets you capture quick notes, and displays a desktop companion that reflects your current work state."),
             ("general",
-             "How do I add tasks and log quick notes?",
-             "Click '+ Add task' in the Tasks tab or press Enter after typing in the bottom bar. Quick notes can be captured instantly in the Quick Notes tab or summoned globally via your configured shortcuts."),
+             "How do I create tasks and notes?",
+             "Click '+ Add task' in the Tasks tab or press Enter in the bottom input bar. Notes can be captured instantly in the Quick Notes tab or opened from anywhere with global shortcuts."),
             ("general",
-             "How do I completely exit WizDesk?",
-             "Right-click the system tray icon (near the Windows clock) and choose Quit, or close the main workspace window when finished with your work session."),
+             "How do I quit WizDesk?",
+             "Right-click the tray icon near the Windows clock and select Quit, or close the main workspace window."),
             ("mascot",
-             "How does autonomous work categorization work?",
-             "Every 5 seconds, WizDesk checks the active foreground window title against your configured project keywords. When you switch focus (e.g. from editor to browser), the previous session automatically concludes and logs the exact duration."),
+             "How does window time tracking work?",
+             "Every 5 seconds, WizDesk checks your active window title against your project keywords. When a match is found, time is logged to that project. When you switch windows, the previous session concludes and saves its duration to the database."),
             ("mascot",
-             "What are the desktop companion moods?",
-             "Your companion reacts dynamically: WORKING (typing/clicking on active task with spinning eyes), IDLE (monitoring focus with cursor-tracking eyes), SLEEP (inactivity >60s), NOTIFY (transient feedback when tasks are added), and COMPLETE (celebration bounce on task completion)."),
+             "What do the mascot states mean?",
+             "The companion indicates your work activity: Working (typing or clicking on a recognized task with spinning eyes), Idle (no activity for 10 seconds with cursor-tracking eyes), Sleep (inactive for 1 minute or more), Notify (brief alert when adding tasks or notes), and Complete (short animation when finishing a task)."),
             ("mascot",
-             "How do cursor-tracking dot eyes work?",
-             "In the Monitor / IDLE state, the desktop mascot's eyes smoothly track your mouse cursor coordinates across the screen in real time. When window activity is detected and tasks are actively being logged, the eyes seamlessly transition into thin, spinning circular eyes in WORKING mode."),
+             "How do the cursor-tracking eyes work?",
+             "In Idle mode, the mascot eyes follow your mouse cursor coordinates across the screen. When you return to active work, the eyes change to spinning indicators to show active time logging."),
             ("mascot",
-             "Does WizDesk have sound effects and can I customize them?",
-             "Yes. WizDesk includes a built-in procedural sound engine generating 16-bit PCM WAV chimes for wake up, sleep, completion, cancellations, work logs, and mascot pokes/drags. You can toggle audio on or off and calibrate volume under Settings > General."),
+             "Can I turn off sound effects?",
+             "Yes. Built-in sound effects play for wake, sleep, task completion, cancellation, and interaction. You can change volume or disable sounds under Settings > General."),
             ("mascot",
-             "Can I hide the desktop mascot and still track work?",
-             "Yes. Toggle the companion anytime using Ctrl+Shift+M (or your customized hotkey in Settings). Window time tracking continues uninterrupted in the background."),
+             "Can I hide the mascot?",
+             "Yes. Press Ctrl+Shift+M (or your configured shortcut in Settings > Hotkeys) to hide or show the mascot. Window tracking continues in the background."),
             ("privacy",
-             "Is my data safe and private on this platform?",
-             "Yes. WizDesk is built on strict zero-telemetry principles. All your task records, subtasks, notes, project allocations, and activity logs are stored strictly on your local device in a standard SQLite database. No data is ever sent to external cloud servers."),
+             "Where is my data stored?",
+             "All tasks, subtasks, notes, project mappings, and logs are stored locally on your machine in a SQLite database. WizDesk does not send telemetry or sync data to external servers."),
             ("privacy",
-             "Does WizDesk log my keystrokes or screen?",
-             "No. WizDesk only inspects the active window title bar every 5 seconds to attribute time to projects. Keystrokes, screen recordings, and personal documents are never logged or stored."),
+             "Does WizDesk log keystrokes or record screens?",
+             "No. WizDesk only reads active window title strings every 5 seconds to attribute project time. It never records keystrokes, screenshots, or file contents."),
             ("privacy",
-             "How does Database Encryption (AES-256-GCM) work?",
-             "WizDesk supports hardware-backed AES-256-GCM authenticated encryption at rest. When enabled under Settings > Security, your database is decrypted into secure memory on startup and written to disk encrypted with atomic replacement. Zero unencrypted plaintext remains on disk."),
+             "How does Database Encryption work?",
+             "WizDesk supports AES-256-GCM encryption at rest. When enabled under Settings > Security, the database is loaded into memory on launch and saved back to disk encrypted. No plaintext files remain on disk."),
             ("privacy",
-             "How do I enable encryption and what is my Personal Master Key?",
-             "Navigate to Settings > Security and click 'Enable Encryption'. WizDesk generates a cryptographically secure 256-bit key and binds it to your Windows user account via Windows DPAPI for instant, zero-prompt login. You also receive an exportable master key ('WIZK-XXXX-...') which you can back up safely for disaster recovery or machine migration."),
+             "How is the encryption key secured?",
+             "Your 256-bit encryption key is stored through Windows DPAPI and tied to your user login for automatic startup. You can also view and copy your master key (formatted as WIZK-...) in Settings > Security for manual backup."),
             ("privacy",
-             "Can I disable database encryption later?",
-             "Yes. Click 'Disable Encryption' under Settings > Security. WizDesk safely decrypts your encrypted payload and restores it as a standard SQLite database on disk."),
+             "Can I turn off encryption?",
+             "Yes. Click 'Disable Encryption' in Settings > Security. WizDesk decrypts your database back to standard SQLite format."),
             ("backup",
-             "How do automated database backups work?",
-             "When Automated Backups is toggled on under Settings > Security, WizDesk automatically creates a rolling snapshot of your database every day when the app starts. If encryption is enabled, backups are securely encrypted as .wbak files; otherwise they are saved as standard .bak files."),
+             "How do automated backups work?",
+             "When enabled under Settings > Security, WizDesk creates a snapshot backup on application startup. Encrypted databases save as .wbak files, while standard databases save as .bak files."),
             ("backup",
-             "How do I create an immediate manual backup?",
-             "Go to Settings > Security and click 'Create Backup Now'. WizDesk instantly snapshots your current database with a timestamp and 'manual' tag in your local backups directory (%APPDATA%\\WizDesk\\backups). Manual snapshots are never auto-pruned."),
+             "How do I create a manual backup?",
+             "Go to Settings > Security and click 'Create Backup Now'. A timestamped snapshot is saved to your local backups folder (%APPDATA%\\WizDesk\\backups). Manual snapshots are never pruned."),
             ("backup",
-             "What is the backup retention limit and how does pruning work?",
-             "You can set a retention limit (1 to 30 snapshots) under Settings > Security. When your automated backups exceed this number, the oldest automatic snapshots are pruned to conserve disk space. Manual and pre-restore snapshots are always preserved."),
+             "How does the retention limit work?",
+             "Set the retention count (1 to 30 snapshots) under Settings > Security. When automatic backups exceed this count, the oldest automatic snapshots are removed. Manual and pre-restore backups are kept."),
             ("backup",
-             "How do I restore my database from a backup file?",
-             "Under Settings > Security, click 'Restore from File...' and select any .bak or .wbak file. WizDesk verifies SQLite integrity (PRAGMA integrity_check) and takes an automatic safety 'pre-restore' snapshot of your active database before applying the restore."),
+             "How do I restore from a backup?",
+             "Click 'Restore from File...' in Settings > Security and choose a .bak or .wbak file. WizDesk runs an integrity check and creates a pre-restore safety snapshot before replacing your active data."),
             ("backup",
-             "How do I export and migrate data to another computer?",
-             "Copy your .bak or .wbak snapshot files from %APPDATA%\\WizDesk\\backups to your new device. If your backups are encrypted (.wbak), export your Personal Master Key from Settings > Security ('View / Export Key') and use it to decrypt and restore your data on the target system."),
+             "How do I move my data to another computer?",
+             "Copy your .bak or .wbak backup files from %APPDATA%\\WizDesk\\backups to the new machine. If using encrypted .wbak files, export your master key from Settings > Security and enter it during restoration on the target computer."),
             ("obsidian",
-             "How does local Obsidian sync work?",
-             "Under Settings > Integrations, configure your local Obsidian vault root folder. Whenever you complete tasks or record notes, WizDesk automatically appends them to daily markdown files in your vault."),
+             "How does Obsidian sync work?",
+             "Under Settings > Integrations, select your Obsidian vault folder. WizDesk writes completed tasks and daily logged time into Markdown notes inside your vault."),
             ("obsidian",
-             "Can I customize the daily logs subfolder?",
-             "Yes. Under Settings > Integrations, you can set the daily logs subfolder name (defaults to 'WizDesk Logs'). WizDesk creates the folder automatically if it doesn't already exist."),
+             "Can I change the vault folder for logs?",
+             "Yes. You can customize the subfolder name under Settings > Integrations (defaults to 'WizDesk Logs'). WizDesk creates it if it does not exist."),
         ]
 
         for cat, q, a in faq_data:
@@ -390,8 +396,76 @@ class HelpFaqView(QWidget):
         return container
 
     # ------------------------------------------------------------------------
-    # PAGE 2: DOCUMENTATION INTERFACE (Reference Image 2)
+    # PAGE 2: DOCUMENTATION INTERFACE
     # ------------------------------------------------------------------------
+    def _format_doc_body_html(self, body: str, color: Optional[str] = None) -> str:
+        """Format plain text documentation body into spacious HTML with line spacing."""
+        if not color:
+            color = "#A1A1AA" if self.is_dark else "#5E5851"
+        strong_color = "#F4F4F6" if self.is_dark else "#18181B"
+        blocks = body.split("\n\n")
+        html_parts = []
+        for block in blocks:
+            lines = [line.strip() for line in block.split("\n") if line.strip()]
+            if not lines:
+                continue
+            if any(l.startswith("•") for l in lines):
+                bullet_items = []
+                for line in lines:
+                    if line.startswith("•"):
+                        content = line[1:].strip()
+                        if ":" in content:
+                            prefix, rest = content.split(":", 1)
+                            bullet_items.append(
+                                f"<div style='margin-bottom: 8px; line-height: 1.6;'>"
+                                f"• <strong style='color: {strong_color};'>{prefix}:</strong>"
+                                f"{rest}"
+                                f"</div>"
+                            )
+                        else:
+                            bullet_items.append(
+                                f"<div style='margin-bottom: 8px; line-height: 1.6;'>• {content}</div>"
+                            )
+                    else:
+                        bullet_items.append(
+                            f"<div style='margin-bottom: 8px; line-height: 1.6;'>{line}</div>"
+                        )
+                html_parts.append(f"<div style='margin-bottom: 10px;'>{''.join(bullet_items)}</div>")
+            else:
+                html_parts.append(
+                    f"<p style='margin: 0 0 12px 0; line-height: 1.6;'>{' '.join(lines)}</p>"
+                )
+
+        return (
+            f"<div style='color: {color}; font-size: 13px; font-family: {FONT_SANS};'>"
+            f"{''.join(html_parts)}"
+            f"</div>"
+        )
+
+    def _create_doc_section(self, title: str, body: str) -> QFrame:
+        """Create a styled editorial documentation card with generous spacing."""
+        card = QFrame()
+        card.setObjectName("docCard")
+        c_layout = QVBoxLayout(card)
+        c_layout.setContentsMargins(22, 20, 22, 20)
+        c_layout.setSpacing(12)
+
+        t_lbl = QLabel(title, card)
+        t_lbl.setFont(get_font(11, QFont.Weight.Bold))
+        t_lbl.setObjectName("docCardTitle")
+        c_layout.addWidget(t_lbl)
+
+        b_lbl = QLabel(card)
+        b_lbl.setTextFormat(Qt.TextFormat.RichText)
+        b_lbl.setFont(get_font(9.5))
+        b_lbl.setWordWrap(True)
+        b_lbl.setObjectName("docCardBody")
+        b_lbl.setProperty("raw_body", body)
+        b_lbl.setText(self._format_doc_body_html(body))
+        c_layout.addWidget(b_lbl)
+
+        return card
+
     def _build_docs_page(self) -> QWidget:
         container = QWidget()
         layout = QHBoxLayout(container)
@@ -415,13 +489,15 @@ class HelpFaqView(QWidget):
         ]
 
         for section_title, topics in doc_structure:
-            sec_lbl = QLabel(section_title.upper(), self.docs_nav_col)
+            sec_lbl = QLabel(section_title.upper().replace("&&", "&"), self.docs_nav_col)
             sec_lbl.setFont(get_font(7, QFont.Weight.Bold))
             sec_lbl.setObjectName("docSectionHeading")
             doc_nav_layout.addWidget(sec_lbl)
 
             for topic in topics:
-                t_btn = QPushButton(f"• {topic}", self.docs_nav_col)
+                # In QPushButton, ampersands must be doubled to display properly
+                btn_display_text = f"• {topic}".replace("&", "&&")
+                t_btn = QPushButton(btn_display_text, self.docs_nav_col)
                 t_btn.setFont(get_font(8.5, QFont.Weight.Medium))
                 t_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
                 t_btn.setAutoDefault(False)
@@ -432,7 +508,7 @@ class HelpFaqView(QWidget):
                 self.doc_topic_btns.append(t_btn)
                 doc_nav_layout.addWidget(t_btn)
 
-            doc_nav_layout.addSpacing(6)
+            doc_nav_layout.addSpacing(8)
 
         doc_nav_layout.addStretch(1)
         layout.addWidget(self.docs_nav_col)
@@ -448,91 +524,92 @@ class HelpFaqView(QWidget):
         self.doc_content_widget = QWidget()
         self.doc_content_widget.setStyleSheet("background: transparent;")
         self.doc_layout = QVBoxLayout(self.doc_content_widget)
-        self.doc_layout.setContentsMargins(8, 4, 18, 16)
-        self.doc_layout.setSpacing(14)
+        self.doc_layout.setContentsMargins(8, 4, 18, 24)
+        self.doc_layout.setSpacing(18)
 
         # Doc Header
         self.doc_title = QLabel("Platform Guide", self.doc_content_widget)
         self.doc_title.setFont(get_font(14, QFont.Weight.Bold))
         self.doc_layout.addWidget(self.doc_title)
 
-        self.doc_intro = QLabel(
-            "WizDesk is a lightweight, local-first desktop productivity companion and autonomous time intelligence platform. "
-            "It runs quietly in the background, eliminating the need for manual punch clocks and complex time-tracking setups.",
-            self.doc_content_widget,
-        )
-        self.doc_intro.setFont(get_font(9.5))
+        self.doc_intro = QLabel(self.doc_content_widget)
+        self.doc_intro.setTextFormat(Qt.TextFormat.RichText)
+        self.doc_intro.setFont(get_font(10))
         self.doc_intro.setWordWrap(True)
+        self.doc_intro.setText(
+            f"<div style='line-height: 1.65; font-size: 13.5px; font-family: {FONT_SANS}; margin-top: 4px; margin-bottom: 6px;'>"
+            "WizDesk tracks your project work and captures quick notes from your desktop. "
+            "It logs time automatically based on your active windows, stores all data locally in SQLite, "
+            "and features an on-screen companion that shows your current activity."
+            "</div>"
+        )
         self.doc_layout.addWidget(self.doc_intro)
 
         # Section 1: Autonomous Window Tracking Engine
         self.sec_tracking = self._create_doc_section(
-            title="Autonomous Window Tracking Engine",
-            body="Instead of requiring manual timers, WizDesk polls your active foreground window every 5 seconds. "
-                 "When a foreground window matches any of your configured project keywords (e.g. 'code', 'docs', 'figma'), "
-                 "time is automatically attributed to that project.\n\n"
-                 "When you switch applications, the previous session is immediately concluded and written to your local database.",
+            title="Automated Window Tracking",
+            body="WizDesk inspects the active window title every 5 seconds. If the title matches any keyword configured for a project (such as 'code', 'docs', or 'figma'), time is logged to that project.\n\n"
+                 "When you switch to another window, WizDesk finishes the current session and saves the duration to your local SQLite database.",
         )
         self.doc_layout.addWidget(self.sec_tracking)
 
         # Section 2: Mascot Companion Behaviors, Eye-Tracking & Audio
         self.sec_mascot = self._create_doc_section(
-            title="Desktop Companion Moods, Eye-Tracking & Sound Engine",
-            body="Your companion dynamically animates based on your work state:\n\n"
-                 "• WORKING: Active keyboard and mouse input while focused on recognized tasks. Mascot displays thin spinning circular eyes.\n"
-                 "• IDLE: Brief pause in activity (>10 seconds). Mascot eyes smoothly follow your mouse cursor coordinates across the screen.\n"
-                 "• SLEEP: Extended break (>1 minute or custom inactivity timeout). Mascot curls up to rest.\n"
-                 "• NOTIFY: Transient visual feedback when new tasks or notes are logged.\n"
-                 "• COMPLETE: Celebration bounce when a task is checked off.\n\n"
-                 "Procedural Sound Engine: Organic 16-bit PCM WAV audio chimes trigger on state transitions (wake, sleep, complete, cancel, work log, poke/drag). Audio can be toggled and volume adjusted in Settings > General.",
+            title="Desktop Companion & Sound Engine",
+            body="The desktop companion reflects your current activity:\n\n"
+                 "• Working: Active typing or clicking on a recognized task. Displays spinning eyes.\n"
+                 "• Idle: Inactive for more than 10 seconds. Eyes track the mouse cursor across the screen.\n"
+                 "• Sleep: Inactive for more than 1 minute (configurable in Settings). Mascot rests.\n"
+                 "• Notify: Brief alert when you add a task or note.\n"
+                 "• Complete: Short animation when you finish a task.\n\n"
+                 "Sound Effects: Built-in audio cues play for wake, sleep, completion, cancellation, and interaction. You can adjust volume or turn off sounds in Settings > General.",
         )
         self.doc_layout.addWidget(self.sec_mascot)
 
         # Section 3: Database Encryption (AES-256-GCM)
         self.sec_encryption = self._create_doc_section(
-            title="Database Encryption (AES-256-GCM) & Key Management",
-            body="Protect all tasks, subtasks, notes, project allocations, and activity logs at rest using authenticated AES-256-GCM encryption.\n\n"
-                 "• In-Memory Decryption: On application launch, the database payload is decrypted into secure memory and runs with high throughput. Data is committed back to disk encrypted with atomic replacement. Zero unencrypted plaintext remains on disk.\n"
-                 "• Windows DPAPI: Your 256-bit encryption key is securely stored using Windows Data Protection API, bound to your Windows user account credentials for seamless zero-prompt unlock.\n"
-                 "• Personal Master Key: Export your 64-character hex master key (formatted as WIZK-XXXX-...) anytime under Settings > Security to maintain disaster recovery capability.",
+            title="Database Encryption (AES-256-GCM)",
+            body="Encrypt all tasks, notes, sessions, and activity logs using AES-256-GCM authenticated encryption.\n\n"
+                 "• Secure Storage: Decrypted into memory at startup. Changes are saved back to disk encrypted with atomic writes. No unencrypted text is written to disk.\n"
+                 "• Windows DPAPI: The 256-bit encryption key is stored via Windows DPAPI and tied to your Windows user account for zero-prompt login.\n"
+                 "• Master Key: Export your 64-character master key (formatted as WIZK-...) anytime in Settings > Security for backup or migration.",
         )
         self.doc_layout.addWidget(self.sec_encryption)
 
         # Section 4: Automated & On-Demand Backup System
         self.sec_backups = self._create_doc_section(
-            title="Automated & On-Demand Backup System",
+            title="Automated Backups & Snapshots",
             body="Keep your workspace data safe from accidental loss with automated and manual point-in-time snapshots:\n\n"
-                 "• Automated Rolling Backups: Automatically creates daily snapshots on application startup. Saved as .wbak (when encrypted) or .bak (standard SQLite).\n"
-                 "• Configurable Retention Limit: Set between 1 and 30 snapshots under Settings > Security. Old automatic snapshots are pruned to conserve disk space, while manual backups are never deleted.\n"
-                 "• Storage Location: Snapshots are stored locally in %APPDATA%\\WizDesk\\backups (Windows) or ~/.local/share/WizDesk/backups (Linux).",
+                 "• Automatic Backups: Creates daily snapshot backups on startup. Encrypted backups use .wbak; unencrypted backups use .bak.\n"
+                 "• Retention Limit: Keeps between 1 and 30 snapshots (set in Settings > Security). Old automatic backups are pruned automatically. Manual backups are never deleted.\n"
+                 "• Storage Location: Backups are stored in %APPDATA%\\WizDesk\\backups on Windows or ~/.local/share/WizDesk/backups on Linux.",
         )
         self.doc_layout.addWidget(self.sec_backups)
 
         # Section 5: Data Restoration & Migration
         self.sec_restore = self._create_doc_section(
-            title="Data Export, Restoration & Machine Migration",
+            title="Restoration & Machine Migration",
             body="Restore or migrate your entire workspace with complete confidence:\n\n"
-                 "• Pre-Restore Safety Snapshot: WizDesk automatically captures a 'pre-restore' backup of your existing database before overwriting, ensuring zero risk of accidental data loss.\n"
-                 "• SQLite Integrity Validation: Every restored database undergoes rigorous validation (PRAGMA integrity_check) before being activated.\n"
-                 "• Machine Migration: Copy your backup file to any computer and restore it via Settings > Security > 'Restore from File...'. For encrypted databases, provide your Personal Master Key to decrypt.",
+                 "• Pre-Restore Snapshot: WizDesk takes a safety snapshot before restoring any backup so you cannot overwrite data by accident.\n"
+                 "• Integrity Check: Validates SQLite file integrity (PRAGMA integrity_check) before loading restored data.\n"
+                 "• Migration: Copy your backup file to a new machine and restore it via Settings > Security > Restore from File. For encrypted files, enter your Master Key.",
         )
         self.doc_layout.addWidget(self.sec_restore)
 
         # Section 6: Privacy & Zero Telemetry Architecture
         self.sec_privacy = self._create_doc_section(
-            title="Privacy & 100% Local Storage Architecture",
-            body="WizDesk adheres strictly to zero-telemetry principles. All information is stored in a standard SQLite database on your device:\n\n"
-                 "Windows: %APPDATA%\\WizDesk\\wizdesk.db\n"
-                 "Linux: ~/.local/share/WizDesk/wizdesk.db\n\n"
-                 "WizDesk has no cloud dependency, captures no analytics, and never reads personal files.",
+            title="Privacy & Local-Only Storage",
+            body="WizDesk does not collect analytics, send telemetry, or connect to external servers. All data stays on your machine:\n\n"
+                 "• Windows: %APPDATA%\\WizDesk\\wizdesk.db\n"
+                 "• Linux: ~/.local/share/WizDesk/wizdesk.db\n\n"
+                 "Only active window title bars are checked for project keywords. Keystrokes, screen contents, and personal files are never recorded.",
         )
         self.doc_layout.addWidget(self.sec_privacy)
 
         # Section 7: Obsidian Daily Logs Sync
         self.sec_obsidian = self._create_doc_section(
-            title="Obsidian Vault Daily Logs Sync",
-            body="Connect your local Obsidian Vault under Settings > Integrations. "
-                 "WizDesk formats completed tasks and work session durations into daily Markdown files inside your vault's logs folder.",
+            title="Obsidian Daily Logs Sync",
+            body="Connect your Obsidian vault in Settings > Integrations. WizDesk appends completed tasks and logged time into daily Markdown notes inside your chosen subfolder (default: WizDesk Logs).",
         )
         self.doc_layout.addWidget(self.sec_obsidian)
 
@@ -548,13 +625,13 @@ class HelpFaqView(QWidget):
             self.doc_scroll.verticalScrollBar().setValue(0)
         elif topic in ("Autonomous Engine", "Project Rules") and hasattr(self, "sec_tracking"):
             self.doc_scroll.ensureWidgetVisible(self.sec_tracking)
-        elif topic in ("Mascot States", "Mascot States & Audio", "Sound Engine") and hasattr(self, "sec_mascot"):
+        elif "Mascot States" in topic and hasattr(self, "sec_mascot"):
             self.doc_scroll.ensureWidgetVisible(self.sec_mascot)
         elif topic == "AES-256 Encryption" and hasattr(self, "sec_encryption"):
             self.doc_scroll.ensureWidgetVisible(self.sec_encryption)
         elif topic == "Database Backups" and hasattr(self, "sec_backups"):
             self.doc_scroll.ensureWidgetVisible(self.sec_backups)
-        elif topic == "Restore & Migration" and hasattr(self, "sec_restore"):
+        elif "Restore" in topic and hasattr(self, "sec_restore"):
             self.doc_scroll.ensureWidgetVisible(self.sec_restore)
         elif topic in ("Local SQLite", "Zero Telemetry") and hasattr(self, "sec_privacy"):
             self.doc_scroll.ensureWidgetVisible(self.sec_privacy)
@@ -567,27 +644,6 @@ class HelpFaqView(QWidget):
         """Open the official WizDesk GitHub repository in the default web browser."""
         QDesktopServices.openUrl(QUrl("https://github.com/Lukog10/WizDesk"))
 
-    def _create_doc_section(self, title: str, body: str) -> QFrame:
-        """Create a styled editorial documentation card."""
-        card = QFrame()
-        card.setObjectName("docCard")
-        c_layout = QVBoxLayout(card)
-        c_layout.setContentsMargins(16, 14, 16, 14)
-        c_layout.setSpacing(6)
-
-        t_lbl = QLabel(title, card)
-        t_lbl.setFont(get_font(10.5, QFont.Weight.Bold))
-        t_lbl.setObjectName("docCardTitle")
-        c_layout.addWidget(t_lbl)
-
-        b_lbl = QLabel(body, card)
-        b_lbl.setFont(get_font(9))
-        b_lbl.setWordWrap(True)
-        b_lbl.setObjectName("docCardBody")
-        c_layout.addWidget(b_lbl)
-
-        return card
-
     # ------------------------------------------------------------------------
     # NAVIGATION & CATEGORY FILTERING
     # ------------------------------------------------------------------------
@@ -597,16 +653,16 @@ class HelpFaqView(QWidget):
         if mode == "faq":
             self.stack.setCurrentIndex(0)
             self.tag_pill.setText("/ FAQS")
-            self.header_title.setText("Frequently asked question")
+            self.header_title.setText("Frequently Asked Questions")
             self.header_desc.setText(
-                "here's everything you need to know to get started, manage your workspace, and troubleshoot the most frequent issues."
+                "Answers to common questions about tracking, encryption, backups, and setup."
             )
         else:
             self.stack.setCurrentIndex(1)
             self.tag_pill.setText("/ DOCS")
             self.header_title.setText("Platform Documentation")
             self.header_desc.setText(
-                "Comprehensive architecture overview, autonomous tracking engine specifications, and local privacy guarantees."
+                "Architecture overview, window tracking details, local database storage, and security guides."
             )
         self.apply_theme()
 
@@ -772,7 +828,13 @@ class HelpFaqView(QWidget):
         # Docs Page Styling
         if hasattr(self, "doc_title"):
             self.doc_title.setStyleSheet(f"color: {title_fg};")
-            self.doc_intro.setStyleSheet(f"color: {desc_fg}; line-height: 140%;")
+            self.doc_intro.setText(
+                f"<div style='color: {desc_fg}; line-height: 1.65; font-size: 13.5px; font-family: {FONT_SANS}; margin-top: 4px; margin-bottom: 6px;'>"
+                "WizDesk tracks your project work and captures quick notes from your desktop. "
+                "It logs time automatically based on your active windows, stores all data locally in SQLite, "
+                "and features an on-screen companion that shows your current activity."
+                "</div>"
+            )
 
             for btn in self.doc_topic_btns:
                 btn.setStyleSheet(f"""
@@ -798,11 +860,12 @@ class HelpFaqView(QWidget):
                     QLabel#docCardTitle {{
                         color: {title_fg};
                     }}
-                    QLabel#docCardBody {{
-                        color: {desc_fg};
-                        line-height: 145%;
-                    }}
                 """)
+                b_lbl = card.findChild(QLabel, "docCardBody")
+                if b_lbl:
+                    raw_body = b_lbl.property("raw_body")
+                    if raw_body:
+                        b_lbl.setText(self._format_doc_body_html(raw_body, desc_fg))
 
             for sec_lbl in self.findChildren(QLabel, "docSectionHeading"):
                 sec_lbl.setStyleSheet(f"color: {'#71717A' if is_dark else '#8C8377'}; padding-top: 4px;")

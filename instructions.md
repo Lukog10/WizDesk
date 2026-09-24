@@ -1,4 +1,4 @@
-# Instructions — Agent Orchestration
+# Instructions: Agent Orchestration
 
 > **Read order**: `instructions.md` → `AGENTS.md` → `claude.md` → relevant `skills/<name>/SKILL.md`
 >
@@ -24,7 +24,7 @@
 
 ---
 
-## 2. Skill Registry — Intent → Skill Routing
+## 2. Skill Registry: Intent → Skill Routing
 
 Before writing **any** code, the agent MUST check the table below and load the matching `SKILL.md` file. If multiple skills match, load all of them and follow each in order.
 
@@ -62,7 +62,7 @@ Before writing **any** code, the agent MUST check the table below and load the m
 
 ---
 
-## 3. The Execution Loop — MANDATORY for Every Task
+## 3. The Execution Loop: MANDATORY for Every Task
 
 Every user request MUST be processed through this loop. **Do not skip steps. Do not short-circuit.**
 
@@ -165,34 +165,34 @@ Every user request MUST be processed through this loop. **Do not skip steps. Do 
 
 ## 4. Step Details
 
-### Step 1 — UNDERSTAND
+### Step 1: UNDERSTAND
 
 1. Parse the user's message into a clear **goal statement** (one sentence).
 2. Identify: is this a feature, bug fix, UI redesign, backend change, or question?
 3. Re-read `claude.md` workflow rules (plan mode, verification, elegance, lessons).
 4. Re-read `AGENTS.md` skill-mapping rules.
 
-### Step 2 — ROUTE
+### Step 2: ROUTE
 
 1. Scan the intent routing table in §2 above.
 2. Open and read every matching `SKILL.md` file **in full** before proceeding.
-3. If no skill matches, proceed with general best practices — but still follow the loop.
+3. If no skill matches, proceed with general best practices: but still follow the loop.
 4. Multiple skills can be combined (e.g., `database` + `building-ui` for a new page that calls the backend).
 
-### Step 3 — PLAN
+### Step 3: PLAN
 
 - For **non-trivial** tasks (3+ steps or architectural decisions): write a plan to `tasks/todo.md` with checkable items.
 - For trivial tasks (fix a typo, adjust spacing): skip directly to Step 4.
 - Reference which skills you loaded and why.
 
-### Step 4 — BUILD
+### Step 4: BUILD
 
 - Follow the loaded skill(s) exactly. Do not deviate.
 - Apply `full-output-enforcement`: never truncate, never use `// ... rest unchanged`, never leave placeholders.
 - Follow `claude.md` principles: simplicity first, minimal impact, find root causes.
 - Track progress by marking `tasks/todo.md` items `[/]` → `[x]`.
 
-### Step 5 — VERIFY
+### Step 5: VERIFY
 
 - **Must prove the code works.** Options (use whichever apply):
   - Run the dev server and confirm no errors.
@@ -202,7 +202,7 @@ Every user request MUST be processed through this loop. **Do not skip steps. Do 
   - Visual inspection of rendered output.
 - If verification fails, log the error and loop back to Step 4.
 
-### Step 6 — COMPARE & SELF-REVIEW
+### Step 6: COMPARE & SELF-REVIEW
 
 This is the **quality gate**. The agent must answer all 5 questions honestly:
 
@@ -216,7 +216,7 @@ This is the **quality gate**. The agent must answer all 5 questions honestly:
 
 **If ANY answer is NO → Loop back to Step 4.**
 
-### Step 7 — DELIVER
+### Step 7: DELIVER
 
 1. Present the result to the user with a brief summary.
 2. Commit with a descriptive message (per `AGENTS.md` commit routine).
@@ -225,7 +225,7 @@ This is the **quality gate**. The agent must answer all 5 questions honestly:
 
 ---
 
-## 5. Anti-Patterns — NEVER Do These
+## 5. Anti-Patterns: NEVER Do These
 
 | Anti-Pattern | Correct Behavior |
 |---|---|
@@ -244,15 +244,15 @@ This is the **quality gate**. The agent must answer all 5 questions honestly:
 
 When instructions conflict, follow this precedence order (highest first):
 
-1. **User's explicit request** — always takes priority
-2. **`instructions.md`** (this file) — orchestration & loop rules
-3. **`claude.md`** — workflow principles & task management
-4. **`AGENTS.md`** — skill invocation rules & commit routine
-5. **`skills/<name>/SKILL.md`** — domain-specific implementation guidance
+1. **User's explicit request**: always takes priority
+2. **`instructions.md`** (this file): orchestration & loop rules
+3. **`claude.md`**: workflow principles & task management
+4. **`AGENTS.md`**: skill invocation rules & commit routine
+5. **`skills/<name>/SKILL.md`**: domain-specific implementation guidance
 
 ---
 
-## 7. Quick Reference — Common Task Flows
+## 7. Quick Reference: Common Task Flows
 
 <!-- CUSTOMIZE these for your project. Examples below. -->
 
