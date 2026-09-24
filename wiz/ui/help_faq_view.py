@@ -474,11 +474,11 @@ class HelpFaqView(QWidget):
 
         # Left Column: Documentation Outline Sidebar
         self.docs_nav_col = QFrame(container)
-        self.docs_nav_col.setFixedWidth(170)
+        self.docs_nav_col.setFixedWidth(210)
         self.docs_nav_col.setStyleSheet("background: transparent; border: none;")
         doc_nav_layout = QVBoxLayout(self.docs_nav_col)
         doc_nav_layout.setContentsMargins(0, 4, 0, 0)
-        doc_nav_layout.setSpacing(4)
+        doc_nav_layout.setSpacing(2)
 
         doc_structure = [
             ("Overview", ["Introduction", "Quick Start"]),
@@ -490,7 +490,7 @@ class HelpFaqView(QWidget):
 
         for section_title, topics in doc_structure:
             sec_lbl = QLabel(section_title.upper().replace("&&", "&"), self.docs_nav_col)
-            sec_lbl.setFont(get_font(7, QFont.Weight.Bold))
+            sec_lbl.setFont(get_font(8.5, QFont.Weight.Bold))
             sec_lbl.setObjectName("docSectionHeading")
             doc_nav_layout.addWidget(sec_lbl)
 
@@ -498,7 +498,7 @@ class HelpFaqView(QWidget):
                 # In QPushButton, ampersands must be doubled to display properly
                 btn_display_text = f"• {topic}".replace("&", "&&")
                 t_btn = QPushButton(btn_display_text, self.docs_nav_col)
-                t_btn.setFont(get_font(8.5, QFont.Weight.Medium))
+                t_btn.setFont(get_font(10, QFont.Weight.Medium))
                 t_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
                 t_btn.setAutoDefault(False)
                 t_btn.setDefault(False)
@@ -508,7 +508,7 @@ class HelpFaqView(QWidget):
                 self.doc_topic_btns.append(t_btn)
                 doc_nav_layout.addWidget(t_btn)
 
-            doc_nav_layout.addSpacing(8)
+            doc_nav_layout.addSpacing(14)
 
         doc_nav_layout.addStretch(1)
         layout.addWidget(self.docs_nav_col)
@@ -841,11 +841,14 @@ class HelpFaqView(QWidget):
                     QPushButton {{
                         background: transparent;
                         color: {inactive_tab_fg};
-                        border: none;
+                        border: 1px solid transparent;
+                        border-radius: 6px;
                         text-align: left;
-                        padding: 4px 6px;
+                        padding: 5px 8px;
+                        font-size: 13px;
                     }}
                     QPushButton:hover {{
+                        background-color: {cat_hover_bg};
                         color: {title_fg};
                     }}
                 """)
@@ -867,8 +870,16 @@ class HelpFaqView(QWidget):
                     if raw_body:
                         b_lbl.setText(self._format_doc_body_html(raw_body, desc_fg))
 
+            sec_heading_color = "#71717A" if is_dark else "#8C8377"
             for sec_lbl in self.findChildren(QLabel, "docSectionHeading"):
-                sec_lbl.setStyleSheet(f"color: {'#71717A' if is_dark else '#8C8377'}; padding-top: 4px;")
+                sec_lbl.setStyleSheet(f"""
+                    color: {sec_heading_color};
+                    font-size: 11px;
+                    font-weight: 700;
+                    padding-top: 6px;
+                    padding-bottom: 2px;
+                    letter-spacing: 0.8px;
+                """)
 
         # Custom Slim Scrollbars
         scroll_thumb = "rgba(255, 255, 255, 0.12)" if is_dark else "rgba(0, 0, 0, 0.10)"
