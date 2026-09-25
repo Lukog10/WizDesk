@@ -201,3 +201,34 @@ def test_quick_entry_dialog_2_stage_splash_transition(qapp):
     dialog.close()
 
 
+def test_quick_entry_dialog_single_clean_frame(qapp):
+    """Validate single card frame, zero nested graphics effect, and clean alpha margins."""
+    from wiz.core.state_machine import StateMachine
+    from wiz.storage.models import StorageRepository
+    from wiz.ui.popup_dialog import QuickEntryDialog
+    from PIL import Image
+    import io
+
+    sm = StateMachine()
+    repo = StorageRepository()
+    dialog = QuickEntryDialog(sm, repository=repo, enable_splash=True)
+
+    # During Stage 0, loading overlay has NO graphics effect to prevent Windows DWM ghosting
+    assert dialog.loading_overlay.graphicsEffect() is None
+
+    dialog.show()
+    qapp.processEvents()
+
+    pix = dialog.grab()
+    save_path = r"C:\Users\Administrator\.gemini\antigravity-ide\brain\a2c70cca-a4cd-4cea-9a5f-b70cf21f04ec\scratch\clean_splash_stage_verified.png"
+    pix.save(save_path)
+
+    img = Image.open(save_path)
+    # Outside the outer_frame (908, 668), pixels must be transparent (no opaque duplicate box)
+    corner_pixel = img.getpixel((915, 675))
+    assert corner_pixel[3] < 30, f"Expected transparent margin, got {corner_pixel}"
+
+    dialog.close()
+
+
+

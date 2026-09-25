@@ -312,10 +312,8 @@ class WorkspaceSplashOverlay(QFrame):
         self.is_dark = is_dark
         self.setObjectName("workspaceSplashOverlay")
 
-        # Opacity effect for smooth fading
-        self._opacity_effect = QGraphicsOpacityEffect(self)
-        self._opacity_effect.setOpacity(1.0)
-        self.setGraphicsEffect(self._opacity_effect)
+        # Fade animation state
+        self._opacity_effect: Optional[QGraphicsOpacityEffect] = None
         self._fade_anim: Optional[QPropertyAnimation] = None
 
         root_layout = QVBoxLayout(self)
@@ -419,9 +417,8 @@ class WorkspaceSplashOverlay(QFrame):
 
         self.setStyleSheet(f"""
             QFrame#workspaceSplashOverlay {{
-                background-color: {bg};
+                background: transparent;
                 border: none;
-                border-radius: 20px;
             }}
             QLabel#overlayTitle {{
                 color: {title_fg};
@@ -461,11 +458,7 @@ class WorkspaceSplashOverlay(QFrame):
 
     def start_loading(self, duration_ms: int = 1200) -> None:
         """Start the loading duration timer and schedule smooth transition."""
-        if self.parentWidget():
-            self.setGeometry(self.parentWidget().rect())
-        self._opacity_effect.setOpacity(1.0)
         self.show()
-        self.raise_()
         QTimer.singleShot(duration_ms, self._start_fade_out)
 
     def show_and_fade(self, duration_ms: int = 1200) -> None:
@@ -473,15 +466,19 @@ class WorkspaceSplashOverlay(QFrame):
         self.start_loading(duration_ms)
 
     def _start_fade_out(self) -> None:
-        """Animate opacity from 1.0 to 0.0 over 350ms."""
+        """Animate opacity from 1.0 to 0.0 over 220ms."""
+        self._opacity_effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self._opacity_effect)
         self._fade_anim = QPropertyAnimation(self._opacity_effect, b"opacity")
-        self._fade_anim.setDuration(350)
+        self._fade_anim.setDuration(220)
         self._fade_anim.setStartValue(1.0)
         self._fade_anim.setEndValue(0.0)
         self._fade_anim.finished.connect(self._on_fade_done)
         self._fade_anim.start()
 
     def _on_fade_done(self) -> None:
-        """Emit loading_finished and hide overlay."""
+        """Emit loading_finished, clean up graphics effect, and hide overlay."""
+        self.setGraphicsEffect(None)
+        self._opacity_effect = None
         self.loading_finished.emit()
         self.hide()
