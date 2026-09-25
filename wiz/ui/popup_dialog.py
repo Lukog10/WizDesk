@@ -55,6 +55,7 @@ from wiz.ui.settings_view import SettingsView
 from wiz.ui.help_faq_view import HelpFaqView
 from wiz.ui.calendar_view import CalendarView
 from wiz.ui.arrow_combo import ArrowComboBox
+from wiz.ui.splash_screen import WorkspaceSplashOverlay
 
 
 from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
@@ -2452,6 +2453,10 @@ class QuickEntryDialog(QDialog):
             btn.setAutoDefault(False)
             btn.setDefault(False)
 
+        # Workspace initial loading transition overlay
+        self._has_shown_initial_overlay = False
+        self.loading_overlay = WorkspaceSplashOverlay(parent=self.inner_card, is_dark=self.is_dark)
+
     def _on_sidebar_toggled(self, collapsed: bool) -> None:
         """Handle sidebar toggle and persist user preference."""
         config.set_sidebar_collapsed(collapsed)
@@ -2736,6 +2741,8 @@ class QuickEntryDialog(QDialog):
             self.settings_view.set_theme(self.is_dark)
         if hasattr(self, "help_faq_view"):
             self.help_faq_view.set_theme(self.is_dark)
+        if hasattr(self, "loading_overlay"):
+            self.loading_overlay.update_theme(self.is_dark)
 
         # 8. Re-apply mode buttons
         self._set_view_mode(self.current_view_mode)
@@ -3317,6 +3324,20 @@ class QuickEntryDialog(QDialog):
         self.refresh_notes()
         self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.note_created.emit(note_id)
+
+    def showEvent(self, event) -> None:
+        """Handle first-show event to display subtle initial loading transition overlay."""
+        super().showEvent(event)
+        if not getattr(self, "_has_shown_initial_overlay", False):
+            self._has_shown_initial_overlay = True
+            if hasattr(self, "loading_overlay"):
+                self.loading_overlay.show_and_fade(duration_ms=350)
+
+    def resizeEvent(self, event) -> None:
+        """Keep loading overlay aligned with inner card when workspace resizes."""
+        super().resizeEvent(event)
+        if hasattr(self, "loading_overlay") and self.loading_overlay.isVisible():
+            self.loading_overlay.setGeometry(self.inner_card.rect())
 
     def changeEvent(self, event) -> None:
         """Handle window state changes (e.g. minimize/restore shadow effect)."""

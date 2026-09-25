@@ -13,7 +13,7 @@
 [![Storage](https://img.shields.io/badge/Database-SQLite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Integration](https://img.shields.io/badge/Sync-Obsidian%20Vault-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md/)
 [![License](https://img.shields.io/badge/License-GPL%20v3-F59E0B?style=for-the-badge)](LICENSE)
-[![Test Suite](https://img.shields.io/badge/Tests-116%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-123%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
 
 <br />
 
@@ -268,12 +268,13 @@ WizDesk maintains a verified test suite covering models, cryptographic operation
 .venv\Scripts\pytest -v
 ```
 
-### Verified Test Matrix (116 Tests Passing):
+### Verified Test Matrix (123 Tests Passing):
 - `tests/test_backup.py`: Validates snapshot creation, .wbak/.bak formatting, retention pruning, pre-restore safety snapshots, and integrity validation.
 - `tests/test_crypto.py`: Validates AES-256-GCM encryption, decryption, invalid key rejection, DPAPI key storage, and Master Key formatting.
 - `tests/test_dialogs.py`: Validates task rows, subtasks, notes, segmented status filtering, and popover calendar navigation.
 - `tests/test_mascot_core.py`: Validates state machine transitions, automated Win32 idle timeouts, and companion rendering.
 - `tests/test_sound.py`: Validates procedural sound synthesizer, audio volume, and mute states.
+- `tests/test_splash_screen.py`: Validates startup splash screen geometry, progress milestones, fade-out animation, and workspace loading overlay.
 - `tests/test_obsidian_sync.py`: Validates Markdown parsing, log generation, and file synchronization.
 - `tests/test_storage.py`: Validates SQLite schemas, queries, migrations, and keyword matching.
 - `tests/test_sidebar_and_shell.py`: Validates sidebar navigation, SettingsView, HelpFaqView, accordion cards, and topic shortcuts.
@@ -309,7 +310,7 @@ WizDesk/
 │   ├── wiz-complete.svg             # Mascot completion celebration state
 │   ├── wiz-sleep.svg                # Mascot sleeping state
 │   └── WizDesk Logo v1.jpeg         # Official logo
-├── tests/                           # Complete automated pytest suite (116 tests)
+├── tests/                           # Complete automated pytest suite (123 tests)
 │   ├── conftest.py                  # Pytest fixtures and environment setup
 │   ├── test_backup.py               # Automated backup and restoration tests
 │   ├── test_crypto.py               # AES-256-GCM and DPAPI security tests
@@ -319,6 +320,7 @@ WizDesk/
 │   ├── test_projects_dashboard.py   # Projects dashboard and keyword tests
 │   ├── test_sidebar_and_shell.py    # Sidebar, Settings, and Help & FAQ tests
 │   ├── test_sound.py                # Audio and sound synthesizer tests
+│   ├── test_splash_screen.py        # Startup splash screen and overlay tests
 │   ├── test_storage.py              # SQLite storage repository tests
 │   └── test_timeline.py             # Activity timeline and metric tests
 ├── wiz/                             # Core Python application package
@@ -344,6 +346,7 @@ WizDesk/
 │   │   ├── projects_dashboard_view.py # Projects tracking dashboard
 │   │   ├── settings_view.py         # Settings dialog and categories
 │   │   ├── sidebar_widget.py        # Side navigation bar
+│   │   ├── splash_screen.py         # Startup splash screen and workspace loading overlay
 │   │   ├── timeline_view.py         # Activity log timeline
 │   │   └── tray_icon.py             # System tray service
 │   ├── utils/                       # Global hotkey listeners

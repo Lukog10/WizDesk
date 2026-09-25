@@ -22,6 +22,7 @@ from wiz.ui.quick_bar_dialog import QuickBarPopup
 from wiz.ui.settings_dialog import SettingsDialog
 from wiz.ui.icons import get_app_icon
 from wiz.ui.fonts import init_fonts, get_font, FONT_SANS
+from wiz.ui.splash_screen import SplashScreen
 from wiz.tracker.window_tracker import WindowTracker
 from wiz.sync.obsidian import ObsidianSync
 from wiz.utils.hotkey import GlobalHotkeyListener
@@ -42,10 +43,24 @@ def set_windows_app_id() -> None:
 class WizApplication:
     """Coordinates core systems, UI windows, background tracker, and sync routines."""
 
-    def __init__(self):
+    def __init__(self, splash: Optional[SplashScreen] = None):
+        self.splash = splash
+        if self.splash:
+            self.splash.set_progress(25, "Loading local database...")
+
         self.repo = StorageRepository()
         self.state_machine = StateMachine(initial_state=MascotState.IDLE)
         self.sync_engine = ObsidianSync(self.repo)
+
+        if self.splash:
+            self.splash.set_progress(55, "Starting background tracker...")
+
+        # Background Services
+        self.tracker = WindowTracker(self.repo)
+        self.hotkey_listener = GlobalHotkeyListener()
+
+        if self.splash:
+            self.splash.set_progress(80, "Preparing desktop companion...")
 
         # UI instances
         self.mascot_window = MascotWindow(self.state_machine)
@@ -54,10 +69,6 @@ class WizApplication:
         self._quick_bar_dialog: Optional[QuickBarPopup] = None
         self._settings_dialog: Optional[SettingsDialog] = None
         self._local_server: Optional[QLocalServer] = None
-
-        # Background Services
-        self.tracker = WindowTracker(self.repo)
-        self.hotkey_listener = GlobalHotkeyListener()
 
         # Connect signals
         self._connect_signals()
@@ -87,8 +98,6 @@ class WizApplication:
 
     def start(self) -> None:
         """Launch UI and background worker threads."""
-        self.mascot_window.show()
-        self.tray_icon.show()
         self.tracker.start()
         self.hotkey_listener.start()
 
@@ -117,6 +126,18 @@ class WizApplication:
                     config.set("last_backup_date", today_str)
             except Exception as e:
                 print(f"[WizDesk] Auto-backup notice: {e}")
+
+        # Reveal UI once splash screen completes or immediately if no splash
+        if self.splash:
+            self.splash.splash_closed.connect(self._on_splash_finished)
+            self.splash.finish()
+        else:
+            self._on_splash_finished()
+
+    def _on_splash_finished(self) -> None:
+        """Reveal desktop companion and tray icon after startup initialization."""
+        self.mascot_window.show()
+        self.tray_icon.show()
 
     def show_quick_entry(self) -> None:
         """Open or focus the full Quick-Entry workspace dialog."""
@@ -233,7 +254,12 @@ def main() -> None:
     app.setWindowIcon(get_app_icon("wiz-idle.svg"))
     app.setQuitOnLastWindowClosed(False)
 
-    wiz_app = WizApplication()
+    # Startup Splash Screen
+    splash = SplashScreen(is_dark=(config.theme == "dark"))
+    splash.show()
+    splash.set_progress(10, "Starting WizDesk...")
+
+    wiz_app = WizApplication(splash=splash)
     wiz_app._local_server = local_server
 
     def _handle_instance_message():
