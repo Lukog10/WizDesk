@@ -2882,11 +2882,15 @@ class QuickEntryDialog(QDialog):
         self.today_pill_btn.setVisible(not is_today)
 
     def showEvent(self, event) -> None:
-        """Roll recurring tasks when opening or re-showing the dialog."""
+        """Roll recurring tasks and display subtle initial loading transition overlay."""
         super().showEvent(event)
         self.repo.roll_recurring_tasks(today=date.today())
         if hasattr(self, "current_view_mode") and self.current_view_mode == "tasks":
             self.refresh_tasks()
+        if not getattr(self, "_has_shown_initial_overlay", False):
+            self._has_shown_initial_overlay = True
+            if hasattr(self, "loading_overlay"):
+                self.loading_overlay.show_and_fade(duration_ms=900)
 
     def set_selected_date(self, target_date: date) -> None:
         """Set the active view date and refresh tasks, notes, and activity timeline."""
@@ -3324,14 +3328,6 @@ class QuickEntryDialog(QDialog):
         self.refresh_notes()
         self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.note_created.emit(note_id)
-
-    def showEvent(self, event) -> None:
-        """Handle first-show event to display subtle initial loading transition overlay."""
-        super().showEvent(event)
-        if not getattr(self, "_has_shown_initial_overlay", False):
-            self._has_shown_initial_overlay = True
-            if hasattr(self, "loading_overlay"):
-                self.loading_overlay.show_and_fade(duration_ms=350)
 
     def resizeEvent(self, event) -> None:
         """Keep loading overlay aligned with inner card when workspace resizes."""

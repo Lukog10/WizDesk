@@ -2,6 +2,7 @@
 
 import sys
 import ctypes
+import time
 from typing import Optional
 from datetime import date
 
@@ -43,10 +44,14 @@ def set_windows_app_id() -> None:
 class WizApplication:
     """Coordinates core systems, UI windows, background tracker, and sync routines."""
 
-    def __init__(self, splash: Optional[SplashScreen] = None):
+    def __init__(self, splash: Optional[SplashScreen] = None, step_delay: float = 0.0):
         self.splash = splash
+        self.step_delay = step_delay
         if self.splash:
             self.splash.set_progress(25, "Loading local database...")
+            if self.step_delay > 0:
+                time.sleep(self.step_delay)
+                QApplication.processEvents()
 
         self.repo = StorageRepository()
         self.state_machine = StateMachine(initial_state=MascotState.IDLE)
@@ -54,6 +59,9 @@ class WizApplication:
 
         if self.splash:
             self.splash.set_progress(55, "Starting background tracker...")
+            if self.step_delay > 0:
+                time.sleep(self.step_delay)
+                QApplication.processEvents()
 
         # Background Services
         self.tracker = WindowTracker(self.repo)
@@ -61,6 +69,9 @@ class WizApplication:
 
         if self.splash:
             self.splash.set_progress(80, "Preparing desktop companion...")
+            if self.step_delay > 0:
+                time.sleep(self.step_delay)
+                QApplication.processEvents()
 
         # UI instances
         self.mascot_window = MascotWindow(self.state_machine)
@@ -255,11 +266,13 @@ def main() -> None:
     app.setQuitOnLastWindowClosed(False)
 
     # Startup Splash Screen
-    splash = SplashScreen(is_dark=(config.theme == "dark"))
+    splash = SplashScreen(is_dark=(config.theme == "dark"), min_display_sec=2.4)
     splash.show()
     splash.set_progress(10, "Starting WizDesk...")
+    time.sleep(0.35)
+    QApplication.processEvents()
 
-    wiz_app = WizApplication(splash=splash)
+    wiz_app = WizApplication(splash=splash, step_delay=0.35)
     wiz_app._local_server = local_server
 
     def _handle_instance_message():

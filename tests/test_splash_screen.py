@@ -5,11 +5,11 @@ import pytest
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication
 
-from wiz.ui.splash_screen import SplashScreen, WorkspaceSplashOverlay
+from wiz.ui.splash_screen import SplashScreen, WorkspaceSplashOverlay, LoadingSpinner
 
 
 def test_splash_screen_initialization(qapp):
-    """Test SplashScreen geometry, window flags, and child widgets."""
+    """Test SplashScreen geometry, window flags, spinner, and child widgets."""
     splash = SplashScreen(is_dark=True, min_display_sec=0.1)
 
     # Assert dimensions
@@ -26,13 +26,17 @@ def test_splash_screen_initialization(qapp):
     assert hasattr(splash, "card")
     assert hasattr(splash, "icon_lbl")
     assert hasattr(splash, "title_lbl")
+    assert hasattr(splash, "spinner")
     assert hasattr(splash, "status_lbl")
     assert hasattr(splash, "progress_bar")
     assert hasattr(splash, "version_lbl")
 
-    # Assert content
+    # Assert content and spinner properties
     assert splash.title_lbl.text() == "WizDesk"
     assert splash.status_lbl.text() == "Starting WizDesk..."
+    assert splash.spinner.width() == 30
+    assert splash.spinner.height() == 30
+    assert splash.progress_value == 0
     assert splash.progress_bar.value() == 0
     assert splash.version_lbl.text() == "v1.0.0"
 
@@ -90,19 +94,43 @@ def test_splash_screen_theme_toggle(qapp):
 
 
 def test_workspace_splash_overlay_initialization_and_theme(qapp):
-    """Test WorkspaceSplashOverlay widgets, layout, and theme updates."""
+    """Test WorkspaceSplashOverlay widgets, layout, spinner, and theme updates."""
     overlay = WorkspaceSplashOverlay(is_dark=True)
 
     assert hasattr(overlay, "icon_lbl")
+    assert hasattr(overlay, "spinner")
     assert hasattr(overlay, "status_lbl")
     assert hasattr(overlay, "progress_bar")
     assert overlay.status_lbl.text() == "Loading workspace..."
+    assert overlay.spinner.width() == 24
+    assert overlay.spinner.height() == 24
     assert overlay.is_dark
 
     overlay.update_theme(is_dark=False)
     assert not overlay.is_dark
 
     overlay.close()
+
+
+def test_loading_spinner_widget(qapp):
+    """Test LoadingSpinner construction, rotation, and theme adaptation."""
+    spinner = LoadingSpinner(size=28, stroke_width=2.5, is_dark=True)
+    assert spinner.width() == 28
+    assert spinner.height() == 28
+    assert spinner.is_dark
+    assert spinner._angle == 0.0
+
+    # Advance rotation angle
+    spinner._rotate()
+    assert spinner._angle == 6.0
+
+    # Test light theme update
+    spinner.update_theme(is_dark=False)
+    assert not spinner.is_dark
+    assert spinner._track_color == "#E4E4E7"
+    assert spinner._accent_color == "#FF6B3D"
+
+    spinner.close()
 
 
 def test_workspace_splash_overlay_show_and_fade(qapp):
