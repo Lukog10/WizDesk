@@ -13,7 +13,7 @@ Implements the exact layout hierarchy:
 
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer, QSize, QPropertyAnimation
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -37,6 +37,7 @@ from PyQt6.QtWidgets import (
     QFrame,
     QMenu,
     QGraphicsDropShadowEffect,
+    QGraphicsOpacityEffect,
     QStackedWidget,
     QCalendarWidget,
     QSizePolicy,
@@ -2090,10 +2091,11 @@ class QuickEntryDialog(QDialog):
       5. Bottom Add Bar with Section picker and Create Section option
     """
 
-    def __init__(self, state_machine: StateMachine, repository: Optional[StorageRepository] = None, parent=None):
+    def __init__(self, state_machine: StateMachine, repository: Optional[StorageRepository] = None, parent=None, enable_splash: bool = False):
         super().__init__(parent)
         self.state_machine = state_machine
         self.repo = repository or StorageRepository()
+        self.enable_splash = enable_splash
         self.current_view_mode = "tasks"
         self.selected_date: date = date.today()
         self.repo.roll_recurring_tasks(today=self.selected_date)
@@ -2145,13 +2147,27 @@ class QuickEntryDialog(QDialog):
 
         self.outer_layout.addWidget(self.outer_frame)
 
-        # Frame Split Layout: Left Sidebar + Right Workspace
-        self.frame_layout = QHBoxLayout(self.outer_frame)
+        # 2-Stage Window Stack Layout inside outer_frame
+        self.outer_frame_layout = QVBoxLayout(self.outer_frame)
+        self.outer_frame_layout.setContentsMargins(0, 0, 0, 0)
+        self.outer_frame_layout.setSpacing(0)
+
+        self.window_stack = QStackedWidget(self.outer_frame)
+        self.outer_frame_layout.addWidget(self.window_stack)
+
+        # Stage 0: Full-Window Splash Loading Screen
+        self.loading_overlay = WorkspaceSplashOverlay(parent=self.window_stack, is_dark=self.is_dark)
+        self.loading_overlay.loading_finished.connect(self._reveal_workspace)
+        self.window_stack.addWidget(self.loading_overlay)
+
+        # Stage 1: Full Workspace Page
+        self.workspace_stage_page = QWidget(self.window_stack)
+        self.frame_layout = QHBoxLayout(self.workspace_stage_page)
         self.frame_layout.setContentsMargins(0, 0, 0, 0)
         self.frame_layout.setSpacing(0)
 
         # 1. Left Side Navigation Bar (190px or 58px)
-        self.sidebar = SideNavBar(is_dark=self.is_dark, parent=self.outer_frame)
+        self.sidebar = SideNavBar(is_dark=self.is_dark, parent=self.workspace_stage_page)
         self.sidebar.mode_changed.connect(self._set_view_mode)
         self.sidebar.theme_toggle_requested.connect(self.toggle_theme)
         self.sidebar.sidebar_toggled.connect(self._on_sidebar_toggled)
@@ -2422,6 +2438,7 @@ class QuickEntryDialog(QDialog):
         self.inner_layout.addWidget(self.stack, stretch=1)
         self.workspace_layout.addWidget(self.inner_card, stretch=1)
         self.frame_layout.addWidget(self.workspace_container, stretch=1)
+        self.window_stack.addWidget(self.workspace_stage_page)
 
         # Drag state for frameless window movement
         self._drag_pos = QPoint()
@@ -2453,9 +2470,31 @@ class QuickEntryDialog(QDialog):
             btn.setAutoDefault(False)
             btn.setDefault(False)
 
-        # Workspace initial loading transition overlay
+        # Workspace initial loading transition state
         self._has_shown_initial_overlay = False
-        self.loading_overlay = WorkspaceSplashOverlay(parent=self.outer_frame, is_dark=self.is_dark)
+        if self.enable_splash:
+            self.window_stack.setCurrentWidget(self.loading_overlay)
+        else:
+            self.window_stack.setCurrentWidget(self.workspace_stage_page)
+
+    def _reveal_workspace(self) -> None:
+        """Switch from splash loading stage to full workspace stage with smooth fade-in."""
+        if hasattr(self, "window_stack") and hasattr(self, "workspace_stage_page"):
+            self.window_stack.setCurrentWidget(self.workspace_stage_page)
+            self._flush_sidebar_repaint()
+            self._workspace_fade_effect = QGraphicsOpacityEffect(self.workspace_stage_page)
+            self.workspace_stage_page.setGraphicsEffect(self._workspace_fade_effect)
+            self._workspace_anim = QPropertyAnimation(self._workspace_fade_effect, b"opacity")
+            self._workspace_anim.setDuration(220)
+            self._workspace_anim.setStartValue(0.0)
+            self._workspace_anim.setEndValue(1.0)
+            self._workspace_anim.finished.connect(self._on_workspace_fade_done)
+            self._workspace_anim.start()
+
+    def _on_workspace_fade_done(self) -> None:
+        """Clear graphics effect after fade-in to preserve sharp native rendering."""
+        if hasattr(self, "workspace_stage_page"):
+            self.workspace_stage_page.setGraphicsEffect(None)
 
     def _on_sidebar_toggled(self, collapsed: bool) -> None:
         """Handle sidebar toggle and persist user preference."""
@@ -2515,6 +2554,10 @@ class QuickEntryDialog(QDialog):
         # Update filter bar theme
         if hasattr(self, "filter_bar"):
             self.filter_bar.set_dark_mode(self.is_dark)
+
+        # Update splash loading overlay theme
+        if hasattr(self, "loading_overlay"):
+            self.loading_overlay.update_theme(self.is_dark)
 
         # Color tokens - Brand aligned & Softer Light Mode
         outer_bg = "#121214" if self.is_dark else "#E8E4DC"
@@ -2882,16 +2925,16 @@ class QuickEntryDialog(QDialog):
         self.today_pill_btn.setVisible(not is_today)
 
     def showEvent(self, event) -> None:
-        """Roll recurring tasks and display full workspace loading transition screen."""
+        """Roll recurring tasks and display full workspace loading stage on first open."""
         super().showEvent(event)
         self.repo.roll_recurring_tasks(today=date.today())
         if hasattr(self, "current_view_mode") and self.current_view_mode == "tasks":
             self.refresh_tasks()
-        if not getattr(self, "_has_shown_initial_overlay", False):
+        if self.enable_splash and not getattr(self, "_has_shown_initial_overlay", False):
             self._has_shown_initial_overlay = True
-            if hasattr(self, "loading_overlay") and hasattr(self, "outer_frame"):
-                self.loading_overlay.setGeometry(self.outer_frame.rect())
-                self.loading_overlay.show_and_fade(duration_ms=1200)
+            if hasattr(self, "window_stack") and hasattr(self, "loading_overlay"):
+                self.window_stack.setCurrentWidget(self.loading_overlay)
+                self.loading_overlay.start_loading(duration_ms=1200)
 
     def set_selected_date(self, target_date: date) -> None:
         """Set the active view date and refresh tasks, notes, and activity timeline."""
@@ -3331,10 +3374,8 @@ class QuickEntryDialog(QDialog):
         app_signals.note_created.emit(note_id)
 
     def resizeEvent(self, event) -> None:
-        """Keep loading overlay aligned with outer frame when workspace resizes."""
+        """Handle window resize event."""
         super().resizeEvent(event)
-        if hasattr(self, "loading_overlay") and hasattr(self, "outer_frame") and self.loading_overlay.isVisible():
-            self.loading_overlay.setGeometry(self.outer_frame.rect())
 
     def changeEvent(self, event) -> None:
         """Handle window state changes (e.g. minimize/restore shadow effect)."""
@@ -3363,15 +3404,16 @@ class QuickEntryDialog(QDialog):
         if self.isMaximized():
             return False
 
-        # If loading overlay is active, allow dragging from top header strip
-        if hasattr(self, "loading_overlay") and self.loading_overlay.isVisible():
-            overlay_local = self.loading_overlay.mapFromGlobal(global_pos)
-            child = self.loading_overlay.childAt(overlay_local)
-            from PyQt6.QtWidgets import QAbstractButton
-            if isinstance(child, QAbstractButton):
-                return False
-            if 0 <= overlay_local.y() <= 46 and 0 <= overlay_local.x() <= self.loading_overlay.width():
-                return True
+        # If on Splash stage (index 0), allow dragging from top header strip
+        if hasattr(self, "window_stack") and self.window_stack.currentIndex() == 0:
+            if hasattr(self, "loading_overlay"):
+                overlay_local = self.loading_overlay.mapFromGlobal(global_pos)
+                child = self.loading_overlay.childAt(overlay_local)
+                from PyQt6.QtWidgets import QAbstractButton
+                if isinstance(child, QAbstractButton):
+                    return False
+                if 0 <= overlay_local.y() <= 46 and 0 <= overlay_local.x() <= self.loading_overlay.width():
+                    return True
             return False
 
         # 1. NEVER allow dragging from anywhere inside the workspace content card

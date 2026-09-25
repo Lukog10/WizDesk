@@ -305,6 +305,8 @@ class WorkspaceSplashOverlay(QFrame):
     Fades out cleanly over 400ms using QGraphicsOpacityEffect.
     """
 
+    loading_finished = pyqtSignal()
+
     def __init__(self, parent: Optional[QWidget] = None, is_dark: bool = True):
         super().__init__(parent)
         self.is_dark = is_dark
@@ -384,7 +386,6 @@ class WorkspaceSplashOverlay(QFrame):
         root_layout.addStretch(1)
 
         self.update_theme(is_dark)
-        self.hide()
 
     def _on_minimize_clicked(self) -> None:
         """Minimize the host window."""
@@ -410,7 +411,6 @@ class WorkspaceSplashOverlay(QFrame):
             self.spinner.update_theme(is_dark)
 
         bg = "#121214" if is_dark else "#E8E4DC"
-        border_color = "#27272A" if is_dark else "#D5CEC2"
         title_fg = "#F4F4F5" if is_dark else "#18181B"
         text_fg = "#A1A1AA" if is_dark else "#71717A"
         ctrl_btn_color = "#A1A1AA" if is_dark else "#57534E"
@@ -420,7 +420,7 @@ class WorkspaceSplashOverlay(QFrame):
         self.setStyleSheet(f"""
             QFrame#workspaceSplashOverlay {{
                 background-color: {bg};
-                border: 1px solid {border_color};
+                border: none;
                 border-radius: 20px;
             }}
             QLabel#overlayTitle {{
@@ -459,20 +459,29 @@ class WorkspaceSplashOverlay(QFrame):
             }}
         """)
 
-    def show_and_fade(self, duration_ms: int = 1200) -> None:
-        """Display the full-window overlay and schedule smooth fade-out."""
+    def start_loading(self, duration_ms: int = 1200) -> None:
+        """Start the loading duration timer and schedule smooth transition."""
         if self.parentWidget():
             self.setGeometry(self.parentWidget().rect())
         self._opacity_effect.setOpacity(1.0)
         self.show()
         self.raise_()
-        QTimer.singleShot(duration_ms, self._fade_out)
+        QTimer.singleShot(duration_ms, self._start_fade_out)
 
-    def _fade_out(self) -> None:
-        """Animate opacity from 1.0 to 0.0 over 400ms."""
+    def show_and_fade(self, duration_ms: int = 1200) -> None:
+        """Compatibility method for callers and tests."""
+        self.start_loading(duration_ms)
+
+    def _start_fade_out(self) -> None:
+        """Animate opacity from 1.0 to 0.0 over 350ms."""
         self._fade_anim = QPropertyAnimation(self._opacity_effect, b"opacity")
-        self._fade_anim.setDuration(400)
+        self._fade_anim.setDuration(350)
         self._fade_anim.setStartValue(1.0)
         self._fade_anim.setEndValue(0.0)
-        self._fade_anim.finished.connect(self.hide)
+        self._fade_anim.finished.connect(self._on_fade_done)
         self._fade_anim.start()
+
+    def _on_fade_done(self) -> None:
+        """Emit loading_finished and hide overlay."""
+        self.loading_finished.emit()
+        self.hide()

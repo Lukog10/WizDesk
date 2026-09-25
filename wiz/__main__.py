@@ -154,7 +154,7 @@ class WizApplication:
         """Open or focus the full Quick-Entry workspace dialog."""
         sound_manager.play_window_open()
         if self._quick_entry_dialog is None:
-            self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo)
+            self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo, enable_splash=True)
         if self._quick_entry_dialog.isMinimized():
             self._quick_entry_dialog.showNormal()
         self._quick_entry_dialog.show()

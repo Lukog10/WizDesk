@@ -174,3 +174,30 @@ def test_wiz_application_with_splash(qapp):
     wiz_app.quit()
 
 
+def test_quick_entry_dialog_2_stage_splash_transition(qapp):
+    """Test QuickEntryDialog 2-stage window stack: Stage 0 splash transitions to Stage 1 workspace."""
+    from wiz.core.state_machine import StateMachine
+    from wiz.storage.models import StorageRepository
+    from wiz.ui.popup_dialog import QuickEntryDialog
+
+    sm = StateMachine()
+    repo = StorageRepository()
+    dialog = QuickEntryDialog(sm, repository=repo, enable_splash=True)
+
+    assert hasattr(dialog, "window_stack")
+    assert hasattr(dialog, "workspace_stage_page")
+    assert hasattr(dialog, "loading_overlay")
+    assert dialog.window_stack.count() == 2
+    assert dialog.window_stack.widget(0) == dialog.loading_overlay
+    assert dialog.window_stack.widget(1) == dialog.workspace_stage_page
+
+    # Initially on Stage 0 (Splash loading page)
+    assert dialog.window_stack.currentWidget() == dialog.loading_overlay
+
+    # Trigger reveal workspace
+    dialog._reveal_workspace()
+    assert dialog.window_stack.currentWidget() == dialog.workspace_stage_page
+
+    dialog.close()
+
+
