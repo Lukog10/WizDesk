@@ -98,12 +98,16 @@ def test_workspace_splash_overlay_initialization_and_theme(qapp):
     overlay = WorkspaceSplashOverlay(is_dark=True)
 
     assert hasattr(overlay, "icon_lbl")
+    assert hasattr(overlay, "title_lbl")
     assert hasattr(overlay, "spinner")
     assert hasattr(overlay, "status_lbl")
     assert hasattr(overlay, "progress_bar")
+    assert hasattr(overlay, "min_btn")
+    assert hasattr(overlay, "close_btn")
+    assert overlay.title_lbl.text() == "WizDesk"
     assert overlay.status_lbl.text() == "Loading workspace..."
-    assert overlay.spinner.width() == 24
-    assert overlay.spinner.height() == 24
+    assert overlay.spinner.width() == 30
+    assert overlay.spinner.height() == 30
     assert overlay.is_dark
 
     overlay.update_theme(is_dark=False)

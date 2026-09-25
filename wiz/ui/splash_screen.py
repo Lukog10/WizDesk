@@ -8,12 +8,13 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QGraphicsDropShadowEffect,
     QGraphicsOpacityEffect,
     QApplication,
 )
 from PyQt6.QtCore import Qt, QPropertyAnimation, pyqtSignal, QTimer, QRectF
-from PyQt6.QtGui import QFont, QColor, QPainter, QPen
+from PyQt6.QtGui import QFont, QColor, QPainter, QPen, QCursor
 
 from wiz.ui.icons import get_app_pixmap
 from wiz.ui.fonts import get_font, FONT_SANS
@@ -299,9 +300,9 @@ class SplashScreen(QWidget):
 
 class WorkspaceSplashOverlay(QFrame):
     """
-    Subtle loading transition overlay shown when QuickEntryDialog is opened for the first time.
-    Features the mascot icon, rotating circular spinner, and 'Loading workspace...' label.
-    Fades out cleanly over 350ms using QGraphicsOpacityEffect.
+    Full-window loading transition screen covering the entire workspace window.
+    Features window controls, mascot icon, app title, rotating circular spinner, and loading status.
+    Fades out cleanly over 400ms using QGraphicsOpacityEffect.
     """
 
     def __init__(self, parent: Optional[QWidget] = None, is_dark: bool = True):
@@ -315,34 +316,87 @@ class WorkspaceSplashOverlay(QFrame):
         self.setGraphicsEffect(self._opacity_effect)
         self._fade_anim: Optional[QPropertyAnimation] = None
 
-        layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.setSpacing(12)
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
 
-        # Mascot icon (36x36)
-        self.icon_lbl = QLabel(self)
+        # Top bar with window controls
+        top_bar = QHBoxLayout()
+        top_bar.setContentsMargins(16, 12, 16, 0)
+        top_bar.setSpacing(6)
+        top_bar.addStretch(1)
+
+        self.min_btn = QPushButton("-", self)
+        self.min_btn.setObjectName("overlayCtrlBtn")
+        self.min_btn.setFixedSize(22, 22)
+        self.min_btn.setToolTip("Minimize")
+        self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.min_btn.clicked.connect(self._on_minimize_clicked)
+        top_bar.addWidget(self.min_btn)
+
+        self.close_btn = QPushButton("x", self)
+        self.close_btn.setObjectName("overlayCtrlBtnClose")
+        self.close_btn.setFixedSize(22, 22)
+        self.close_btn.setToolTip("Close")
+        self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.close_btn.clicked.connect(self._on_close_clicked)
+        top_bar.addWidget(self.close_btn)
+
+        root_layout.addLayout(top_bar)
+        root_layout.addStretch(1)
+
+        # Center card container
+        center_widget = QWidget(self)
+        center_layout = QVBoxLayout(center_widget)
+        center_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        center_layout.setSpacing(14)
+
+        # Mascot icon (56x56)
+        self.icon_lbl = QLabel(center_widget)
         self.icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.icon_lbl.setPixmap(get_app_pixmap(size=36, asset_name="wiz-idle.svg"))
-        layout.addWidget(self.icon_lbl)
+        self.icon_lbl.setPixmap(get_app_pixmap(size=56, asset_name="wiz-idle.svg"))
+        center_layout.addWidget(self.icon_lbl)
 
-        # Circular spinner (24px)
+        # App Title
+        self.title_lbl = QLabel("WizDesk", center_widget)
+        self.title_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title_lbl.setFont(get_font(18, QFont.Weight.Bold, display=True))
+        self.title_lbl.setObjectName("overlayTitle")
+        center_layout.addWidget(self.title_lbl)
+
+        # Circular spinner (30px)
         spinner_layout = QHBoxLayout()
         spinner_layout.setContentsMargins(0, 0, 0, 0)
-        self.spinner = LoadingSpinner(size=24, stroke_width=2.6, is_dark=self.is_dark, parent=self)
+        self.spinner = LoadingSpinner(size=30, stroke_width=3.0, is_dark=self.is_dark, parent=center_widget)
         spinner_layout.addStretch(1)
         spinner_layout.addWidget(self.spinner)
         spinner_layout.addStretch(1)
-        layout.addLayout(spinner_layout)
+        center_layout.addLayout(spinner_layout)
 
         # Status label
-        self.status_lbl = QLabel("Loading workspace...", self)
+        self.status_lbl = QLabel("Loading workspace...", center_widget)
         self.status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_lbl.setFont(get_font(10, QFont.Weight.Medium))
+        self.status_lbl.setFont(get_font(10.5, QFont.Weight.Medium))
         self.status_lbl.setObjectName("overlayStatus")
-        layout.addWidget(self.status_lbl)
+        center_layout.addWidget(self.status_lbl)
+
+        root_layout.addWidget(center_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        root_layout.addStretch(1)
 
         self.update_theme(is_dark)
         self.hide()
+
+    def _on_minimize_clicked(self) -> None:
+        """Minimize the host window."""
+        window = self.window()
+        if window:
+            window.showMinimized()
+
+    def _on_close_clicked(self) -> None:
+        """Close the host window."""
+        window = self.window()
+        if window:
+            window.close()
 
     @property
     def progress_bar(self) -> _ProgressBarShim:
@@ -350,27 +404,63 @@ class WorkspaceSplashOverlay(QFrame):
         return _ProgressBarShim(lambda: 0)
 
     def update_theme(self, is_dark: bool = True) -> None:
-        """Apply theme colors matching the inner workspace card."""
+        """Apply theme colors matching the full workspace outer frame."""
         self.is_dark = is_dark
         if hasattr(self, "spinner"):
             self.spinner.update_theme(is_dark)
 
-        bg = "rgba(22, 22, 26, 0.95)" if is_dark else "rgba(246, 244, 238, 0.95)"
-        text_fg = "#F4F4F5" if is_dark else "#18181B"
+        bg = "#121214" if is_dark else "#E8E4DC"
+        border_color = "#27272A" if is_dark else "#D5CEC2"
+        title_fg = "#F4F4F5" if is_dark else "#18181B"
+        text_fg = "#A1A1AA" if is_dark else "#71717A"
+        ctrl_btn_color = "#A1A1AA" if is_dark else "#57534E"
+        ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.06)"
+        ctrl_btn_hover_color = "#FAFAFA" if is_dark else "#242220"
 
         self.setStyleSheet(f"""
             QFrame#workspaceSplashOverlay {{
                 background-color: {bg};
-                border-radius: 14px;
+                border: 1px solid {border_color};
+                border-radius: 20px;
+            }}
+            QLabel#overlayTitle {{
+                color: {title_fg};
+                font-family: {FONT_SANS};
             }}
             QLabel#overlayStatus {{
                 color: {text_fg};
                 font-family: {FONT_SANS};
             }}
+            QPushButton#overlayCtrlBtn {{
+                background: transparent;
+                border: none;
+                border-radius: 4px;
+                color: {ctrl_btn_color};
+                font-family: {FONT_SANS};
+                font-size: 13px;
+                font-weight: bold;
+            }}
+            QPushButton#overlayCtrlBtn:hover {{
+                background-color: {ctrl_btn_hover_bg};
+                color: {ctrl_btn_hover_color};
+            }}
+            QPushButton#overlayCtrlBtnClose {{
+                background: transparent;
+                border: none;
+                border-radius: 4px;
+                color: {ctrl_btn_color};
+                font-family: {FONT_SANS};
+                font-size: 13px;
+                font-weight: bold;
+            }}
+            QPushButton#overlayCtrlBtnClose:hover {{
+                background-color: #DC2626;
+                color: #FFFFFF;
+            }}
         """)
 
-    def show_and_fade(self, duration_ms: int = 900) -> None:
-        """Display the overlay and schedule smooth fade-out."""
+    def show_and_fade(self, duration_ms: int = 1200) -> None:
+        """Display the full-window overlay and schedule smooth fade-out."""
         if self.parentWidget():
             self.setGeometry(self.parentWidget().rect())
         self._opacity_effect.setOpacity(1.0)
@@ -379,9 +469,9 @@ class WorkspaceSplashOverlay(QFrame):
         QTimer.singleShot(duration_ms, self._fade_out)
 
     def _fade_out(self) -> None:
-        """Animate opacity from 1.0 to 0.0 over 350ms."""
+        """Animate opacity from 1.0 to 0.0 over 400ms."""
         self._fade_anim = QPropertyAnimation(self._opacity_effect, b"opacity")
-        self._fade_anim.setDuration(350)
+        self._fade_anim.setDuration(400)
         self._fade_anim.setStartValue(1.0)
         self._fade_anim.setEndValue(0.0)
         self._fade_anim.finished.connect(self.hide)

@@ -2455,7 +2455,7 @@ class QuickEntryDialog(QDialog):
 
         # Workspace initial loading transition overlay
         self._has_shown_initial_overlay = False
-        self.loading_overlay = WorkspaceSplashOverlay(parent=self.inner_card, is_dark=self.is_dark)
+        self.loading_overlay = WorkspaceSplashOverlay(parent=self.outer_frame, is_dark=self.is_dark)
 
     def _on_sidebar_toggled(self, collapsed: bool) -> None:
         """Handle sidebar toggle and persist user preference."""
@@ -2882,15 +2882,16 @@ class QuickEntryDialog(QDialog):
         self.today_pill_btn.setVisible(not is_today)
 
     def showEvent(self, event) -> None:
-        """Roll recurring tasks and display subtle initial loading transition overlay."""
+        """Roll recurring tasks and display full workspace loading transition screen."""
         super().showEvent(event)
         self.repo.roll_recurring_tasks(today=date.today())
         if hasattr(self, "current_view_mode") and self.current_view_mode == "tasks":
             self.refresh_tasks()
         if not getattr(self, "_has_shown_initial_overlay", False):
             self._has_shown_initial_overlay = True
-            if hasattr(self, "loading_overlay"):
-                self.loading_overlay.show_and_fade(duration_ms=900)
+            if hasattr(self, "loading_overlay") and hasattr(self, "outer_frame"):
+                self.loading_overlay.setGeometry(self.outer_frame.rect())
+                self.loading_overlay.show_and_fade(duration_ms=1200)
 
     def set_selected_date(self, target_date: date) -> None:
         """Set the active view date and refresh tasks, notes, and activity timeline."""
@@ -3330,10 +3331,10 @@ class QuickEntryDialog(QDialog):
         app_signals.note_created.emit(note_id)
 
     def resizeEvent(self, event) -> None:
-        """Keep loading overlay aligned with inner card when workspace resizes."""
+        """Keep loading overlay aligned with outer frame when workspace resizes."""
         super().resizeEvent(event)
-        if hasattr(self, "loading_overlay") and self.loading_overlay.isVisible():
-            self.loading_overlay.setGeometry(self.inner_card.rect())
+        if hasattr(self, "loading_overlay") and hasattr(self, "outer_frame") and self.loading_overlay.isVisible():
+            self.loading_overlay.setGeometry(self.outer_frame.rect())
 
     def changeEvent(self, event) -> None:
         """Handle window state changes (e.g. minimize/restore shadow effect)."""
@@ -3358,8 +3359,19 @@ class QuickEntryDialog(QDialog):
     # --- Mouse drag for frameless window movement ---
 
     def _is_in_draggable_area(self, global_pos: QPoint) -> bool:
-        """Allow dragging ONLY from the top title bar header or sidebar brand header, never from workspace content."""
+        """Allow dragging from title bar header or loading overlay top bar, never from content."""
         if self.isMaximized():
+            return False
+
+        # If loading overlay is active, allow dragging from top header strip
+        if hasattr(self, "loading_overlay") and self.loading_overlay.isVisible():
+            overlay_local = self.loading_overlay.mapFromGlobal(global_pos)
+            child = self.loading_overlay.childAt(overlay_local)
+            from PyQt6.QtWidgets import QAbstractButton
+            if isinstance(child, QAbstractButton):
+                return False
+            if 0 <= overlay_local.y() <= 46 and 0 <= overlay_local.x() <= self.loading_overlay.width():
+                return True
             return False
 
         # 1. NEVER allow dragging from anywhere inside the workspace content card
