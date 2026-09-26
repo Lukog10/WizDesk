@@ -314,14 +314,14 @@ class SettingsDialog(QDialog):
         # Color tokens - Crisp Modern Light Mode & Neutral Cool Palette
         outer_bg = "#121214" if self.is_dark else "#F4F4F6"
         outer_border = "#27272A" if self.is_dark else "#E4E4E7"
-        inner_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        inner_border = "#27272A" if self.is_dark else "#E5E5EA"
+        inner_bg = "#18181B" if self.is_dark else "#F0F0F2"
+        inner_border = "#27272A" if self.is_dark else "#E4E4E7"
         text_primary = "#F4F4F5" if self.is_dark else "#18181B"
         text_secondary = "#A1A1AA" if self.is_dark else "#71717A"
-        input_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        input_bg = "#27272A" if self.is_dark else "#FFFFFF"
         input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         input_focus = "#C2410C" if self.is_dark else "#BA3F1A"
-        btn_neutral_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        btn_neutral_bg = "#27272A" if self.is_dark else "#FFFFFF"
         btn_neutral_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         btn_neutral_text = "#F4F4F5" if self.is_dark else "#18181B"
         btn_neutral_hover_bg = "#3F3F46" if self.is_dark else "#EAEAEB"
@@ -335,7 +335,7 @@ class SettingsDialog(QDialog):
         btn_save_hover = "#A3360E" if self.is_dark else "#9E3414"
         div_color = "#27272A" if self.is_dark else "#E5E5EA"
         table_grid = "#27272A" if self.is_dark else "#E5E5EA"
-        table_header_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        table_header_bg = "#27272A" if self.is_dark else "#FFFFFF"
         table_header_border = "#3F3F46" if self.is_dark else "#E4E4E7"
 
         # 1. Outer Frame & Inner Card

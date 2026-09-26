@@ -327,8 +327,8 @@ class EmptyStateCard(QFrame):
             subtitle.setStyleSheet("color: #71717A;")
         else:
             self.setStyleSheet("background: transparent; border: none;")
-            title.setStyleSheet("color: #111111;")
-            subtitle.setStyleSheet("color: #777770;")
+            title.setStyleSheet("color: #18181B;")
+            subtitle.setStyleSheet("color: #71717A;")
 
 
 class TimelineView(QWidget):

@@ -1352,10 +1352,10 @@ class SettingsView(QWidget):
         """Apply complete theme styling."""
         is_dark = self.is_dark
 
-        inner_bg = "#18181B" if is_dark else "#FFFFFF"
+        inner_bg = "#18181B" if is_dark else "#F0F0F2"
         text_primary = "#F4F4F5" if is_dark else "#18181B"
         text_secondary = "#A1A1AA" if is_dark else "#71717A"
-        input_bg = "#27272A" if is_dark else "#F4F4F6"
+        input_bg = "#27272A" if is_dark else "#FFFFFF"
         input_border = "#3F3F46" if is_dark else "#E4E4E7"
         input_focus = "#C2410C" if is_dark else "#BA3F1A"
 
@@ -1363,7 +1363,7 @@ class SettingsView(QWidget):
         save_hover = "#A3360E" if is_dark else "#9E3414"
         save_pressed = "#872A09" if is_dark else "#7D280E"
 
-        btn_neutral_bg = "#27272A" if is_dark else "#F4F4F6"
+        btn_neutral_bg = "#27272A" if is_dark else "#FFFFFF"
         btn_neutral_border = "#3F3F46" if is_dark else "#E4E4E7"
         btn_neutral_text = "#F4F4F5" if is_dark else "#18181B"
         btn_neutral_hover_bg = "#3F3F46" if is_dark else "#EAEAEB"
@@ -1375,7 +1375,7 @@ class SettingsView(QWidget):
 
         div_color = "rgba(255, 255, 255, 0.06)" if is_dark else "rgba(0, 0, 0, 0.06)"
         table_grid = "#27272A" if is_dark else "#E5E5EA"
-        table_header_bg = "#27272A" if is_dark else "#F4F4F6"
+        table_header_bg = "#27272A" if is_dark else "#FFFFFF"
         table_header_border = "#3F3F46" if is_dark else "#E4E4E7"
 
         # Headers

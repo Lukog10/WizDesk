@@ -623,7 +623,7 @@ class SegmentedFilterBar(QWidget):
             self._update_button_styles()
 
     def _update_container_style(self) -> None:
-        switcher_bg = "rgba(255, 255, 255, 0.03)" if self.is_dark else "#F0F0F2"
+        switcher_bg = "rgba(255, 255, 255, 0.03)" if self.is_dark else "#EAEAEB"
         switcher_border = "rgba(255, 255, 255, 0.12)" if self.is_dark else "#E4E4E7"
         self.setStyleSheet(f"""
             QWidget#SegmentedFilterBar, SegmentedFilterBar {{
@@ -2514,8 +2514,8 @@ class QuickEntryDialog(QDialog):
         # Color tokens - Brand aligned & Crisp Modern Light Mode
         outer_bg = "#121214" if self.is_dark else "#F4F4F6"
         outer_border = "#27272A" if self.is_dark else "#E4E4E7"
-        inner_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        inner_border = "#27272A" if self.is_dark else "#E5E5EA"
+        inner_bg = "#18181B" if self.is_dark else "#F0F0F2"
+        inner_border = "#27272A" if self.is_dark else "#E4E4E7"
         page_title_color = "#F4F4F5" if self.is_dark else "#18181B"
         ctrl_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
         ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.05)"
@@ -2529,7 +2529,7 @@ class QuickEntryDialog(QDialog):
         today_pill_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         today_pill_color = "#FFFFFF"
         today_pill_hover = "#A3360E" if self.is_dark else "#9E3414"
-        input_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        input_bg = "#27272A" if self.is_dark else "#FFFFFF"
         input_color = "#F4F4F5" if self.is_dark else "#18181B"
         input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         input_focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
