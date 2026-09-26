@@ -2,7 +2,6 @@
 
 import sys
 import ctypes
-import time
 from typing import Optional
 from datetime import date
 
@@ -23,7 +22,6 @@ from wiz.ui.quick_bar_dialog import QuickBarPopup
 from wiz.ui.settings_dialog import SettingsDialog
 from wiz.ui.icons import get_app_icon
 from wiz.ui.fonts import init_fonts, get_font, FONT_SANS
-from wiz.ui.splash_screen import SplashScreen
 from wiz.tracker.window_tracker import WindowTracker
 from wiz.sync.obsidian import ObsidianSync
 from wiz.utils.hotkey import GlobalHotkeyListener
@@ -44,34 +42,10 @@ def set_windows_app_id() -> None:
 class WizApplication:
     """Coordinates core systems, UI windows, background tracker, and sync routines."""
 
-    def __init__(self, splash: Optional[SplashScreen] = None, step_delay: float = 0.0):
-        self.splash = splash
-        self.step_delay = step_delay
-        if self.splash:
-            self.splash.set_progress(25, "Loading local database...")
-            if self.step_delay > 0:
-                time.sleep(self.step_delay)
-                QApplication.processEvents()
-
+    def __init__(self):
         self.repo = StorageRepository()
         self.state_machine = StateMachine(initial_state=MascotState.IDLE)
         self.sync_engine = ObsidianSync(self.repo)
-
-        if self.splash:
-            self.splash.set_progress(55, "Starting background tracker...")
-            if self.step_delay > 0:
-                time.sleep(self.step_delay)
-                QApplication.processEvents()
-
-        # Background Services
-        self.tracker = WindowTracker(self.repo)
-        self.hotkey_listener = GlobalHotkeyListener()
-
-        if self.splash:
-            self.splash.set_progress(80, "Preparing desktop companion...")
-            if self.step_delay > 0:
-                time.sleep(self.step_delay)
-                QApplication.processEvents()
 
         # UI instances
         self.mascot_window = MascotWindow(self.state_machine)
@@ -80,6 +54,10 @@ class WizApplication:
         self._quick_bar_dialog: Optional[QuickBarPopup] = None
         self._settings_dialog: Optional[SettingsDialog] = None
         self._local_server: Optional[QLocalServer] = None
+
+        # Background Services
+        self.tracker = WindowTracker(self.repo)
+        self.hotkey_listener = GlobalHotkeyListener()
 
         # Connect signals
         self._connect_signals()
@@ -109,6 +87,8 @@ class WizApplication:
 
     def start(self) -> None:
         """Launch UI and background worker threads."""
+        self.mascot_window.show()
+        self.tray_icon.show()
         self.tracker.start()
         self.hotkey_listener.start()
 
@@ -138,23 +118,11 @@ class WizApplication:
             except Exception as e:
                 print(f"[WizDesk] Auto-backup notice: {e}")
 
-        # Reveal UI once splash screen completes or immediately if no splash
-        if self.splash:
-            self.splash.splash_closed.connect(self._on_splash_finished)
-            self.splash.finish()
-        else:
-            self._on_splash_finished()
-
-    def _on_splash_finished(self) -> None:
-        """Reveal desktop companion and tray icon after startup initialization."""
-        self.mascot_window.show()
-        self.tray_icon.show()
-
     def show_quick_entry(self) -> None:
         """Open or focus the full Quick-Entry workspace dialog."""
         sound_manager.play_window_open()
         if self._quick_entry_dialog is None:
-            self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo, enable_splash=True)
+            self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo)
         if self._quick_entry_dialog.isMinimized():
             self._quick_entry_dialog.showNormal()
         self._quick_entry_dialog.show()
@@ -265,14 +233,7 @@ def main() -> None:
     app.setWindowIcon(get_app_icon("wiz-idle.svg"))
     app.setQuitOnLastWindowClosed(False)
 
-    # Startup Splash Screen
-    splash = SplashScreen(is_dark=(config.theme == "dark"), min_display_sec=2.4)
-    splash.show()
-    splash.set_progress(10, "Starting WizDesk...")
-    time.sleep(0.35)
-    QApplication.processEvents()
-
-    wiz_app = WizApplication(splash=splash, step_delay=0.35)
+    wiz_app = WizApplication()
     wiz_app._local_server = local_server
 
     def _handle_instance_message():

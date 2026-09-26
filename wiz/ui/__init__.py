@@ -9,7 +9,6 @@ from wiz.ui.settings_dialog import SettingsDialog
 from wiz.ui.icons import get_app_icon, get_app_pixmap
 from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView
-from wiz.ui.splash_screen import SplashScreen, WorkspaceSplashOverlay
 
 __all__ = [
     "MascotWidget",
@@ -20,8 +19,6 @@ __all__ = [
     "SettingsDialog",
     "TimelineView",
     "ProjectDashboardView",
-    "SplashScreen",
-    "WorkspaceSplashOverlay",
     "get_app_icon",
     "get_app_pixmap",
 ]
