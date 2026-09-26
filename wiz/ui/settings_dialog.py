@@ -311,20 +311,20 @@ class SettingsDialog(QDialog):
         self.float_anim_check.set_dark_mode(self.is_dark)
         self.dark_mode_check.blockSignals(False)
 
-        # Color tokens
-        outer_bg = "#121214" if self.is_dark else "#E8E4DC"
-        outer_border = "#27272A" if self.is_dark else "#D6D0C5"
-        inner_bg = "#18181B" if self.is_dark else "#F6F4EE"
-        inner_border = "#27272A" if self.is_dark else "#E2DDD3"
-        text_primary = "#F4F4F5" if self.is_dark else "#242220"
-        text_secondary = "#A1A1AA" if self.is_dark else "#666460"
-        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
-        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        # Color tokens - Crisp Modern Light Mode & Neutral Cool Palette
+        outer_bg = "#121214" if self.is_dark else "#F4F4F6"
+        outer_border = "#27272A" if self.is_dark else "#E4E4E7"
+        inner_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        inner_border = "#27272A" if self.is_dark else "#E5E5EA"
+        text_primary = "#F4F4F5" if self.is_dark else "#18181B"
+        text_secondary = "#A1A1AA" if self.is_dark else "#71717A"
+        input_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         input_focus = "#C2410C" if self.is_dark else "#BA3F1A"
-        btn_neutral_bg = "#27272A" if self.is_dark else "#EDE7DC"
-        btn_neutral_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        btn_neutral_text = "#F4F4F5" if self.is_dark else "#242220"
-        btn_neutral_hover_bg = "#3F3F46" if self.is_dark else "#E2DDD4"
+        btn_neutral_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        btn_neutral_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        btn_neutral_text = "#F4F4F5" if self.is_dark else "#18181B"
+        btn_neutral_hover_bg = "#3F3F46" if self.is_dark else "#EAEAEB"
         btn_danger_bg = "#3B1818" if self.is_dark else "#FEF2F2"
         btn_danger_border = "#5C1D1D" if self.is_dark else "#FEE2E2"
         btn_danger_text = "#F87171" if self.is_dark else "#EF4444"
@@ -333,10 +333,10 @@ class SettingsDialog(QDialog):
         btn_save_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_save_text = "#FFFFFF"
         btn_save_hover = "#A3360E" if self.is_dark else "#9E3414"
-        div_color = "#27272A" if self.is_dark else "#E2DDD3"
-        table_grid = "#27272A" if self.is_dark else "#E2DDD3"
-        table_header_bg = "#27272A" if self.is_dark else "#EDE7DC"
-        table_header_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        div_color = "#27272A" if self.is_dark else "#E5E5EA"
+        table_grid = "#27272A" if self.is_dark else "#E5E5EA"
+        table_header_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        table_header_border = "#3F3F46" if self.is_dark else "#E4E4E7"
 
         # 1. Outer Frame & Inner Card
         self.outer_frame.setStyleSheet(f"""

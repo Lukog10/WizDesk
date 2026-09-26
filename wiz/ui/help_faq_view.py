@@ -99,11 +99,11 @@ class FaqItemWidget(QFrame):
 
     def update_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        bg = "#18181C" if is_dark else "#F9F7F2"
-        border = "#262630" if is_dark else "#E2DDD4"
-        q_fg = "#F4F4F6" if is_dark else "#1E1C1A"
-        a_fg = "#A1A1AA" if is_dark else "#5E5851"
-        ind_fg = "#FF6B3D" if is_dark else "#D94E23"
+        bg = "#18181C" if is_dark else "#FFFFFF"
+        border = "#262630" if is_dark else "#E5E5EA"
+        q_fg = "#F4F4F6" if is_dark else "#18181B"
+        a_fg = "#A1A1AA" if is_dark else "#71717A"
+        ind_fg = "#FF6B3D" if is_dark else "#BA3F1A"
 
         self.setStyleSheet(f"""
             QFrame#faqItem {{
@@ -401,7 +401,7 @@ class HelpFaqView(QWidget):
     def _format_doc_body_html(self, body: str, color: Optional[str] = None) -> str:
         """Format plain text documentation body into spacious HTML with line spacing."""
         if not color:
-            color = "#A1A1AA" if self.is_dark else "#5E5851"
+            color = "#A1A1AA" if self.is_dark else "#71717A"
         strong_color = "#F4F4F6" if self.is_dark else "#18181B"
         blocks = body.split("\n\n")
         html_parts = []
@@ -692,20 +692,20 @@ class HelpFaqView(QWidget):
 
         # Palette
         title_fg = "#F4F4F6" if is_dark else "#18181B"
-        desc_fg = "#A1A1AA" if is_dark else "#57534E"
-        tag_bg = "rgba(255, 107, 61, 0.12)" if is_dark else "rgba(234, 88, 12, 0.10)"
-        tag_fg = "#FF825C" if is_dark else "#C2410C"
-        tag_border = "rgba(255, 107, 61, 0.28)" if is_dark else "rgba(234, 88, 12, 0.25)"
+        desc_fg = "#A1A1AA" if is_dark else "#71717A"
+        tag_bg = "rgba(255, 107, 61, 0.12)" if is_dark else "rgba(186, 63, 26, 0.10)"
+        tag_fg = "#FF825C" if is_dark else "#BA3F1A"
+        tag_border = "rgba(255, 107, 61, 0.28)" if is_dark else "rgba(186, 63, 26, 0.25)"
 
-        switcher_bg = "#18181B" if is_dark else "#ECE7DC"
-        switcher_border = "#27272A" if is_dark else "#D8D2C6"
+        switcher_bg = "#18181B" if is_dark else "#F4F4F6"
+        switcher_border = "#27272A" if is_dark else "#E4E4E7"
         active_tab_bg = "#27272A" if is_dark else "#FFFFFF"
         active_tab_fg = "#FAFAFA" if is_dark else "#18181B"
-        active_tab_border = "#3F3F46" if is_dark else "#D5CEC2"
-        inactive_tab_fg = "#A1A1AA" if is_dark else "#6B655B"
+        active_tab_border = "#3F3F46" if is_dark else "#E4E4E7"
+        inactive_tab_fg = "#A1A1AA" if is_dark else "#71717A"
 
-        card_bg = "#18181C" if is_dark else "#F9F7F2"
-        card_border = "#262630" if is_dark else "#E2DDD4"
+        card_bg = "#18181C" if is_dark else "#FFFFFF"
+        card_border = "#262630" if is_dark else "#E5E5EA"
 
         # Headers
         self.header_title.setStyleSheet(f"color: {title_fg};")
@@ -793,8 +793,8 @@ class HelpFaqView(QWidget):
                 """)
 
         # Contribute link box in FAQ nav
-        link_box_bg = "#16161A" if is_dark else "#F1EBE1"
-        link_box_border = "#24242C" if is_dark else "#DFD8CD"
+        link_box_bg = "#16161A" if is_dark else "#F4F4F6"
+        link_box_border = "#24242C" if is_dark else "#E4E4E7"
         self.contribute_box.setStyleSheet(f"""
             QFrame#contributeBox {{
                 background-color: {link_box_bg};
@@ -868,7 +868,7 @@ class HelpFaqView(QWidget):
                         b_lbl.setText(self._format_doc_body_html(raw_body, desc_fg))
 
             for sec_lbl in self.findChildren(QLabel, "docSectionHeading"):
-                sec_lbl.setStyleSheet(f"color: {'#71717A' if is_dark else '#8C8377'}; padding-top: 4px;")
+                sec_lbl.setStyleSheet(f"color: {'#71717A' if is_dark else '#71717A'}; padding-top: 4px;")
 
         # Custom Slim Scrollbars
         scroll_thumb = "rgba(255, 255, 255, 0.12)" if is_dark else "rgba(0, 0, 0, 0.10)"

@@ -62,12 +62,12 @@ from wiz.ui.checkbox import RoundedCheckbox
 
 
 def get_context_menu_style(is_dark: bool = False) -> str:
-    bg = "#18181B" if is_dark else "#FAF8F5"
-    color = "#F4F4F5" if is_dark else "#242220"
-    border = "#27272A" if is_dark else "#D6D0C5"
+    bg = "#18181B" if is_dark else "#FFFFFF"
+    color = "#F4F4F5" if is_dark else "#18181B"
+    border = "#27272A" if is_dark else "#E4E4E7"
     hover_bg = "#27272A" if is_dark else "#FEECE5"
     hover_color = "#FAFAFA" if is_dark else "#D84315"
-    disabled_color = "#71717A" if is_dark else "#A8A29E"
+    disabled_color = "#71717A" if is_dark else "#A1A1AA"
     return f"""
         QMenu {{
             background-color: {bg};
@@ -127,21 +127,21 @@ class CalendarPopupDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        card_bg = "#18181B" if self.is_dark else "#FAF8F5"
-        card_border = "#27272A" if self.is_dark else "#D6D0C5"
-        combo_bg = "#27272A" if self.is_dark else "#EDE9E0"
-        combo_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        combo_text = "#F4F4F5" if self.is_dark else "#242220"
-        nav_btn_color = "#A1A1AA" if self.is_dark else "#666460"
+        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        card_border = "#27272A" if self.is_dark else "#E5E5EA"
+        combo_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        combo_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        combo_text = "#F4F4F5" if self.is_dark else "#18181B"
+        nav_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
         nav_btn_hover_color = "#FF8E6B" if self.is_dark else "#BA3F1A"
-        nav_btn_hover_bg = "#27272A" if self.is_dark else "#EDE7DC"
-        table_text = "#F4F4F5" if self.is_dark else "#242220"
+        nav_btn_hover_bg = "#27272A" if self.is_dark else "#EAEAEB"
+        table_text = "#F4F4F5" if self.is_dark else "#18181B"
         table_hover_bg = "rgba(255, 107, 61, 40)" if self.is_dark else "#FEECE5"
         table_sel_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         table_sel_text = "#FFFFFF"
-        today_btn_bg = "#27272A" if self.is_dark else "#EDE7DC"
-        today_btn_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        today_btn_text = "#F4F4F5" if self.is_dark else "#242220"
+        today_btn_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        today_btn_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        today_btn_text = "#F4F4F5" if self.is_dark else "#18181B"
         today_btn_hover_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         today_btn_hover_text = "#FFFFFF"
 
@@ -279,14 +279,14 @@ class CalendarPopupDialog(QDialog):
         # Format header days cleanly in muted grey
         hdr_font = get_font(9, QFont.Weight.DemiBold)
         hdr_fmt = QTextCharFormat()
-        hdr_fmt.setForeground(QColor("#A1A1AA" if self.is_dark else "#666460"))
+        hdr_fmt.setForeground(QColor("#A1A1AA" if self.is_dark else "#71717A"))
         hdr_fmt.setFont(hdr_font)
         self.calendar.setHeaderTextFormat(hdr_fmt)
 
         # Neutralize weekend text to clean theme color
         work_font = get_font(9)
         work_fmt = QTextCharFormat()
-        work_fmt.setForeground(QColor("#F4F4F5" if self.is_dark else "#242220"))
+        work_fmt.setForeground(QColor("#F4F4F5" if self.is_dark else "#18181B"))
         work_fmt.setFont(work_font)
         for day in [
             Qt.DayOfWeek.Sunday,
@@ -396,18 +396,18 @@ class CreateSectionDialog(QDialog):
 
         self.is_dark = is_dark if is_dark is not None else (config.theme == "dark")
 
-        card_bg = "#18181B" if self.is_dark else "#FAF8F5"
-        card_border = "#27272A" if self.is_dark else "#D6D0C5"
-        title_color = "#F4F4F5" if self.is_dark else "#242220"
-        close_btn_color = "#71717A" if self.is_dark else "#A8A29E"
-        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
-        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        input_text = "#F4F4F5" if self.is_dark else "#242220"
+        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        card_border = "#27272A" if self.is_dark else "#E5E5EA"
+        title_color = "#F4F4F5" if self.is_dark else "#18181B"
+        close_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
+        input_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        input_text = "#F4F4F5" if self.is_dark else "#18181B"
         input_focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
-        cancel_bg = "#27272A" if self.is_dark else "#EBE6DC"
-        cancel_text = "#A1A1AA" if self.is_dark else "#57534E"
-        cancel_hover_color = "#FAFAFA" if self.is_dark else "#242220"
-        cancel_hover_bg = "#3F3F46" if self.is_dark else "#DDD7CC"
+        cancel_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        cancel_text = "#A1A1AA" if self.is_dark else "#71717A"
+        cancel_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        cancel_hover_bg = "#3F3F46" if self.is_dark else "#EAEAEB"
         submit_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         submit_text = "#FFFFFF"
         submit_hover_bg = "#A3360E" if self.is_dark else "#9E3414"
@@ -623,8 +623,8 @@ class SegmentedFilterBar(QWidget):
             self._update_button_styles()
 
     def _update_container_style(self) -> None:
-        switcher_bg = "rgba(255, 255, 255, 0.03)" if self.is_dark else "rgba(0, 0, 0, 0.03)"
-        switcher_border = "rgba(255, 255, 255, 0.12)" if self.is_dark else "rgba(0, 0, 0, 0.10)"
+        switcher_bg = "rgba(255, 255, 255, 0.03)" if self.is_dark else "#F0F0F2"
+        switcher_border = "rgba(255, 255, 255, 0.12)" if self.is_dark else "#E4E4E7"
         self.setStyleSheet(f"""
             QWidget#SegmentedFilterBar, SegmentedFilterBar {{
                 background-color: {switcher_bg};
@@ -645,8 +645,8 @@ class SegmentedFilterBar(QWidget):
         is_dark = self.is_dark
         active_tab_bg = "rgba(255, 255, 255, 0.08)" if is_dark else "#FFFFFF"
         active_tab_fg = "#FAFAFA" if is_dark else "#18181B"
-        active_tab_border = "rgba(255, 255, 255, 0.14)" if is_dark else "rgba(0, 0, 0, 0.10)"
-        inactive_tab_fg = "#A1A1AA" if is_dark else "#6B655B"
+        active_tab_border = "rgba(255, 255, 255, 0.14)" if is_dark else "#E4E4E7"
+        inactive_tab_fg = "#A1A1AA" if is_dark else "#71717A"
         hover_fg = "#FAFAFA" if is_dark else "#18181B"
         hover_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(0, 0, 0, 0.04)"
 
@@ -752,8 +752,8 @@ class SubtaskRowWidget(QWidget):
         self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
 
-        edit_bg = "#18181B" if self.is_dark else "#FAF8F5"
-        edit_color = "#F4F4F5" if self.is_dark else "#242220"
+        edit_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        edit_color = "#F4F4F5" if self.is_dark else "#18181B"
         edit_border = "#C2410C" if self.is_dark else "#BA3F1A"
 
         self.edit_input = InlineEditInput(subtask.title, self)
@@ -777,7 +777,7 @@ class SubtaskRowWidget(QWidget):
         del_btn = QPushButton("x")
         del_btn.setFixedSize(16, 16)
         del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        del_btn_color = "#71717A" if self.is_dark else "#A8A29E"
+        del_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
         del_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -803,7 +803,7 @@ class SubtaskRowWidget(QWidget):
         time_layout.setContentsMargins(52, 0, 4, 2)
         time_layout.setSpacing(4)
 
-        time_color = "#71717A" if self.is_dark else "#78716C"
+        time_color = "#71717A" if self.is_dark else "#71717A"
         self.time_label = QLabel()
         self.time_label.setStyleSheet(f"""
             QLabel {{
@@ -857,8 +857,8 @@ class SubtaskRowWidget(QWidget):
 
     def _update_label_style(self, is_done: bool) -> None:
         self._update_time_label(is_done)
-        done_color = "#71717A" if self.is_dark else "#A8A29E"
-        active_color = "#D4D4D8" if self.is_dark else "#44403C"
+        done_color = "#71717A" if self.is_dark else "#A1A1AA"
+        active_color = "#D4D4D8" if self.is_dark else "#18181B"
 
         if is_done:
             self.label.setStyleSheet(f"""
@@ -898,7 +898,7 @@ class SubtaskRowWidget(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
-        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+        icon_color = "#D4D4D8" if self.is_dark else "#18181B"
         delete_color = "#EF4444"
 
         action_rename = menu.addAction(
@@ -940,9 +940,9 @@ class SubtaskAddButton(QPushButton):
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.normal_color = "#71717A" if is_dark else "#78716C"
-        self.hover_color = "#FAFAFA" if is_dark else "#242220"
-        hover_bg = "#27272A" if is_dark else "#EBE6DC"
+        self.normal_color = "#71717A" if is_dark else "#71717A"
+        self.hover_color = "#FAFAFA" if is_dark else "#18181B"
+        hover_bg = "#27272A" if is_dark else "#EAEAEB"
         self.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -995,10 +995,10 @@ class ScheduleIconButton(QPushButton):
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.normal_color = "#71717A" if is_dark else "#78716C"
-        self.hover_color = "#FAFAFA" if is_dark else "#242220"
+        self.normal_color = "#71717A" if is_dark else "#71717A"
+        self.hover_color = "#FAFAFA" if is_dark else "#18181B"
         self.active_color = "#FF6B3D" if is_dark else "#BA3F1A"
-        hover_bg = "#27272A" if is_dark else "#EBE6DC"
+        hover_bg = "#27272A" if is_dark else "#EAEAEB"
         self.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -1054,10 +1054,10 @@ class RepeatIconButton(QPushButton):
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.normal_color = "#71717A" if is_dark else "#78716C"
-        self.hover_color = "#FAFAFA" if is_dark else "#242220"
+        self.normal_color = "#71717A" if is_dark else "#71717A"
+        self.hover_color = "#FAFAFA" if is_dark else "#18181B"
         self.active_color = "#38BDF8" if is_dark else "#0284C7"
-        hover_bg = "#27272A" if is_dark else "#EBE6DC"
+        hover_bg = "#27272A" if is_dark else "#EAEAEB"
         self.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -1137,8 +1137,8 @@ class TaskRowWidget(QWidget):
         self.label.double_clicked.connect(self.start_renaming)
         top_layout.addWidget(self.label, stretch=1)
 
-        edit_bg = "#18181B" if self.is_dark else "#FAF8F5"
-        edit_color = "#F4F4F5" if self.is_dark else "#242220"
+        edit_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        edit_color = "#F4F4F5" if self.is_dark else "#18181B"
         edit_border = "#C2410C" if self.is_dark else "#BA3F1A"
 
         self.edit_input = InlineEditInput(task.title, self)
@@ -1192,7 +1192,7 @@ class TaskRowWidget(QWidget):
         status_bar_layout.addWidget(self.status_combo)
 
         # Time metadata label
-        time_color = "#71717A" if self.is_dark else "#78716C"
+        time_color = "#71717A" if self.is_dark else "#71717A"
         self.time_label = QLabel()
         self.time_label.setStyleSheet(f"""
             QLabel {{
@@ -1240,9 +1240,9 @@ class TaskRowWidget(QWidget):
         sub_input_layout.setContentsMargins(28, 2, 4, 2)
         sub_input_layout.setSpacing(6)
 
-        sub_in_bg = "#27272A" if self.is_dark else "#EDE9E0"
-        sub_in_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        sub_in_text = "#F4F4F5" if self.is_dark else "#242220"
+        sub_in_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        sub_in_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        sub_in_text = "#F4F4F5" if self.is_dark else "#18181B"
         sub_in_focus = "#C2410C" if self.is_dark else "#BA3F1A"
 
         self.sub_input = QLineEdit()
@@ -1374,9 +1374,9 @@ class TaskRowWidget(QWidget):
                 border = "rgba(251, 146, 60, 0.3)"
             else:
                 text = fmt_date
-                bg = "#27272A" if self.is_dark else "#EDE9E0"
-                fg = "#D4D4D8" if self.is_dark else "#57534E"
-                border = "#3F3F46" if self.is_dark else "#D6D0C5"
+                bg = "#27272A" if self.is_dark else "#F4F4F6"
+                fg = "#D4D4D8" if self.is_dark else "#71717A"
+                border = "#3F3F46" if self.is_dark else "#E4E4E7"
 
             self.schedule_badge.setText(text)
             self.schedule_badge.setStyleSheet(f"""
@@ -1431,7 +1431,7 @@ class TaskRowWidget(QWidget):
         """Open menu to update schedule date for this task."""
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
-        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+        icon_color = "#D4D4D8" if self.is_dark else "#18181B"
 
         today = date.today()
         tomorrow = today + timedelta(days=1)
@@ -1505,7 +1505,7 @@ class TaskRowWidget(QWidget):
         """Open menu to update repeat mode for this task."""
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
-        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+        icon_color = "#D4D4D8" if self.is_dark else "#18181B"
 
         act_none = menu.addAction(
             get_status_icon("icons/icons8-no-entry-100.png", icon_color, 14),
@@ -1602,8 +1602,8 @@ class TaskRowWidget(QWidget):
         self.status_combo.blockSignals(False)
 
         # Text colors
-        done_color = "#71717A" if self.is_dark else "#A8A29E"
-        active_color = "#F4F4F5" if self.is_dark else "#242220"
+        done_color = "#71717A" if self.is_dark else "#A1A1AA"
+        active_color = "#F4F4F5" if self.is_dark else "#18181B"
 
         # Label styling
         if is_done:
@@ -1655,11 +1655,11 @@ class TaskRowWidget(QWidget):
             """)
 
         # Dropdown popup & monochrome styling without colored fills
-        hover_bg = "#2E2E33" if self.is_dark else "#EBE6DC"
-        hover_border = "#3F3F46" if self.is_dark else "#D6D0C5"
-        combo_popup_bg = "#1E1E22" if self.is_dark else "#FAF8F5"
-        combo_popup_text = "#F4F4F5" if self.is_dark else "#242220"
-        combo_popup_border = "#333338" if self.is_dark else "#D6D0C5"
+        hover_bg = "#2E2E33" if self.is_dark else "#EAEAEB"
+        hover_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        combo_popup_bg = "#1E1E22" if self.is_dark else "#FFFFFF"
+        combo_popup_text = "#F4F4F5" if self.is_dark else "#18181B"
+        combo_popup_border = "#333338" if self.is_dark else "#E4E4E7"
         combo_popup_sel_bg = "rgba(194, 65, 12, 0.22)" if self.is_dark else "#FEECE5"
         combo_popup_sel_text = "#FFAB91" if self.is_dark else "#BA3F1A"
 
@@ -1728,7 +1728,7 @@ class TaskRowWidget(QWidget):
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
         # Theme-aware icon color
-        icon_color = "#D4D4D8" if self.is_dark else "#44403C"
+        icon_color = "#D4D4D8" if self.is_dark else "#18181B"
         delete_color = "#EF4444"
 
         action_rename = menu.addAction(
@@ -1853,7 +1853,7 @@ class NoteRowWidget(QWidget):
         meta_layout.addWidget(self.tag_btn)
 
         time_str = note.created_at.strftime("%I:%M %p").lstrip("0")
-        time_color = "#71717A" if self.is_dark else "#78716C"
+        time_color = "#71717A" if self.is_dark else "#71717A"
         time_lbl = QLabel(time_str)
         time_lbl.setStyleSheet(f"""
             QLabel {{
@@ -1872,7 +1872,7 @@ class NoteRowWidget(QWidget):
         del_btn = QPushButton("x")
         del_btn.setFixedSize(18, 18)
         del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        del_btn_color = "#71717A" if self.is_dark else "#A8A29E"
+        del_btn_color = "#71717A" if self.is_dark else "#71717A"
         del_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
@@ -1957,8 +1957,8 @@ class NoteRowWidget(QWidget):
                 self.project_changed.emit(self.note_id, name.strip())
 
     def _update_text_style(self, is_done: bool) -> None:
-        done_color = "#71717A" if self.is_dark else "#A8A29E"
-        active_color = "#F4F4F5" if self.is_dark else "#242220"
+        done_color = "#71717A" if self.is_dark else "#A1A1AA"
+        active_color = "#F4F4F5" if self.is_dark else "#18181B"
 
         if is_done:
             self.label.setStyleSheet(f"""
@@ -2000,8 +2000,8 @@ class ProjectGroupWidget(QWidget):
         self.main_layout.setSpacing(6)
 
         # Header bar
-        header_color = "#F4F4F5" if self.is_dark else "#242220"
-        header_hover = "#A1A1AA" if self.is_dark else "#57534E"
+        header_color = "#F4F4F5" if self.is_dark else "#18181B"
+        header_hover = "#A1A1AA" if self.is_dark else "#71717A"
 
         self.header_btn = QPushButton(f"  {project_name}", self)
         self.header_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -2047,14 +2047,14 @@ class ProjectGroupWidget(QWidget):
         """Toggle section expansion and swap down/up arrow icons."""
         self._is_expanded = not self._is_expanded
         self.tasks_container.setVisible(self._is_expanded)
-        header_color = "#F4F4F5" if self.is_dark else "#242220"
+        header_color = "#F4F4F5" if self.is_dark else "#18181B"
         icon_name = "icons/arrow-down-2-duotone.svg" if self._is_expanded else "icons/arrow-up-2-duotone.svg"
         self.header_btn.setIcon(get_status_icon(icon_name, header_color, 14))
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        header_color = "#F4F4F5" if self.is_dark else "#242220"
-        header_hover = "#A1A1AA" if self.is_dark else "#57534E"
+        header_color = "#F4F4F5" if self.is_dark else "#18181B"
+        header_hover = "#A1A1AA" if self.is_dark else "#71717A"
         divider_color = "rgba(255, 255, 255, 0.12)" if self.is_dark else "rgba(0, 0, 0, 0.10)"
         self.header_btn.setStyleSheet(f"""
             QPushButton {{
@@ -2511,30 +2511,30 @@ class QuickEntryDialog(QDialog):
         if hasattr(self, "filter_bar"):
             self.filter_bar.set_dark_mode(self.is_dark)
 
-        # Color tokens - Brand aligned & Softer Light Mode
-        outer_bg = "#121214" if self.is_dark else "#E8E4DC"
-        outer_border = "#27272A" if self.is_dark else "#D5CEC2"
-        inner_bg = "#18181B" if self.is_dark else "#F6F4EE"
-        inner_border = "#27272A" if self.is_dark else "#DFD9CE"
-        page_title_color = "#F4F4F5" if self.is_dark else "#242220"
-        ctrl_btn_color = "#A1A1AA" if self.is_dark else "#57534E"
-        ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.06)"
-        ctrl_btn_hover_color = "#FAFAFA" if self.is_dark else "#242220"
-        mode_capsule_bg = "#27272A" if self.is_dark else "#E6E1D7"
-        day_btn_color = "#A1A1AA" if self.is_dark else "#78716C"
-        day_btn_border = "#3F3F46" if self.is_dark else "#D8D1C4"
-        day_btn_hover_bg = "#27272A" if self.is_dark else "#EBE6DC"
-        day_btn_hover_color = "#FAFAFA" if self.is_dark else "#242220"
-        date_btn_color = "#F4F4F5" if self.is_dark else "#242220"
+        # Color tokens - Brand aligned & Crisp Modern Light Mode
+        outer_bg = "#121214" if self.is_dark else "#F4F4F6"
+        outer_border = "#27272A" if self.is_dark else "#E4E4E7"
+        inner_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        inner_border = "#27272A" if self.is_dark else "#E5E5EA"
+        page_title_color = "#F4F4F5" if self.is_dark else "#18181B"
+        ctrl_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
+        ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.05)"
+        ctrl_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        mode_capsule_bg = "#27272A" if self.is_dark else "#F0F0F2"
+        day_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
+        day_btn_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        day_btn_hover_bg = "#27272A" if self.is_dark else "#EAEAEB"
+        day_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        date_btn_color = "#F4F4F5" if self.is_dark else "#18181B"
         today_pill_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         today_pill_color = "#FFFFFF"
         today_pill_hover = "#A3360E" if self.is_dark else "#9E3414"
-        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
-        input_color = "#F4F4F5" if self.is_dark else "#242220"
-        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        input_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        input_color = "#F4F4F5" if self.is_dark else "#18181B"
+        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         input_focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
-        combo_popup_bg = "#18181B" if self.is_dark else "#FAF8F5"
-        combo_popup_border = "#27272A" if self.is_dark else "#D6D0C5"
+        combo_popup_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        combo_popup_border = "#27272A" if self.is_dark else "#E4E4E7"
         combo_popup_sel_bg = "rgba(194, 65, 12, 0.22)" if self.is_dark else "#FEECE5"
         combo_popup_sel_text = "#FFAB91" if self.is_dark else "#BA3F1A"
         btn_action_bg = "#C2410C" if self.is_dark else "#BA3F1A"

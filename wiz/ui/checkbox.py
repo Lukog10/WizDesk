@@ -85,8 +85,8 @@ class RoundedCheckbox(QWidget):
             painter.drawLine(int(p2_x), int(p2_y), int(p3_x), int(p3_y))
         else:
             # Clean subtle rounded outline
-            border_color = QColor("#52525B") if self.is_dark else QColor("#C8C2B6")
-            bg_color = QColor("#27272A") if self.is_dark else QColor("#EDE9E0")
+            border_color = QColor("#52525B") if self.is_dark else QColor("#D4D4D8")
+            bg_color = QColor("#27272A") if self.is_dark else QColor("#F4F4F6")
 
             pen = QPen(border_color, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)

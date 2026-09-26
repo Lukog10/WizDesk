@@ -129,8 +129,8 @@ class NavPillButton(QPushButton):
             icon_color = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
         else:
             bg_color = Qt.GlobalColor.transparent
-            text_color = QColor("#9CA3AF") if self.is_dark else QColor("#57534E")
-            icon_color = QColor("#9CA3AF") if self.is_dark else QColor("#78716C")
+            text_color = QColor("#9CA3AF") if self.is_dark else QColor("#71717A")
+            icon_color = QColor("#9CA3AF") if self.is_dark else QColor("#71717A")
 
         # 1. Background capsule (Dense, thick pill with 10px smooth radius)
         if bg_color != Qt.GlobalColor.transparent:
@@ -188,7 +188,7 @@ class NavPillButton(QPushButton):
                     badge_fg = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
                 else:
                     badge_bg = QColor(255, 255, 255, 20) if self.is_dark else QColor(0, 0, 0, 16)
-                    badge_fg = QColor("#D4D4D8") if self.is_dark else QColor("#57534E")
+                    badge_fg = QColor("#D4D4D8") if self.is_dark else QColor("#71717A")
 
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.setBrush(QBrush(badge_bg))
@@ -256,9 +256,9 @@ class SidebarToggleButton(QPushButton):
         self.update_style()
 
     def update_style(self, hover: bool = False) -> None:
-        normal_fg = "#9CA3AF" if self.is_dark else "#78716C"
+        normal_fg = "#9CA3AF" if self.is_dark else "#71717A"
         hover_fg = "#FAFAFA" if self.is_dark else "#18181B"
-        hover_bg = "#27272A" if self.is_dark else "#DAD5CB"
+        hover_bg = "#27272A" if self.is_dark else "#EAEAEB"
         c = hover_fg if hover else normal_fg
         self.setIcon(get_status_icon("icons/side-bar-fill.svg", c, 16))
         self.setIconSize(QSize(16, 16))
@@ -503,14 +503,14 @@ class SideNavBar(QWidget):
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
 
-        # Theme color variables - Softer Light Mode & Calibrated Warm Neutrals
-        bg_color = "#16161A" if is_dark else "#E2DDD4"
-        brand_color = "#F4F4F5" if is_dark else "#242220"
-        sub_color = "#71717A" if is_dark else "#78716C"
-        border_color = "#232328" if is_dark else "#D6D0C5"
-        btn_bg = "#232328" if is_dark else "#DAD5CB"
-        btn_fg = "#D4D4D8" if is_dark else "#44403C"
-        btn_hover = "#2D2D34" if is_dark else "#D0CAC0"
+        # Theme color variables - Crisp Modern Light Mode & Neutral Cool Palette
+        bg_color = "#16161A" if is_dark else "#F4F4F6"
+        brand_color = "#F4F4F5" if is_dark else "#18181B"
+        sub_color = "#71717A" if is_dark else "#71717A"
+        border_color = "#232328" if is_dark else "#E4E4E7"
+        btn_bg = "#232328" if is_dark else "#EAEAEB"
+        btn_fg = "#D4D4D8" if is_dark else "#18181B"
+        btn_hover = "#2D2D34" if is_dark else "#E4E4E7"
 
         self.setStyleSheet(f"""
             QWidget#sideNavBar {{

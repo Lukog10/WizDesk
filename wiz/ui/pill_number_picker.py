@@ -173,10 +173,10 @@ class NumberPill(QFrame):
         super().mousePressEvent(event)
 
     def _apply_styling(self) -> None:
-        bg_color = "#27272A" if self.is_dark else "#EBE6DC"
-        border_color = "#3F3F46" if self.is_dark else "#D6D0C5"
-        text_primary = "#F4F4F5" if self.is_dark else "#242220"
-        text_secondary = "#A1A1AA" if self.is_dark else "#78716C"
+        bg_color = "#27272A" if self.is_dark else "#F4F4F6"
+        border_color = "#3F3F46" if self.is_dark else "#E4E4E7"
+        text_primary = "#F4F4F5" if self.is_dark else "#18181B"
+        text_secondary = "#A1A1AA" if self.is_dark else "#71717A"
         focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
 
         super().setStyleSheet(f"""

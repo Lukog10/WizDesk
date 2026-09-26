@@ -113,13 +113,13 @@ class KeyDisplayDialog(QDialog):
         QTimer.singleShot(2000, lambda: self.copy_btn.setText("Copy Key"))
 
     def _apply_styling(self) -> None:
-        bg = "#18181B" if self.is_dark else "#FAF8F5"
-        text = "#F4F4F5" if self.is_dark else "#242220"
-        subtext = "#A1A1AA" if self.is_dark else "#78716C"
-        input_bg = "#27272A" if self.is_dark else "#EDE9E0"
-        input_border = "#3F3F46" if self.is_dark else "#D6D0C5"
+        bg = "#18181B" if self.is_dark else "#FFFFFF"
+        text = "#F4F4F5" if self.is_dark else "#18181B"
+        subtext = "#A1A1AA" if self.is_dark else "#71717A"
+        input_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         accent = "#C2410C" if self.is_dark else "#BA3F1A"
-        btn_bg = "#27272A" if self.is_dark else "#EBE6DC"
+        btn_bg = "#27272A" if self.is_dark else "#F4F4F6"
 
         self.setStyleSheet(f"""
             QDialog {{
@@ -239,7 +239,7 @@ class SettingsCategoryBar(QFrame):
         else:
             container_bg = "rgba(0, 0, 0, 0.03)"
             container_border = "rgba(0, 0, 0, 0.10)"
-            btn_color = "#57534E"
+            btn_color = "#71717A"
             btn_hover_bg = "rgba(0, 0, 0, 0.04)"
             btn_hover_color = "#18181B"
             active_bg = "#FFFFFF"
@@ -1320,9 +1320,9 @@ class SettingsView(QWidget):
             border = "#235B43" if self.is_dark else "#A7F3D0"
             color = "#34D399" if self.is_dark else "#059669"
         else:
-            bg = "#27272A" if self.is_dark else "#F3EFE9"
-            border = "#3F3F46" if self.is_dark else "#D6D0C5"
-            color = "#71717A" if self.is_dark else "#78716C"
+            bg = "#27272A" if self.is_dark else "#F4F4F6"
+            border = "#3F3F46" if self.is_dark else "#E4E4E7"
+            color = "#71717A" if self.is_dark else "#71717A"
 
         badge.setStyleSheet(f"""
             background-color: {bg};
@@ -1352,21 +1352,21 @@ class SettingsView(QWidget):
         """Apply complete theme styling."""
         is_dark = self.is_dark
 
-        inner_bg = "#18181B" if is_dark else "#FAF8F5"
-        text_primary = "#F4F4F5" if is_dark else "#242220"
-        text_secondary = "#A1A1AA" if is_dark else "#78716C"
-        input_bg = "#27272A" if is_dark else "#EDE9E0"
-        input_border = "#3F3F46" if is_dark else "#D6D0C5"
+        inner_bg = "#18181B" if is_dark else "#FFFFFF"
+        text_primary = "#F4F4F5" if is_dark else "#18181B"
+        text_secondary = "#A1A1AA" if is_dark else "#71717A"
+        input_bg = "#27272A" if is_dark else "#F4F4F6"
+        input_border = "#3F3F46" if is_dark else "#E4E4E7"
         input_focus = "#C2410C" if is_dark else "#BA3F1A"
 
         save_bg = "#C2410C" if is_dark else "#BA3F1A"
         save_hover = "#A3360E" if is_dark else "#9E3414"
         save_pressed = "#872A09" if is_dark else "#7D280E"
 
-        btn_neutral_bg = "#27272A" if is_dark else "#EBE6DC"
-        btn_neutral_border = "#3F3F46" if is_dark else "#D6D0C5"
-        btn_neutral_text = "#F4F4F5" if is_dark else "#242220"
-        btn_neutral_hover_bg = "#3F3F46" if is_dark else "#DDD7CC"
+        btn_neutral_bg = "#27272A" if is_dark else "#F4F4F6"
+        btn_neutral_border = "#3F3F46" if is_dark else "#E4E4E7"
+        btn_neutral_text = "#F4F4F5" if is_dark else "#18181B"
+        btn_neutral_hover_bg = "#3F3F46" if is_dark else "#EAEAEB"
 
         btn_danger_bg = "#3B1818" if is_dark else "#FEF2F2"
         btn_danger_border = "#5C1D1D" if is_dark else "#FEE2E2"
@@ -1374,9 +1374,9 @@ class SettingsView(QWidget):
         btn_danger_hover_bg = "#4C1D1D" if is_dark else "#FEE2E2"
 
         div_color = "rgba(255, 255, 255, 0.06)" if is_dark else "rgba(0, 0, 0, 0.06)"
-        table_grid = "#27272A" if is_dark else "#EFECE5"
-        table_header_bg = "#27272A" if is_dark else "#EBE6DC"
-        table_header_border = "#3F3F46" if is_dark else "#D6D0C5"
+        table_grid = "#27272A" if is_dark else "#E5E5EA"
+        table_header_bg = "#27272A" if is_dark else "#F4F4F6"
+        table_header_border = "#3F3F46" if is_dark else "#E4E4E7"
 
         # Headers
         self.title_lbl.setStyleSheet(f"color: {text_primary};")
