@@ -413,7 +413,8 @@ class CreateSectionDialog(QDialog):
         submit_hover_bg = "#A3360E" if self.is_dark else "#9E3414"
 
         self.outer_layout = QVBoxLayout(self)
-        self.outer_layout.setContentsMargins(12, 12, 12, 12)
+        self.outer_layout.setContentsMargins(0, 0, 0, 0)
+        self.outer_layout.setSpacing(0)
 
         self.card = QFrame()
         self.card.setObjectName("createSectionCard")
@@ -424,13 +425,6 @@ class CreateSectionDialog(QDialog):
                 border-radius: 18px;
             }}
         """)
-
-        # Drop shadow (radius 10 fits strictly inside layout margins)
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(10)
-        shadow.setColor(QColor(0, 0, 0, 60 if self.is_dark else 40))
-        shadow.setOffset(0, 2)
-        self.card.setGraphicsEffect(shadow)
 
         self.card_layout = QVBoxLayout(self.card)
         self.card_layout.setContentsMargins(20, 18, 20, 18)
@@ -2128,19 +2122,12 @@ class QuickEntryDialog(QDialog):
 
         # Main Outer Container Layout
         self.outer_layout = QVBoxLayout(self)
-        self.outer_layout.setContentsMargins(12, 12, 12, 12)
+        self.outer_layout.setContentsMargins(0, 0, 0, 0)
         self.outer_layout.setSpacing(0)
 
         # Outer rounded card frame
         self.outer_frame = QFrame()
         self.outer_frame.setObjectName("outerFrame")
-
-        # Add drop shadow (radius 10 fits strictly inside 12px layout margins)
-        self._shadow_effect = QGraphicsDropShadowEffect(self)
-        self._shadow_effect.setBlurRadius(10)
-        self._shadow_effect.setColor(QColor(0, 0, 0, 50 if self.is_dark else 35))
-        self._shadow_effect.setOffset(0, 2)
-        self.outer_frame.setGraphicsEffect(self._shadow_effect)
 
         self.outer_layout.addWidget(self.outer_frame)
 
@@ -2471,16 +2458,8 @@ class QuickEntryDialog(QDialog):
             self.frame_layout.invalidate()
             self.frame_layout.activate()
 
-        # 2. Recreate the shadow effect to flush its internal pixel cache
+        # 2. Force repaint of outer frame
         if hasattr(self, "outer_frame"):
-            self.outer_frame.setGraphicsEffect(None)
-            self._shadow_effect = QGraphicsDropShadowEffect(self)
-            self._shadow_effect.setBlurRadius(10)
-            self._shadow_effect.setColor(
-                QColor(0, 0, 0, 50 if self.is_dark else 35)
-            )
-            self._shadow_effect.setOffset(0, 2)
-            self.outer_frame.setGraphicsEffect(self._shadow_effect)
             self.outer_frame.repaint()
 
         self.repaint()
