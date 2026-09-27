@@ -1352,11 +1352,11 @@ class SettingsView(QWidget):
         """Apply complete theme styling."""
         is_dark = self.is_dark
 
-        inner_bg = "#18181B" if is_dark else "#F0F0F2"
+        inner_bg = "rgba(24, 24, 29, 0.55)" if is_dark else "rgba(238, 238, 242, 0.60)"
         text_primary = "#F4F4F5" if is_dark else "#18181B"
         text_secondary = "#A1A1AA" if is_dark else "#71717A"
-        input_bg = "#27272A" if is_dark else "#FFFFFF"
-        input_border = "#3F3F46" if is_dark else "#E4E4E7"
+        input_bg = "rgba(255, 255, 255, 0.06)" if is_dark else "rgba(255, 255, 255, 0.90)"
+        input_border = "rgba(255, 255, 255, 0.15)" if is_dark else "#E4E4E7"
         input_focus = "#C2410C" if is_dark else "#BA3F1A"
 
         save_bg = "#C2410C" if is_dark else "#BA3F1A"

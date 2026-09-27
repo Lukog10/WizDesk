@@ -42,20 +42,20 @@
 ## 3. Incremental Execution Steps
 
 ### Phase 1: Window Blur Utility & Tests
-- [ ] **Step 1.1**: Create `wiz/utils/window_blur.py`:
+- [x] **Step 1.1**: Create `wiz/utils/window_blur.py`:
   - Check `sys.platform == "win32"`.
   - Define `DWMWA_SYSTEMBACKDROP_TYPE = 38`, `DWMSBT_ACRYLIC = 3`, `DWMSBT_MICA = 2`, `DWMWA_USE_IMMERSIVE_DARK_MODE = 20`.
   - Provide `set_window_backdrop(hwnd, backdrop_type=DWMSBT_ACRYLIC, is_dark=True) -> bool` with graceful error handling.
   - On non-Windows platforms (e.g. Linux), safely return False without attempting any DLL imports.
-- [ ] **Step 1.2**: Create `tests/test_window_blur.py`:
+- [x] **Step 1.2**: Create `tests/test_window_blur.py`:
   - Test platform detection and mock calls.
   - Verify that invalid window handles or OS exceptions are caught without raising errors.
 
 ### Phase 2: Translucent Shell & Color Tokens in QuickEntryDialog
-- [ ] **Step 2.1**: Update `QuickEntryDialog.__init__` in `wiz/ui/popup_dialog.py`:
+- [x] **Step 2.1**: Update `QuickEntryDialog.__init__` in `wiz/ui/popup_dialog.py`:
   - Enable `self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)`.
   - Connect theme changes to update the window backdrop mode.
-- [ ] **Step 2.2**: Update `QuickEntryDialog.apply_theme`:
+- [x] **Step 2.2**: Update `QuickEntryDialog.apply_theme`:
   - Dark Liquid Glass:
     - `outer_bg`: `rgba(18, 18, 22, 0.72)` with border `1px solid rgba(255, 255, 255, 0.18)`
     - `inner_bg`: `rgba(24, 24, 29, 0.55)` with border `1px solid rgba(255, 255, 255, 0.12)`
@@ -67,17 +67,17 @@
   - Brand accents: strictly preserved (`#BA3F1A` / `#C2410C` / `#FF6B3D`).
 
 ### Phase 3: SideNavBar & Settings Glass Polish
-- [ ] **Step 3.1**: Update `SideNavBar.apply_theme` in `wiz/ui/sidebar_widget.py`:
+- [x] **Step 3.1**: Update `SideNavBar.apply_theme` in `wiz/ui/sidebar_widget.py`:
   - Dark Glass sidebar: `background-color: rgba(14, 14, 18, 0.65); border-right: 1px solid rgba(255, 255, 255, 0.10);`
   - Light Glass sidebar: `background-color: rgba(242, 242, 245, 0.70); border-right: 1px solid rgba(0, 0, 0, 0.08);`
   - Specular button and hover styling: clean translucent states.
-- [ ] **Step 3.2**: Update `SettingsDialog.apply_theme` and `SettingsView.apply_theme`:
+- [x] **Step 3.2**: Update `SettingsDialog.apply_theme` and `SettingsView.apply_theme`:
   - Apply corresponding outer and inner glass tokens.
 
 ### Phase 4: Verification, Test Suite & Package Gate
-- [ ] **Step 4.1**: Execute automated pytest suite:
+- [x] **Step 4.1**: Execute automated pytest suite:
   - Run full test suite (`pytest`) verifying all 116 existing tests pass plus new blur tests.
-- [ ] **Step 4.2**: Render offscreen verification screenshots:
+- [x] **Step 4.2**: Render offscreen verification screenshots:
   - Verify Dark Liquid Glass and Light Crystal Glass render cleanly with high contrast, sharp text, and elegant specular highlights.
-- [ ] **Step 4.3**: Rebuild standalone executable (`pyinstaller wizdesk.spec`) to bundle the new utility.
-- [ ] **Step 4.4**: Commit working tree with a clean commit message following all constraints.
+- [x] **Step 4.3**: Rebuild standalone executable (`pyinstaller wizdesk.spec`) to bundle the new utility.
+- [x] **Step 4.4**: Commit working tree with a clean commit message following all constraints.

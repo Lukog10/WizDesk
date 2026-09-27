@@ -127,8 +127,8 @@ class CalendarPopupDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        card_border = "#27272A" if self.is_dark else "#E5E5EA"
+        card_bg = "rgba(24, 24, 29, 0.88)" if self.is_dark else "rgba(255, 255, 255, 0.92)"
+        card_border = "rgba(255, 255, 255, 0.16)" if self.is_dark else "rgba(255, 255, 255, 0.60)"
         combo_bg = "#27272A" if self.is_dark else "#F4F4F6"
         combo_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         combo_text = "#F4F4F5" if self.is_dark else "#18181B"
@@ -396,8 +396,8 @@ class CreateSectionDialog(QDialog):
 
         self.is_dark = is_dark if is_dark is not None else (config.theme == "dark")
 
-        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        card_border = "#27272A" if self.is_dark else "#E5E5EA"
+        card_bg = "rgba(24, 24, 29, 0.88)" if self.is_dark else "rgba(255, 255, 255, 0.92)"
+        card_border = "rgba(255, 255, 255, 0.16)" if self.is_dark else "rgba(255, 255, 255, 0.60)"
         title_color = "#F4F4F5" if self.is_dark else "#18181B"
         close_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
         input_bg = "#27272A" if self.is_dark else "#F4F4F6"
@@ -2505,30 +2505,37 @@ class QuickEntryDialog(QDialog):
         if hasattr(self, "filter_bar"):
             self.filter_bar.set_dark_mode(self.is_dark)
 
-        # Color tokens - Brand aligned & Crisp Modern Light Mode
-        outer_bg = "#121214" if self.is_dark else "#F4F4F6"
-        outer_border = "#27272A" if self.is_dark else "#E4E4E7"
-        inner_bg = "#18181B" if self.is_dark else "#F0F0F2"
-        inner_border = "#27272A" if self.is_dark else "#E4E4E7"
+        # Coordinate Acrylic backdrop blur with Windows 11 compositor
+        try:
+            from wiz.utils.window_blur import set_window_acrylic
+            set_window_acrylic(int(self.winId()), is_dark=self.is_dark)
+        except Exception:
+            pass
+
+        # Liquid Glass color tokens: Translucent frosted glass and specular rim highlights
+        outer_bg = "rgba(18, 18, 22, 0.72)" if self.is_dark else "rgba(248, 248, 250, 0.78)"
+        outer_border = "rgba(255, 255, 255, 0.18)" if self.is_dark else "rgba(255, 255, 255, 0.65)"
+        inner_bg = "rgba(24, 24, 29, 0.55)" if self.is_dark else "rgba(238, 238, 242, 0.60)"
+        inner_border = "rgba(255, 255, 255, 0.12)" if self.is_dark else "rgba(255, 255, 255, 0.50)"
         page_title_color = "#F4F4F5" if self.is_dark else "#18181B"
         ctrl_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
         ctrl_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.05)"
         ctrl_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
-        mode_capsule_bg = "#27272A" if self.is_dark else "#F0F0F2"
+        mode_capsule_bg = "rgba(255, 255, 255, 0.04)" if self.is_dark else "rgba(0, 0, 0, 0.04)"
         day_btn_color = "#A1A1AA" if self.is_dark else "#71717A"
-        day_btn_border = "#3F3F46" if self.is_dark else "#E4E4E7"
-        day_btn_hover_bg = "#27272A" if self.is_dark else "#EAEAEB"
+        day_btn_border = "rgba(255, 255, 255, 0.15)" if self.is_dark else "#E4E4E7"
+        day_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "#EAEAEB"
         day_btn_hover_color = "#FAFAFA" if self.is_dark else "#18181B"
         date_btn_color = "#F4F4F5" if self.is_dark else "#18181B"
         today_pill_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         today_pill_color = "#FFFFFF"
         today_pill_hover = "#A3360E" if self.is_dark else "#9E3414"
-        input_bg = "#27272A" if self.is_dark else "#FFFFFF"
+        input_bg = "rgba(255, 255, 255, 0.06)" if self.is_dark else "rgba(255, 255, 255, 0.90)"
         input_color = "#F4F4F5" if self.is_dark else "#18181B"
-        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        input_border = "rgba(255, 255, 255, 0.15)" if self.is_dark else "#E4E4E7"
         input_focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
         combo_popup_bg = "#18181B" if self.is_dark else "#FFFFFF"
-        combo_popup_border = "#27272A" if self.is_dark else "#E4E4E7"
+        combo_popup_border = "rgba(255, 255, 255, 0.15)" if self.is_dark else "#E4E4E7"
         combo_popup_sel_bg = "rgba(194, 65, 12, 0.22)" if self.is_dark else "#FEECE5"
         combo_popup_sel_text = "#FFAB91" if self.is_dark else "#BA3F1A"
         btn_action_bg = "#C2410C" if self.is_dark else "#BA3F1A"
@@ -2890,6 +2897,11 @@ class QuickEntryDialog(QDialog):
     def showEvent(self, event) -> None:
         """Roll recurring tasks when opening or re-showing the dialog."""
         super().showEvent(event)
+        try:
+            from wiz.utils.window_blur import set_window_acrylic
+            set_window_acrylic(int(self.winId()), is_dark=self.is_dark)
+        except Exception:
+            pass
         self.repo.roll_recurring_tasks(today=date.today())
         if hasattr(self, "current_view_mode") and self.current_view_mode == "tasks":
             self.refresh_tasks()
