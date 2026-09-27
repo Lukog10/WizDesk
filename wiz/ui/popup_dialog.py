@@ -2219,22 +2219,16 @@ class QuickEntryDialog(QDialog):
 
         top_bar.addStretch()
 
-        # Window Control Buttons (Theme, -, □, x)
+        # Window Control Buttons (-, x) - enlarged to 28x28 with refined symbols
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(6)
 
+        # Preserved hidden for backwards compatibility with tests and signals
         self.theme_btn = QPushButton("☀" if self.is_dark else "☾")
-        self.theme_btn.setFixedSize(22, 22)
-        self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
-        self.theme_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.theme_btn.setAutoDefault(False)
-        self.theme_btn.setDefault(False)
-        self.theme_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.theme_btn.clicked.connect(self.toggle_theme)
-        controls_layout.addWidget(self.theme_btn)
+        self.theme_btn.hide()
 
-        self.min_btn = QPushButton("-")
-        self.min_btn.setFixedSize(22, 22)
+        self.min_btn = QPushButton("−")
+        self.min_btn.setFixedSize(28, 28)
         self.min_btn.setToolTip("Minimize")
         self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.min_btn.setAutoDefault(False)
@@ -2243,8 +2237,8 @@ class QuickEntryDialog(QDialog):
         self.min_btn.clicked.connect(self.showMinimized)
         controls_layout.addWidget(self.min_btn)
 
-        self.close_btn = QPushButton("x")
-        self.close_btn.setFixedSize(22, 22)
+        self.close_btn = QPushButton("✕")
+        self.close_btn.setFixedSize(28, 28)
         self.close_btn.setToolTip("Close")
         self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.close_btn.setAutoDefault(False)
@@ -2560,24 +2554,43 @@ class QuickEntryDialog(QDialog):
         # 2. Window Controls & Title
         if hasattr(self, "page_title_lbl"):
             self.page_title_lbl.setStyleSheet(f"color: {page_title_color};")
-        ctrl_qss = f"""
+
+        min_qss = f"""
             QPushButton {{
                 background-color: transparent;
                 color: {ctrl_btn_color};
                 border: none;
-                font-family: {FONT_MONO};
-                font-size: 13px;
+                font-family: {FONT_SANS};
+                font-size: 15px;
                 font-weight: bold;
-                border-radius: 11px;
+                border-radius: 14px;
             }}
             QPushButton:hover {{
                 background-color: {ctrl_btn_hover_bg};
                 color: {ctrl_btn_hover_color};
             }}
         """
-        self.theme_btn.setStyleSheet(ctrl_qss)
-        self.min_btn.setStyleSheet(ctrl_qss)
-        self.close_btn.setStyleSheet(ctrl_qss)
+        self.min_btn.setStyleSheet(min_qss)
+        self.theme_btn.setStyleSheet(min_qss)
+
+        close_hover_bg = "rgba(239, 68, 68, 0.20)" if self.is_dark else "rgba(239, 68, 68, 0.12)"
+        close_hover_color = "#EF4444" if self.is_dark else "#DC2626"
+        close_qss = f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {ctrl_btn_color};
+                border: none;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+                font-weight: bold;
+                border-radius: 14px;
+            }}
+            QPushButton:hover {{
+                background-color: {close_hover_bg};
+                color: {close_hover_color};
+            }}
+        """
+        self.close_btn.setStyleSheet(close_qss)
 
         # 3. Mode Capsule (legacy compatibility)
         if hasattr(self, "mode_capsule"):

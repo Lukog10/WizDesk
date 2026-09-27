@@ -322,23 +322,24 @@ class SideNavBar(QWidget):
 
         self.logo_lbl = QLabel()
         self.logo_lbl.setFixedSize(24, 24)
-        pix = get_app_pixmap(24, "wiz-idle.svg")
+        self.logo_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        pix = get_app_pixmap(24, "wizdesk-logo.svg")
         if not pix.isNull():
             self.logo_lbl.setPixmap(pix)
-        brand_c_layout.addWidget(self.logo_lbl)
+        brand_c_layout.addWidget(self.logo_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.brand_title = QLabel("WizDesk")
         self.brand_title.setFont(get_font(12, QFont.Weight.Bold, display=True))
-        brand_c_layout.addWidget(self.brand_title)
+        brand_c_layout.addWidget(self.brand_title, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        self.brand_layout.addWidget(self.brand_container)
+        self.brand_layout.addWidget(self.brand_container, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.header_spacer_left = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.brand_layout.addItem(self.header_spacer_left)
 
         self.toggle_btn = SidebarToggleButton(is_dark=self.is_dark, parent=self)
         self.toggle_btn.clicked.connect(self.toggle_sidebar)
-        self.brand_layout.addWidget(self.toggle_btn)
+        self.brand_layout.addWidget(self.toggle_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.header_spacer_right = QSpacerItem(0, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
         self.brand_layout.addItem(self.header_spacer_right)
@@ -522,6 +523,9 @@ class SideNavBar(QWidget):
         """)
 
         self.logo_lbl.setStyleSheet("background: transparent;")
+        pix = get_app_pixmap(24, "wizdesk-logo.svg")
+        if not pix.isNull():
+            self.logo_lbl.setPixmap(pix)
         self.brand_title.setStyleSheet(f"color: {brand_color}; background: transparent;")
         self.workspace_lbl.setStyleSheet(f"color: {sub_color}; background: transparent; padding-left: 8px; margin-bottom: 2px;")
         self.divider.setStyleSheet(f"background-color: {border_color}; border: none;")

@@ -84,15 +84,15 @@ class SettingsDialog(QDialog):
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(6)
 
-        self.min_btn = QPushButton("-")
-        self.min_btn.setFixedSize(22, 22)
+        self.min_btn = QPushButton("−")
+        self.min_btn.setFixedSize(28, 28)
         self.min_btn.setToolTip("Minimize")
         self.min_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.min_btn.clicked.connect(self.showMinimized)
         controls_layout.addWidget(self.min_btn)
 
         self.close_btn = QPushButton("✕")
-        self.close_btn.setFixedSize(22, 22)
+        self.close_btn.setFixedSize(28, 28)
         self.close_btn.setToolTip("Close")
         self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.close_btn.clicked.connect(self.reject)
@@ -361,29 +361,31 @@ class SettingsDialog(QDialog):
                 background-color: transparent;
                 color: {text_secondary};
                 border: none;
-                font-family: {FONT_MONO};
-                font-size: 13px;
+                font-family: {FONT_SANS};
+                font-size: 15px;
                 font-weight: bold;
-                border-radius: 11px;
+                border-radius: 14px;
             }}
             QPushButton:hover {{
-                background-color: rgba(255, 255, 255, 0.08) if self.is_dark else rgba(0, 0, 0, 0.08);
+                background-color: rgba(255, 255, 255, 0.08) if self.is_dark else rgba(0, 0, 0, 0.06);
                 color: {text_primary};
             }}
         """)
+        close_hover_bg = "rgba(239, 68, 68, 0.20)" if self.is_dark else "rgba(239, 68, 68, 0.12)"
+        close_hover_color = "#EF4444" if self.is_dark else "#DC2626"
         self.close_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
                 color: {text_secondary};
                 border: none;
-                font-family: {FONT_MONO};
-                font-size: 11px;
+                font-family: {FONT_SANS};
+                font-size: 13px;
                 font-weight: bold;
-                border-radius: 11px;
+                border-radius: 14px;
             }}
             QPushButton:hover {{
-                background-color: rgba(239, 68, 68, 0.15);
-                color: #EF4444;
+                background-color: {close_hover_bg};
+                color: {close_hover_color};
             }}
         """)
 
