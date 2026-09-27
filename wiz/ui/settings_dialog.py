@@ -58,11 +58,11 @@ class SettingsDialog(QDialog):
         self.outer_frame = QFrame()
         self.outer_frame.setObjectName("outerFrame")
 
-        # Add drop shadow
+        # Add drop shadow (radius 10 fits strictly inside 12px layout margins)
         self._shadow_effect = QGraphicsDropShadowEffect(self)
-        self._shadow_effect.setBlurRadius(28)
+        self._shadow_effect.setBlurRadius(10)
         self._shadow_effect.setColor(QColor(0, 0, 0, 50 if self.is_dark else 35))
-        self._shadow_effect.setOffset(0, 6)
+        self._shadow_effect.setOffset(0, 2)
         self.outer_frame.setGraphicsEffect(self._shadow_effect)
 
         self.outer_layout.addWidget(self.outer_frame)

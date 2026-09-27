@@ -324,21 +324,21 @@ class KpiStatCard(QFrame):
                 icon_border = "rgba(255, 255, 255, 0.25)"
                 icon_color = "#FFFFFF"
             else:
-                bg = "#242427"
-                border = "#333338"
-                hover_bg = "#2A2A2F"
+                bg = "rgba(255, 255, 255, 0.04)"
+                border = "rgba(255, 255, 255, 0.10)"
+                hover_bg = "rgba(255, 255, 255, 0.07)"
                 hover_border = "#FF6B3D"
                 text_color = "#F4F4F6"
                 sub_color = "#A1A1AA"
                 badge_bg = "rgba(16, 185, 129, 0.15)" if "+" in self.change_text else ("rgba(244, 63, 94, 0.15)" if "-" in self.change_text else "rgba(255, 107, 61, 0.20)")
                 badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#FF8E6B")
                 badge_border = border
-                prog_bg = "#333338"
+                prog_bg = "rgba(255, 255, 255, 0.08)"
                 prog_chunk = "#10B981"
                 prog_chunk_hover = "#34D399"
                 card_border = f"1px solid {border}"
-                icon_bg = "#1F1F22"
-                icon_border = "#333338"
+                icon_bg = "rgba(255, 255, 255, 0.06)"
+                icon_border = "rgba(255, 255, 255, 0.12)"
                 icon_color = "#A1A1AA"
         else:
             if self.is_hero:
@@ -359,9 +359,9 @@ class KpiStatCard(QFrame):
                 icon_border = "#FFBCAA"
                 icon_color = "#E64A19"
             else:
-                bg = "#FFFFFF"
-                border = "#E4E4E7"
-                hover_bg = "#F4F4F6"
+                bg = "rgba(255, 255, 255, 0.70)"
+                border = "rgba(255, 255, 255, 0.80)"
+                hover_bg = "rgba(255, 255, 255, 0.90)"
                 hover_border = "#BA3F1A"
                 text_color = "#18181B"
                 sub_color = "#71717A"
@@ -1118,10 +1118,10 @@ class ProjectComparisonChartWidget(QFrame):
         self.btn_area.setStyleSheet(btn_base + (f"background-color: {active_bg}; color: {active_color};" if mode == "area" else f"background: transparent; color: {inactive_color};"))
 
     def apply_theme(self) -> None:
-        bg = "#242427" if self.is_dark else "#FFFFFF"
-        border = "#333338" if self.is_dark else "#E5E5EA"
-        hover_border = "#4A4A54" if self.is_dark else "#E4E4E7"
-        capsule_bg = "#1E1E22" if self.is_dark else "#F0F0F2"
+        bg = "rgba(255, 255, 255, 0.04)" if self.is_dark else "rgba(255, 255, 255, 0.70)"
+        border = "rgba(255, 255, 255, 0.10)" if self.is_dark else "rgba(255, 255, 255, 0.80)"
+        hover_border = "rgba(255, 255, 255, 0.20)" if self.is_dark else "#E4E4E7"
+        capsule_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "#F0F0F2"
         title_color = "#F4F4F6" if self.is_dark else "#18181B"
 
         self.setStyleSheet(f"""
@@ -1659,16 +1659,16 @@ class ProjectTrackingWidget(QFrame):
             self.set_project_targets(self.projects_data, self.total_hours)
 
     def apply_theme(self) -> None:
-        bg = "#242427" if self.is_dark else "#FFFFFF"
-        border = "#333338" if self.is_dark else "#E5E5EA"
-        hover_border = "#4A4A54" if self.is_dark else "#E4E4E7"
+        bg = "rgba(255, 255, 255, 0.04)" if self.is_dark else "rgba(255, 255, 255, 0.70)"
+        border = "rgba(255, 255, 255, 0.10)" if self.is_dark else "rgba(255, 255, 255, 0.80)"
+        hover_border = "rgba(255, 255, 255, 0.20)" if self.is_dark else "#E4E4E7"
         title_color = "#F4F4F6" if self.is_dark else "#18181B"
         sub_color = "#A1A1AA" if self.is_dark else "#71717A"
-        badge_bg = "#1F1F22" if self.is_dark else "#F4F4F6"
-        badge_border = "#333338" if self.is_dark else "#E4E4E7"
+        badge_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "#F4F4F6"
+        badge_border = "rgba(255, 255, 255, 0.10)" if self.is_dark else "#E4E4E7"
         badge_color = "#A1A1AA" if self.is_dark else "#71717A"
-        scrollbar_thumb = "#3F3F46" if self.is_dark else "#D4D4D8"
-        scrollbar_thumb_hover = "#52525B" if self.is_dark else "#A1A1AA"
+        scrollbar_thumb = "rgba(255, 255, 255, 0.20)" if self.is_dark else "#D4D4D8"
+        scrollbar_thumb_hover = "rgba(255, 255, 255, 0.35)" if self.is_dark else "#A1A1AA"
 
         self.lbl_subtitle.setStyleSheet(f"color: {sub_color};")
         self.setStyleSheet(f"""
@@ -2101,14 +2101,14 @@ class AppUsageAnalyticsWidget(QFrame):
         self.btn_bar.setStyleSheet(btn_base + (f"background-color: {active_bg}; color: {active_color};" if mode == "bar" else f"background: transparent; color: {inactive_color};"))
 
     def apply_theme(self) -> None:
-        bg = "#242427" if self.is_dark else "#FFFFFF"
-        border = "#333338" if self.is_dark else "#E5E5EA"
-        hover_border = "#4A4A54" if self.is_dark else "#E4E4E7"
-        capsule_bg = "#1E1E22" if self.is_dark else "#F0F0F2"
+        bg = "rgba(255, 255, 255, 0.04)" if self.is_dark else "rgba(255, 255, 255, 0.70)"
+        border = "rgba(255, 255, 255, 0.10)" if self.is_dark else "rgba(255, 255, 255, 0.80)"
+        hover_border = "rgba(255, 255, 255, 0.20)" if self.is_dark else "#E4E4E7"
+        capsule_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "#F0F0F2"
         title_color = "#F4F4F6" if self.is_dark else "#18181B"
-        divider_color = "#333338" if self.is_dark else "#E5E5EA"
-        badge_bg = "#1F1F22" if self.is_dark else "#F4F4F6"
-        badge_border = "#333338" if self.is_dark else "#E4E4E7"
+        divider_color = "rgba(255, 255, 255, 0.08)" if self.is_dark else "#E5E5EA"
+        badge_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "#F4F4F6"
+        badge_border = "rgba(255, 255, 255, 0.10)" if self.is_dark else "#E4E4E7"
         badge_color = "#A1A1AA" if self.is_dark else "#71717A"
 
         self.setStyleSheet(f"""

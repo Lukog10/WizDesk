@@ -130,14 +130,14 @@ class AppSessionCard(QFrame):
             self.setStyleSheet(
                 """
                 QFrame#AppSessionCard {
-                    background-color: #242427;
-                    border: 1px solid #333338;
+                    background-color: rgba(255, 255, 255, 0.04);
+                    border: 1px solid rgba(255, 255, 255, 0.10);
                     border-radius: 8px;
                 }
                 QLabel#ProjectPill {
-                    background-color: #2E2E33;
+                    background-color: rgba(255, 255, 255, 0.05);
                     color: #A1A1AA;
-                    border: 1px solid #3F3F46;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
                     border-radius: 4px;
                     padding: 2px 8px;
                 }
@@ -247,14 +247,14 @@ class MilestoneCard(QFrame):
             self.setStyleSheet(
                 f"""
                 QFrame#MilestoneCard {{
-                    background-color: #242427;
+                    background-color: rgba(255, 255, 255, 0.04);
                     border: 1px solid {border_color};
                     border-radius: 8px;
                 }}
                 QLabel#ProjectPill {{
-                    background-color: #2E2E33;
+                    background-color: rgba(255, 255, 255, 0.05);
                     color: #A1A1AA;
-                    border: 1px solid #3F3F46;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
                     border-radius: 4px;
                     padding: 2px 8px;
                 }}
@@ -463,9 +463,9 @@ class TimelineView(QWidget):
                     border: none;
                 }}
                 QLabel#MetricBadge {{
-                    background-color: #242427;
+                    background-color: rgba(255, 255, 255, 0.05);
                     color: #E4E4E7;
-                    border: 1px solid #333338;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
                     border-radius: 6px;
                     padding: 0 10px;
                     font-family: {FONT_SANS};
@@ -476,9 +476,9 @@ class TimelineView(QWidget):
             )
             chip_style = f"""
                 QPushButton {{
-                    background-color: #242427;
+                    background-color: rgba(255, 255, 255, 0.05);
                     color: #A1A1AA;
-                    border: 1px solid #3F3F46;
+                    border: 1px solid rgba(255, 255, 255, 0.12);
                     border-radius: 12px;
                     padding: 4px 12px;
                     font-family: {FONT_SANS};
@@ -492,15 +492,15 @@ class TimelineView(QWidget):
                     font-weight: 600;
                 }}
                 QPushButton:hover:!checked {{
-                    background-color: #2E2E33;
+                    background-color: rgba(255, 255, 255, 0.08);
                     color: #FFFFFF;
                 }}
             """
             combo_style = f"""
                 QComboBox {{
-                    background-color: #242427;
+                    background-color: rgba(255, 255, 255, 0.06);
                     color: #F4F4F6;
-                    border: 1px solid #333338;
+                    border: 1px solid rgba(255, 255, 255, 0.15);
                     border-radius: 6px;
                     padding: 0 22px 0 10px;
                     font-family: {FONT_SANS};
@@ -508,18 +508,18 @@ class TimelineView(QWidget):
                     font-weight: 500;
                 }}
                 QComboBox:hover {{
-                    background-color: #2A2A2E;
-                    border-color: #3F3F46;
+                    background-color: rgba(255, 255, 255, 0.09);
+                    border-color: rgba(255, 255, 255, 0.25);
                 }}
                 QComboBox::drop-down {{
                     border: none;
                     width: 0px;
                 }}
                 QComboBox QAbstractItemView {{
-                    background-color: #242427;
+                    background-color: #18181B;
                     color: #F4F4F6;
-                    selection-background-color: #3F3F46;
-                    border: 1px solid #3F3F46;
+                    selection-background-color: rgba(194, 65, 12, 0.22);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
                     min-width: 130px;
                 }}
             """

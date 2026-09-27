@@ -425,11 +425,11 @@ class CreateSectionDialog(QDialog):
             }}
         """)
 
-        # Drop shadow
+        # Drop shadow (radius 10 fits strictly inside layout margins)
         shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(28)
+        shadow.setBlurRadius(10)
         shadow.setColor(QColor(0, 0, 0, 60 if self.is_dark else 40))
-        shadow.setOffset(0, 6)
+        shadow.setOffset(0, 2)
         self.card.setGraphicsEffect(shadow)
 
         self.card_layout = QVBoxLayout(self.card)
@@ -2135,11 +2135,11 @@ class QuickEntryDialog(QDialog):
         self.outer_frame = QFrame()
         self.outer_frame.setObjectName("outerFrame")
 
-        # Add drop shadow
+        # Add drop shadow (radius 10 fits strictly inside 12px layout margins)
         self._shadow_effect = QGraphicsDropShadowEffect(self)
-        self._shadow_effect.setBlurRadius(28)
+        self._shadow_effect.setBlurRadius(10)
         self._shadow_effect.setColor(QColor(0, 0, 0, 50 if self.is_dark else 35))
-        self._shadow_effect.setOffset(0, 6)
+        self._shadow_effect.setOffset(0, 2)
         self.outer_frame.setGraphicsEffect(self._shadow_effect)
 
         self.outer_layout.addWidget(self.outer_frame)
@@ -2475,11 +2475,11 @@ class QuickEntryDialog(QDialog):
         if hasattr(self, "outer_frame"):
             self.outer_frame.setGraphicsEffect(None)
             self._shadow_effect = QGraphicsDropShadowEffect(self)
-            self._shadow_effect.setBlurRadius(28)
+            self._shadow_effect.setBlurRadius(10)
             self._shadow_effect.setColor(
                 QColor(0, 0, 0, 50 if self.is_dark else 35)
             )
-            self._shadow_effect.setOffset(0, 6)
+            self._shadow_effect.setOffset(0, 2)
             self.outer_frame.setGraphicsEffect(self._shadow_effect)
             self.outer_frame.repaint()
 

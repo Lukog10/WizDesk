@@ -56,7 +56,19 @@ def set_window_backdrop(
             c_int(sizeof(dark_val)),
         )
 
-        # 2. Apply system backdrop (Acrylic = 3, Mica = 2)
+        # 2. Extend frame into client area so DWM applies backdrop to frameless windows
+        class MARGINS(ctypes.Structure):
+            _fields_ = [
+                ("cxLeftWidth", c_int),
+                ("cxRightWidth", c_int),
+                ("cyTopHeight", c_int),
+                ("cyBottomHeight", c_int),
+            ]
+
+        margins = MARGINS(-1, -1, -1, -1)
+        dwmapi.DwmExtendFrameIntoClientArea(c_int(hwnd), byref(margins))
+
+        # 3. Apply system backdrop (Acrylic = 3, Mica = 2)
         backdrop_val = c_int(backdrop_type)
         hr = dwmapi.DwmSetWindowAttribute(
             c_int(hwnd),
