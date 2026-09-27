@@ -51,12 +51,19 @@ class SettingsDialog(QDialog):
 
         # Main Outer Container Layout
         self.outer_layout = QVBoxLayout(self)
-        self.outer_layout.setContentsMargins(0, 0, 0, 0)
+        self.outer_layout.setContentsMargins(12, 12, 12, 12)
         self.outer_layout.setSpacing(0)
 
         # Outer rounded card frame
         self.outer_frame = QFrame()
         self.outer_frame.setObjectName("outerFrame")
+
+        # Add drop shadow
+        self._shadow_effect = QGraphicsDropShadowEffect(self)
+        self._shadow_effect.setBlurRadius(28)
+        self._shadow_effect.setColor(QColor(0, 0, 0, 50 if self.is_dark else 35))
+        self._shadow_effect.setOffset(0, 6)
+        self.outer_frame.setGraphicsEffect(self._shadow_effect)
 
         self.outer_layout.addWidget(self.outer_frame)
 
@@ -293,25 +300,9 @@ class SettingsDialog(QDialog):
         config.set_theme(new_theme)
         app_signals.theme_changed.emit(new_theme)
 
-    def showEvent(self, event) -> None:
-        """Apply Acrylic blur when opening dialog."""
-        super().showEvent(event)
-        try:
-            from wiz.utils.window_blur import set_window_acrylic
-            set_window_acrylic(int(self.winId()), is_dark=self.is_dark)
-        except Exception:
-            pass
-
     def apply_theme(self, theme_name: str) -> None:
         """Dynamically apply Light or Dark theme styling to the settings dialog."""
         self.is_dark = (theme_name.lower() == "dark")
-
-        # Coordinate Acrylic backdrop blur with Windows 11 compositor
-        try:
-            from wiz.utils.window_blur import set_window_acrylic
-            set_window_acrylic(int(self.winId()), is_dark=self.is_dark)
-        except Exception:
-            pass
 
         # Sync checkbox state without re-triggering signal
         self.dark_mode_check.blockSignals(True)
@@ -320,16 +311,15 @@ class SettingsDialog(QDialog):
         self.float_anim_check.set_dark_mode(self.is_dark)
         self.dark_mode_check.blockSignals(False)
 
-        # Liquid Glass color tokens: Translucent frosted glass and specular rim highlights
-        outer_bg = "rgba(18, 18, 22, 0.72)" if self.is_dark else "rgba(248, 248, 250, 0.78)"
-        outer_border = "rgba(255, 255, 255, 0.18)" if self.is_dark else "rgba(255, 255, 255, 0.65)"
-        inner_bg = "rgba(24, 24, 29, 0.55)" if self.is_dark else "rgba(238, 238, 242, 0.60)"
-        inner_border = "rgba(255, 255, 255, 0.12)" if self.is_dark else "rgba(255, 255, 255, 0.50)"
+        # Color tokens - Crisp Modern Light Mode & Neutral Cool Palette
+        outer_bg = "#121214" if self.is_dark else "#F4F4F6"
+        outer_border = "#27272A" if self.is_dark else "#E4E4E7"
+        inner_bg = "#18181B" if self.is_dark else "#F0F0F2"
+        inner_border = "#27272A" if self.is_dark else "#E4E4E7"
         text_primary = "#F4F4F5" if self.is_dark else "#18181B"
         text_secondary = "#A1A1AA" if self.is_dark else "#71717A"
-        ctrl_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.06)"
-        input_bg = "rgba(255, 255, 255, 0.06)" if self.is_dark else "rgba(255, 255, 255, 0.90)"
-        input_border = "rgba(255, 255, 255, 0.15)" if self.is_dark else "#E4E4E7"
+        input_bg = "#27272A" if self.is_dark else "#FFFFFF"
+        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
         input_focus = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_neutral_bg = "#27272A" if self.is_dark else "#FFFFFF"
         btn_neutral_border = "#3F3F46" if self.is_dark else "#E4E4E7"
@@ -343,7 +333,7 @@ class SettingsDialog(QDialog):
         btn_save_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_save_text = "#FFFFFF"
         btn_save_hover = "#A3360E" if self.is_dark else "#9E3414"
-        div_color = "rgba(255, 255, 255, 0.08)" if self.is_dark else "#E5E5EA"
+        div_color = "#27272A" if self.is_dark else "#E5E5EA"
         table_grid = "#27272A" if self.is_dark else "#E5E5EA"
         table_header_bg = "#27272A" if self.is_dark else "#FFFFFF"
         table_header_border = "#3F3F46" if self.is_dark else "#E4E4E7"
@@ -377,7 +367,7 @@ class SettingsDialog(QDialog):
                 border-radius: 14px;
             }}
             QPushButton:hover {{
-                background-color: {ctrl_hover_bg};
+                background-color: rgba(255, 255, 255, 0.08) if self.is_dark else rgba(0, 0, 0, 0.06);
                 color: {text_primary};
             }}
         """)

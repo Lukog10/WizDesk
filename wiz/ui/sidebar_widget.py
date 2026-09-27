@@ -124,7 +124,7 @@ class NavPillButton(QPushButton):
             text_color = QColor("#FFFFFF")
             icon_color = QColor("#FFFFFF")
         elif self.is_hovered:
-            bg_color = QColor(255, 255, 255, 20) if self.is_dark else QColor(0, 0, 0, 14)
+            bg_color = QColor(255, 255, 255, 14) if self.is_dark else QColor(0, 0, 0, 10)
             text_color = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
             icon_color = QColor("#FFFFFF") if self.is_dark else QColor("#18181B")
         else:
@@ -258,7 +258,7 @@ class SidebarToggleButton(QPushButton):
     def update_style(self, hover: bool = False) -> None:
         normal_fg = "#9CA3AF" if self.is_dark else "#71717A"
         hover_fg = "#FAFAFA" if self.is_dark else "#18181B"
-        hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.06)"
+        hover_bg = "#27272A" if self.is_dark else "#EAEAEB"
         c = hover_fg if hover else normal_fg
         self.setIcon(get_status_icon("icons/side-bar-fill.svg", c, 16))
         self.setIconSize(QSize(16, 16))
@@ -504,14 +504,14 @@ class SideNavBar(QWidget):
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
 
-        # Liquid Glass sidebar tokens: Translucent frosted glass and specular border
-        bg_color = "rgba(14, 14, 18, 0.65)" if is_dark else "rgba(242, 242, 245, 0.70)"
+        # Theme color variables - Crisp Modern Light Mode & Neutral Cool Palette
+        bg_color = "#16161A" if is_dark else "#F4F4F6"
         brand_color = "#F4F4F5" if is_dark else "#18181B"
         sub_color = "#71717A" if is_dark else "#71717A"
-        border_color = "rgba(255, 255, 255, 0.10)" if is_dark else "rgba(0, 0, 0, 0.08)"
-        btn_bg = "rgba(255, 255, 255, 0.05)" if is_dark else "rgba(255, 255, 255, 0.65)"
+        border_color = "#232328" if is_dark else "#E4E4E7"
+        btn_bg = "#232328" if is_dark else "#EAEAEB"
         btn_fg = "#D4D4D8" if is_dark else "#18181B"
-        btn_hover = "rgba(255, 255, 255, 0.10)" if is_dark else "rgba(255, 255, 255, 0.90)"
+        btn_hover = "#2D2D34" if is_dark else "#E4E4E7"
 
         self.setStyleSheet(f"""
             QWidget#sideNavBar {{
