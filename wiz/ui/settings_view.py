@@ -40,6 +40,7 @@ from wiz.storage.models import StorageRepository
 from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
 from wiz.ui.pill_number_picker import DurationPillSelector, PillSpinBox
+from wiz.utils.auth import authenticate_user
 from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
 
 # Shared component alias for backwards compatibility and tests
@@ -1145,18 +1146,43 @@ class SettingsView(QWidget):
                     )
 
     def _on_view_private_key(self) -> None:
-        """Open the personal private key export modal."""
+        """Open the personal private key export modal after OS authentication."""
         key = crypto_manager.load_key_dpapi()
-        if key:
-            key_str = CryptoManager.format_key_for_display(key)
-            dlg = KeyDisplayDialog(key_str, is_dark=self.is_dark, parent=self)
-            dlg.exec()
-        else:
+        if not key:
             QMessageBox.information(
                 self,
                 "Private Key",
                 "No encryption key found. Encryption is currently disabled.",
             )
+            return
+
+        parent_hwnd = None
+        win = self.window()
+        if win and hasattr(win, "winId"):
+            try:
+                parent_hwnd = int(win.winId())
+            except Exception:
+                parent_hwnd = None
+
+        authenticated = authenticate_user(
+            parent_hwnd=parent_hwnd,
+            title="WizDesk Security",
+            message="Please enter your Windows credentials to view and export your private recovery key.",
+        )
+        if not authenticated:
+            self.status_pill.setText("Authentication cancelled or failed")
+            self.status_pill.setStyleSheet(
+                f"color: #EF4444; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+            )
+            QTimer.singleShot(
+                3000,
+                lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+            )
+            return
+
+        key_str = CryptoManager.format_key_for_display(key)
+        dlg = KeyDisplayDialog(key_str, is_dark=self.is_dark, parent=self)
+        dlg.exec()
 
     def _on_create_backup_now(self) -> None:
         """Trigger an immediate point-in-time snapshot backup."""
