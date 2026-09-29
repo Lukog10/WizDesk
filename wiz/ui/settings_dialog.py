@@ -216,7 +216,7 @@ class SettingsDialog(QDialog):
         # Section 3: Project Auto-Tagging Keywords
         # ----------------------------------------------------
         proj_box = QVBoxLayout()
-        proj_box.setSpacing(8)
+        proj_box.setSpacing(4)
 
         self.proj_title = QLabel("Project Auto-Tagging Keywords")
         self.proj_title.setFont(get_font(10, QFont.Weight.DemiBold))

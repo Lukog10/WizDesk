@@ -179,7 +179,7 @@ class SettingsCategoryBar(QFrame):
         ("hotkeys", "Hotkeys"),
         ("projects", "Projects"),
         ("integrations", "Integrations"),
-        ("security", "Security & Backup"),
+        ("security", "Security && Backup"),
     ]
 
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
@@ -265,7 +265,7 @@ class SettingsCategoryBar(QFrame):
                         color: {active_color};
                         border: 1px solid {active_border};
                         border-radius: 6px;
-                        padding: 0 14px;
+                        padding: 0 10px;
                         font-family: {FONT_SANS};
                         font-size: 11px;
                         font-weight: 600;
@@ -279,7 +279,7 @@ class SettingsCategoryBar(QFrame):
                         color: {btn_color};
                         border: 1px solid transparent;
                         border-radius: 6px;
-                        padding: 0 14px;
+                        padding: 0 10px;
                         font-family: {FONT_SANS};
                         font-size: 11px;
                         font-weight: 500;
@@ -321,14 +321,14 @@ class SettingsView(QWidget):
 
         # 1. Header Section
         header_layout = QVBoxLayout()
-        header_layout.setSpacing(2)
+        header_layout.setSpacing(4)
 
         self.title_lbl = QLabel("Settings", self)
         self.title_lbl.setFont(get_font(15, QFont.Weight.Bold, display=True))
         header_layout.addWidget(self.title_lbl)
 
         self.subtitle_lbl = QLabel("Manage your desktop preferences, keyboard shortcuts, and project workflows.", self)
-        self.subtitle_lbl.setFont(get_font(9))
+        self.subtitle_lbl.setFont(get_font(9.5))
         header_layout.addWidget(self.subtitle_lbl)
 
         self.main_layout.addLayout(header_layout)
@@ -401,12 +401,12 @@ class SettingsView(QWidget):
         """
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
-        row_layout.setContentsMargins(0, 6, 0, 6)
+        row_layout.setContentsMargins(0, 8, 0, 8)
         row_layout.setSpacing(16)
 
         # Left Column: Label + Description
         left_box = QVBoxLayout()
-        left_box.setSpacing(2)
+        left_box.setSpacing(4)
         left_box.setContentsMargins(0, 0, 0, 0)
 
         title_lbl = QLabel(title, row_widget)
@@ -440,24 +440,31 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(4, 6, 12, 6)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 4, 8, 8)
+        layout.setSpacing(0)
 
-        # Section Heading
+        # Section Heading & Subheading (Header Block)
+        header_box = QVBoxLayout()
+        header_box.setSpacing(4)
+        header_box.setContentsMargins(0, 0, 0, 10)
+
         self.gen_heading = QLabel("General & Companion Behavior", container)
         self.gen_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
-        layout.addWidget(self.gen_heading)
+        header_box.addWidget(self.gen_heading)
 
         self.gen_subheading = QLabel("Configure desktop mascot animations, window tracking behavior, and app startup.", container)
         self.gen_subheading.setFont(get_font(9))
-        layout.addWidget(self.gen_subheading)
+        self.gen_subheading.setWordWrap(True)
+        header_box.addWidget(self.gen_subheading)
+
+        layout.addLayout(header_box)
 
         # Row 1: Floating bob animation
         self.float_anim_check = SettingsCheckbox(
@@ -593,20 +600,21 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(4, 6, 12, 6)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 4, 8, 8)
+        layout.setSpacing(0)
 
         # Section Heading with Active status pill
         header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 10)
         header_vbox = QVBoxLayout()
-        header_vbox.setSpacing(2)
+        header_vbox.setSpacing(4)
 
         self.hk_heading = QLabel("Global Keyboard Shortcuts", container)
         self.hk_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
@@ -655,7 +663,7 @@ class SettingsView(QWidget):
 
         # Action Buttons Row
         btn_row = QHBoxLayout()
-        btn_row.setContentsMargins(0, 10, 0, 0)
+        btn_row.setContentsMargins(0, 14, 0, 0)
         btn_row.setSpacing(8)
 
         self.save_hk_btn = QPushButton("Save Shortcuts", container)
@@ -735,19 +743,23 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(4, 6, 12, 6)
+        layout.setContentsMargins(0, 4, 8, 8)
         layout.setSpacing(10)
+
+        header_box = QVBoxLayout()
+        header_box.setSpacing(4)
+        header_box.setContentsMargins(0, 0, 0, 6)
 
         self.proj_heading = QLabel("Project Auto-Tagging Keywords", container)
         self.proj_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
-        layout.addWidget(self.proj_heading)
+        header_box.addWidget(self.proj_heading)
 
         self.proj_subheading = QLabel(
             "Active windows matching these keywords are automatically categorized into project sections during tracking.",
@@ -755,7 +767,9 @@ class SettingsView(QWidget):
         )
         self.proj_subheading.setFont(get_font(9))
         self.proj_subheading.setWordWrap(True)
-        layout.addWidget(self.proj_subheading)
+        header_box.addWidget(self.proj_subheading)
+
+        layout.addLayout(header_box)
 
         self.proj_table = QTableWidget(container)
         self.proj_table.setColumnCount(2)
@@ -875,19 +889,23 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(4, 6, 12, 6)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 4, 8, 8)
+        layout.setSpacing(0)
+
+        header_box = QVBoxLayout()
+        header_box.setSpacing(4)
+        header_box.setContentsMargins(0, 0, 0, 10)
 
         self.obs_heading = QLabel("Obsidian Vault Integration", container)
         self.obs_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
-        layout.addWidget(self.obs_heading)
+        header_box.addWidget(self.obs_heading)
 
         self.obs_subheading = QLabel(
             "Connect your local Obsidian Vault folder to automatically sync your daily work logs, completed tasks, and notes.",
@@ -895,7 +913,9 @@ class SettingsView(QWidget):
         )
         self.obs_subheading.setFont(get_font(9))
         self.obs_subheading.setWordWrap(True)
-        layout.addWidget(self.obs_subheading)
+        header_box.addWidget(self.obs_subheading)
+
+        layout.addLayout(header_box)
 
         # Row 1: Vault Folder Path
         vault_ctrl = QWidget()
@@ -971,19 +991,23 @@ class SettingsView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setStyleSheet("background: transparent; border: none;")
 
         container = QWidget()
         container.setStyleSheet("background: transparent;")
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(4, 6, 12, 6)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 4, 8, 8)
+        layout.setSpacing(0)
+
+        header_box = QVBoxLayout()
+        header_box.setSpacing(4)
+        header_box.setContentsMargins(0, 0, 0, 10)
 
         self.sec_heading = QLabel("Database Security & Backups", container)
         self.sec_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
-        layout.addWidget(self.sec_heading)
+        header_box.addWidget(self.sec_heading)
 
         self.sec_subheading = QLabel(
             "Protect your tasks and logs with hardware-backed AES-256-GCM encryption at rest, and manage point-in-time database backups.",
@@ -991,7 +1015,9 @@ class SettingsView(QWidget):
         )
         self.sec_subheading.setFont(get_font(9))
         self.sec_subheading.setWordWrap(True)
-        layout.addWidget(self.sec_subheading)
+        header_box.addWidget(self.sec_subheading)
+
+        layout.addLayout(header_box)
 
         # Row 1: Encryption Status & Toggle
         enc_ctrl = QWidget()
@@ -1438,7 +1464,40 @@ class SettingsView(QWidget):
         for lbl in self.findChildren(QLabel, "SettingRowDesc"):
             lbl.setStyleSheet(f"color: {text_secondary};")
         for div in self.findChildren(QFrame, "SettingDivider"):
-            div.setStyleSheet(f"background-color: {div_color}; max-height: 1px; border: none;")
+            div.setStyleSheet(f"background-color: {div_color}; max-height: 1px; border: none; margin: 0px;")
+
+        # Sleek scrollbars for all category pages
+        scroll_thumb = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.15)"
+        scroll_thumb_hover = "#C2410C" if is_dark else "#BA3F1A"
+        scrollbar_qss = f"""
+            QScrollArea {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 6px;
+                margin: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {scroll_thumb};
+                min-height: 24px;
+                border-radius: 3px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background: {scroll_thumb_hover};
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+                background: none;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
+            }}
+        """
+        for p in [self.page_general, self.page_hotkeys, self.page_projects, self.page_integrations, self.page_security]:
+            if isinstance(p, QScrollArea):
+                p.setStyleSheet(scrollbar_qss)
 
         # Inputs styling
         input_qss = f"""
