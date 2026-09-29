@@ -479,9 +479,10 @@ class SettingsView(QWidget):
             parent=container,
             is_dark=self.is_dark,
         )
+        self.always_on_top_check.toggled.connect(self._on_always_on_top_toggled)
         self._create_setting_row(
             title="Always On Top",
-            description="Keep the desktop companion floating above full-screen windows and active applications.",
+            description="Keep the workspace and desktop companion floating above full-screen windows and active applications.",
             control_widget=self.always_on_top_check,
             parent_layout=layout,
         )
@@ -1261,7 +1262,9 @@ class SettingsView(QWidget):
         # General
         is_anim = self.float_anim_check.isChecked() if callable(self.float_anim_check.isChecked) else self.float_anim_check.isChecked
         config.set("enable_floating_animation", bool(is_anim))
-        config.set("always_on_top", bool(self.always_on_top_check.isChecked()))
+        is_always_on_top = bool(self.always_on_top_check.isChecked())
+        config.set("always_on_top", is_always_on_top)
+        app_signals.always_on_top_changed.emit(is_always_on_top)
         config.set("tracking_interval_seconds", self.interval_spin.value() * 60)
         config.set("auto_start_on_login", bool(self.autostart_check.isChecked()))
         
@@ -1334,6 +1337,11 @@ class SettingsView(QWidget):
             font-size: 10px;
             font-weight: 600;
         """)
+
+    def _on_always_on_top_toggled(self, checked: bool) -> None:
+        """Immediately update config and broadcast always on top preference."""
+        config.set("always_on_top", bool(checked))
+        app_signals.always_on_top_changed.emit(bool(checked))
 
     def set_theme(self, is_dark: bool) -> None:
         """Apply dark or light theme with WizDesk brand colors."""

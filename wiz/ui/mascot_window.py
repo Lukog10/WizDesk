@@ -25,11 +25,10 @@ class MascotWindow(QWidget):
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
 
         # Window flags: frameless, stays on top, tool window (avoids cluttering taskbar)
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.Tool
-        )
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
+        if config.get("always_on_top", True):
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
         # Set default size
@@ -61,6 +60,7 @@ class MascotWindow(QWidget):
 
         # Connect signals
         app_signals.toggle_mascot_visibility.connect(self.toggle_visibility)
+        app_signals.always_on_top_changed.connect(self._apply_always_on_top)
 
     def _init_window_position(self) -> None:
         """Place window at saved position or default to bottom-right corner."""
@@ -88,6 +88,19 @@ class MascotWindow(QWidget):
             self.show()
             self.raise_()
             self.activateWindow()
+
+    def _apply_always_on_top(self, always_on_top: bool) -> None:
+        """Update mascot window flags when Always On Top setting changes."""
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
+        if always_on_top:
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        if self.windowFlags() != flags:
+            geo = self.geometry()
+            was_visible = self.isVisible()
+            self.setWindowFlags(flags)
+            self.setGeometry(geo)
+            if was_visible:
+                self.show()
 
     # --- Mouse & Drag Handling with Multi-Click Gesture Detection ---
 

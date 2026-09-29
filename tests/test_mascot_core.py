@@ -82,7 +82,8 @@ def test_tray_icon_init(qapp):
     tray = TrayIcon(sm)
     assert tray.toolTip() == "WizDesk - Desktop Companion and Work Tracker"
     assert tray.contextMenu() is not None
-    assert len(tray.contextMenu().actions()) > 0
+    action_texts = [a.text() for a in tray.contextMenu().actions() if a.text()]
+    assert action_texts == ["Open the Workspace", "Show / Hide Mascot", "Exit"]
 
 
 def test_automated_idle_and_sleep_state_transitions(qapp):

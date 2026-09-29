@@ -2118,7 +2118,10 @@ class QuickEntryDialog(QDialog):
         self.setMinimumSize(780, min(560, target_h))
         self.resize(target_w, target_h)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        flags = Qt.WindowType.FramelessWindowHint
+        if config.get("always_on_top", False):
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
         self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
 
         # Frameless window dragging state
@@ -2421,6 +2424,7 @@ class QuickEntryDialog(QDialog):
 
         # Connect broadcast signals for real-time workspace synchronization
         app_signals.theme_changed.connect(self.apply_theme)
+        app_signals.always_on_top_changed.connect(self._apply_always_on_top)
         app_signals.session_polled.connect(self._on_background_session_polled)
         app_signals.task_created.connect(self._on_background_task_activity)
         app_signals.task_updated.connect(self._on_background_task_activity)
@@ -2484,6 +2488,19 @@ class QuickEntryDialog(QDialog):
             self.outer_frame.repaint()
 
         self.repaint()
+
+    def _apply_always_on_top(self, always_on_top: bool) -> None:
+        """Update window flags when Always On Top setting changes."""
+        flags = Qt.WindowType.FramelessWindowHint
+        if always_on_top:
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        if self.windowFlags() != flags:
+            geo = self.geometry()
+            was_visible = self.isVisible()
+            self.setWindowFlags(flags)
+            self.setGeometry(geo)
+            if was_visible:
+                self.show()
 
     def toggle_theme(self) -> None:
         """Toggle between light and dark themes and broadcast."""

@@ -497,3 +497,53 @@ def test_quick_entry_dialog_reuse_and_settings_tabs(qapp, repo: StorageRepositor
 
     app_instance.quit()
 
+
+def test_always_on_top_dynamic_toggling_and_flags(qapp, repo: StorageRepository):
+    """Test dynamic always on top toggling across SettingsView, QuickEntryDialog, and MascotWindow."""
+    from wiz.core.signals import app_signals
+    from wiz.core.state_machine import MascotState
+    from wiz.ui.mascot_window import MascotWindow
+
+    # 1. Start with always_on_top = False
+    config.set("always_on_top", False)
+    sm = StateMachine(initial_state=MascotState.IDLE, enable_idle_monitoring=False)
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    # Workspace window flags must not contain WindowStaysOnTopHint when False
+    has_stay_on_top = bool(dialog.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
+    assert has_stay_on_top is False
+
+    # 2. Dynamic broadcast to True
+    app_signals.always_on_top_changed.emit(True)
+    assert bool(dialog.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is True
+
+    # 3. Dynamic broadcast to False
+    app_signals.always_on_top_changed.emit(False)
+    assert bool(dialog.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is False
+
+    # 4. Check MascotWindow dynamic updates
+    mascot = MascotWindow(sm)
+    app_signals.always_on_top_changed.emit(False)
+    assert bool(mascot.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is False
+    app_signals.always_on_top_changed.emit(True)
+    assert bool(mascot.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is True
+
+    # 5. Check SettingsView checkbox interaction and save emission
+    view = SettingsView(repository=repo, is_dark=True)
+    emitted_states = []
+    app_signals.always_on_top_changed.connect(emitted_states.append)
+
+    view.always_on_top_check.setChecked(True)
+    assert True in emitted_states
+
+    view.always_on_top_check.setChecked(False)
+    assert False in emitted_states
+
+    view.save_settings()
+    assert config.get("always_on_top") is False
+
+    dialog.close()
+    mascot.close()
+    view.close()
+
+

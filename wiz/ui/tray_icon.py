@@ -70,10 +70,9 @@ class TrayIcon(QSystemTrayIcon):
             }}
         """)
 
-        # Quick Note Action
-        action_note = self.menu.addAction("Quick Note / Task")
-        action_note.setShortcut("Ctrl+Shift+W")
-        action_note.triggered.connect(lambda: app_signals.request_quick_entry.emit())
+        # Open Workspace Action
+        action_workspace = self.menu.addAction("Open the Workspace")
+        action_workspace.triggered.connect(lambda: app_signals.request_quick_entry.emit())
 
         # Toggle Mascot Visibility Action
         action_toggle = self.menu.addAction("Show / Hide Mascot")
@@ -81,29 +80,16 @@ class TrayIcon(QSystemTrayIcon):
 
         self.menu.addSeparator()
 
-        # State Switcher Submenu
-        self.state_menu = self.menu.addMenu("Mascot State")
-        self.state_menu.setStyleSheet(self.menu.styleSheet())
-        self._rebuild_state_menu()
-
-        # Sync Obsidian Action
-        action_sync = self.menu.addAction("Sync Obsidian Daily Note")
-        action_sync.triggered.connect(lambda: app_signals.request_sync.emit())
-
-        self.menu.addSeparator()
-
-        # Settings Action
-        action_settings = self.menu.addAction("Settings")
-        action_settings.triggered.connect(lambda: app_signals.request_settings.emit())
-
-        # Quit Action
-        action_quit = self.menu.addAction("Quit WizDesk")
-        action_quit.triggered.connect(lambda: app_signals.quit_application.emit())
+        # Exit Action
+        action_exit = self.menu.addAction("Exit")
+        action_exit.triggered.connect(lambda: app_signals.quit_application.emit())
 
         self.setContextMenu(self.menu)
 
     def _rebuild_state_menu(self) -> None:
-        """Rebuild the mascot state submenu with checkmarks on the active state."""
+        """Rebuild the mascot state submenu if present."""
+        if not hasattr(self, "state_menu") or self.state_menu is None:
+            return
         self.state_menu.clear()
         current = self.state_machine.current_state
 
