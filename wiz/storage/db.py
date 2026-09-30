@@ -1,5 +1,7 @@
 """SQLite database connection, encryption lifecycle, and schema management for WizDesk."""
 
+import atexit
+import gc
 import os
 import shutil
 import sqlite3
@@ -106,6 +108,7 @@ class Database:
         self._lock = threading.RLock()
         self._mem_conn: Optional[sqlite3.Connection] = None
         self._is_encrypted = False
+        self._is_closed = False
 
         self._init_database_state()
 
@@ -113,6 +116,11 @@ class Database:
     def is_encrypted(self) -> bool:
         """Check whether the active database is running in encrypted mode."""
         return self._is_encrypted
+
+    @property
+    def is_closed(self) -> bool:
+        """Check whether the database connection has been closed."""
+        return self._is_closed
 
     def _init_database_state(self) -> None:
         """Initialize connection, detect encryption state, and execute schema migrations."""
@@ -146,6 +154,9 @@ class Database:
                     encrypted_blob, key, expected_magic=WIZ_ENCRYPTION_MAGIC
                 )
                 self._mem_conn.deserialize(plain_bytes)
+                del plain_bytes
+                del encrypted_blob
+                gc.collect()
                 self._run_schema_and_migrations(self._mem_conn)
             except Exception as e:
                 print(f"[Database] Error decrypting database: {e}. Preserving unreadable file.")
@@ -283,6 +294,9 @@ class Database:
 
     def get_connection(self) -> sqlite3.Connection:
         """Create or return an SQLite connection with row factory and foreign keys enabled."""
+        if self._is_closed:
+            raise RuntimeError("Database connection is closed.")
+
         if self._is_encrypted and self._mem_conn is not None:
             return self._mem_conn
 
@@ -295,6 +309,9 @@ class Database:
     def cursor(self):
         """Context manager providing a thread-safe, auto-committing database cursor."""
         with self._lock:
+            if self._is_closed:
+                raise RuntimeError("Database connection is closed.")
+
             if self._is_encrypted and self._mem_conn is not None:
                 cur = self._mem_conn.cursor()
                 try:
@@ -321,6 +338,9 @@ class Database:
     def get_raw_sqlite_bytes(self) -> bytes:
         """Retrieve unencrypted SQLite binary database snapshot for backup or export."""
         with self._lock:
+            if self._is_closed:
+                raise RuntimeError("Database connection is closed.")
+
             if self._is_encrypted and self._mem_conn is not None:
                 return self._mem_conn.serialize()
             elif not self.is_memory_db and self.db_path.is_file():
@@ -346,6 +366,9 @@ class Database:
     def restore_from_raw_bytes(self, raw_bytes: bytes) -> None:
         """Restore database state from plain SQLite binary data."""
         with self._lock:
+            if self._is_closed:
+                raise RuntimeError("Database connection is closed.")
+
             if self._is_encrypted and self._mem_conn is not None:
                 self._mem_conn.deserialize(raw_bytes)
                 self._run_schema_and_migrations(self._mem_conn)
@@ -379,6 +402,9 @@ class Database:
             Tuple of (success: bool, user_formatted_key: str)
         """
         with self._lock:
+            if self._is_closed:
+                raise RuntimeError("Database connection is closed.")
+
             if self._is_encrypted:
                 key = crypto_manager.load_key_dpapi()
                 formatted = CryptoManager.format_key_for_display(key) if key else ""
@@ -422,6 +448,9 @@ class Database:
     def disable_encryption(self) -> Tuple[bool, str]:
         """Decrypt database and revert to standard plaintext SQLite file on disk."""
         with self._lock:
+            if self._is_closed:
+                raise RuntimeError("Database connection is closed.")
+
             if not self._is_encrypted or self._mem_conn is None:
                 return True, "Encryption already disabled."
 
@@ -448,11 +477,43 @@ class Database:
                 pass
             self._mem_conn = None
             self._is_encrypted = False
+            gc.collect()
 
             # 4. Update config
             if not self.is_memory_db and self.db_path == config.db_path:
                 config.set("encryption_enabled", False)
             return True, "Database successfully decrypted to standard plaintext."
+
+    def close(self) -> None:
+        """Commit pending transactions, flush encrypted contents to disk, securely close connection handles, and wipe in-memory buffers."""
+        with self._lock:
+            if self._is_closed:
+                return
+
+            if self._is_encrypted and self._mem_conn is not None:
+                try:
+                    self._mem_conn.commit()
+                    self._flush_to_disk()
+                except Exception as e:
+                    print(f"[Database] Warning during close flush: {e}")
+                finally:
+                    try:
+                        self._mem_conn.close()
+                    except Exception:
+                        pass
+                    self._mem_conn = None
+
+            self._is_closed = True
+            global _default_db
+            if self is _default_db:
+                _default_db = None
+            gc.collect()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 # Global singleton instance
@@ -464,6 +525,21 @@ def get_db(db_path: Optional[Path] = None) -> Database:
     global _default_db
     if db_path is not None:
         return Database(db_path)
-    if _default_db is None:
+    if _default_db is None or _default_db.is_closed:
         _default_db = Database()
     return _default_db
+
+
+def close_db() -> None:
+    """Close and wipe the global singleton database instance."""
+    global _default_db
+    if _default_db is not None:
+        db = _default_db
+        _default_db = None
+        try:
+            db.close()
+        except Exception as e:
+            print(f"[Database] Error closing global database: {e}")
+
+
+atexit.register(close_db)

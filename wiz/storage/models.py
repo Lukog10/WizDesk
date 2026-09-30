@@ -134,6 +134,11 @@ class StorageRepository:
         self._projects_cache: Optional[List[ProjectRecord]] = None
         self.heal_duplicate_projects()
 
+    def close(self) -> None:
+        """Close underlying database connection and release resources."""
+        if self.db is not None:
+            self.db.close()
+
     def heal_duplicate_projects(self) -> None:
         """Self-healing migration: resolve known duplicate projects and duplicate colors."""
         try:

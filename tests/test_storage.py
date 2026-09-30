@@ -377,5 +377,81 @@ def test_corrupt_encrypted_database_preserved_without_overwrite(tmp_path):
         count = cur.fetchone()[0]
         assert count == 0
 
+    db.close()
+
+
+def test_database_close_lifecycle_plaintext(tmp_path):
+    """Test that closing a plaintext database sets is_closed and prevents subsequent access."""
+    db_file = tmp_path / "plain_close.db"
+    db = Database(db_file)
+    assert db.is_closed is False
+
+    with db.cursor() as cur:
+        cur.execute("INSERT INTO notes (content, created_at) VALUES ('hello', '2026-09-30');")
+
+    db.close()
+    assert db.is_closed is True
+
+    # Idempotent close
+    db.close()
+    assert db.is_closed is True
+
+    with pytest.raises(RuntimeError, match="Database connection is closed"):
+        db.get_connection()
+
+    with pytest.raises(RuntimeError, match="Database connection is closed"):
+        with db.cursor() as cur:
+            pass
+
+
+def test_database_close_lifecycle_encrypted(tmp_path):
+    """Test that closing an encrypted database flushes to disk, wipes memory connection, and reloads cleanly."""
+    db_file = tmp_path / "enc_close.db"
+    db = Database(db_file)
+    success, _ = db.enable_encryption()
+    assert success is True
+    assert db.is_encrypted is True
+    assert db._mem_conn is not None
+
+    with db.cursor() as cur:
+        cur.execute("INSERT INTO notes (content, created_at) VALUES ('secret note', '2026-09-30');")
+
+    db.close()
+    assert db.is_closed is True
+    assert db._mem_conn is None
+
+    with pytest.raises(RuntimeError, match="Database connection is closed"):
+        with db.cursor() as cur:
+            pass
+
+    # Verify reload from disk into a fresh encrypted Database instance
+    reloaded_db = Database(db_file)
+    assert reloaded_db.is_encrypted is True
+    with reloaded_db.cursor() as cur:
+        cur.execute("SELECT content FROM notes;")
+        row = cur.fetchone()
+        assert row is not None
+        assert row["content"] == "secret note"
+    reloaded_db.close()
+    assert reloaded_db.is_closed is True
+
+
+def test_storage_repository_close_and_context_manager(tmp_path):
+    """Test that StorageRepository.close and Database context manager handle lifecycle properly."""
+    db_file = tmp_path / "repo_ctx.db"
+    with Database(db_file) as ctx_db:
+        assert ctx_db.is_closed is False
+        repo = StorageRepository(ctx_db)
+        repo.create_note("context manager note")
+    assert ctx_db.is_closed is True
+
+    # Test repository.close()
+    fresh_db = Database(tmp_path / "repo_close.db")
+    repo2 = StorageRepository(fresh_db)
+    assert repo2.db.is_closed is False
+    repo2.close()
+    assert repo2.db.is_closed is True
+
+
 
 
