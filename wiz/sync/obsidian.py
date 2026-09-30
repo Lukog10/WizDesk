@@ -88,6 +88,13 @@ class ObsidianSync:
         Returns:
             (success: bool, message: str)
         """
+        # Security: Prevent unintended plaintext export if database encryption is active
+        if config.get("encryption_enabled", False) and not config.get("allow_plaintext_obsidian_sync", False):
+            msg = "Obsidian sync blocked: Database encryption is active. Enable allow_plaintext_obsidian_sync in settings to permit plaintext export."
+            if emit_signal:
+                app_signals.sync_finished.emit(False, msg)
+            return False, msg
+
         vault_path = config.obsidian_vault_path
         if not vault_path or not vault_path.exists():
             msg = "Obsidian vault path not configured or directory does not exist."
@@ -96,7 +103,13 @@ class ObsidianSync:
             return False, msg
 
         logs_folder_name = config.get("obsidian_logs_folder", "WizDesk Logs")
-        dest_dir = vault_path / logs_folder_name
+        dest_dir = (vault_path / logs_folder_name).resolve()
+        # Security: Prevent directory traversal outside vault_path
+        try:
+            dest_dir.relative_to(vault_path.resolve())
+        except ValueError:
+            dest_dir = (vault_path / "WizDesk Logs").resolve()
+
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         filename = f"{target_date.strftime('%Y-%m-%d')}.md"

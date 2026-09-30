@@ -91,3 +91,64 @@ def test_obsidian_vault_file_sync(repo_with_data, tmp_path, monkeypatch):
     content = expected_file.read_text(encoding="utf-8")
     assert "## 2026-08-31" in content
     assert "Build TurfLine booking flow" in content
+
+
+def test_obsidian_sync_blocked_when_encryption_enabled(repo_with_data, tmp_path, monkeypatch):
+    """Test that sync_date blocks plaintext file creation when DB encryption is active without opt-in."""
+    vault_dir = tmp_path / "VaultSecure"
+    vault_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cfg = Config(config_file=tmp_path / "test_cfg_sec.json")
+    test_cfg.set("obsidian_vault_path", str(vault_dir))
+    test_cfg.set("encryption_enabled", True)
+    test_cfg.set("allow_plaintext_obsidian_sync", False)
+
+    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
+
+    sync_engine = ObsidianSync(repo_with_data)
+    success, msg = sync_engine.sync_date(date(2026, 8, 31))
+
+    assert success is False
+    assert "Database encryption is active" in msg
+    # Verify no file written
+    assert not (vault_dir / "WizDesk Logs" / "2026-08-31.md").exists()
+
+
+def test_obsidian_sync_allowed_when_encryption_enabled_with_opt_in(repo_with_data, tmp_path, monkeypatch):
+    """Test that sync_date proceeds when DB encryption is active and user explicitly opts in."""
+    vault_dir = tmp_path / "VaultOptIn"
+    vault_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cfg = Config(config_file=tmp_path / "test_cfg_opt.json")
+    test_cfg.set("obsidian_vault_path", str(vault_dir))
+    test_cfg.set("encryption_enabled", True)
+    test_cfg.set("allow_plaintext_obsidian_sync", True)
+
+    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
+
+    sync_engine = ObsidianSync(repo_with_data)
+    success, msg = sync_engine.sync_date(date(2026, 8, 31))
+
+    assert success is True
+    assert (vault_dir / "WizDesk Logs" / "2026-08-31.md").exists()
+
+
+def test_obsidian_sync_path_traversal_sanitized(repo_with_data, tmp_path, monkeypatch):
+    """Test that malicious path traversal in logs folder name is clamped to vault directory."""
+    vault_dir = tmp_path / "VaultTraversal"
+    vault_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cfg = Config(config_file=tmp_path / "test_cfg_trav.json")
+    test_cfg.set("obsidian_vault_path", str(vault_dir))
+    test_cfg.set("obsidian_logs_folder", "../../escaped_dir")
+
+    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
+
+    sync_engine = ObsidianSync(repo_with_data)
+    success, msg = sync_engine.sync_date(date(2026, 8, 31))
+
+    assert success is True
+    # Confirm it was clamped to safe default folder inside vault
+    assert (vault_dir / "WizDesk Logs" / "2026-08-31.md").exists()
+    assert not (tmp_path / "escaped_dir").exists()
+
