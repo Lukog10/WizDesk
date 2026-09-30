@@ -375,23 +375,35 @@ class StorageRepository:
         repeat_mode: Optional[str] = None,
     ) -> bool:
         """Update scheduled_date and/or repeat_mode for an existing task."""
+        if scheduled_date is None and repeat_mode is None:
+            return False
+
+        val = None
+        if scheduled_date is not None:
+            val = None if (scheduled_date == "" or scheduled_date.strip().lower() == "clear") else scheduled_date.strip()
+
+        mode = None
+        if repeat_mode is not None:
+            mode = repeat_mode.strip().lower()
+            if mode not in ("none", "daily", "weekdays", "weekends"):
+                mode = "none"
+
         with self.db.cursor() as cur:
-            updates = []
-            params = []
-            if scheduled_date is not None:
-                val = None if (scheduled_date == "" or scheduled_date.strip().lower() == "clear") else scheduled_date.strip()
-                updates.append("scheduled_date = ?")
-                params.append(val)
-            if repeat_mode is not None:
-                mode = repeat_mode.strip().lower()
-                if mode not in ("none", "daily", "weekdays", "weekends"):
-                    mode = "none"
-                updates.append("repeat_mode = ?")
-                params.append(mode)
-            if not updates:
-                return False
-            params.append(task_id)
-            cur.execute(f"UPDATE tasks SET {', '.join(updates)} WHERE id = ?", params)
+            if scheduled_date is not None and repeat_mode is not None:
+                cur.execute(
+                    "UPDATE tasks SET scheduled_date = ?, repeat_mode = ? WHERE id = ?",
+                    (val, mode, task_id),
+                )
+            elif scheduled_date is not None:
+                cur.execute(
+                    "UPDATE tasks SET scheduled_date = ? WHERE id = ?",
+                    (val, task_id),
+                )
+            elif repeat_mode is not None:
+                cur.execute(
+                    "UPDATE tasks SET repeat_mode = ? WHERE id = ?",
+                    (mode, task_id),
+                )
             return cur.rowcount > 0
 
     def roll_recurring_tasks(self, today: Optional[date] = None) -> int:
