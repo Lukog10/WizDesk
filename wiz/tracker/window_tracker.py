@@ -12,7 +12,7 @@ from PyQt6.QtCore import QThread
 from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.storage.models import StorageRepository
-from wiz.utils.sanitizer import sanitize_window_title
+from wiz.utils.sanitizer import sanitize_window_title, clean_app_name
 
 # Windows API imports
 if sys.platform == "win32":
@@ -86,7 +86,7 @@ def get_active_window_info() -> Optional[ActiveWindowInfo]:
             clean_title = window_title
 
         return ActiveWindowInfo(
-            app_name=app_name,
+            app_name=clean_app_name(app_name),
             window_title=clean_title,
             pid=pid,
         )

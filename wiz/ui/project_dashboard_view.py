@@ -34,6 +34,7 @@ from wiz.ui.chart_widgets import (
     ProjectTrackingWidget,
 )
 from wiz.ui.fonts import FONT_SANS, get_font
+from wiz.utils.sanitizer import clean_app_name
 
 
 PRESET_COLORS = [
@@ -458,7 +459,7 @@ class ProjectSummaryCard(QFrame):
             apps_row.addWidget(apps_lbl)
 
             for app_name, app_mins in top_apps:
-                chip = QLabel(f"{app_name} ({format_duration(app_mins)})")
+                chip = QLabel(f"{clean_app_name(app_name)} ({format_duration(app_mins)})")
                 chip.setFont(get_font(10))
                 chip.setObjectName("AppChip")
                 apps_row.addWidget(chip)
@@ -780,7 +781,7 @@ class ProjectsOverviewPage(QWidget):
         if top_app:
             pct_share = top_app.get("percentage", 0)
             self.kpi_top_app.update_data(
-                top_app["app_name"],
+                clean_app_name(top_app["app_name"]),
                 f"{top_app.get('hours', 0.0)}h",
                 subtitle=f"{pct_share}% of time",
             )
@@ -1413,7 +1414,7 @@ class ProjectDetailPage(QWidget):
             c_layout.setSpacing(6)
 
             row = QHBoxLayout()
-            app_lbl = QLabel(app_info.get("app_name", "Unknown"))
+            app_lbl = QLabel(clean_app_name(app_info.get("app_name", "Unknown")))
             app_lbl.setFont(get_font(12, QFont.Weight.Medium))
             row.addWidget(app_lbl)
             row.addStretch()

@@ -20,6 +20,7 @@ from wiz.storage.models import StorageRepository
 from wiz.ui.icons import get_app_pixmap
 from wiz.ui.arrow_combo import ArrowComboBox
 from wiz.ui.fonts import FONT_SANS, get_font
+from wiz.utils.sanitizer import clean_app_name
 
 
 def format_duration(minutes: float) -> str:
@@ -93,7 +94,7 @@ class AppSessionCard(QFrame):
         mid_box.setSpacing(3)
         mid_box.setContentsMargins(0, 0, 0, 0)
 
-        app_name = session.get("app_name") or "Unknown"
+        app_name = clean_app_name(session.get("app_name"))
         app_label = QLabel(app_name, self)
         app_label.setFont(get_font(10, QFont.Weight.Bold))
 

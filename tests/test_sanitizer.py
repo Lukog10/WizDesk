@@ -5,6 +5,7 @@ import pytest
 
 from wiz.utils.sanitizer import (
     sanitize_window_title,
+    clean_app_name,
     PASSWORD_MANAGER_APPS,
     SENSITIVE_TITLE_KEYWORDS,
 )
@@ -79,3 +80,16 @@ def test_log_session_sanitization_integration(tmp_path):
     sessions2 = repo.get_sessions_for_date(t1.date())
     assert len(sessions2) == 2
     assert sessions2[1].window_title == "WizDesk - storage/models.py"
+
+
+def test_clean_app_name():
+    """Verify that .exe file extensions are stripped from process names."""
+    assert clean_app_name("Antigravity IDE.exe") == "Antigravity IDE"
+    assert clean_app_name("explorer.exe") == "explorer"
+    assert clean_app_name("CONTROLResonant.exe") == "CONTROLResonant"
+    assert clean_app_name("zen.exe") == "zen"
+    assert clean_app_name("Code") == "Code"
+    assert clean_app_name("my_app.EXE") == "my_app"
+    assert clean_app_name(None) == "Unknown"
+    assert clean_app_name("") == "Unknown"
+

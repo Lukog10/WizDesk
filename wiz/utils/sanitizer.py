@@ -35,13 +35,27 @@ SENSITIVE_TITLE_KEYWORDS = (
 )
 
 
+def clean_app_name(app_name: Optional[str]) -> str:
+    """
+    Remove executable file extensions (e.g. .exe) from application names for clean display.
+    Example: 'Antigravity IDE.exe' -> 'Antigravity IDE', 'zen.exe' -> 'zen'.
+    """
+    if not app_name:
+        return "Unknown"
+    name = app_name.strip()
+    if name.lower().endswith(".exe"):
+        name = name[:-4].strip()
+    return name or "Unknown"
+
+
 def sanitize_window_title(window_title: Optional[str], app_name: Optional[str] = "") -> str:
     """Sanitize and redact sensitive or confidential window titles before recording."""
     if not window_title:
         return ""
 
     app_clean = (app_name or "").lower().strip()
-    if app_clean in PASSWORD_MANAGER_APPS:
+    app_base = app_clean[:-4] if app_clean.endswith(".exe") else app_clean
+    if app_clean in PASSWORD_MANAGER_APPS or f"{app_base}.exe" in PASSWORD_MANAGER_APPS:
         return "[Password Manager]"
 
     title_lower = window_title.lower()
@@ -50,3 +64,4 @@ def sanitize_window_title(window_title: Optional[str], app_name: Optional[str] =
             return "[Private Activity]"
 
     return window_title.strip()
+

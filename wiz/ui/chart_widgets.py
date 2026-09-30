@@ -35,6 +35,7 @@ from PyQt6.QtWidgets import (
 )
 
 from wiz.ui.fonts import FONT_SANS, get_font
+from wiz.utils.sanitizer import clean_app_name
 
 
 class MicroSparklineCanvas(QWidget):
@@ -1382,7 +1383,7 @@ class AppUsageDonutCanvas(QWidget):
         # Draw Center Hole Text
         if self.hovered_segment_idx is not None and self.hovered_segment_idx < len(apps):
             app = apps[self.hovered_segment_idx]
-            app_name = app.get("app_name", "App")
+            app_name = clean_app_name(app.get("app_name", "App"))
             if len(app_name) > 12:
                 app_name = app_name[:11] + "…"
             hours = app.get("hours", 0.0)
@@ -1974,7 +1975,7 @@ class AppUsageAnalyticsWidget(QFrame):
             dot.setStyleSheet(f"background-color: {app.get('color', '#FF6B3D')}; border-radius: 3px;")
             row.addWidget(dot)
 
-            app_name = app["app_name"]
+            app_name = clean_app_name(app["app_name"])
             if len(app_name) > 10:
                 app_name = app_name[:9] + "…"
             name_lbl = QLabel(app_name)
@@ -2033,7 +2034,7 @@ class AppUsageAnalyticsWidget(QFrame):
             dot.setStyleSheet(f"background-color: {app.get('color', '#FF6B3D')}; border-radius: 3px;")
             row.addWidget(dot)
 
-            name_lbl = QLabel(app["app_name"])
+            name_lbl = QLabel(clean_app_name(app["app_name"]))
             name_lbl.setFont(get_font(8, QFont.Weight.Medium))
             row.addWidget(name_lbl, 1)
 
