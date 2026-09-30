@@ -1,9 +1,11 @@
 """SQLite database connection, encryption lifecycle, and schema management for WizDesk."""
 
 import os
+import shutil
 import sqlite3
 import threading
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -146,11 +148,25 @@ class Database:
                 self._mem_conn.deserialize(plain_bytes)
                 self._run_schema_and_migrations(self._mem_conn)
             except Exception as e:
-                print(f"[Database] Error decrypting database: {e}. Reinitializing schema.")
+                print(f"[Database] Error decrypting database: {e}. Preserving unreadable file.")
+                now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                corrupt_path = self.enc_path.with_name(
+                    f"{self.enc_path.stem}.corrupt_{now_str}{self.enc_path.suffix}"
+                )
+                try:
+                    try:
+                        self.enc_path.rename(corrupt_path)
+                    except OSError:
+                        shutil.copy2(self.enc_path, corrupt_path)
+                    print(f"[Database] Preserved unreadable database copy at: {corrupt_path}")
+                except Exception as backup_err:
+                    print(f"[Database] Warning: Failed to preserve unreadable database: {backup_err}")
+
                 self._run_schema_and_migrations(self._mem_conn)
-                self._flush_to_disk(key=key)
+                # Do NOT flush empty in-memory schema over disk on decryption failure
         elif not self.is_memory_db and self.db_path.is_file():
             # Migrate existing plaintext database to encrypted memory format
+            migrated_ok = False
             try:
                 src_conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
                 src_conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
@@ -158,15 +174,17 @@ class Database:
                 src_conn.backup(self._mem_conn)
                 src_conn.close()
                 self._run_schema_and_migrations(self._mem_conn)
+                migrated_ok = True
             except Exception as e:
                 print(f"[Database] Error migrating plaintext db: {e}")
                 self._run_schema_and_migrations(self._mem_conn)
 
-            self._flush_to_disk(key=key)
-            try:
-                self.db_path.unlink()
-            except OSError:
-                pass
+            if migrated_ok:
+                self._flush_to_disk(key=key)
+                try:
+                    self.db_path.unlink()
+                except OSError:
+                    pass
         else:
             self._run_schema_and_migrations(self._mem_conn)
             if not self.is_memory_db:

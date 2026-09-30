@@ -355,3 +355,27 @@ def test_upcoming_and_unfinished_filters(repo):
     assert t_done_overdue not in unfinished_ids
 
 
+def test_corrupt_encrypted_database_preserved_without_overwrite(tmp_path):
+    """Test that a corrupted or unreadable encrypted database file is quarantined and not overwritten."""
+    db_file = tmp_path / "wizdesk.db"
+    enc_file = db_file.with_name(db_file.name + ".enc")
+    corrupt_content = b"INVALID_CORRUPT_BYTES_NOT_AES_ENCRYPTED"
+    enc_file.write_bytes(corrupt_content)
+
+    # Initialize database pointing to this directory
+    db = Database(db_file)
+    assert db.is_encrypted is True
+
+    # Check that corrupt file was preserved with .corrupt_ timestamp
+    corrupt_files = list(tmp_path.glob("wizdesk.db.corrupt_*.enc"))
+    assert len(corrupt_files) == 1
+    assert corrupt_files[0].read_bytes() == corrupt_content
+
+    # Check that in-memory database functions cleanly without crashing
+    with db.cursor() as cur:
+        cur.execute("SELECT count(*) FROM tasks;")
+        count = cur.fetchone()[0]
+        assert count == 0
+
+
+
