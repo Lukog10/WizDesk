@@ -116,3 +116,25 @@ def test_auto_backup_rolling_retention(tmp_path, test_db):
     manual_remaining = [b for b in remaining if b["tag"] == "manual"]
     assert len(auto_remaining) == 3
     assert len(manual_remaining) == 3
+
+
+def test_restore_backup_does_not_leak_unencrypted_file_to_disk(tmp_path, test_db):
+    """Test that restore_backup verifies strictly in memory and writes zero .verify files to disk."""
+    db, _ = test_db
+    key = CryptoManager.generate_key()
+    crypto_manager.store_key_dpapi(key)
+
+    backup_dir = tmp_path / "backups"
+    bm = BackupManager(backup_dir=backup_dir)
+
+    wbak_path = bm.create_backup(db, tag="security_test", encrypt=True)
+    assert wbak_path.is_file()
+
+    # Perform restore
+    success = bm.restore_backup(wbak_path, db)
+    assert success is True
+
+    # Assert no temporary verify files exist anywhere in the backup directory
+    verify_files = list(backup_dir.glob(".verify*")) + list(backup_dir.glob("*.db"))
+    assert len(verify_files) == 0
+

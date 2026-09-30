@@ -135,10 +135,16 @@ class BackupManager:
         if not sqlite_bytes.startswith(b"SQLite format 3\x00"):
             raise ValueError("Restored data is not a valid SQLite database header.")
 
-        verify_tmp = self.backup_dir / f".verify_{os.getpid()}_{datetime.now().strftime('%f')}.db"
+        # In-memory integrity check without writing unencrypted SQLite bytes to physical disk
+        # Normalize journal mode flag in memory copy (offsets 18-19) so :memory: connection doesn't search for WAL disk files
+        verify_bytes = bytearray(sqlite_bytes)
+        if len(verify_bytes) >= 20:
+            verify_bytes[18] = 1
+            verify_bytes[19] = 1
+
         try:
-            verify_tmp.write_bytes(sqlite_bytes)
-            test_conn = sqlite3.connect(str(verify_tmp))
+            test_conn = sqlite3.connect(":memory:", check_same_thread=False)
+            test_conn.deserialize(bytes(verify_bytes))
             test_cur = test_conn.cursor()
             test_cur.execute("PRAGMA integrity_check;")
             res = test_cur.fetchone()
@@ -149,12 +155,6 @@ class BackupManager:
             test_conn.close()
         except Exception as e:
             raise ValueError(f"Backup verification failed: {e}") from e
-        finally:
-            if verify_tmp.exists():
-                try:
-                    verify_tmp.unlink()
-                except OSError:
-                    pass
 
         # Apply restored bytes to active database
         db.restore_from_raw_bytes(sqlite_bytes)
