@@ -122,3 +122,45 @@ def test_is_encrypted_file(tmp_path):
     enc_data = CryptoManager.encrypt_payload(b"hello", key)
     enc_file.write_bytes(enc_data)
     assert CryptoManager.is_encrypted_file(enc_file)
+
+
+def test_fallback_key_encrypted_at_rest(tmp_path, monkeypatch):
+    """Test that when DPAPI is not used, fallback key is encrypted at rest and not raw cleartext."""
+    from unittest.mock import patch
+    from wiz.core.crypto import WIZ_FALLBACK_KEY_MAGIC
+
+    mgr = CryptoManager(key_dir=tmp_path)
+    key = CryptoManager.generate_key()
+
+    with patch("wiz.core.crypto.HAS_DPAPI", False):
+        mgr.store_key_dpapi(key)
+        assert mgr.fallback_file.exists()
+        raw_on_disk = mgr.fallback_file.read_bytes()
+        # Verify it has encrypted magic and is not the raw 32-byte key
+        assert raw_on_disk.startswith(WIZ_FALLBACK_KEY_MAGIC)
+        assert raw_on_disk != key
+        assert len(raw_on_disk) > 32
+
+        # Verify load_key_dpapi decrypts correctly
+        loaded_key = mgr.load_key_dpapi()
+        assert loaded_key == key
+
+
+def test_legacy_cleartext_fallback_key_migration(tmp_path, monkeypatch):
+    """Test that existing cleartext fallback keys are migrated to encrypted format on load."""
+    from unittest.mock import patch
+    from wiz.core.crypto import WIZ_FALLBACK_KEY_MAGIC
+
+    mgr = CryptoManager(key_dir=tmp_path)
+    legacy_key = CryptoManager.generate_key()
+    mgr.fallback_file.write_bytes(legacy_key)
+    assert len(mgr.fallback_file.read_bytes()) == 32
+
+    with patch("wiz.core.crypto.HAS_DPAPI", False):
+        loaded_key = mgr.load_key_dpapi()
+        assert loaded_key == legacy_key
+        # Verify file was migrated and re-encrypted
+        migrated_bytes = mgr.fallback_file.read_bytes()
+        assert migrated_bytes.startswith(WIZ_FALLBACK_KEY_MAGIC)
+        assert migrated_bytes != legacy_key
+

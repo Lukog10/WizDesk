@@ -16,6 +16,7 @@ from wiz.core.config import config
 # 8-byte file magic signatures
 WIZ_ENCRYPTION_MAGIC = b"WIZENC01"
 WIZ_BACKUP_MAGIC = b"WIZBAK01"
+WIZ_FALLBACK_KEY_MAGIC = b"WIZKFB01"
 
 # Windows DPAPI import with safe non-Windows fallback
 try:
@@ -23,6 +24,16 @@ try:
     HAS_DPAPI = True
 except ImportError:
     HAS_DPAPI = False
+
+
+def get_machine_bound_kdf_key() -> bytes:
+    """Derive a host-specific 256-bit encryption key using machine and user entropy."""
+    import hashlib
+    import uuid
+    user_name = os.environ.get("USERNAME") or os.environ.get("USER") or "wizdesk_user"
+    entropy = f"{uuid.getnode()}:{sys.platform}:{user_name}"
+    salt = b"WizDesk_Fallback_Key_Protection_Salt_v1"
+    return hashlib.scrypt(entropy.encode("utf-8"), salt=salt, n=16384, r=8, p=1, maxmem=33554432, dklen=32)
 
 
 class CryptoManager:
@@ -96,8 +107,10 @@ class CryptoManager:
                 except OSError:
                     pass
         else:
-            # Fallback for Linux / macOS environments
-            self.fallback_file.write_bytes(key)
+            # Fallback for Linux / macOS environments: Encrypt master key using host-bound key derivation
+            kdf_key = get_machine_bound_kdf_key()
+            encrypted_key_payload = self.encrypt_payload(key, kdf_key, magic=WIZ_FALLBACK_KEY_MAGIC)
+            self.fallback_file.write_bytes(encrypted_key_payload)
             try:
                 os.chmod(self.fallback_file, 0o600)
             except OSError:
@@ -117,9 +130,17 @@ class CryptoManager:
 
         if self.fallback_file.exists():
             try:
-                key = self.fallback_file.read_bytes()
-                if len(key) == 32:
-                    return key
+                raw_fallback = self.fallback_file.read_bytes()
+                if raw_fallback.startswith(WIZ_FALLBACK_KEY_MAGIC):
+                    kdf_key = get_machine_bound_kdf_key()
+                    key = self.decrypt_payload(raw_fallback, kdf_key, expected_magic=WIZ_FALLBACK_KEY_MAGIC)
+                    if len(key) == 32:
+                        return key
+                elif len(raw_fallback) == 32:
+                    # Legacy cleartext fallback migration: re-encrypt in place with host-bound KDF
+                    print("[CryptoManager] Migrating legacy cleartext fallback key to encrypted storage.")
+                    self.store_key_dpapi(raw_fallback)
+                    return raw_fallback
             except Exception as e:
                 print(f"[CryptoManager] Failed to read fallback key: {e}")
 
