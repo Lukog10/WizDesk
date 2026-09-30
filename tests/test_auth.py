@@ -139,3 +139,22 @@ def test_settings_view_private_key_auth_granted(qapp, tmp_path):
         mock_dialog_exec.assert_called_once()
 
     view.close()
+
+
+def test_auth_win32security_missing_fails_closed(monkeypatch):
+    """Test that missing win32security fails closed and returns False."""
+    with patch("wiz.utils.auth.win32security", None):
+        assert _prompt_windows_credentials() is False
+
+
+def test_auth_linux_stub_fails_closed():
+    """Test that Linux stub authentication fails closed and returns False."""
+    from wiz.utils.auth import _prompt_linux_credentials
+    assert _prompt_linux_credentials() is False
+
+
+def test_authenticate_user_unsupported_platform_fails_closed():
+    """Test that unsupported OS platforms fail closed and return False."""
+    with patch("sys.platform", "darwin"):
+        assert authenticate_user() is False
+

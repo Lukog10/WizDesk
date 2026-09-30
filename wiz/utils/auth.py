@@ -73,8 +73,8 @@ def _prompt_windows_credentials(
     Returns True if authentication succeeds, False if cancelled or invalid.
     """
     if win32security is None:
-        # Fallback if win32security is not installed
-        return True
+        print("[Auth] Security error: win32security is not available. Failing closed.")
+        return False
 
     credui = ctypes.windll.credui
     ole32 = ctypes.windll.ole32
@@ -164,7 +164,8 @@ def _prompt_linux_credentials(
     message: str = "Please enter your password to view and export your private recovery key.",
 ) -> bool:
     """Placeholder for Linux PAM/Polkit authentication in upcoming Linux build."""
-    return True
+    print("[Auth] Linux PAM/Polkit integration is not yet active. Failing closed.")
+    return False
 
 
 def authenticate_user(
@@ -180,4 +181,5 @@ def authenticate_user(
         return _prompt_windows_credentials(parent_hwnd=parent_hwnd, title=title, message=message)
     elif sys.platform.startswith("linux"):
         return _prompt_linux_credentials(title=title, message=message)
-    return True
+    print(f"[Auth] Platform {sys.platform} does not have an active credential verifier. Failing closed.")
+    return False
