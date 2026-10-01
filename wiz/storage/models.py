@@ -1314,24 +1314,24 @@ class StorageRepository:
                 if 0 <= b_idx < num_buckets:
                     project_bucket_mins[proj_name][b_idx] += dur
 
-            # Build app breakdown list using WizDesk brand palette (16 colors)
+            # Build app breakdown list using minimal accent and neutral grey shades (16 colors)
             APP_PALETTE = [
-                "#FF6B3D",  # Mascot Orange-Red (Brand)
-                "#10B981",  # Emerald
-                "#3B82F6",  # Electric Blue
-                "#F59E0B",  # Amber Gold
-                "#8B5CF6",  # Violet
-                "#EC4899",  # Hot Pink
-                "#06B6D4",  # Cyan
-                "#14B8A6",  # Teal
-                "#F97316",  # Tangerine
-                "#84CC16",  # Lime Green
-                "#6366F1",  # Indigo
-                "#F43F5E",  # Rose
-                "#0EA5E9",  # Sky Blue
-                "#D946EF",  # Fuchsia
-                "#EAB308",  # Sunburst Yellow
-                "#64748B",  # Slate
+                "#FF7A45",  # Minimal Warm Accent (Top Application)
+                "#CBD5E1",  # Slate 300
+                "#94A3B8",  # Slate 400
+                "#64748B",  # Slate 500
+                "#475569",  # Slate 600
+                "#334155",  # Slate 700
+                "#1E293B",  # Slate 800
+                "#D4D4D8",  # Zinc 300
+                "#A1A1AA",  # Zinc 400
+                "#71717A",  # Zinc 500
+                "#52525B",  # Zinc 600
+                "#3F3F46",  # Zinc 700
+                "#27272A",  # Zinc 800
+                "#A8A29E",  # Stone 400
+                "#78716C",  # Stone 500
+                "#57534E",  # Stone 600
             ]
             apps_list = []
             for idx, (app_name, mins) in enumerate(sorted(app_durations.items(), key=lambda x: x[1], reverse=True)):
@@ -1352,32 +1352,32 @@ class StorageRepository:
             else:
                 change_pct = 0.0
 
-            # Ensure distinct colors across all compared project series (24 colors)
+            # Ensure distinct neutral colors across all compared project series (24 colors)
             PROJECT_COMPARISON_PALETTE = [
-                "#FF6B3D",  # Mascot Orange-Red (Brand)
-                "#10B981",  # Emerald
-                "#3B82F6",  # Electric Blue
-                "#F59E0B",  # Amber Gold
-                "#8B5CF6",  # Violet
-                "#EC4899",  # Hot Pink
-                "#06B6D4",  # Cyan
-                "#F43F5E",  # Rose
-                "#84CC16",  # Lime Green
-                "#14B8A6",  # Teal
-                "#F97316",  # Tangerine
-                "#A855F7",  # Purple
-                "#0EA5E9",  # Sky Blue
-                "#E11D48",  # Crimson
-                "#059669",  # Forest Jade
-                "#6366F1",  # Indigo
-                "#EAB308",  # Sunburst Yellow
-                "#D946EF",  # Fuchsia
-                "#2563EB",  # Cobalt Blue
-                "#FF5722",  # Flame Orange
-                "#0284C7",  # Cerulean
-                "#D97706",  # Bronze Ochre
-                "#64748B",  # Slate
-                "#475569",  # Steel
+                "#FF7A45",  # Minimal Warm Accent
+                "#CBD5E1",  # Slate 300
+                "#94A3B8",  # Slate 400
+                "#475569",  # Slate 600
+                "#334155",  # Slate 700
+                "#1E293B",  # Slate 800
+                "#E2E8F0",  # Slate 200
+                "#D4D4D8",  # Zinc 300
+                "#A1A1AA",  # Zinc 400
+                "#71717A",  # Zinc 500
+                "#52525B",  # Zinc 600
+                "#3F3F46",  # Zinc 700
+                "#27272A",  # Zinc 800
+                "#E4E4E7",  # Zinc 200
+                "#F4F4F5",  # Zinc 100
+                "#D6D3D1",  # Stone 300
+                "#A8A29E",  # Stone 400
+                "#78716C",  # Stone 500
+                "#57534E",  # Stone 600
+                "#44403C",  # Stone 700
+                "#292524",  # Stone 800
+                "#E7E5E4",  # Stone 200
+                "#9CA3AF",  # Gray 400
+                "#4B5563",  # Gray 600
             ]
 
             sorted_proj_buckets = sorted(

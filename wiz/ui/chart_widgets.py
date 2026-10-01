@@ -8,6 +8,7 @@ Rendered purely via PyQt6 QPainter:
 
 from typing import List, Dict, Any, Optional, Tuple
 import math
+import re
 from PyQt6.QtCore import Qt, QPoint, QPointF, QRectF, pyqtSignal, QSize
 from PyQt6.QtGui import (
     QFont,
@@ -36,6 +37,94 @@ from PyQt6.QtWidgets import (
 
 from wiz.ui.fonts import FONT_SANS, get_font
 from wiz.utils.sanitizer import clean_app_name
+
+
+def get_project_symbol(name: str) -> str:
+    """
+    Generate a clean 1-2 character monogram or symbol for a project name.
+    Examples:
+    - "Untagged" -> "—"
+    - "WizDesk" -> "WD"
+    - "Gaming" -> "G"
+    - "Coding" -> "C"
+    - "Client Portal" -> "CP"
+    """
+    if not name or name.strip().lower() in ("untagged", "none", "unknown"):
+        return "—"
+
+    cleaned = name.strip()
+    tokens = [t for t in re.split(r"[\s_\-]+", cleaned) if t]
+    if len(tokens) >= 2:
+        return (tokens[0][0] + tokens[1][0]).upper()
+
+    word = tokens[0]
+    uppers = [c for c in word if c.isupper()]
+    if len(uppers) >= 2:
+        return (uppers[0] + uppers[1]).upper()
+
+    return word[0].upper()
+
+
+class ProjectBadge(QLabel):
+    """
+    Compact, refined typographic capsule/badge displaying a project symbol.
+    Replaces loud rainbow color dots with minimalist slate/zinc badges.
+    """
+
+    def __init__(
+        self,
+        project_name: str,
+        is_dark: bool = True,
+        parent: Optional[QWidget] = None,
+    ):
+        super().__init__(parent)
+        self.project_name = project_name
+        self.is_dark = is_dark
+        self.symbol = get_project_symbol(project_name)
+        self.setObjectName("ProjectBadge")
+        self.setText(self.symbol)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setFont(get_font(8, QFont.Weight.Bold))
+        self.setToolTip(project_name if project_name else "Untagged")
+
+        self.setFixedHeight(16)
+        self.setMinimumWidth(18)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        self.apply_theme()
+
+    def set_project(self, name: str) -> None:
+        self.project_name = name
+        self.symbol = get_project_symbol(name)
+        self.setText(self.symbol)
+        self.setToolTip(name if name else "Untagged")
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.apply_theme()
+
+    def apply_theme(self) -> None:
+        if self.is_dark:
+            bg = "#27272A"
+            border = "#3F3F46"
+            text_color = "#E4E4E7"
+        else:
+            bg = "#F4F4F5"
+            border = "#E4E4E7"
+            text_color = "#3F3F46"
+
+        self.setStyleSheet(f"""
+            QLabel#ProjectBadge {{
+                background-color: {bg};
+                border: 1px solid {border};
+                border-radius: 4px;
+                color: {text_color};
+                padding: 0px 3px;
+                font-family: {FONT_SANS};
+                font-size: 8px;
+                font-weight: 700;
+            }}
+        """)
 
 
 class MicroSparklineCanvas(QWidget):
@@ -97,21 +186,21 @@ class MicroSparklineCanvas(QWidget):
 
         grad = QLinearGradient(0, 0, 0, h)
         if self.is_dark:
-            top_alpha = 65 if self.is_hovered else 45
+            top_alpha = 30 if self.is_hovered else 18
             grad.setColorAt(0.0, QColor(255, 255, 255, top_alpha))
-            grad.setColorAt(1.0, QColor(255, 255, 255, 4))
+            grad.setColorAt(1.0, QColor(255, 255, 255, 2))
         else:
-            top_alpha = 50 if self.is_hovered else 30
-            grad.setColorAt(0.0, QColor(255, 107, 61, top_alpha))
-            grad.setColorAt(1.0, QColor(255, 107, 61, 2))
+            top_alpha = 24 if self.is_hovered else 14
+            grad.setColorAt(0.0, QColor(24, 24, 27, top_alpha))
+            grad.setColorAt(1.0, QColor(24, 24, 27, 2))
         painter.fillPath(area_path, grad)
 
         # Line stroke
-        stroke_width = 2.0 if self.is_hovered else 1.6
+        stroke_width = 1.8 if self.is_hovered else 1.4
         if self.is_dark:
-            stroke_color = QColor("#FFFFFF" if self.is_hovered else "#F4F4F5")
+            stroke_color = QColor("#D4D4D8" if self.is_hovered else "#A1A1AA")
         else:
-            stroke_color = QColor("#E64A19" if self.is_hovered else "#FF6B3D")
+            stroke_color = QColor("#52525B" if self.is_hovered else "#71717A")
         pen = QPen(stroke_color, stroke_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -120,18 +209,19 @@ class MicroSparklineCanvas(QWidget):
         # End node
         if points:
             last_pt = points[-1]
+            accent_color = QColor("#FF7A45")
             if self.is_hovered:
                 # Glowing outer halo
-                halo_color = QColor(255, 255, 255, 80) if self.is_dark else QColor(255, 107, 61, 75)
+                halo_color = QColor(255, 122, 69, 70)
                 painter.setBrush(halo_color)
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.drawEllipse(last_pt, 5.0, 5.0)
-                painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#FF5722"), 1.6))
+                painter.drawEllipse(last_pt, 4.5, 4.5)
+                painter.setBrush(QColor("#FFFFFF" if self.is_dark else "#18181B"))
+                painter.setPen(QPen(accent_color, 1.5))
                 painter.drawEllipse(last_pt, 2.5, 2.5)
             else:
-                painter.setBrush(QColor("#FFFFFF"))
-                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#FF5722"), 1.4))
+                painter.setBrush(accent_color)
+                painter.setPen(Qt.PenStyle.NoPen)
                 painter.drawEllipse(last_pt, 2.0, 2.0)
 
 
@@ -307,75 +397,39 @@ class KpiStatCard(QFrame):
             self.sparkline.set_theme(self.is_dark)
 
         if self.is_dark:
-            if self.is_hero:
-                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #C83B12, stop:0.55 #8E2506, stop:1 #27140E)"
-                border = "#FF6B3D"
-                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E04818, stop:0.55 #A72E09, stop:1 #321810)"
-                hover_border = "#FF8E6B"
-                text_color = "#FFFFFF"
-                sub_color = "rgba(255, 255, 255, 0.88)"
-                badge_bg = "rgba(255, 255, 255, 0.22)"
-                badge_color = "#FFFFFF"
-                badge_border = "rgba(255, 255, 255, 0.35)"
-                prog_bg = "rgba(255, 255, 255, 0.2)"
-                prog_chunk = "#FFFFFF"
-                prog_chunk_hover = "#FFFFFF"
-                card_border = f"1px solid {border}"
-                icon_bg = "rgba(255, 255, 255, 0.15)"
-                icon_border = "rgba(255, 255, 255, 0.25)"
-                icon_color = "#FFFFFF"
-            else:
-                bg = "#242427"
-                border = "#333338"
-                hover_bg = "#2A2A2F"
-                hover_border = "#FF6B3D"
-                text_color = "#F4F4F6"
-                sub_color = "#A1A1AA"
-                badge_bg = "rgba(16, 185, 129, 0.15)" if "+" in self.change_text else ("rgba(244, 63, 94, 0.15)" if "-" in self.change_text else "rgba(255, 107, 61, 0.20)")
-                badge_color = "#10B981" if "+" in self.change_text else ("#F43F5E" if "-" in self.change_text else "#FF8E6B")
-                badge_border = border
-                prog_bg = "#333338"
-                prog_chunk = "#10B981"
-                prog_chunk_hover = "#34D399"
-                card_border = f"1px solid {border}"
-                icon_bg = "#1F1F22"
-                icon_border = "#333338"
-                icon_color = "#A1A1AA"
+            bg = "#242427"
+            border = "#333338"
+            hover_bg = "#2A2A2F"
+            hover_border = "#FF7A45"
+            text_color = "#F4F4F6"
+            sub_color = "#A1A1AA"
+            badge_bg = "rgba(255, 255, 255, 0.08)"
+            badge_color = "#D4D4D8"
+            badge_border = "#3F3F46"
+            prog_bg = "#333338"
+            prog_chunk = "#71717A"
+            prog_chunk_hover = "#A1A1AA"
+            card_border = f"1px solid {border}"
+            icon_bg = "#1F1F22"
+            icon_border = "#333338"
+            icon_color = "#A1A1AA"
         else:
-            if self.is_hero:
-                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #FFF1EC, stop:0.6 #FFE3D8, stop:1 #FFF8F5)"
-                border = "#FFCCBC"
-                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #FFEBE3, stop:0.6 #FFDACD, stop:1 #FFF3EE)"
-                hover_border = "#FF6B3D"
-                text_color = "#18181B"
-                sub_color = "#D84315"
-                badge_bg = "#ECFDF5"
-                badge_color = "#059669"
-                badge_border = "#A7F3D0"
-                prog_bg = "#E4E4E7"
-                prog_chunk = "#059669"
-                prog_chunk_hover = "#10B981"
-                card_border = f"1px solid {border}"
-                icon_bg = "#FFDCCF"
-                icon_border = "#FFBCAA"
-                icon_color = "#E64A19"
-            else:
-                bg = "#FFFFFF"
-                border = "#E4E4E7"
-                hover_bg = "#F4F4F6"
-                hover_border = "#BA3F1A"
-                text_color = "#18181B"
-                sub_color = "#71717A"
-                badge_bg = "#ECFDF5" if "+" in self.change_text else ("#FFF1F2" if "-" in self.change_text else "#FEECE5")
-                badge_color = "#059669" if "+" in self.change_text else ("#E11D48" if "-" in self.change_text else "#D84315")
-                badge_border = border
-                prog_bg = "#EAEAEB"
-                prog_chunk = "#059669"
-                prog_chunk_hover = "#10B981"
-                card_border = f"1px solid {border}"
-                icon_bg = "#F4F4F6"
-                icon_border = "#E4E4E7"
-                icon_color = "#71717A"
+            bg = "#FFFFFF"
+            border = "#E4E4E7"
+            hover_bg = "#F4F4F6"
+            hover_border = "#FF7A45"
+            text_color = "#18181B"
+            sub_color = "#71717A"
+            badge_bg = "#F4F4F5"
+            badge_color = "#52525B"
+            badge_border = "#E4E4E7"
+            prog_bg = "#E4E4E7"
+            prog_chunk = "#71717A"
+            prog_chunk_hover = "#52525B"
+            card_border = f"1px solid {border}"
+            icon_bg = "#F4F4F6"
+            icon_border = "#E4E4E7"
+            icon_color = "#71717A"
 
         card_name = "KpiHeroCard" if self.is_hero else "KpiStatCard"
 
@@ -444,31 +498,31 @@ class KpiStatCard(QFrame):
 
 
 COMPARISON_PALETTE = [
-    # 24 Curated High-Contrast Brand & Studio Colors
-    "#FF6B3D",  # Mascot Orange-Red (Brand)
-    "#10B981",  # Emerald
-    "#3B82F6",  # Electric Blue
-    "#F59E0B",  # Amber Gold
-    "#8B5CF6",  # Violet
-    "#EC4899",  # Hot Pink
-    "#06B6D4",  # Cyan
-    "#F43F5E",  # Rose
-    "#84CC16",  # Lime Green
-    "#14B8A6",  # Teal
-    "#F97316",  # Tangerine
-    "#A855F7",  # Purple
-    "#0EA5E9",  # Sky Blue
-    "#E11D48",  # Crimson
-    "#059669",  # Forest Jade
-    "#6366F1",  # Indigo
-    "#EAB308",  # Sunburst Yellow
-    "#D946EF",  # Fuchsia
-    "#2563EB",  # Cobalt Blue
-    "#FF5722",  # Flame Orange
-    "#0284C7",  # Cerulean
-    "#D97706",  # Bronze Ochre
-    "#64748B",  # Slate
-    "#475569",  # Steel
+    # 24 Curated Neutral Slate/Charcoal Shades with Minimal Brand Accent
+    "#FF7A45",  # Minimal Warm Accent
+    "#CBD5E1",  # Slate 300
+    "#94A3B8",  # Slate 400
+    "#475569",  # Slate 600
+    "#334155",  # Slate 700
+    "#1E293B",  # Slate 800
+    "#E2E8F0",  # Slate 200
+    "#D4D4D8",  # Zinc 300
+    "#A1A1AA",  # Zinc 400
+    "#71717A",  # Zinc 500
+    "#52525B",  # Zinc 600
+    "#3F3F46",  # Zinc 700
+    "#27272A",  # Zinc 800
+    "#E4E4E7",  # Zinc 200
+    "#F4F4F5",  # Zinc 100
+    "#D6D3D1",  # Stone 300
+    "#A8A29E",  # Stone 400
+    "#78716C",  # Stone 500
+    "#57534E",  # Stone 600
+    "#44403C",  # Stone 700
+    "#292524",  # Stone 800
+    "#E7E5E4",  # Stone 200
+    "#9CA3AF",  # Gray 400
+    "#4B5563",  # Gray 600
 ]
 
 
@@ -1070,14 +1124,13 @@ class ProjectComparisonChartWidget(QFrame):
             pill.setMinimumWidth(0)
             pill_layout = QHBoxLayout(pill)
             pill_layout.setContentsMargins(4, 2, 4, 2)
-            pill_layout.setSpacing(4)
+            pill_layout.setSpacing(5)
 
-            dot = QFrame()
-            dot.setFixedSize(6, 6)
-            dot.setStyleSheet(f"background-color: {s.get('color', '#FF6B3D')}; border-radius: 3px;")
-            pill_layout.addWidget(dot)
+            s_name = s.get("name", "")
+            badge = ProjectBadge(s_name, is_dark=self.is_dark)
+            pill_layout.addWidget(badge)
 
-            name = s['name']
+            name = s_name
             if len(name) > 10:
                 name = name[:9] + "…"
             name_lbl = QLabel(f"{name} ({s.get('total_hours', 0):.1f}h)")
@@ -1463,10 +1516,15 @@ class ProjectTargetRow(QFrame):
         header = QHBoxLayout()
         header.setSpacing(6)
 
-        dot = QFrame()
-        dot.setFixedSize(6, 6)
-        dot.setStyleSheet(f"background-color: {self.color}; border-radius: 3px;")
-        header.addWidget(dot)
+        # Project symbol badge
+        self.badge = ProjectBadge(self.project_name, is_dark=self.is_dark)
+        header.addWidget(self.badge)
+
+        # Backward compatibility placeholder (hidden)
+        self.dot = QFrame()
+        self.dot.setFixedSize(6, 6)
+        self.dot.setStyleSheet(f"background-color: {self.color}; border-radius: 3px;")
+        self.dot.hide()
 
         self.lbl_name = QLabel(self.project_name)
         self.lbl_name.setFont(get_font(9, QFont.Weight.DemiBold))
@@ -1501,6 +1559,7 @@ class ProjectTargetRow(QFrame):
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
+        self.badge.set_theme(is_dark)
         self.apply_theme()
 
     def apply_theme(self) -> None:
@@ -1508,9 +1567,9 @@ class ProjectTargetRow(QFrame):
         border_hover = "#3F3F46" if self.is_dark else "#E4E4E7"
         text_color = "#F4F4F6" if self.is_dark else "#18181B"
         stat_color = "#A1A1AA" if self.is_dark else "#71717A"
-        prog_bg = "#333338" if self.is_dark else "#E4E4E7"
-        color_q = QColor(self.color)
-        chunk_grad = f"qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {self.color}, stop:1 {color_q.lighter(116).name()})"
+        prog_bg = "#27272A" if self.is_dark else "#E4E4E7"
+        prog_chunk = "#71717A"
+        prog_chunk_hover = "#A1A1AA"
 
         self.setStyleSheet(f"""
             QFrame#ProjectTargetRow {{
@@ -1534,8 +1593,11 @@ class ProjectTargetRow(QFrame):
                 border-radius: 2.5px;
             }}
             QProgressBar::chunk {{
-                background: {chunk_grad};
+                background: {prog_chunk};
                 border-radius: 2.5px;
+            }}
+            QFrame#ProjectTargetRow:hover QProgressBar::chunk {{
+                background: {prog_chunk_hover};
             }}
         """)
 
@@ -1986,7 +2048,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
             pct_lbl = QLabel(f"{int(round(app.get('percentage', 0)))}%")
             pct_lbl.setFont(get_font(8, QFont.Weight.DemiBold))
-            pct_color = "#10B981" if self.is_dark else "#059669"
+            pct_color = "#A1A1AA" if self.is_dark else "#71717A"
             pct_lbl.setStyleSheet(f"color: {pct_color};")
             row.addWidget(pct_lbl)
 
