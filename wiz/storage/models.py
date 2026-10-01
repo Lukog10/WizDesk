@@ -102,7 +102,6 @@ class ProjectRecord:
     keywords: List[str]  # e.g. ["turfline", "booking"]
     color: str = "#FF6B3D"
     description: str = ""
-    badge: str = ""
 
 
 DEFAULT_PROJECT_PALETTE: List[str] = [
@@ -774,14 +773,13 @@ class StorageRepository:
         keywords: List[str],
         color: Optional[str] = None,
         description: str = "",
-        badge: Optional[str] = None,
     ) -> int:
-        """Create or update a project and its comma-separated keywords, color, description, and badge."""
+        """Create or update a project and its comma-separated keywords, color, and description."""
         self._projects_cache = None  # Invalidate in-memory cache
         name_clean = name.strip()
         kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()])
         with self.db.cursor() as cur:
-            cur.execute("SELECT color, badge FROM projects WHERE name = ?", (name_clean,))
+            cur.execute("SELECT color FROM projects WHERE name = ?", (name_clean,))
             existing = cur.fetchone()
 
             final_color = color.strip() if (color and color.strip()) else None
@@ -798,21 +796,16 @@ class StorageRepository:
                     if not final_color:
                         final_color = DEFAULT_PROJECT_PALETTE[0]
 
-            final_badge = badge.strip() if badge is not None else (
-                existing["badge"] if existing and "badge" in existing.keys() and existing["badge"] else ""
-            )
-
             cur.execute(
                 """
-                INSERT INTO projects (name, keywords, color, description, badge)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO projects (name, keywords, color, description)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT(name) DO UPDATE SET
                     keywords = excluded.keywords,
                     color = excluded.color,
-                    description = excluded.description,
-                    badge = excluded.badge
+                    description = excluded.description
                 """,
-                (name_clean, kw_str, final_color, description.strip(), final_badge),
+                (name_clean, kw_str, final_color, description.strip()),
             )
             return cur.lastrowid or 0
 
@@ -823,7 +816,6 @@ class StorageRepository:
         color: Optional[str] = None,
         keywords: Optional[List[str]] = None,
         description: Optional[str] = None,
-        badge: Optional[str] = None,
     ) -> bool:
         """
         Safely rename a project and cascade changes to sessions, tasks, and notes.
@@ -838,7 +830,7 @@ class StorageRepository:
         with self.db.cursor() as cur:
             if old_clean.lower() == new_clean.lower():
                 # Case change or in-place attribute update
-                cur.execute("SELECT id, keywords, color, description, badge FROM projects WHERE name = ?", (old_clean,))
+                cur.execute("SELECT id, keywords, color, description FROM projects WHERE name = ?", (old_clean,))
                 current = cur.fetchone()
                 if not current:
                     return False
@@ -846,11 +838,10 @@ class StorageRepository:
                 kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()]) if keywords is not None else current["keywords"]
                 c_val = color.strip() if (color and color.strip()) else current["color"]
                 d_val = description.strip() if description is not None else current["description"]
-                b_val = badge.strip() if badge is not None else (current["badge"] if current and "badge" in current.keys() and current["badge"] else "")
 
                 cur.execute(
-                    "UPDATE projects SET name = ?, keywords = ?, color = ?, description = ?, badge = ? WHERE id = ?",
-                    (new_clean, kw_str, c_val, d_val, b_val, current["id"]),
+                    "UPDATE projects SET name = ?, keywords = ?, color = ?, description = ? WHERE id = ?",
+                    (new_clean, kw_str, c_val, d_val, current["id"]),
                 )
                 cur.execute("UPDATE sessions SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
                 cur.execute("UPDATE tasks SET project_tag = ? WHERE project_tag = ?", (new_clean, old_clean))
@@ -858,10 +849,10 @@ class StorageRepository:
                 return True
 
             # Check if target new_name already exists in projects table
-            cur.execute("SELECT id, keywords, color, description, badge FROM projects WHERE name = ?", (new_clean,))
+            cur.execute("SELECT id, keywords, color, description FROM projects WHERE name = ?", (new_clean,))
             target_existing = cur.fetchone()
 
-            cur.execute("SELECT id, keywords, color, description, badge FROM projects WHERE name = ?", (old_clean,))
+            cur.execute("SELECT id, keywords, color, description FROM projects WHERE name = ?", (old_clean,))
             source_existing = cur.fetchone()
 
             if target_existing:
@@ -876,14 +867,10 @@ class StorageRepository:
                 d_val = description.strip() if description is not None else (
                     target_existing["description"] or (source_existing["description"] if source_existing else "")
                 )
-                b_val = badge.strip() if badge is not None else (
-                    target_existing["badge"] if target_existing and "badge" in target_existing.keys() and target_existing["badge"]
-                    else (source_existing["badge"] if source_existing and "badge" in source_existing.keys() and source_existing["badge"] else "")
-                )
 
                 cur.execute(
-                    "UPDATE projects SET keywords = ?, color = ?, description = ?, badge = ? WHERE id = ?",
-                    (kw_str, c_val, d_val, b_val, target_existing["id"]),
+                    "UPDATE projects SET keywords = ?, color = ?, description = ? WHERE id = ?",
+                    (kw_str, c_val, d_val, target_existing["id"]),
                 )
                 if source_existing:
                     cur.execute("DELETE FROM projects WHERE id = ?", (source_existing["id"],))
@@ -893,19 +880,17 @@ class StorageRepository:
                     kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()]) if keywords is not None else source_existing["keywords"]
                     c_val = color.strip() if (color and color.strip()) else source_existing["color"]
                     d_val = description.strip() if description is not None else source_existing["description"]
-                    b_val = badge.strip() if badge is not None else (source_existing["badge"] if source_existing and "badge" in source_existing.keys() and source_existing["badge"] else "")
                     cur.execute(
-                        "UPDATE projects SET name = ?, keywords = ?, color = ?, description = ?, badge = ? WHERE id = ?",
-                        (new_clean, kw_str, c_val, d_val, b_val, source_existing["id"]),
+                        "UPDATE projects SET name = ?, keywords = ?, color = ?, description = ? WHERE id = ?",
+                        (new_clean, kw_str, c_val, d_val, source_existing["id"]),
                     )
                 else:
                     kw_str = ",".join([k.strip().lower() for k in keywords if k.strip()]) if keywords is not None else ""
                     c_val = color.strip() if (color and color.strip()) else DEFAULT_PROJECT_PALETTE[0]
                     d_val = description.strip() if description is not None else ""
-                    b_val = badge.strip() if badge is not None else ""
                     cur.execute(
-                        "INSERT INTO projects (name, keywords, color, description, badge) VALUES (?, ?, ?, ?, ?)",
-                        (new_clean, kw_str, c_val, d_val, b_val),
+                        "INSERT INTO projects (name, keywords, color, description) VALUES (?, ?, ?, ?)",
+                        (new_clean, kw_str, c_val, d_val),
                     )
 
             # Cascade update all historical records
@@ -934,7 +919,7 @@ class StorageRepository:
             return self._projects_cache
 
         with self.db.cursor() as cur:
-            cur.execute("SELECT id, name, keywords, color, description, badge FROM projects ORDER BY name ASC")
+            cur.execute("SELECT id, name, keywords, color, description FROM projects ORDER BY name ASC")
             rows = cur.fetchall()
             self._projects_cache = [
                 ProjectRecord(
@@ -943,7 +928,6 @@ class StorageRepository:
                     keywords=[k.strip() for k in (row["keywords"] or "").split(",") if k.strip()],
                     color=row["color"] or "#FF6B3D",
                     description=row["description"] or "",
-                    badge=row["badge"] if ("badge" in row.keys() and row["badge"]) else "",
                 )
                 for row in rows
             ]
