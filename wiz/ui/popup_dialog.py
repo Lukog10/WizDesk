@@ -1204,11 +1204,10 @@ class TaskRowWidget(QWidget):
         """)
         status_bar_layout.addWidget(self.time_label)
 
-        # Schedule / overdue badge
+        # Schedule date badge (removed per user request to streamline task rows)
         self.schedule_badge = QLabel()
         self.schedule_badge.setFixedHeight(18)
         self.schedule_badge.setVisible(False)
-        status_bar_layout.addWidget(self.schedule_badge)
 
         # Repeat mode badge
         self.repeat_badge = QLabel()
@@ -1346,56 +1345,11 @@ class TaskRowWidget(QWidget):
 
     def _update_badges(self) -> None:
         """Update visual badges for scheduled date / overdue status and repeat mode."""
-        today = date.today()
-        today_str = today.strftime("%Y-%m-%d")
-
         if self.task.scheduled_date:
-            sched_str = self.task.scheduled_date
-            try:
-                sched_dt = date.fromisoformat(sched_str)
-                fmt_date = sched_dt.strftime("%b %d")
-            except Exception:
-                fmt_date = sched_str
-
-            if self.task.is_overdue:
-                text = f"Overdue • {fmt_date}"
-                bg = "rgba(239, 68, 68, 0.15)" if self.is_dark else "#FEE2E2"
-                fg = "#F87171" if self.is_dark else "#DC2626"
-                border = "#EF4444" if self.is_dark else "#FCA5A5"
-            elif sched_str == today_str:
-                text = "Today"
-                bg = "rgba(255, 107, 61, 0.15)" if self.is_dark else "#FEECE5"
-                fg = "#FF8E6B" if self.is_dark else "#BA3F1A"
-                border = "#EA580C" if self.is_dark else "#FDBA74"
-            elif sched_str == (today + timedelta(days=1)).strftime("%Y-%m-%d"):
-                text = "Tomorrow"
-                bg = "rgba(255, 107, 61, 0.12)" if self.is_dark else "#FFF7ED"
-                fg = "#FB923C" if self.is_dark else "#C2410C"
-                border = "rgba(251, 146, 60, 0.3)"
-            else:
-                text = fmt_date
-                bg = "#27272A" if self.is_dark else "#F4F4F6"
-                fg = "#D4D4D8" if self.is_dark else "#71717A"
-                border = "#3F3F46" if self.is_dark else "#E4E4E7"
-
-            self.schedule_badge.setText(text)
-            self.schedule_badge.setStyleSheet(f"""
-                QLabel {{
-                    background-color: {bg};
-                    color: {fg};
-                    border: 1px solid {border};
-                    border-radius: 4px;
-                    padding: 0 6px;
-                    font-family: {FONT_SANS};
-                    font-size: 10px;
-                    font-weight: 600;
-                }}
-            """)
-            self.schedule_badge.setVisible(True)
             self.schedule_btn.set_scheduled_date(self.task.scheduled_date)
         else:
-            self.schedule_badge.setVisible(False)
             self.schedule_btn.set_scheduled_date(None)
+        self.schedule_badge.setVisible(False)
 
         if self.task.is_recurring:
             mode_display = {

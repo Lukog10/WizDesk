@@ -775,7 +775,7 @@ class ProjectsOverviewPage(QWidget):
         self.kpi_hero.update_data(f"{tot_hrs}h", chg_str, subtitle="vs prev period")
 
         active_cnt = analytics.get("active_projects_count", 0)
-        self.kpi_projects.update_data(str(active_cnt), "Active", subtitle=f"{active_cnt} active this period")
+        self.kpi_projects.update_data(str(active_cnt), "", subtitle=f"{active_cnt} active this period")
 
         top_app = analytics.get("top_app")
         if top_app:
