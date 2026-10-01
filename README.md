@@ -17,7 +17,7 @@
 
 <br />
 
-[Workspace Preview](#workspace-preview) &bull; [Architecture](#system-architecture) &bull; [Codebase Guide](docs/CODEBASE_ARCHITECTURE.md) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Quickstart](#quickstart--installation) &bull; [Shortcuts](#keyboard-shortcuts--gestures) &bull; [Testing](#automated-testing)
+[Workspace Preview](#workspace-preview) &bull; [Architecture](#system-architecture) &bull; [Codebase Guide](docs/CODEBASE_ARCHITECTURE.md) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Download](#download--quickstart) &bull; [Shortcuts](#keyboard-shortcuts--gestures) &bull; [Testing](#automated-testing)
 
 </div>
 
@@ -223,13 +223,22 @@ WizDesk is built around verifiable privacy and robust data protection:
 
 ---
 
-## Quickstart & Installation
+## Download & Quickstart
 
-### Prerequisites
+### Download Standalone Executable (Windows)
+
+Download the latest pre-built Windows bundle from [Releases](https://github.com/Lukog10/WizDesk/releases/latest):
+* **[WizDesk-v1.0.0-windows-x64.zip](https://github.com/Lukog10/WizDesk/releases/download/v1.0.0/WizDesk-v1.0.0-windows-x64.zip)**: Download, extract, and launch `WizDesk.exe`. No Python setup required.
+
+---
+
+### Running from Source
+
+#### Prerequisites
 - **Operating System**: Windows 10, Windows 11, or Linux (X11 / Wayland)
 - **Python**: Python 3.10, 3.11, 3.12, or 3.14 (64-bit)
 
-### Installation Steps
+#### Installation Steps
 
 1. **Clone the repository**:
    ```powershell
@@ -261,16 +270,16 @@ WizDesk is built around verifiable privacy and robust data protection:
 | :--- | :--- | :--- |
 | `Ctrl + Shift + W` | System-Wide | Open or focus the main **Workspace Window** |
 | `Ctrl + Shift + M` | System-Wide | Toggle companion mascot visibility (show / hide) |
-| `Ctrl + Shift + T` | System-Wide | Summon floating **Quick Task Bar** |
-| `Ctrl + Shift + N` | System-Wide | Summon floating **Quick Note Bar** |
-| **Left Double-Click** | Mascot Widget | Pop up floating Quick Task Bar near mascot |
-| **Left Triple-Click** | Mascot Widget | Pop up floating Quick Note Bar near mascot |
-| **Left Click + Drag** | Mascot / Header | Reposition the companion anywhere on your desktop |
-| **Right Click** | Mascot Widget | Open context menu (Workspace, Moods, Settings, Quit) |
-| `Enter` | Text Inputs | Save new task, note, or commit inline rename |
-| `Escape` | Windows / Modals | Close workspace window or dismiss quick entry bars |
+| `Ctrl + Shift + T` | System-Wide | Summon floating **Quick Task Bar** near companion |
+| `Ctrl + Shift + N` | System-Wide | Summon floating **Quick Note Bar** near companion |
+| **Left Single-Click** | Mascot Widget | Playful companion poke interaction with audio reaction |
+| **Left Double-Click** | Mascot Widget | Instantly open or focus the main **Workspace Window** |
+| **Left Click + Drag** | Mascot Widget | Reposition the companion anywhere on your desktop (auto-saved) |
+| **Right-Click** | System Tray Icon | Open system tray menu (Open Workspace, Moods, Settings, Exit) |
+| `Enter` | Input Fields | Save new task, note, or commit inline title rename |
+| `Escape` | Windows / Modals | Close workspace window or dismiss quick entry floating bars |
 
-All hotkeys are customizable under **Settings > Hotkeys**.
+All global hotkeys are fully customizable under **Settings > Hotkeys**.
 
 ---
 
