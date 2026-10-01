@@ -35,8 +35,30 @@ from PyQt6.QtWidgets import (
     QScrollArea,
 )
 
+from wiz.core.config import config
 from wiz.ui.fonts import FONT_SANS, get_font
+from wiz.ui.icons import render_tinted_svg
 from wiz.utils.sanitizer import clean_app_name
+
+NEUTRAL_GRADED_TINTS_DARK: List[str] = [
+    "#E4E4E7",  # Rank 0: Crisp light zinc/grey
+    "#D4D4D8",  # Rank 1
+    "#A1A1AA",  # Rank 2
+    "#71717A",  # Rank 3
+    "#52525B",  # Rank 4
+    "#3F3F46",  # Rank 5
+    "#27272A",  # Rank 6+
+]
+
+NEUTRAL_GRADED_TINTS_LIGHT: List[str] = [
+    "#27272A",  # Rank 0: Dark charcoal
+    "#3F3F46",  # Rank 1
+    "#52525B",  # Rank 2
+    "#71717A",  # Rank 3
+    "#A1A1AA",  # Rank 4
+    "#D4D4D8",  # Rank 5
+    "#E4E4E7",  # Rank 6+
+]
 
 
 def get_project_symbol(name: str) -> str:
@@ -65,66 +87,118 @@ def get_project_symbol(name: str) -> str:
     return word[0].upper()
 
 
-class ProjectBadge(QLabel):
+class ProjectBadge(QWidget):
     """
-    Compact, refined typographic capsule/badge displaying a project symbol.
+    Compact, refined typographic or vector capsule/badge displaying a project icon or monogram.
     Replaces loud rainbow color dots with minimalist slate/zinc badges.
     """
 
     def __init__(
         self,
         project_name: str,
+        badge: str = "",
         is_dark: bool = True,
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
+        if isinstance(badge, bool):
+            is_dark = badge
+            badge = ""
         self.project_name = project_name
+        self.badge = badge or self._lookup_badge(project_name)
         self.is_dark = is_dark
+        self.is_hovered: bool = False
         self.symbol = get_project_symbol(project_name)
         self.setObjectName("ProjectBadge")
-        self.setText(self.symbol)
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setFont(get_font(8, QFont.Weight.Bold))
         self.setToolTip(project_name if project_name else "Untagged")
 
         self.setFixedHeight(16)
         self.setMinimumWidth(18)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
-        self.apply_theme()
+    def text(self) -> str:
+        return self.symbol
 
-    def set_project(self, name: str) -> None:
+    def setText(self, text: str) -> None:
+        self.symbol = text
+        self.update()
+
+    def _lookup_badge(self, name: str) -> str:
+        if not name or name.lower() in ("untagged", "none", "unknown"):
+            return ""
+        try:
+            from wiz.storage.models import StorageRepository
+            for p in StorageRepository().get_all_projects():
+                if p.name.lower() == name.lower() and getattr(p, "badge", ""):
+                    return p.badge
+        except Exception:
+            pass
+        return ""
+
+    def set_project(self, name: str, badge: str = "") -> None:
         self.project_name = name
+        self.badge = badge or self._lookup_badge(name)
         self.symbol = get_project_symbol(name)
-        self.setText(self.symbol)
         self.setToolTip(name if name else "Untagged")
+        self.update()
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.apply_theme()
+        self.update()
 
-    def apply_theme(self) -> None:
-        if self.is_dark:
-            bg = "#27272A"
-            border = "#3F3F46"
+    def enterEvent(self, event) -> None:
+        self.is_hovered = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self.is_hovered = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
+
+        w = float(self.width())
+        h = float(self.height())
+        rect = QRectF(0.5, 0.5, w - 1.0, h - 1.0)
+
+        if self.is_hovered:
+            bg = QColor("#2A2A2E" if self.is_dark else "#F4F4F5")
+            border = QColor("#FF7A45")
+            text_color = "#FF7A45"
+        elif self.is_dark:
+            bg = QColor("#27272A")
+            border = QColor("#3F3F46")
             text_color = "#E4E4E7"
         else:
-            bg = "#F4F4F5"
-            border = "#E4E4E7"
+            bg = QColor("#F4F4F5")
+            border = QColor("#E4E4E7")
             text_color = "#3F3F46"
 
-        self.setStyleSheet(f"""
-            QLabel#ProjectBadge {{
-                background-color: {bg};
-                border: 1px solid {border};
-                border-radius: 4px;
-                color: {text_color};
-                padding: 0px 3px;
-                font-family: {FONT_SANS};
-                font-size: 8px;
-                font-weight: 700;
-            }}
-        """)
+        path = QPainterPath()
+        path.addRoundedRect(rect, 4.0, 4.0)
+        painter.fillPath(path, bg)
+        painter.setPen(QPen(border, 1.0))
+        painter.drawPath(path)
+
+        has_svg = False
+        if self.badge:
+            svg_file = config.get_asset_path(f"badges/{self.badge}.svg")
+            if svg_file.exists():
+                has_svg = True
+                icon_size = 11.0
+                ix = (w - icon_size) / 2.0
+                iy = (h - icon_size) / 2.0
+                render_tinted_svg(painter, f"badges/{self.badge}.svg", text_color, ix, iy, icon_size)
+
+        if not has_svg:
+            painter.setPen(QColor(text_color))
+            painter.setFont(get_font(8, QFont.Weight.Bold))
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, self.symbol)
 
 
 class MicroSparklineCanvas(QWidget):
@@ -768,15 +842,27 @@ class ProjectComparisonCanvas(QWidget):
                         is_spotlighted = (self.spotlight_series == s.get("name"))
                         is_dimmed = (self.spotlight_series is not None and not is_spotlighted)
 
-                        bar_color = QColor(s.get("color", "#FF6B3D"))
-                        if is_spotlighted:
-                            bar_color = bar_color.lighter(125)
+                        # Determine graded neutral tint based on rank of active series
+                        ranked_active = sorted(
+                            active_series,
+                            key=lambda x: sum(x.get("hours", [])) if x.get("name") != "Untagged" else -1.0,
+                            reverse=True,
+                        )
+                        tints = NEUTRAL_GRADED_TINTS_DARK if self.is_dark else NEUTRAL_GRADED_TINTS_LIGHT
+                        s_rank = ranked_active.index(s) if s in ranked_active else 0
+                        neutral_color = QColor("#71717A") if s.get("name") == "Untagged" else QColor(tints[min(s_rank, len(tints) - 1)])
+
+                        if is_spotlighted or (is_bucket_hovered and self.spotlight_series is None):
+                            # Minimal brand accent on hover
+                            bar_color = QColor("#FF7A45")
                         elif is_dimmed:
+                            bar_color = neutral_color
                             bar_color.setAlpha(60)
-                        elif is_bucket_hovered:
-                            bar_color = bar_color.lighter(115)
                         elif self.hover_bucket_idx is not None:
+                            bar_color = neutral_color
                             bar_color.setAlpha(170)
+                        else:
+                            bar_color = neutral_color
 
                         path = QPainterPath()
                         r = min(4.5, ind_w / 2.0, bar_h)
@@ -1395,11 +1481,11 @@ class AppUsageDonutCanvas(QWidget):
                     sec_cx = cx
                     sec_cy = cy
 
-                app_color = QColor(app.get("color", "#FF6B3D"))
-                if is_hovered:
-                    app_color = app_color.lighter(118)
-                elif self.hovered_segment_idx is not None:
-                    app_color.setAlpha(170)
+                tints = NEUTRAL_GRADED_TINTS_DARK if self.is_dark else NEUTRAL_GRADED_TINTS_LIGHT
+                base_color = tints[min(idx, len(tints) - 1)]
+                app_color = QColor("#FF7A45") if is_hovered else QColor(base_color)
+                if not is_hovered and self.hovered_segment_idx is not None:
+                    app_color.setAlpha(160)
 
                 outer_rect = QRectF(sec_cx - cur_outer_r, sec_cy - cur_outer_r, cur_outer_r * 2, cur_outer_r * 2)
                 inner_rect = QRectF(sec_cx - cur_inner_r, sec_cy - cur_inner_r, cur_inner_r * 2, cur_inner_r * 2)
@@ -1481,10 +1567,10 @@ class ProjectTargetRow(QFrame):
     """
     Catchy, minimalist project target row matching modern executive dashboard references.
     Displays:
-    - Project color dot + name
+    - Project vector badge + name
     - Hours tracked + percentage share
-    - Sleek rounded horizontal progress track filled with project's signature color
-    - Interactive hover elevation and click-to-drilldown
+    - Sleek rounded horizontal progress track filled with graded neutral tint
+    - Interactive hover minimal accent highlight and click-to-drilldown
     """
 
     clicked = pyqtSignal(str)
@@ -1496,6 +1582,7 @@ class ProjectTargetRow(QFrame):
         hours: float,
         pct: int,
         is_dark: bool = True,
+        badge: str = "",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
@@ -1504,6 +1591,7 @@ class ProjectTargetRow(QFrame):
         self.hours = hours
         self.pct = max(0, min(100, pct))
         self.is_dark = is_dark
+        self.badge_name = badge
         self.setObjectName("ProjectTargetRow")
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setMinimumWidth(0)
@@ -1516,8 +1604,8 @@ class ProjectTargetRow(QFrame):
         header = QHBoxLayout()
         header.setSpacing(6)
 
-        # Project symbol badge
-        self.badge = ProjectBadge(self.project_name, is_dark=self.is_dark)
+        # Project symbol/vector badge
+        self.badge = ProjectBadge(self.project_name, badge=self.badge_name, is_dark=self.is_dark)
         header.addWidget(self.badge)
 
         # Backward compatibility placeholder (hidden)
@@ -1568,8 +1656,8 @@ class ProjectTargetRow(QFrame):
         text_color = "#F4F4F6" if self.is_dark else "#18181B"
         stat_color = "#A1A1AA" if self.is_dark else "#71717A"
         prog_bg = "#27272A" if self.is_dark else "#E4E4E7"
-        prog_chunk = "#71717A"
-        prog_chunk_hover = "#A1A1AA"
+        prog_chunk = self.color if self.color else ("#A1A1AA" if self.is_dark else "#71717A")
+        prog_chunk_hover = "#FF7A45"
 
         self.setStyleSheet(f"""
             QFrame#ProjectTargetRow {{
@@ -1698,16 +1786,21 @@ class ProjectTrackingWidget(QFrame):
             self.targets_layout.addStretch()
             return
 
-        for p in display_projects:
+        sorted_projects = sorted(display_projects, key=lambda p: p.get("tracked_minutes", 0.0), reverse=True)
+        tints = NEUTRAL_GRADED_TINTS_DARK if self.is_dark else NEUTRAL_GRADED_TINTS_LIGHT
+
+        for idx, p in enumerate(sorted_projects):
             mins = p.get("tracked_minutes", 0.0)
             h = mins / 60.0
             pct = int(round((h / total_hours * 100))) if total_hours > 0 else int(round(p.get("completion_rate", 0.0) * 100))
+            tint = tints[min(idx, len(tints) - 1)]
             row = ProjectTargetRow(
                 project_name=p["name"],
-                color=p.get("color", "#FF6B3D"),
+                color=tint,
                 hours=h,
                 pct=pct,
                 is_dark=self.is_dark,
+                badge=p.get("badge", ""),
                 parent=self.targets_container,
             )
             row.clicked.connect(self.project_selected.emit)
@@ -1983,16 +2076,21 @@ class AppUsageAnalyticsWidget(QFrame):
             self.targets_layout.addWidget(empty)
             return
 
-        for p in display_projects:
+        sorted_projects = sorted(display_projects, key=lambda p: p.get("tracked_minutes", 0.0), reverse=True)
+        tints = NEUTRAL_GRADED_TINTS_DARK if self.is_dark else NEUTRAL_GRADED_TINTS_LIGHT
+
+        for idx, p in enumerate(sorted_projects):
             mins = p.get("tracked_minutes", 0.0)
             h = mins / 60.0
             pct = int(round((h / total_hours * 100))) if total_hours > 0 else int(round(p.get("completion_rate", 0.0) * 100))
+            tint = tints[min(idx, len(tints) - 1)]
             row = ProjectTargetRow(
                 project_name=p["name"],
-                color=p.get("color", "#FF6B3D"),
+                color=tint,
                 hours=h,
                 pct=pct,
                 is_dark=self.is_dark,
+                badge=p.get("badge", ""),
                 parent=self.targets_container,
             )
             row.clicked.connect(self.project_selected.emit)
@@ -2023,6 +2121,7 @@ class AppUsageAnalyticsWidget(QFrame):
             self.donut_list_layout.addWidget(empty)
             return
 
+        tints = NEUTRAL_GRADED_TINTS_DARK if self.is_dark else NEUTRAL_GRADED_TINTS_LIGHT
         for idx, app in enumerate(apps[:3]):
             row_frame = QFrame()
             row_frame.setObjectName("AppDonutRow")
@@ -2034,7 +2133,8 @@ class AppUsageAnalyticsWidget(QFrame):
 
             dot = QFrame()
             dot.setFixedSize(6, 6)
-            dot.setStyleSheet(f"background-color: {app.get('color', '#FF6B3D')}; border-radius: 3px;")
+            dot_color = tints[min(idx, len(tints) - 1)]
+            dot.setStyleSheet(f"background-color: {dot_color}; border-radius: 3px;")
             row.addWidget(dot)
 
             app_name = clean_app_name(app["app_name"])
@@ -2079,7 +2179,8 @@ class AppUsageAnalyticsWidget(QFrame):
             self.bar_page_layout.addWidget(empty)
             return
 
-        for app in apps[:3]:
+        tints = NEUTRAL_GRADED_TINTS_DARK if self.is_dark else NEUTRAL_GRADED_TINTS_LIGHT
+        for idx, app in enumerate(apps[:3]):
             item_frame = QFrame()
             item_frame.setObjectName("AppUsageBarItem")
             item_frame.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -2093,7 +2194,8 @@ class AppUsageAnalyticsWidget(QFrame):
 
             dot = QFrame()
             dot.setFixedSize(6, 6)
-            dot.setStyleSheet(f"background-color: {app.get('color', '#FF6B3D')}; border-radius: 3px;")
+            dot_color = tints[min(idx, len(tints) - 1)]
+            dot.setStyleSheet(f"background-color: {dot_color}; border-radius: 3px;")
             row.addWidget(dot)
 
             name_lbl = QLabel(clean_app_name(app["app_name"]))
@@ -2115,7 +2217,7 @@ class AppUsageAnalyticsWidget(QFrame):
             bar.setFixedHeight(5)
 
             bar_bg = "#333338" if self.is_dark else "#E4E4E7"
-            bar_color = app.get("color", "#FF6B3D")
+            bar_color = dot_color
             bar_color_q = QColor(bar_color)
             bar_chunk_grad = f"qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {bar_color}, stop:1 {bar_color_q.lighter(116).name()})"
             bar.setStyleSheet(f"""
@@ -2130,6 +2232,18 @@ class AppUsageAnalyticsWidget(QFrame):
                 }}
             """)
             item_layout.addWidget(bar)
+            item_frame.setStyleSheet(f"""
+                QFrame#AppUsageBarItem {{
+                    background: transparent;
+                    border-radius: 6px;
+                }}
+                QFrame#AppUsageBarItem:hover {{
+                    background: {"#2A2A2E" if self.is_dark else "#F4F4F5"};
+                }}
+                QFrame#AppUsageBarItem:hover QProgressBar::chunk {{
+                    background: #FF7A45;
+                }}
+            """)
             self.bar_page_layout.addWidget(item_frame)
 
         self.bar_page_layout.addStretch()

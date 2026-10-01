@@ -77,7 +77,8 @@ CREATE TABLE IF NOT EXISTS projects (
     name TEXT UNIQUE NOT NULL,
     keywords TEXT NOT NULL,  -- Comma-separated match hints
     color TEXT DEFAULT '#FF6B3D',
-    description TEXT DEFAULT ''
+    description TEXT DEFAULT '',
+    badge TEXT DEFAULT ''
 );
 
 -- Indices for rapid daily reporting, project filtering, and sync queries
@@ -236,6 +237,10 @@ class Database:
             pass
         try:
             conn.execute("ALTER TABLE projects ADD COLUMN description TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE projects ADD COLUMN badge TEXT DEFAULT ''")
         except sqlite3.OperationalError:
             pass
 

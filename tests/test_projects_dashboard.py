@@ -1039,6 +1039,123 @@ def test_comparison_palette_minimal_accent_uniqueness():
     assert COMPARISON_PALETTE[0] == "#FF7A45"
 
 
+def test_project_record_and_db_badge_field(repo):
+    """Verify projects table and ProjectRecord support badge persistence and querying."""
+    from wiz.storage.models import StorageRepository, ProjectRecord
+    repo = StorageRepository()
+    # Create with vector badge
+    pid = repo.create_or_update_project(
+        name="Internet Research",
+        keywords=["search", "web"],
+        color="#71717A",
+        description="Web search tasks",
+        badge="globe",
+    )
+    assert pid > 0
+
+    projects = repo.get_all_projects(force_refresh=True)
+    proj = next((p for p in projects if p.name == "Internet Research"), None)
+    assert proj is not None
+    assert proj.badge == "globe"
+
+    # Rename and update badge
+    repo.rename_project(
+        old_name="Internet Research",
+        new_name="Web Dev",
+        badge="code",
+    )
+    projects_after = repo.get_all_projects(force_refresh=True)
+    renamed = next((p for p in projects_after if p.name == "Web Dev"), None)
+    assert renamed is not None
+    assert renamed.badge == "code"
+
+
+def test_project_dialog_badge_picker(qapp):
+    """Verify ProjectDialog initializes with badge picker and returns selected badge in get_data."""
+    from wiz.ui.project_dashboard_view import ProjectDialog, AVAILABLE_PROJECT_BADGES
+    from wiz.storage.models import ProjectRecord
+
+    # New Project mode
+    dlg = ProjectDialog(is_dark=True)
+    assert hasattr(dlg, "badge_buttons")
+    assert "" in dlg.badge_buttons
+    assert "globe" in dlg.badge_buttons
+    assert dlg.selected_badge == ""
+
+    # Select globe badge
+    dlg._on_badge_selected("globe")
+    assert dlg.selected_badge == "globe"
+    assert "Globe" in dlg.badge_status_lbl.text()
+
+    # Edit Project mode
+    edit_proj = ProjectRecord(
+        id=99,
+        name="CloudOps",
+        keywords=["cloud"],
+        color="#A1A1AA",
+        description="Infra",
+        badge="server",
+    )
+    dlg_edit = ProjectDialog(is_dark=True, project=edit_proj)
+    assert dlg_edit.selected_badge == "server"
+    name, color, desc, kws, badge = dlg_edit.get_data()
+    assert name == "CloudOps"
+    assert badge == "server"
+
+
+def test_project_badge_svg_and_hover_rendering(qapp):
+    """Verify ProjectBadge correctly loads vector SVGs from assets/icons/badges and paints without error."""
+    from wiz.ui.chart_widgets import ProjectBadge
+    from PyQt6.QtGui import QPainter, QPixmap
+    from PyQt6.QtCore import Qt
+
+    badge = ProjectBadge("Internet", badge="globe", is_dark=True)
+    assert badge.badge == "globe"
+    assert badge.symbol == "I"
+    assert badge.text() == "I"
+
+    pm = QPixmap(24, 24)
+    pm.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pm)
+    badge.paintEvent(None)
+    painter.end()
+    assert not pm.isNull()
+
+    # Hover state test
+    badge.enterEvent(None)
+    assert badge.is_hovered is True
+    badge.leaveEvent(None)
+    assert badge.is_hovered is False
+
+
+def test_project_tracking_graded_tints_and_badges(qapp):
+    """Verify ProjectTrackingWidget orders projects descending by time and assigns graded neutral tints."""
+    from wiz.ui.chart_widgets import ProjectTrackingWidget, ProjectTargetRow
+
+    tracker = ProjectTrackingWidget(is_dark=True)
+    tracker.resize(300, 300)
+    projects_data = [
+        {"name": "Low Project", "tracked_minutes": 30, "badge": "coffee"},
+        {"name": "High Project", "tracked_minutes": 180, "badge": "rocket"},
+        {"name": "Mid Project", "tracked_minutes": 90, "badge": "terminal"},
+    ]
+    tracker.set_project_targets(projects_data, 5.0)
+
+    # Verify rows were created
+    rows = [tracker.targets_layout.itemAt(i).widget() for i in range(tracker.targets_layout.count())]
+    target_rows = [r for r in rows if isinstance(r, ProjectTargetRow)]
+    assert len(target_rows) == 3
+
+    # Sorted order check (High -> Mid -> Low)
+    assert target_rows[0].project_name == "High Project"
+    assert target_rows[0].badge_name == "rocket"
+    assert target_rows[1].project_name == "Mid Project"
+    assert target_rows[1].badge_name == "terminal"
+    assert target_rows[2].project_name == "Low Project"
+    assert target_rows[2].badge_name == "coffee"
+
+
+
 
 
 

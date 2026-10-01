@@ -6,7 +6,7 @@ Provides an in-page drilldown architecture:
 """
 
 from typing import List, Dict, Any, Optional, Tuple
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtGui import QFont, QColor, QCursor
 from PyQt6.QtWidgets import (
     QWidget,
@@ -36,7 +36,18 @@ from wiz.ui.chart_widgets import (
     get_project_symbol,
 )
 from wiz.ui.fonts import FONT_SANS, get_font
+from wiz.ui.icons import get_status_icon
 from wiz.utils.sanitizer import clean_app_name
+
+AVAILABLE_PROJECT_BADGES: List[str] = [
+    "globe", "compass", "wifi", "link",
+    "code", "terminal", "cpu", "database", "server", "laptop", "smartphone", "monitor", "git-branch", "layers",
+    "briefcase", "folder", "file-text", "square-check", "calendar", "mail", "message-square",
+    "palette", "pen-tool", "image", "video", "music", "headphones",
+    "book-open", "graduation-cap", "search", "lightbulb", "sparkles",
+    "chart-column", "trending-up", "dollar-sign", "credit-card",
+    "gamepad-2", "coffee", "zap", "rocket", "target", "flag", "shield", "award", "star", "heart", "clock", "activity",
+]
 
 
 PRESET_COLORS = [
@@ -98,6 +109,11 @@ class ProjectDialog(QDialog):
         super().__init__(parent)
         self.is_dark = is_dark
         self.project = project
+        if project and hasattr(project, "badge") and project.badge:
+            self.selected_badge = project.badge
+        else:
+            self.selected_badge = ""
+
         if project and project.color:
             self.selected_color = project.color
         else:
@@ -116,12 +132,12 @@ class ProjectDialog(QDialog):
 
         title = "Edit Project" if project else "New Project"
         self.setWindowTitle(title)
-        self.setFixedSize(430, 460)
+        self.setFixedSize(450, 580)
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowCloseButtonHint)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 18, 20, 18)
-        layout.setSpacing(11)
+        layout.setSpacing(10)
 
         header_lbl = QLabel(title)
         header_lbl.setFont(get_font(14, QFont.Weight.Bold))
@@ -136,6 +152,58 @@ class ProjectDialog(QDialog):
             if project.name == "Untagged":
                 self.name_edit.setEnabled(False)
         layout.addWidget(self.name_edit)
+
+        # Badge Selector Header
+        badge_header = QHBoxLayout()
+        badge_header.addWidget(QLabel("Project Badge Icon:"))
+        self.badge_status_lbl = QLabel("Auto Monogram" if not self.selected_badge else self.selected_badge.replace("-", " ").title())
+        self.badge_status_lbl.setStyleSheet("color: #FF7A45; font-weight: 600; font-size: 11px;")
+        badge_header.addStretch()
+        badge_header.addWidget(self.badge_status_lbl)
+        layout.addLayout(badge_header)
+
+        # Scrollable Badge Picker Grid
+        badge_scroll = QScrollArea(self)
+        badge_scroll.setFixedHeight(105)
+        badge_scroll.setWidgetResizable(True)
+        badge_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        badge_scroll.setObjectName("BadgeScrollArea")
+
+        badge_container = QWidget()
+        badge_grid = QGridLayout(badge_container)
+        badge_grid.setSpacing(5)
+        badge_grid.setContentsMargins(4, 4, 4, 4)
+
+        self.badge_buttons: Dict[str, QPushButton] = {}
+
+        # Option 0: Auto Monogram button
+        btn_auto = QPushButton("Aa")
+        btn_auto.setFixedSize(28, 28)
+        btn_auto.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_auto.setToolTip("Auto Monogram (First Letter)")
+        btn_auto.setFont(get_font(9, QFont.Weight.Bold))
+        btn_auto.clicked.connect(lambda: self._on_badge_selected(""))
+        badge_grid.addWidget(btn_auto, 0, 0)
+        self.badge_buttons[""] = btn_auto
+
+        cols_count = 8
+        for idx, bname in enumerate(AVAILABLE_PROJECT_BADGES, 1):
+            row = idx // cols_count
+            col = idx % cols_count
+            b_btn = QPushButton()
+            b_btn.setFixedSize(28, 28)
+            b_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            b_btn.setToolTip(bname.replace("-", " ").title())
+            icon = get_status_icon(f"badges/{bname}.svg", color_hex="#E4E4E7" if self.is_dark else "#27272A", size=14)
+            b_btn.setIcon(icon)
+            b_btn.setIconSize(QSize(14, 14))
+            b_btn.clicked.connect(lambda checked, b=bname: self._on_badge_selected(b))
+            badge_grid.addWidget(b_btn, row, col)
+            self.badge_buttons[bname] = b_btn
+
+        badge_scroll.setWidget(badge_container)
+        layout.addWidget(badge_scroll)
+        self._refresh_badge_button_styles()
 
         # Color Selector Header with Custom Color Picker Button
         color_header = QHBoxLayout()
@@ -208,6 +276,33 @@ class ProjectDialog(QDialog):
         layout.addLayout(btn_layout)
         self._apply_dialog_theme()
 
+    def _on_badge_selected(self, badge_name: str) -> None:
+        self.selected_badge = badge_name
+        self.badge_status_lbl.setText("Auto Monogram" if not badge_name else badge_name.replace("-", " ").title())
+        self._refresh_badge_button_styles()
+
+    def _refresh_badge_button_styles(self) -> None:
+        for bname, btn in self.badge_buttons.items():
+            is_active = (bname == self.selected_badge)
+            if is_active:
+                border = "2px solid #FF7A45"
+                bg = "#2A2A2E" if self.is_dark else "#F4F4F5"
+            else:
+                border = "1px solid #3F3F46" if self.is_dark else "1px solid #E4E4E7"
+                bg = "#18181B" if self.is_dark else "#FFFFFF"
+            text_color = "#FF7A45" if is_active else ("#E4E4E7" if self.is_dark else "#27272A")
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {bg};
+                    border: {border};
+                    border-radius: 6px;
+                    color: {text_color};
+                }}
+                QPushButton:hover {{
+                    border: 1.5px solid #FF7A45;
+                }}
+            """)
+
     def _on_color_selected(self, color_hex: str) -> None:
         self.selected_color = color_hex
         found = False
@@ -239,12 +334,12 @@ class ProjectDialog(QDialog):
             return
         self.accept()
 
-    def get_data(self) -> Tuple[str, str, str, List[str]]:
+    def get_data(self) -> Tuple[str, str, str, List[str], str]:
         name = self.name_edit.text().strip()
         desc = self.desc_edit.text().strip()
         kw_text = self.kw_edit.text().strip()
         kws = [k.strip().lower() for k in kw_text.split(",") if k.strip()]
-        return name, self.selected_color, desc, kws
+        return name, self.selected_color, desc, kws, self.selected_badge
 
     def _apply_dialog_theme(self) -> None:
         if self.is_dark:
@@ -1512,11 +1607,11 @@ class ProjectDetailPage(QWidget):
             return
         dlg = ProjectDialog(self, is_dark=self.is_dark, project=target)
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            name, color, desc, kws = dlg.get_data()
+            name, color, desc, kws, badge = dlg.get_data()
             if name != target.name:
-                self.repo.rename_project(target.name, name, color=color, keywords=kws, description=desc)
+                self.repo.rename_project(target.name, name, color=color, keywords=kws, description=desc, badge=badge)
             else:
-                self.repo.create_or_update_project(name, kws, color=color, description=desc)
+                self.repo.create_or_update_project(name, kws, color=color, description=desc, badge=badge)
             self.current_project_name = name
             self.load_project(name)
             self.project_updated.emit()
@@ -1815,8 +1910,8 @@ class ProjectDashboardView(QWidget):
     def _create_new_project(self) -> None:
         dlg = ProjectDialog(self, is_dark=self.is_dark)
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            name, color, desc, kws = dlg.get_data()
-            self.repo.create_or_update_project(name, kws, color=color, description=desc)
+            name, color, desc, kws, badge = dlg.get_data()
+            self.repo.create_or_update_project(name, kws, color=color, description=desc, badge=badge)
             self.overview_page.refresh()
             self.project_changed.emit()
             from wiz.core.signals import app_signals
