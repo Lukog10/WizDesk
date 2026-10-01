@@ -13,11 +13,11 @@
 [![Storage](https://img.shields.io/badge/Database-SQLite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Integration](https://img.shields.io/badge/Sync-Obsidian%20Vault-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md/)
 [![License](https://img.shields.io/badge/License-GPL%20v3-F59E0B?style=for-the-badge)](LICENSE)
-[![Test Suite](https://img.shields.io/badge/Tests-116%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-141%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
 
 <br />
 
-[Workspace Preview](#workspace-preview) &bull; [Architecture](#system-architecture) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Quickstart](#quickstart--installation) &bull; [Shortcuts](#keyboard-shortcuts--gestures) &bull; [Testing](#automated-testing)
+[Workspace Preview](#workspace-preview) &bull; [Architecture](#system-architecture) &bull; [Codebase Guide](docs/CODEBASE_ARCHITECTURE.md) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Quickstart](#quickstart--installation) &bull; [Shortcuts](#keyboard-shortcuts--gestures) &bull; [Testing](#automated-testing)
 
 </div>
 
@@ -35,17 +35,31 @@ Unlike cloud-based tracking software that requires manual clocks or uploads priv
 
 <div align="center">
 
-<img src="assets/screenshots/documentation-preview.png" width="920" alt="WizDesk Platform Documentation and Workspace Preview" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
+### Tasks & Subtask Management
+<img src="assets/screenshots/tasks-view-preview.png" width="960" alt="WizDesk Hierarchical Tasks and Subtasks View" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
 
 <br /><br />
 
-<img src="assets/screenshots/faq-preview.png" width="920" alt="WizDesk Frequently Asked Questions and Knowledge Base" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
+### Projects Dashboard & Time Analytics
+<img src="assets/screenshots/projects-dashboard-preview.png" width="960" alt="WizDesk Projects Dashboard, Comparison Bar Charts, and App Distribution Donut" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
+
+<br /><br />
+
+### Autonomous Activity Timeline
+<img src="assets/screenshots/activity-timeline-preview.png" width="960" alt="WizDesk Activity Timeline with Aggregated Sessions and Clean App Names" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
+
+<br /><br />
+
+### Calendar & Schedule
+<img src="assets/screenshots/calendar-view-preview.png" width="960" alt="WizDesk Calendar View with Day and Week Schedule" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
 
 </div>
 
 ---
 
 ## System Architecture
+
+> For comprehensive subsystem breakdowns, class line references, and module maps, see the [Codebase Architecture Specification](docs/CODEBASE_ARCHITECTURE.md) and the interactive Archify diagram in [.archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html](.archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html).
 
 WizDesk is architected around decoupled components connected through Qt signals, an automated Win32 idle engine, and local-first cryptographic storage:
 

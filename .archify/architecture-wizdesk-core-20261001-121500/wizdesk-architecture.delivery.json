@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "87a9aa0a-8994-4b50-9be0-0a2599284b08",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-core-20261001-121500\\candidate.json",
+  "output": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-core-20261001-121500\\wizdesk-architecture.html",
+  "specification": {
+    "sha256": "e1815626190b459461a2ab91bc654fd86bef8be985686acb725a4631f5b93fe7",
+    "bytes": 8813
+  },
+  "artifact": {
+    "sha256": "299f99c3a18ff5267207aefe3e87ff4aac33c22f1354deffdd112e2abdd8d7b0",
+    "bytes": 778454
+  }
+}

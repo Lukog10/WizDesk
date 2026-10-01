@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "WizDesk System Architecture",
+    "output": ".archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/Lukog10/WizDesk",
+      "provider": "github",
+      "link_mode": "local-only",
+      "revision": "2cfbe38df58b9a9e839e99eccdbb4d43c8e5e9e9"
+    }
+  },
+  "components": [
+    {
+      "id": "companion-widget",
+      "type": "frontend",
+      "label": "Desktop Companion",
+      "sublabel": "MascotWindow Widget",
+      "tag": "PyQt6 Canvas",
+      "pos": [60, 100],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/ui/mascot_window.py", "line": 16, "end_line": 180, "label": "MascotWindow" }
+      ]
+    },
+    {
+      "id": "workspace-shell",
+      "type": "frontend",
+      "label": "Workspace Shell",
+      "sublabel": "QuickEntryDialog Canvas",
+      "tag": "Multi-View Hub",
+      "pos": [350, 100],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/ui/popup_dialog.py", "line": 85, "end_line": 320, "label": "QuickEntryDialog" }
+      ]
+    },
+    {
+      "id": "global-hotkeys",
+      "type": "external",
+      "label": "Global Hotkey Listener",
+      "sublabel": "GlobalHotKeys Dispatcher",
+      "tag": "pynput Hook",
+      "pos": [640, 100],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/utils/hotkey.py", "line": 60, "end_line": 110, "label": "GlobalHotkeyListener" }
+      ]
+    },
+    {
+      "id": "system-tray",
+      "type": "frontend",
+      "label": "System Tray Service",
+      "sublabel": "TrayIcon & Quick Menu",
+      "tag": "QSystemTrayIcon",
+      "pos": [930, 100],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/ui/tray_icon.py", "line": 12, "end_line": 105, "label": "TrayIcon" }
+      ]
+    },
+    {
+      "id": "state-machine",
+      "type": "backend",
+      "label": "Companion State Machine",
+      "sublabel": "Moods & Behavior Logic",
+      "tag": "Mascot States",
+      "pos": [60, 280],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/core/state_machine.py", "line": 20, "end_line": 140, "label": "StateMachine" }
+      ]
+    },
+    {
+      "id": "window-tracker",
+      "type": "backend",
+      "label": "Window Tracker Engine",
+      "sublabel": "Active Window Poller",
+      "tag": "5s Autonomous Loop",
+      "pos": [350, 280],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/tracker/window_tracker.py", "line": 57, "end_line": 190, "label": "WindowTracker" }
+      ]
+    },
+    {
+      "id": "title-sanitizer",
+      "type": "security",
+      "label": "Privacy Title Sanitizer",
+      "sublabel": "PII & Password Redactor",
+      "tag": "Zero-Snoop Filter",
+      "pos": [640, 280],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/utils/sanitizer.py", "line": 35, "end_line": 65, "label": "sanitize_window_title" }
+      ]
+    },
+    {
+      "id": "idle-detector",
+      "type": "backend",
+      "label": "Idle Detection Engine",
+      "sublabel": "Inactivity Detector",
+      "tag": "GetLastInputInfo",
+      "pos": [930, 280],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/core/idle_detector.py", "line": 15, "end_line": 37, "label": "get_system_idle_seconds" }
+      ]
+    },
+    {
+      "id": "obsidian-sync",
+      "type": "external",
+      "label": "Obsidian Vault Sync",
+      "sublabel": "Markdown Note Compiler",
+      "tag": "Daily Work Logs",
+      "pos": [60, 460],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/sync/obsidian.py", "line": 11, "end_line": 135, "label": "ObsidianSync" }
+      ]
+    },
+    {
+      "id": "storage-repo",
+      "type": "database",
+      "label": "Storage Repository",
+      "sublabel": "CRUD & Aggregation Provider",
+      "tag": "Core Data Layer",
+      "pos": [350, 460],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/storage/models.py", "line": 129, "end_line": 600, "label": "StorageRepository" }
+      ]
+    },
+    {
+      "id": "crypto-manager",
+      "type": "security",
+      "label": "AES-256 Crypto Manager",
+      "sublabel": "GCM Vault Encryption",
+      "tag": "DPAPI / KDF Guard",
+      "pos": [640, 460],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/core/crypto.py", "line": 50, "end_line": 170, "label": "CryptoManager" }
+      ]
+    },
+    {
+      "id": "os-auth",
+      "type": "security",
+      "label": "OS Credential Verifier",
+      "sublabel": "CredUI / Polkit Prompt",
+      "tag": "System Identity Gate",
+      "pos": [930, 460],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/utils/auth.py", "line": 65, "end_line": 185, "label": "authenticate_user" }
+      ]
+    },
+    {
+      "id": "sqlite-db",
+      "type": "database",
+      "label": "SQLite Database",
+      "sublabel": "In-Memory Engine & File",
+      "tag": "Atomic Encrypted I/O",
+      "pos": [350, 640],
+      "size": [160, 68],
+      "sources": [
+        { "path": "wiz/storage/db.py", "line": 20, "end_line": 150, "label": "Database" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Desktop Presentation Layer (PyQt6)",
+      "wraps": ["companion-widget", "workspace-shell", "global-hotkeys", "system-tray"]
+    },
+    {
+      "kind": "region",
+      "label": "Autonomous Tracking & State Subsystems",
+      "wraps": ["state-machine", "window-tracker", "title-sanitizer", "idle-detector"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Local Storage, Cryptography & Security Boundaries",
+      "wraps": ["storage-repo", "crypto-manager", "sqlite-db", "os-auth"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "companion-state",
+      "from": "companion-widget",
+      "to": "state-machine",
+      "label": "animates mood",
+      "variant": "emphasis"
+    },
+    {
+      "id": "hotkey-open-shell",
+      "from": "global-hotkeys",
+      "to": "workspace-shell",
+      "label": "hotkey summon",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "tray-toggle-shell",
+      "from": "system-tray",
+      "to": "workspace-shell",
+      "label": "tray action",
+      "fromSide": "left",
+      "toSide": "top"
+    },
+    {
+      "id": "shell-queries-repo",
+      "from": "workspace-shell",
+      "to": "storage-repo",
+      "label": "queries & writes"
+    },
+    {
+      "id": "tracker-updates-state",
+      "from": "window-tracker",
+      "to": "state-machine",
+      "label": "focus event",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "tracker-sanitizes-title",
+      "from": "window-tracker",
+      "to": "title-sanitizer",
+      "label": "raw window title",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "sanitizer-logs-session",
+      "from": "title-sanitizer",
+      "to": "storage-repo",
+      "label": "sanitized session"
+    },
+    {
+      "id": "idle-to-state",
+      "from": "idle-detector",
+      "to": "title-sanitizer",
+      "label": "idle check",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "repo-syncs-obsidian",
+      "from": "storage-repo",
+      "to": "obsidian-sync",
+      "label": "export daily logs",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "repo-executes-sql",
+      "from": "storage-repo",
+      "to": "sqlite-db",
+      "label": "SQL queries"
+    },
+    {
+      "id": "crypto-protects-db",
+      "from": "crypto-manager",
+      "to": "sqlite-db",
+      "label": "AES-256 cipher",
+      "variant": "security"
+    },
+    {
+      "id": "auth-unlocks-crypto",
+      "from": "os-auth",
+      "to": "crypto-manager",
+      "label": "verify key access",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "right"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Autonomous Tracking",
+      "items": [
+        "Continuous 5s foreground polling without manual timers",
+        "Automatic project attribution based on window title keywords",
+        "Client-side redaction of sensitive titles, banking, and passwords"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Zero-Telemetry Security",
+      "items": [
+        "AES-256-GCM encrypted database file at rest",
+        "In-memory SQLite execution for instant responsiveness",
+        "OS credential authentication protects private recovery key exports"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Desktop Companion & Integrations",
+      "items": [
+        "Interactive desktop mascot with eye tracking and procedural audio",
+        "Direct Markdown generation synced to your Obsidian vault",
+        "Global keyboard hotkeys for instant task and note capture"
+      ]
+    }
+  ]
+}
