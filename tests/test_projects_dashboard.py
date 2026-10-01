@@ -26,9 +26,6 @@ from wiz.ui.chart_widgets import (
     ProjectComparisonCanvas,
     AppUsageRingCanvas,
     ProjectTargetRow,
-    ProjectBadge,
-    get_project_symbol,
-    COMPARISON_PALETTE,
 )
 from PyQt6.QtCore import Qt, QPoint, QPointF
 from PyQt6.QtGui import QMouseEvent
@@ -965,79 +962,6 @@ def test_dashboard_filter_static_geometry(repo, qapp):
     first_w = recorded_widths[0]
     for w in recorded_widths:
         assert w == first_w
-
-
-def test_project_symbol_generation():
-    """Verify get_project_symbol extracts clean, concise 1-2 character symbols."""
-    assert get_project_symbol("Coding") == "C"
-    assert get_project_symbol("Gaming") == "G"
-    assert get_project_symbol("WizDesk") == "WD"
-    assert get_project_symbol("Client Portal") == "CP"
-    assert get_project_symbol("WizDesk Core") == "WC"
-    assert get_project_symbol("my-backend_api") == "MB"
-    assert get_project_symbol("Untagged") == "—"
-    assert get_project_symbol("none") == "—"
-    assert get_project_symbol("") == "—"
-    assert get_project_symbol(None) == "—"
-
-
-def test_project_badge_widget(qapp):
-    """Verify ProjectBadge displays correct symbol, tooltip, and responds to theme switches."""
-    badge = ProjectBadge("WizDesk", is_dark=True)
-    assert badge.text() == "WD"
-    assert badge.toolTip() == "WizDesk"
-    assert badge.height() == 16
-    assert badge.width() >= 18
-
-    # Update project
-    badge.set_project("Gaming")
-    assert badge.text() == "G"
-    assert badge.toolTip() == "Gaming"
-
-    # Theme switch
-    badge.set_theme(is_dark=False)
-    assert not badge.is_dark
-    badge.set_theme(is_dark=True)
-    assert badge.is_dark
-
-
-def test_project_target_row_badge_and_neutral_styling(qapp):
-    """Verify ProjectTargetRow integrates ProjectBadge and neutral progress bar."""
-    row = ProjectTargetRow(
-        project_name="Coding",
-        color="#3B82F6",
-        hours=4.2,
-        pct=35,
-        is_dark=True,
-    )
-    assert hasattr(row, "badge")
-    assert isinstance(row.badge, ProjectBadge)
-    assert row.badge.text() == "C"
-    assert row.dot.isHidden()
-
-    # Theme switch updates badge as well
-    row.set_theme(is_dark=False)
-    assert not row.badge.is_dark
-
-
-def test_kpi_card_neutral_styling_and_minimal_accent(qapp):
-    """Verify KPI hero and stat cards use neutral backgrounds and minimal accent hover border."""
-    hero = KpiStatCard("Tracked Time", "1.9h", "-59.5%", is_hero=True, is_dark=True)
-    assert hero.is_hero is True
-    # Verify hero no longer uses loud orange background
-    assert "#C83B12" not in hero.styleSheet()
-    assert "#242427" in hero.styleSheet()
-
-    stat = KpiStatCard("Tasks Completed", "2 / 3", "67%", is_hero=False, is_dark=True)
-    assert "#242427" in stat.styleSheet()
-
-
-def test_comparison_palette_minimal_accent_uniqueness():
-    """Verify COMPARISON_PALETTE has 24 unique neutral shades with minimal accent #FF7A45."""
-    assert len(COMPARISON_PALETTE) == 24
-    assert len(COMPARISON_PALETTE) == len(set(c.upper() for c in COMPARISON_PALETTE))
-    assert COMPARISON_PALETTE[0] == "#FF7A45"
-
 
 
 

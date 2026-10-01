@@ -32,8 +32,6 @@ from wiz.ui.chart_widgets import (
     ProjectComparisonChartWidget,
     AppUsageAnalyticsWidget,
     ProjectTrackingWidget,
-    ProjectBadge,
-    get_project_symbol,
 )
 from wiz.ui.fonts import FONT_SANS, get_font
 from wiz.utils.sanitizer import clean_app_name
@@ -395,16 +393,12 @@ class ProjectSummaryCard(QFrame):
         top_row = QHBoxLayout()
         top_row.setSpacing(8)
 
-        # Project symbol badge
-        self.badge = ProjectBadge(data.get("name", "Project"), is_dark=self.is_dark)
-        top_row.addWidget(self.badge)
-
-        # Color dot indicator (hidden for backward compatibility)
+        # Color dot indicator
         self.dot = QFrame()
         self.dot.setFixedSize(10, 10)
         color = data.get("color") or "#FF6B3D"
         self.dot.setStyleSheet(f"background-color: {color}; border-radius: 5px;")
-        self.dot.hide()
+        top_row.addWidget(self.dot)
 
         # Project Name
         self.name_lbl = QLabel(data.get("name", "Project"))
@@ -482,107 +476,99 @@ class ProjectSummaryCard(QFrame):
             super().mousePressEvent(event)
 
     def apply_theme(self) -> None:
-        if hasattr(self, "badge"):
-            self.badge.set_theme(self.is_dark)
-
+        color = self.data.get("color") or "#FF6B3D"
         if self.is_dark:
-            self.setStyleSheet("""
-                QFrame#ProjectSummaryCard {
+            self.setStyleSheet(f"""
+                QFrame#ProjectSummaryCard {{
                     background-color: #242427;
                     border: 1px solid #333338;
                     border-radius: 8px;
-                }
-                QFrame#ProjectSummaryCard:hover {
-                    border: 1px solid #FF7A45;
+                }}
+                QFrame#ProjectSummaryCard:hover {{
+                    border: 1px solid #FF6B3D;
                     background-color: #2A2A2F;
-                }
-                QLabel { color: #F4F4F6; }
-                QLabel#TimeBadge {
+                }}
+                QLabel {{ color: #F4F4F6; }}
+                QLabel#TimeBadge {{
                     background-color: #1E1E22;
                     color: #E4E4E7;
                     border: 1px solid #3F3F46;
                     border-radius: 6px;
                     padding: 3px 8px;
-                }
-                QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {
-                    border-color: #FF7A45;
+                }}
+                QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {{
+                    border-color: #FF6B3D;
                     color: #FFFFFF;
-                }
-                QLabel#DescLabel { color: #A1A1AA; }
-                QLabel#ProgressText { color: #71717A; }
-                QLabel#AppChip {
+                }}
+                QLabel#DescLabel {{ color: #A1A1AA; }}
+                QLabel#ProgressText {{ color: #71717A; }}
+                QLabel#AppChip {{
                     background-color: #1E1E22;
                     color: #A1A1AA;
                     border: 1px solid #333338;
                     border-radius: 4px;
                     padding: 2px 6px;
-                }
-                QLabel#AppChip:hover {
-                    border-color: #FF7A45;
+                }}
+                QLabel#AppChip:hover {{
+                    border-color: #FF6B3D;
                     background-color: #2E2E33;
                     color: #FFFFFF;
-                }
-                QProgressBar {
+                }}
+                QProgressBar {{
                     background-color: #333338;
                     border: none;
                     border-radius: 3px;
-                }
-                QProgressBar::chunk {
-                    background-color: #71717A;
+                }}
+                QProgressBar::chunk {{
+                    background-color: {color};
                     border-radius: 3px;
-                }
-                QFrame#ProjectSummaryCard:hover QProgressBar::chunk {
-                    background-color: #A1A1AA;
-                }
+                }}
             """)
         else:
-            self.setStyleSheet("""
-                QFrame#ProjectSummaryCard {
+            self.setStyleSheet(f"""
+                QFrame#ProjectSummaryCard {{
                     background-color: #FFFFFF;
                     border: 1px solid #E5E5EA;
                     border-radius: 8px;
-                }
-                QFrame#ProjectSummaryCard:hover {
-                    border: 1px solid #FF7A45;
+                }}
+                QFrame#ProjectSummaryCard:hover {{
+                    border: 1px solid #FF6B3D;
                     background-color: #F4F4F6;
-                }
-                QLabel { color: #18181B; }
-                QLabel#TimeBadge {
+                }}
+                QLabel {{ color: #18181B; }}
+                QLabel#TimeBadge {{
                     background-color: #F4F4F6;
                     color: #18181B;
                     border: 1px solid #E4E4E7;
                     border-radius: 6px;
                     padding: 3px 8px;
-                }
-                QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {
-                    border-color: #FF7A45;
+                }}
+                QFrame#ProjectSummaryCard:hover QLabel#TimeBadge {{
+                    border-color: #FF6B3D;
                     color: #18181B;
-                }
-                QLabel#DescLabel { color: #71717A; }
-                QLabel#ProgressText { color: #71717A; }
-                QLabel#AppChip {
+                }}
+                QLabel#DescLabel {{ color: #71717A; }}
+                QLabel#ProgressText {{ color: #71717A; }}
+                QLabel#AppChip {{
                     background-color: #F4F4F6;
                     color: #71717A;
                     border: 1px solid #E4E4E7;
                     border-radius: 4px;
                     padding: 2px 6px;
-                }
-                QLabel#AppChip:hover {
-                    border-color: #FF7A45;
+                }}
+                QLabel#AppChip:hover {{
+                    border-color: #FF6B3D;
                     background-color: #EAEAEB;
-                }
-                QProgressBar {
+                }}
+                QProgressBar {{
                     background-color: #EAEAEB;
                     border: none;
                     border-radius: 3px;
-                }
-                QProgressBar::chunk {
-                    background-color: #71717A;
+                }}
+                QProgressBar::chunk {{
+                    background-color: {color};
                     border-radius: 3px;
-                }
-                QFrame#ProjectSummaryCard:hover QProgressBar::chunk {
-                    background-color: #52525B;
-                }
+                }}
             """)
 
 
@@ -1096,15 +1082,10 @@ class ProjectDetailPage(QWidget):
         self.btn_back.clicked.connect(self.back_clicked.emit)
         nav_row.addWidget(self.btn_back)
 
-        # Project symbol badge
-        self.badge = ProjectBadge("Project Details", is_dark=self.is_dark)
-        nav_row.addWidget(self.badge)
-
-        # Backward compatibility color dot (hidden)
         self.color_dot = QFrame()
         self.color_dot.setFixedSize(12, 12)
         self.color_dot.setStyleSheet("background-color: #FF6B3D; border-radius: 6px;")
-        self.color_dot.hide()
+        nav_row.addWidget(self.color_dot)
 
         self.title_lbl = QLabel("Project Details")
         self.title_lbl.setFont(get_font(14, QFont.Weight.Bold))
@@ -1321,9 +1302,6 @@ class ProjectDetailPage(QWidget):
         self.title_lbl.setText(project_name)
         color = proj.color if proj else "#FF6B3D"
         self.color_dot.setStyleSheet(f"background-color: {color}; border-radius: 6px;")
-        if hasattr(self, "badge"):
-            self.badge.set_project(project_name)
-            self.badge.set_theme(self.is_dark)
 
         # Disable delete for Untagged
         is_untagged = (project_name.lower() == "untagged")
@@ -1544,9 +1522,6 @@ class ProjectDetailPage(QWidget):
             self.load_project(self.current_project_name)
 
     def apply_theme(self) -> None:
-        if hasattr(self, "badge"):
-            self.badge.set_theme(self.is_dark)
-
         if self.is_dark:
             btn_style = f"""
                 QPushButton {{
@@ -1606,7 +1581,7 @@ class ProjectDetailPage(QWidget):
                     border-radius: 3px;
                 }
                 QProgressBar::chunk {
-                    background-color: #71717A;
+                    background-color: #FF5722;
                     border-radius: 3px;
                 }
             """
@@ -1684,7 +1659,7 @@ class ProjectDetailPage(QWidget):
                     border-radius: 3px;
                 }
                 QProgressBar::chunk {
-                    background-color: #71717A;
+                    background-color: #BA3F1A;
                     border-radius: 3px;
                 }
             """
