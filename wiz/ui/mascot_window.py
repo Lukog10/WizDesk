@@ -60,6 +60,7 @@ class MascotWindow(QWidget):
 
         # Connect signals
         app_signals.toggle_mascot_visibility.connect(self.toggle_visibility)
+        app_signals.ensure_mascot_visible.connect(self.ensure_visible)
         app_signals.always_on_top_changed.connect(self._apply_always_on_top)
 
     def _init_window_position(self) -> None:
@@ -80,14 +81,20 @@ class MascotWindow(QWidget):
             self.move(x, y)
             config.save_window_position(x, y)
 
+    def ensure_visible(self) -> None:
+        """Bring mascot to front, un-minimize if needed, and make visible."""
+        if self.isMinimized():
+            self.showNormal()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
     def toggle_visibility(self) -> None:
-        """Toggle mascot window between visible and hidden."""
-        if self.isVisible():
-            self.hide()
+        """Toggle mascot window between visible and hidden, or bring to front if minimized."""
+        if not self.isVisible() or self.isMinimized():
+            self.ensure_visible()
         else:
-            self.show()
-            self.raise_()
-            self.activateWindow()
+            self.hide()
 
     def _apply_always_on_top(self, always_on_top: bool) -> None:
         """Update mascot window flags when Always On Top setting changes."""
@@ -101,6 +108,7 @@ class MascotWindow(QWidget):
             self.setGeometry(geo)
             if was_visible:
                 self.show()
+                self.raise_()
 
     # --- Mouse & Drag Handling with Multi-Click Gesture Detection ---
 

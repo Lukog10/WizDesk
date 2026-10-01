@@ -83,6 +83,9 @@ class GlobalHotkeyListener(QObject):
             hotkeys_map[hk_ws] = lambda: app_signals.request_quick_entry.emit()
         if hk_mascot:
             hotkeys_map[hk_mascot] = lambda: app_signals.toggle_mascot_visibility.emit()
+        # Always register <ctrl>+m as an intuitive alias to toggle and bring back the mascot
+        if "<ctrl>+m" not in hotkeys_map:
+            hotkeys_map["<ctrl>+m"] = lambda: app_signals.toggle_mascot_visibility.emit()
         if hk_task:
             hotkeys_map[hk_task] = lambda: app_signals.request_quick_task_bar.emit()
         if hk_note:

@@ -45,9 +45,16 @@ def test_global_hotkey_listener_lifecycle(qapp):
         registered_dict = mock_hotkeys_cls.call_args[0][0]
         assert "<ctrl>+<shift>+w" in registered_dict
         assert "<ctrl>+<shift>+m" in registered_dict
+        assert "<ctrl>+m" in registered_dict
         assert "<ctrl>+<shift>+t" in registered_dict
         assert "<ctrl>+<shift>+n" in registered_dict
         assert mock_instance.start.called
+
+        # Verify executing <ctrl>+m callback emits toggle_mascot_visibility
+        emitted = []
+        app_signals.toggle_mascot_visibility.connect(lambda: emitted.append(True))
+        registered_dict["<ctrl>+m"]()
+        assert len(emitted) == 1
 
         # Test reload on signal
         mock_instance.reset_mock()

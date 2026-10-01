@@ -2237,7 +2237,7 @@ class QuickEntryDialog(QDialog):
         self.min_btn.setAutoDefault(False)
         self.min_btn.setDefault(False)
         self.min_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.min_btn.clicked.connect(self.showMinimized)
+        self.min_btn.clicked.connect(self._on_minimize_clicked)
         controls_layout.addWidget(self.min_btn)
 
         self.close_btn = QPushButton("✕")
@@ -3348,9 +3348,16 @@ class QuickEntryDialog(QDialog):
         self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.note_created.emit(note_id)
 
+    def _on_minimize_clicked(self) -> None:
+        """Minimize the workspace dialog while ensuring the companion mascot remains active and visible."""
+        self.showMinimized()
+        app_signals.ensure_mascot_visible.emit()
+
     def changeEvent(self, event) -> None:
-        """Handle window state changes (e.g. minimize/restore shadow effect)."""
+        """Handle window state changes (e.g. minimize/restore shadow effect, companion persistence)."""
         if event.type() == event.Type.WindowStateChange:
+            if self.isMinimized():
+                app_signals.ensure_mascot_visible.emit()
             if self.isMaximized():
                 if hasattr(self, "_shadow_effect"):
                     self._shadow_effect.setEnabled(False)

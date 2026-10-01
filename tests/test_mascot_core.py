@@ -182,3 +182,68 @@ def test_mascot_window_double_click_opens_workspace(qapp):
     window.close()
 
 
+def test_mascot_window_toggle_and_ensure_visible(qapp):
+    """Test mascot ensure_visible un-minimizes and restores window, and toggle_visibility behavior."""
+    from PyQt6.QtCore import Qt
+    from wiz.core.signals import app_signals
+    from wiz.core.config import config
+
+    config.set("always_on_top", True)
+    sm = StateMachine(initial_state=MascotState.IDLE)
+    window = MascotWindow(sm)
+    window.show()
+    qapp.processEvents()
+
+    # Mascot should have WindowStaysOnTopHint when always_on_top is True
+    assert bool(window.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
+
+    # Test toggle_visibility when visible -> hides
+    window.toggle_visibility()
+    assert not window.isVisible()
+
+    # Test toggle_visibility when hidden -> restores and brings to front
+    window.toggle_visibility()
+    assert window.isVisible()
+
+    # Test ensure_visible when minimized
+    window.showMinimized()
+    qapp.processEvents()
+    assert window.isMinimized()
+
+    # Calling ensure_visible un-minimizes to normal state
+    window.ensure_visible()
+    qapp.processEvents()
+    assert not window.isMinimized()
+    assert window.isVisible()
+
+    # Test ensure_mascot_visible signal connection
+    window.hide()
+    app_signals.ensure_mascot_visible.emit()
+    qapp.processEvents()
+    assert window.isVisible()
+
+    window.close()
+
+
+def test_workspace_minimize_signals_mascot_visible(qapp):
+    """Test that minimizing QuickEntryDialog emits ensure_mascot_visible to preserve mascot companion."""
+    from wiz.core.signals import app_signals
+    from wiz.ui.popup_dialog import QuickEntryDialog
+
+    sm = StateMachine(initial_state=MascotState.IDLE)
+    dialog = QuickEntryDialog(sm)
+    dialog.show()
+    qapp.processEvents()
+
+    emitted = []
+    app_signals.ensure_mascot_visible.connect(lambda: emitted.append(True))
+
+    dialog._on_minimize_clicked()
+    qapp.processEvents()
+
+    assert len(emitted) >= 1
+    assert dialog.isMinimized()
+
+    dialog.close()
+
+
