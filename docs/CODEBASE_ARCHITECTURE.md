@@ -74,12 +74,21 @@ graph TD
 
 ---
 
-## 2. Interactive Architecture Model (Archify)
+## 2. Interactive Architecture & Feature Map (Archify)
 
-The formal architecture specification is generated via Archify in [.archify/architecture-wizdesk-core-20261001-121500/](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-core-20261001-121500/):
-* Specification: [candidate.json](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-core-20261001-121500/candidate.json)
-* Interactive Diagram: [wizdesk-architecture.html](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html)
-* Validation Receipt: All automated stages (validate, deliver, check, browser-check) passed.
+The formal interactive architecture and feature map is generated using the Archify system design framework and is stored directly in `docs/`:
+
+* **Interactive Map Document**: [docs/wizdesk-interactive-map.html](file:///h:/Projects/Wiz/docs/wizdesk-interactive-map.html)
+* **Archify Working Build**: [.archify/architecture-wizdesk-map-20261002-123500/wizdesk-interactive-map.html](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-map-20261002-123500/wizdesk-interactive-map.html)
+* **Specification File**: [candidate.json](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-map-20261002-123500/candidate.json)
+* **Visual Check Report**: [wizdesk-interactive-map.visual-check.html](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-map-20261002-123500/wizdesk-interactive-map.visual-check.html)
+* **Verification Status**: All Archify verification gates (`validate`, `deliver`, `check`, `browser-check`, `visual-check`) passed with 0 errors and zero route crossings across light and dark responsive viewports (1440x900 and 2048x1320).
+
+### Key Subsystems & Features Mapped:
+1. **Presentation & Quick Capture**: Global Hotkey Listener (`Ctrl+Shift+Space`), `QuickEntryDialog` Workspace Shell, Mascot Companion floating window, and `QuickBarPopup` rapid task/note bars.
+2. **Productivity Views**: Tasks & To-Dos Hub (with 24 preset color swatches and keyword rules), Projects Dashboard (Tracked Time KPI hero card, donut and project comparison charts), Timeline & Calendar View, and Timestamped Quick Work Notes.
+3. **Autonomous Engines**: 5-second heartbeat Window Tracker, Zero-Snoop Privacy Sanitizer, Mascot State Machine with mood controller, and Procedural Audio / Inactivity Detection.
+4. **Local-First Security & Storage**: AES-256-GCM Crypto Manager, Windows Hello Credential Gate, SQLite In-Memory Database with atomic disk flush, Automated Database Backups, and Obsidian Vault Markdown Sync.
 
 ---
 
