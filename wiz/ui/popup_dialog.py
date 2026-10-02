@@ -383,18 +383,21 @@ class CalendarPopupDialog(QDialog):
 class CreateSectionDialog(QDialog):
     """
     Custom modal dialog for creating a new Section / Project in WizDesk.
+    Matches the full feature set of ProjectDialog (all colors, description, and auto-track keywords).
     Replaces default OS input dialogs with WizDesk's clean minimalist rounded card design.
-    Supports preset color swatches and custom color picker.
+    Supports preset color swatches (3x8 grid of 24 colors) and custom color picker.
     Supports dynamic Light & Dark themes.
     """
 
     last_selected_color: str = "#FF6B3D"
+    last_description: str = ""
+    last_keywords: List[str] = []
 
     def __init__(self, parent: Optional[QWidget] = None, is_dark: Optional[bool] = None):
         super().__init__(parent)
         self.setWindowTitle("Create Section - WizDesk")
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
-        self.setFixedSize(390, 275)
+        self.setFixedSize(430, 485)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setModal(True)
@@ -454,7 +457,7 @@ class CreateSectionDialog(QDialog):
 
         self.card_layout = QVBoxLayout(self.card)
         self.card_layout.setContentsMargins(20, 16, 20, 16)
-        self.card_layout.setSpacing(10)
+        self.card_layout.setSpacing(8)
 
         # Header Row
         hdr_layout = QHBoxLayout()
@@ -492,18 +495,29 @@ class CreateSectionDialog(QDialog):
         hdr_layout.addWidget(close_btn)
         self.card_layout.addLayout(hdr_layout)
 
-        # Input Field
+        # Section Name Field
+        name_lbl = QLabel("Section Name:")
+        name_lbl.setStyleSheet(f"""
+            QLabel {{
+                color: {label_color};
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+        """)
+        self.card_layout.addWidget(name_lbl)
+
         self.input_field = QLineEdit()
-        self.input_field.setPlaceholderText("Section name (e.g. Design, Backend, Marketing)...")
+        self.input_field.setPlaceholderText("e.g. TurfLine, Research, WizDesk")
         self.input_field.setStyleSheet(f"""
             QLineEdit {{
                 background-color: {input_bg};
                 color: {input_text};
                 border: 1px solid {input_border};
                 border-radius: 8px;
-                padding: 8px 12px;
+                padding: 6px 12px;
                 font-family: {FONT_SANS};
-                font-size: 13px;
+                font-size: 12px;
             }}
             QLineEdit:focus {{
                 background-color: {card_bg};
@@ -516,7 +530,7 @@ class CreateSectionDialog(QDialog):
         # Color Selection Header
         color_hdr = QHBoxLayout()
         color_hdr.setContentsMargins(0, 2, 0, 0)
-        color_lbl = QLabel("Section Color:")
+        color_lbl = QLabel("Section Accent Color:")
         color_lbl.setStyleSheet(f"""
             QLabel {{
                 color: {label_color};
@@ -528,15 +542,18 @@ class CreateSectionDialog(QDialog):
         color_hdr.addWidget(color_lbl)
         color_hdr.addStretch()
 
-        self.btn_custom_color = QPushButton("+ Custom…")
+        self.btn_custom_color = QPushButton("+ Custom Color…")
         self.btn_custom_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_custom_color.setFont(get_font(9, QFont.Weight.Medium))
         self.btn_custom_color.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: {"#A1A1AA" if self.is_dark else "#71717A"};
+                color: {"#FF8E6B" if self.is_dark else "#C2410C"};
                 border: none;
                 padding: 1px 4px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 500;
             }}
             QPushButton:hover {{
                 color: {"#FFFFFF" if self.is_dark else "#18181B"};
@@ -546,8 +563,8 @@ class CreateSectionDialog(QDialog):
         color_hdr.addWidget(self.btn_custom_color)
         self.card_layout.addLayout(color_hdr)
 
-        # Preset Color Swatches (2 rows of 8)
-        self.swatch_presets = PRESET_COLORS[:16]
+        # Preset Color Swatches (3 rows of 8 = all 24 colors)
+        self.swatch_presets = PRESET_COLORS
         swatches_layout = QGridLayout()
         swatches_layout.setSpacing(6)
         swatches_layout.setContentsMargins(0, 0, 0, 0)
@@ -567,6 +584,78 @@ class CreateSectionDialog(QDialog):
             swatches_layout.addWidget(s_btn, r, c)
             self.swatch_buttons.append(s_btn)
         self.card_layout.addLayout(swatches_layout)
+
+        if self.selected_color.upper() not in [c.upper() for c in PRESET_COLORS]:
+            self.btn_custom_color.setText(f"Custom: {self.selected_color}")
+
+        # Description Field
+        desc_lbl = QLabel("Description:")
+        desc_lbl.setStyleSheet(f"""
+            QLabel {{
+                color: {label_color};
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+        """)
+        self.card_layout.addWidget(desc_lbl)
+
+        self.desc_field = QLineEdit()
+        self.desc_field.setPlaceholderText("Brief overview of the project")
+        self.desc_field.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {input_bg};
+                color: {input_text};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 6px 12px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+            QLineEdit:focus {{
+                background-color: {card_bg};
+                border: 1.5px solid {input_focus_border};
+            }}
+        """)
+        self.desc_field.returnPressed.connect(self._on_submit)
+        self.card_layout.addWidget(self.desc_field)
+
+        # Keywords Field
+        kw_lbl = QLabel("Window Title Keywords (comma separated):")
+        kw_lbl.setStyleSheet(f"""
+            QLabel {{
+                color: {label_color};
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+        """)
+        self.card_layout.addWidget(kw_lbl)
+
+        self.kw_field = QLineEdit()
+        self.kw_field.setPlaceholderText("e.g. turf, booking, stadium")
+        self.kw_field.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {input_bg};
+                color: {input_text};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 6px 12px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+            QLineEdit:focus {{
+                background-color: {card_bg};
+                border: 1.5px solid {input_focus_border};
+            }}
+        """)
+        self.kw_field.returnPressed.connect(self._on_submit)
+        self.card_layout.addWidget(self.kw_field)
+
+        # Aliases for parity with ProjectDialog
+        self.name_edit = self.input_field
+        self.desc_edit = self.desc_field
+        self.kw_edit = self.kw_field
 
         # Buttons Row
         btn_layout = QHBoxLayout()
@@ -634,7 +723,7 @@ class CreateSectionDialog(QDialog):
         if not found:
             self.btn_custom_color.setText(f"Custom: {color_hex}")
         else:
-            self.btn_custom_color.setText("+ Custom…")
+            self.btn_custom_color.setText("+ Custom Color…")
 
     def _on_pick_custom_color(self) -> None:
         initial = QColor(self.selected_color) if QColor.isValidColor(self.selected_color) else QColor("#FF6B3D")
@@ -645,19 +734,39 @@ class CreateSectionDialog(QDialog):
     def _on_submit(self) -> None:
         if self.section_name:
             CreateSectionDialog.last_selected_color = self.selected_color
+            CreateSectionDialog.last_description = self.description
+            CreateSectionDialog.last_keywords = self.keywords
             self.accept()
 
     @property
     def section_name(self) -> str:
         return self.input_field.text().strip()
 
+    @property
+    def description(self) -> str:
+        return self.desc_field.text().strip()
+
+    @property
+    def keywords(self) -> List[str]:
+        kw_text = self.kw_field.text().strip()
+        kws = [k.strip().lower() for k in kw_text.split(",") if k.strip()]
+        if kws:
+            return kws
+        name = self.section_name
+        return [name.lower()] if name else []
+
+    def get_data(self) -> Tuple[str, str, str, List[str]]:
+        """Return (section_name, color, description, keywords)."""
+        return self.section_name, self.selected_color, self.description, self.keywords
+
     @classmethod
-    def get_section_name(cls, parent: Optional[QWidget] = None) -> tuple[str, bool]:
-        """Show custom modal dialog and return (section_name, accepted)."""
+    def get_section_details(
+        cls, parent: Optional[QWidget] = None
+    ) -> tuple[str, str, str, list[str], bool]:
+        """Show custom modal dialog and return (section_name, color, description, keywords, accepted)."""
         dlg = cls(parent)
         dlg.input_field.setFocus()
         if parent:
-            # Center over parent geometry
             p_geo = parent.geometry()
             dlg.move(
                 p_geo.center().x() - (dlg.width() // 2),
@@ -666,25 +775,22 @@ class CreateSectionDialog(QDialog):
         result = dlg.exec()
         if result == QDialog.DialogCode.Accepted and dlg.section_name:
             cls.last_selected_color = dlg.selected_color
-            return dlg.section_name, True
-        return "", False
+            cls.last_description = dlg.description
+            cls.last_keywords = dlg.keywords
+            return dlg.section_name, dlg.selected_color, dlg.description, dlg.keywords, True
+        return "", "", "", [], False
+
+    @classmethod
+    def get_section_name(cls, parent: Optional[QWidget] = None) -> tuple[str, bool]:
+        """Show custom modal dialog and return (section_name, accepted)."""
+        name, color, desc, kws, ok = cls.get_section_details(parent)
+        return name, ok
 
     @classmethod
     def get_section_data(cls, parent: Optional[QWidget] = None) -> tuple[str, str, bool]:
         """Show custom modal dialog and return (section_name, color, accepted)."""
-        dlg = cls(parent)
-        dlg.input_field.setFocus()
-        if parent:
-            p_geo = parent.geometry()
-            dlg.move(
-                p_geo.center().x() - (dlg.width() // 2),
-                p_geo.center().y() - (dlg.height() // 2),
-            )
-        result = dlg.exec()
-        if result == QDialog.DialogCode.Accepted and dlg.section_name:
-            cls.last_selected_color = dlg.selected_color
-            return dlg.section_name, dlg.selected_color, True
-        return "", "", False
+        name, color, desc, kws, ok = cls.get_section_details(parent)
+        return name, color, ok
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -1848,10 +1954,15 @@ class TaskRowWidget(QWidget):
         elif action == action_add_sub:
             self._toggle_subtask_input(force_show=True)
         elif action == action_new_sec:
-            name, ok = CreateSectionDialog.get_section_name(self)
+            name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
             if ok and name.strip():
                 clean_name = name.strip()
-                StorageRepository().create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                StorageRepository().create_or_update_project(
+                    clean_name,
+                    kws or [clean_name.lower()],
+                    color=color,
+                    description=desc,
+                )
                 self.project_changed.emit(self.task_id, clean_name)
         elif action == action_delete:
             self.action_requested.emit("delete", self.task_id)
@@ -2005,10 +2116,15 @@ class NoteRowWidget(QWidget):
 
         action = menu.exec(global_pos)
         if action == action_new_sec:
-            name, ok = CreateSectionDialog.get_section_name(self)
+            name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
             if ok and name.strip():
                 clean_name = name.strip()
-                StorageRepository().create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                StorageRepository().create_or_update_project(
+                    clean_name,
+                    kws or [clean_name.lower()],
+                    color=color,
+                    description=desc,
+                )
                 self.project_changed.emit(self.note_id, clean_name)
         elif action == action_delete:
             self.delete_requested.emit(self.note_id)
@@ -2029,10 +2145,15 @@ class NoteRowWidget(QWidget):
 
         action = menu.exec(global_pos)
         if action == action_new_sec:
-            name, ok = CreateSectionDialog.get_section_name(self)
+            name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
             if ok and name.strip():
                 clean_name = name.strip()
-                StorageRepository().create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                StorageRepository().create_or_update_project(
+                    clean_name,
+                    kws or [clean_name.lower()],
+                    color=color,
+                    description=desc,
+                )
                 self.project_changed.emit(self.note_id, clean_name)
 
     def _update_text_style(self, is_done: bool) -> None:
@@ -2947,10 +3068,15 @@ class QuickEntryDialog(QDialog):
         """Handle selection of '+ Create Section...' in task project combo."""
         text = self.project_combo.currentText()
         if text == "+ Create Section...":
-            name, ok = CreateSectionDialog.get_section_name(self)
+            name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
             if ok and name.strip():
                 clean_name = name.strip()
-                self.repo.create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                self.repo.create_or_update_project(
+                    clean_name,
+                    kws or [clean_name.lower()],
+                    color=color,
+                    description=desc,
+                )
                 self._populate_projects()
                 self.project_combo.setCurrentText(clean_name)
             else:
@@ -2961,10 +3087,15 @@ class QuickEntryDialog(QDialog):
         """Handle selection of '+ Create Section...' in note project combo."""
         text = self.note_project_combo.currentText()
         if text == "+ Create Section...":
-            name, ok = CreateSectionDialog.get_section_name(self)
+            name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
             if ok and name.strip():
                 clean_name = name.strip()
-                self.repo.create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                self.repo.create_or_update_project(
+                    clean_name,
+                    kws or [clean_name.lower()],
+                    color=color,
+                    description=desc,
+                )
                 self._populate_projects()
                 self.note_project_combo.setCurrentText(clean_name)
             else:

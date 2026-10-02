@@ -158,20 +158,37 @@ def test_rounded_checkbox(qapp):
 
 
 def test_create_section_dialog(qapp):
-    """Test custom CreateSectionDialog functionality including color selection."""
+    """Test custom CreateSectionDialog functionality including 24-color selection, description, and keywords."""
     dlg = CreateSectionDialog()
     dlg.input_field.setText("  Architecture & Design  ")
     assert dlg.section_name == "Architecture & Design"
 
-    # Color picking tests
+    # Color picking tests (all 24 preset swatches)
     assert dlg.selected_color.startswith("#")
-    assert len(dlg.swatch_buttons) == 16
+    assert len(dlg.swatch_buttons) == 24
     dlg._on_color_selected("#10B981")
     assert dlg.selected_color == "#10B981"
+
+    # Description and keywords tests
+    dlg.desc_field.setText("System architecture documents and UI design")
+    assert dlg.description == "System architecture documents and UI design"
+
+    dlg.kw_field.setText("arch, design, figma, wireframe")
+    assert dlg.keywords == ["arch", "design", "figma", "wireframe"]
+
+    data = dlg.get_data()
+    assert data == (
+        "Architecture & Design",
+        "#10B981",
+        "System architecture documents and UI design",
+        ["arch", "design", "figma", "wireframe"],
+    )
 
     dlg._on_submit()
     assert dlg.result() == CreateSectionDialog.DialogCode.Accepted
     assert CreateSectionDialog.last_selected_color == "#10B981"
+    assert CreateSectionDialog.last_description == "System architecture documents and UI design"
+    assert CreateSectionDialog.last_keywords == ["arch", "design", "figma", "wireframe"]
     dlg.close()
 
 
