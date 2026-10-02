@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "pending",
   "provenance": "current",
-  "deliveryReceiptId": "e31c6550-72a4-4876-a92f-efb7b87ba8d9",
+  "deliveryReceiptId": "cfb3de6b-bce6-4aec-a4c9-2c1c9831132a",
   "artifact": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
-    "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
-    "bytes": 801904
+    "sha256": "80966fafc413d249e604d51454914a6ba55a826a1c9d5711dfcbbb8a6a481adb",
+    "bytes": 805908
   },
   "state": {
     "detail": "read",
@@ -55,13 +55,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -107,13 +107,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -159,13 +159,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -211,13 +211,13 @@
         "minimumProjectedNodeTextPx": 8,
         "minimumProjectedNonEdgeTextPx": 8.1,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -316,13 +316,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -368,13 +368,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -420,13 +420,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -472,13 +472,13 @@
         "minimumProjectedNodeTextPx": 8,
         "minimumProjectedNonEdgeTextPx": 8.1,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -529,13 +529,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -581,13 +581,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -633,13 +633,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -685,13 +685,13 @@
         "minimumProjectedNodeTextPx": 8,
         "minimumProjectedNonEdgeTextPx": 8.1,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -742,13 +742,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -795,13 +795,13 @@
         "minimumProjectedNodeTextPx": 7.408610885458977,
         "minimumProjectedNonEdgeTextPx": 7.501218521527214,
         "minimumProjectedEdgeTextPx": 7.408610885458977,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -848,13 +848,13 @@
         "minimumProjectedNodeTextPx": 8,
         "minimumProjectedNonEdgeTextPx": 8.1,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -901,13 +901,13 @@
         "minimumProjectedNodeTextPx": 8,
         "minimumProjectedNonEdgeTextPx": 8.1,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "hotkey summon",
+        "minimumProjectedNodeText": "Ctrl+Shift+Space",
         "minimumProjectedNodeTextDetail": "edge",
         "minimumProjectedNodeTextOwner": {
           "kind": "edge",
-          "id": "hotkey-summon-shell",
-          "from": "global-hotkeys",
-          "to": "workspace-shell"
+          "id": "user-presses-hotkey",
+          "from": "end-user",
+          "to": "global-hotkeys"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -937,23 +937,23 @@
         "file": "wizdesk-interactive-map.visual-check.html"
       },
       {
-        "sha256": "5832fb3627ebea752f9d574ac8eafe1a0c34250d42bedcae06439123f8a9796f",
-        "bytes": 174381,
+        "sha256": "7fd9b5fa23a48bbcf27301946b844cef18b3fb8b6fb36b80ca77dd1e1322ff8c",
+        "bytes": 180412,
         "file": "wizdesk-interactive-map.visual-check.1440x900.light.png"
       },
       {
-        "sha256": "6914c6e658d13bfcf5fb4582e58f30fe1ef69301874df28c62adebda3d1168b8",
-        "bytes": 195710,
+        "sha256": "8e4cdd1cb576bef3783e757c0fcac6975e2cd3107aae12d099a38c4a712a0dd4",
+        "bytes": 203703,
         "file": "wizdesk-interactive-map.visual-check.1440x900.dark.png"
       },
       {
-        "sha256": "e94a332a9d5e12db1ae5e46c4d5609569026a42de086d2bc0fea9d416d178026",
-        "bytes": 235018,
+        "sha256": "5f1bd4bc3d903d6e44db423681c6ec17f9d6c6bc19b68b208a1e6f56ef35972f",
+        "bytes": 244150,
         "file": "wizdesk-interactive-map.visual-check.2048x1320.light.png"
       },
       {
-        "sha256": "28d5d0f32930399652c1af33c297cc86b7c94cfe3dd7f71d4b599e13f0f24892",
-        "bytes": 261660,
+        "sha256": "1834d3fe182bb94d9ec637470ce2a30a0a1b53bf2049bfcebe83796e75531060",
+        "bytes": 272240,
         "file": "wizdesk-interactive-map.visual-check.2048x1320.dark.png"
       }
     ]

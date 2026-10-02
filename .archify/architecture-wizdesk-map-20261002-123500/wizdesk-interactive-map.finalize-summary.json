@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\candidate.json",
-    "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
-    "bytes": 16089
+    "sha256": "f21363b1fb438eda6e0ccd97bdca7edfeadf41380c8c8bfb13703d24938248d4",
+    "bytes": 17403
   },
   "artifact": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
-    "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
-    "bytes": 801904
+    "sha256": "80966fafc413d249e604d51454914a6ba55a826a1c9d5711dfcbbb8a6a481adb",
+    "bytes": 805908
   },
   "gates": {
     "validate": "pass",
@@ -43,11 +43,11 @@
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 3841,
+  "durationMs": 3554,
   "visualReviewRecommendation": {
     "action": "inspect-route-readability",
     "signals": {
-      "resolvedCrossovers": 2,
+      "resolvedCrossovers": 3,
       "routesOverSuggestedBends": 2
     },
     "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
@@ -59,20 +59,43 @@
             "from": "workspace-shell",
             "to": "tasks-hub",
             "label": "tasks view",
-            "collectionIndex": 3,
-            "artifactIndex": 4
+            "collectionIndex": 5,
+            "artifactIndex": 6
           },
           "right": {
             "id": "shell-to-dashboard",
             "from": "workspace-shell",
             "to": "projects-dashboard",
             "label": "analytics view",
-            "collectionIndex": 4,
-            "artifactIndex": 5
+            "collectionIndex": 6,
+            "artifactIndex": 7
           },
           "point": [
             557,
-            172
+            222
+          ],
+          "sharedNode": "workspace-shell"
+        },
+        {
+          "left": {
+            "id": "shell-to-calendar",
+            "from": "workspace-shell",
+            "to": "calendar-view",
+            "label": "calendar view",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "right": {
+            "id": "shell-to-notes",
+            "from": "workspace-shell",
+            "to": "notes-hub",
+            "label": "notes view",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "point": [
+            613,
+            244
           ],
           "sharedNode": "workspace-shell"
         },
@@ -82,20 +105,20 @@
             "from": "tasks-hub",
             "to": "storage-repo",
             "label": "tasks &amp; rules",
-            "collectionIndex": 8,
-            "artifactIndex": 9
+            "collectionIndex": 10,
+            "artifactIndex": 11
           },
           "right": {
             "id": "dashboard-to-repo",
             "from": "projects-dashboard",
             "to": "storage-repo",
             "label": "metrics",
-            "collectionIndex": 9,
-            "artifactIndex": 10
+            "collectionIndex": 11,
+            "artifactIndex": 12
           },
           "point": [
             350,
-            402
+            422
           ],
           "sharedNode": "storage-repo"
         }
@@ -107,8 +130,8 @@
             "from": "tasks-hub",
             "to": "storage-repo",
             "label": "tasks &amp; rules",
-            "collectionIndex": 8,
-            "artifactIndex": 9
+            "collectionIndex": 10,
+            "artifactIndex": 11
           },
           "bends": 3,
           "stretch": 1
@@ -119,8 +142,8 @@
             "from": "projects-dashboard",
             "to": "storage-repo",
             "label": "metrics",
-            "collectionIndex": 9,
-            "artifactIndex": 10
+            "collectionIndex": 11,
+            "artifactIndex": 12
           },
           "bends": 4,
           "stretch": 1
@@ -129,7 +152,9 @@
       "truncated": false
     },
     "hints": [
+      "workspace-shell has 4 relationships facing its left side, which fits 3 ports: make that side at least 74px, or move some of those neighbours so they face another side of workspace-shell.",
       "workspace-shell → tasks-hub and workspace-shell → projects-dashboard cross next to workspace-shell: move node tasks-hub or projects-dashboard so the two reach workspace-shell from different sides (for example one level with it, one directly above or below it).",
+      "workspace-shell → calendar-view and workspace-shell → notes-hub cross next to workspace-shell: move node calendar-view or notes-hub so the two reach workspace-shell from different sides (for example one level with it, one directly above or below it).",
       "tasks-hub → storage-repo and projects-dashboard → storage-repo cross next to storage-repo: move node tasks-hub or projects-dashboard so the two reach storage-repo from different sides (for example one level with it, one directly above or below it).",
       "tasks-hub → storage-repo needs 3 bends: move node tasks-hub or storage-repo so they share a row or column with matching centers, or sit diagonally with a clear corner.",
       "projects-dashboard → storage-repo needs 4 bends: move node projects-dashboard or storage-repo so they share a row or column with matching centers, or sit diagonally with a clear corner."

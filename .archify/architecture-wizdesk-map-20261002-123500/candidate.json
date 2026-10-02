@@ -15,6 +15,29 @@
   },
   "components": [
     {
+      "id": "end-user",
+      "type": "external",
+      "label": "Desktop User",
+      "sublabel": "Keyboard & Mouse Actions",
+      "tag": "Human Operator",
+      "pos": [
+        275,
+        20
+      ],
+      "size": [
+        150,
+        56
+      ],
+      "sources": [
+        {
+          "path": "wiz/__main__.py",
+          "line": 42,
+          "end_line": 150,
+          "label": "WizApplication"
+        }
+      ]
+    },
+    {
       "id": "global-hotkeys",
       "type": "backend",
       "label": "Global Hotkey Service",
@@ -22,7 +45,7 @@
       "tag": "Ctrl+Shift+Space Hook",
       "pos": [
         40,
-        80
+        130
       ],
       "size": [
         150,
@@ -45,7 +68,7 @@
       "tag": "Frameless Multi-View Canvas",
       "pos": [
         510,
-        80
+        130
       ],
       "size": [
         150,
@@ -68,7 +91,7 @@
       "tag": "Instant Task & Note Bar",
       "pos": [
         745,
-        80
+        130
       ],
       "size": [
         150,
@@ -91,7 +114,7 @@
       "tag": "Cursor Eye Tracking",
       "pos": [
         980,
-        80
+        130
       ],
       "size": [
         150,
@@ -114,7 +137,7 @@
       "tag": "24 Preset Swatches & Rules",
       "pos": [
         40,
-        260
+        290
       ],
       "size": [
         150,
@@ -137,7 +160,7 @@
       "tag": "Tracked Time Hero Card",
       "pos": [
         275,
-        260
+        290
       ],
       "size": [
         150,
@@ -160,7 +183,7 @@
       "tag": "Chronological Activity Flow",
       "pos": [
         510,
-        260
+        290
       ],
       "size": [
         150,
@@ -183,7 +206,7 @@
       "tag": "Visual Day & Month Planning",
       "pos": [
         745,
-        260
+        290
       ],
       "size": [
         150,
@@ -206,7 +229,7 @@
       "tag": "Daily Project Notes Log",
       "pos": [
         980,
-        260
+        290
       ],
       "size": [
         150,
@@ -229,7 +252,7 @@
       "tag": "5s Heartbeat Loop",
       "pos": [
         40,
-        440
+        460
       ],
       "size": [
         150,
@@ -252,7 +275,7 @@
       "tag": "Zero-Snoop Title Redactor",
       "pos": [
         275,
-        440
+        460
       ],
       "size": [
         150,
@@ -275,7 +298,7 @@
       "tag": "SoundManager & IdleDetector",
       "pos": [
         745,
-        440
+        460
       ],
       "size": [
         150,
@@ -298,7 +321,7 @@
       "tag": "Focus, Bored, Sleep, Notify",
       "pos": [
         980,
-        440
+        460
       ],
       "size": [
         150,
@@ -321,7 +344,7 @@
       "tag": "Debounced Auto-Sync",
       "pos": [
         40,
-        620
+        630
       ],
       "size": [
         150,
@@ -344,7 +367,7 @@
       "tag": "In-Memory Cached Models",
       "pos": [
         510,
-        620
+        630
       ],
       "size": [
         150,
@@ -367,7 +390,7 @@
       "tag": "Zero-Telemetry Protection",
       "pos": [
         745,
-        620
+        630
       ],
       "size": [
         150,
@@ -390,7 +413,7 @@
       "tag": "Windows Hello Auth",
       "pos": [
         980,
-        620
+        630
       ],
       "size": [
         150,
@@ -499,10 +522,28 @@
   ],
   "connections": [
     {
+      "id": "user-presses-hotkey",
+      "from": "end-user",
+      "to": "global-hotkeys",
+      "label": "Ctrl+Shift+Space",
+      "fromSide": "left",
+      "toSide": "top"
+    },
+    {
+      "id": "user-opens-hub",
+      "from": "end-user",
+      "to": "workspace-shell",
+      "label": "tray or launch",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
       "id": "hotkey-summon-shell",
       "from": "global-hotkeys",
       "to": "workspace-shell",
-      "label": "hotkey summon"
+      "label": "hotkey summon",
+      "fromSide": "right",
+      "toSide": "left"
     },
     {
       "id": "mascot-to-quickbar",
@@ -578,13 +619,17 @@
       "id": "timeline-to-repo",
       "from": "activity-timeline",
       "to": "storage-repo",
-      "label": "day logs"
+      "label": "day logs",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "calendar-to-repo",
       "from": "calendar-view",
       "to": "storage-repo",
-      "label": "schedules"
+      "label": "schedules",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "notes-to-repo",
@@ -646,33 +691,33 @@
   "cards": [
     {
       "dot": "emerald",
-      "title": "5 Core Workspace Views",
+      "title": "User Interaction & 5 Core Workspace Views",
       "items": [
-        "Tasks Hub: Projects with 24 colors, descriptions, auto-track keywords, subtasks, and repeat rules",
-        "Projects Dashboard: Hero KPI card, dual-mode project comparison bar chart, and app donut",
-        "Activity Timeline: Chronological day stream, application sessions, and milestone cards",
-        "Calendar Schedule: Monthly visual scheduler with day/week views and agenda filter presets",
-        "Quick Work Notes: Daily timestamped scratchpad directly persistent to local SQLite"
+        "Desktop User: Invokes the application via global shortcut (Ctrl+Shift+Space) or direct tray launch into the Workspace Hub",
+        "Tasks Hub: Hierarchical task management with 24 preset colors, description, auto-track keywords, and subtasks",
+        "Projects Dashboard: Hero KPI card, dual-mode project comparison bar chart, and application usage donut",
+        "Activity Timeline: Chronological activity stream visualizing application sessions and completed task milestones",
+        "Calendar Schedule & Notes: Monthly calendar agenda planner and persistent daily timestamped scratchpad"
       ]
     },
     {
       "dot": "cyan",
       "title": "Desktop Companion & Autonomous Tracking",
       "items": [
-        "Desktop Mascot: Transparent floating window with real-time cursor eye tracking and procedural audio",
-        "Autonomous Tracking: 5s background polling loop attributing app sessions without manual timers",
-        "Privacy-First Sanitizer: Client-side redaction of sensitive titles, banking portals, and password managers",
-        "Companion State Engine: Mascot moods reflecting working focus, celebrations, notify, and idle sleep"
+        "Desktop Mascot: Transparent floating window with real-time cursor eye tracking and click-to-open Quick Bar popups",
+        "Autonomous Tracking: Continuous 5s background polling loop attributing active application windows without manual timers",
+        "Privacy-First Sanitizer: In-flight redaction of sensitive window titles, credentials, banking portals, and private browsing",
+        "Companion State Engine: Reactive mascot moods reflecting focus, celebration, system alerts, and inactivity sleep"
       ]
     },
     {
       "dot": "rose",
       "title": "Zero-Telemetry Security & Local Storage",
       "items": [
-        "Encrypted at Rest: Database file sealed with AES-256-GCM authenticated encryption",
-        "In-Memory Speed: Zero-lag UI execution over an in-memory SQLite database",
-        "OS Credential Gate: Windows Hello / CredUI authentication protects private master recovery key exports",
-        "Sync & Backup: Automatic debounced sync to Obsidian Markdown vaults and encrypted snapshot backups"
+        "5 Individual View Connections: Every workspace view communicates directly and independently with StorageRepository",
+        "Encrypted SQLite Engine: Sealed disk file protected with authenticated AES-256-GCM encryption with in-memory execution",
+        "OS Credential Gate: Windows Hello / CredUI authentication challenges users before viewing or exporting private recovery keys",
+        "Sync & Backup: Automated debounced daily log export to Obsidian Markdown vaults and encrypted database snapshots"
       ]
     }
   ]

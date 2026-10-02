@@ -85,10 +85,10 @@ The formal interactive architecture and feature map is generated using the Archi
 * **Verification Status**: All Archify verification gates (`validate`, `deliver`, `check`, `browser-check`, `visual-check`) passed with 0 errors and zero route crossings across light and dark responsive viewports (1440x900 and 2048x1320).
 
 ### Key Subsystems & Features Mapped:
-1. **Presentation & Quick Capture**: Global Hotkey Listener (`Ctrl+Shift+Space`), `QuickEntryDialog` Workspace Shell, Mascot Companion floating window, and `QuickBarPopup` rapid task/note bars.
-2. **Productivity Views (5 Core Views)**: Tasks & To-Dos Hub (with 24 preset color swatches and keyword rules), Projects Dashboard (Tracked Time KPI hero card, donut and project comparison charts), Activity Timeline (chronological day sessions), Calendar Schedule (month schedule and agenda presets), and Quick Work Notes (timestamped scratchpad). All 5 views connect directly and independently into the Storage Repository.
-3. **Autonomous Engines**: 5-second heartbeat Window Tracker, Zero-Snoop Privacy Sanitizer, Mascot State Machine with mood controller, and Procedural Audio / Inactivity Detection.
-4. **Local-First Security & Storage**: AES-256-GCM Crypto Manager, Windows Hello Credential Gate, SQLite In-Memory Database with atomic disk flush, Automated Database Backups, and Obsidian Vault Markdown Sync.
+1. **User Interaction & Presentation**: Desktop User triggers WizDesk via global hotkey (`Ctrl+Shift+Space`) through `GlobalHotkeyListener` or directly from the system tray into `WizDesk Workspace Hub` (`QuickEntryDialog`). The `Mascot Companion` tracks mouse movement and summons the `Quick Capture Bar` on click gestures.
+2. **Productivity Views (5 Core Views)**: `Tasks & To-Dos Hub` (hierarchical tasks, 24 preset color swatches, description, and auto-track keyword rules), `Projects Dashboard` (Tracked Time KPI hero card, donut and project comparison charts), `Activity Timeline` (chronological day sessions and milestones), `Calendar Schedule` (month grid and agenda presets), and `Quick Work Notes` (daily timestamped scratchpad). All 5 views connect directly and independently into `Storage Repository`.
+3. **Autonomous Tracking & Companion Engines**: 5-second background heartbeat loop `Window Tracker`, client-side `Privacy Sanitizer` (filtering PII, banking portals, and passwords), `Mascot State Engine` (focus, celebration, alerts, sleep), and `Audio & Idle Engine` (procedural tones and Win32 inactivity detection).
+4. **Local-First Security & Storage**: In-memory SQLite execution with atomic disk flush sealed by `AES-256 Crypto Manager` (AES-256-GCM authenticated cipher). `OS Credential Gate` (Windows CredUI / Windows Hello) strictly challenges users before viewing or exporting private recovery keys. Automated `Database Backup Engine` and debounced `Obsidian Vault Sync` complete the persistence pipeline.
 
 ---
 

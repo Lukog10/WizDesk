@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "architecture",
   "quality": "showcase",
-  "startedAt": "2026-10-02T07:41:48.959Z",
+  "startedAt": "2026-10-02T07:50:48.032Z",
   "specification": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\candidate.json",
-    "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
-    "bytes": 16089
+    "sha256": "f21363b1fb438eda6e0ccd97bdca7edfeadf41380c8c8bfb13703d24938248d4",
+    "bytes": 17403
   },
   "artifact": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
-    "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
-    "bytes": 801904
+    "sha256": "80966fafc413d249e604d51454914a6ba55a826a1c9d5711dfcbbb8a6a481adb",
+    "bytes": 805908
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
-          "bytes": 16089
+          "sha256": "f21363b1fb438eda6e0ccd97bdca7edfeadf41380c8c8bfb13703d24938248d4",
+          "bytes": 17403
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1238,
+      "durationMs": 1052,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "H:\\Projects\\Wiz\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "e31c6550-72a4-4876-a92f-efb7b87ba8d9",
+        "receiptId": "cfb3de6b-bce6-4aec-a4c9-2c1c9831132a",
         "ok": true,
         "command": "deliver",
         "type": "architecture",
         "input": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\candidate.json",
         "output": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
         "specification": {
-          "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
-          "bytes": 16089
+          "sha256": "f21363b1fb438eda6e0ccd97bdca7edfeadf41380c8c8bfb13703d24938248d4",
+          "bytes": 17403
         },
         "artifact": {
-          "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
-          "bytes": 801904
+          "sha256": "80966fafc413d249e604d51454914a6ba55a826a1c9d5711dfcbbb8a6a481adb",
+          "bytes": 805908
         },
         "validation": {
           "checksPassed": 9,
@@ -98,7 +98,7 @@
           "verified": true,
           "repository": "https://github.com/Lukog10/WizDesk",
           "revision": "c2e6a469270d41b11a2d764b877251005a02c34f",
-          "references": 19,
+          "references": 20,
           "linkMode": "local-only"
         },
         "update": {
@@ -117,7 +117,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 256,
+      "durationMs": 201,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "H:\\Projects\\Wiz\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -129,8 +129,8 @@
         "ok": true,
         "file": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
         "artifact": {
-          "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
-          "bytes": 801904
+          "sha256": "80966fafc413d249e604d51454914a6ba55a826a1c9d5711dfcbbb8a6a481adb",
+          "bytes": 805908
         },
         "checks": [
           {
@@ -191,19 +191,19 @@
           },
           "metrics": {
             "properCrossings": 0,
-            "resolvedCrossovers": 2,
+            "resolvedCrossovers": 3,
             "ambiguousCorridors": 0,
             "arrowheadCollisions": 0,
             "containerBorderRuns": 0,
             "labelRouteClearanceIssues": 0,
             "labelCanvasOverflowIssues": 0,
-            "minLabelRouteClearance": 12,
+            "minLabelRouteClearance": 5.5,
             "desktopReadabilityIssues": 0,
             "viewportHeightIssues": 0,
             "minProjectedNodeTextPx": 6.0438667749796915,
             "maxBends": 4,
             "routesOverSuggestedBends": 2,
-            "maxStretch": 1.133,
+            "maxStretch": 1.145,
             "routesOverSuggestedStretch": 0,
             "minSegmentPx": 24,
             "minInteriorSegmentPx": 62.4,
@@ -226,20 +226,43 @@
                   "from": "workspace-shell",
                   "to": "tasks-hub",
                   "label": "tasks view",
-                  "collectionIndex": 3,
-                  "artifactIndex": 4
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
                 },
                 "right": {
                   "id": "shell-to-dashboard",
                   "from": "workspace-shell",
                   "to": "projects-dashboard",
                   "label": "analytics view",
-                  "collectionIndex": 4,
-                  "artifactIndex": 5
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
                 },
                 "point": [
                   557,
-                  172
+                  222
+                ],
+                "sharedNode": "workspace-shell"
+              },
+              {
+                "left": {
+                  "id": "shell-to-calendar",
+                  "from": "workspace-shell",
+                  "to": "calendar-view",
+                  "label": "calendar view",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "shell-to-notes",
+                  "from": "workspace-shell",
+                  "to": "notes-hub",
+                  "label": "notes view",
+                  "collectionIndex": 9,
+                  "artifactIndex": 10
+                },
+                "point": [
+                  613,
+                  244
                 ],
                 "sharedNode": "workspace-shell"
               },
@@ -249,22 +272,32 @@
                   "from": "tasks-hub",
                   "to": "storage-repo",
                   "label": "tasks &amp; rules",
-                  "collectionIndex": 8,
-                  "artifactIndex": 9
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
                 },
                 "right": {
                   "id": "dashboard-to-repo",
                   "from": "projects-dashboard",
                   "to": "storage-repo",
                   "label": "metrics",
-                  "collectionIndex": 9,
-                  "artifactIndex": 10
+                  "collectionIndex": 11,
+                  "artifactIndex": 12
                 },
                 "point": [
                   350,
-                  402
+                  422
                 ],
                 "sharedNode": "storage-repo"
+              }
+            ],
+            "crowdedSides": [
+              {
+                "node": "workspace-shell",
+                "label": "WizDesk Workspace Hub",
+                "side": "left",
+                "relationships": 4,
+                "sidePx": 68,
+                "neededPx": 74
               }
             ],
             "detours": [
@@ -274,8 +307,8 @@
                   "from": "tasks-hub",
                   "to": "storage-repo",
                   "label": "tasks &amp; rules",
-                  "collectionIndex": 8,
-                  "artifactIndex": 9
+                  "collectionIndex": 10,
+                  "artifactIndex": 11
                 },
                 "bends": 3,
                 "stretch": 1
@@ -286,8 +319,8 @@
                   "from": "projects-dashboard",
                   "to": "storage-repo",
                   "label": "metrics",
-                  "collectionIndex": 9,
-                  "artifactIndex": 10
+                  "collectionIndex": 11,
+                  "artifactIndex": 12
                 },
                 "bends": 4,
                 "stretch": 1
@@ -296,9 +329,9 @@
           },
           "leadingSpace": {
             "measured": true,
-            "emptyTopPx": 50,
-            "emptyTopRatio": 0.052,
-            "occupiedTop": 50,
+            "emptyTopPx": 20,
+            "emptyTopRatio": 0.021,
+            "occupiedTop": 20,
             "viewBoxTop": 0,
             "canvasHeight": 956,
             "typicalNodeHeight": 68,
@@ -316,24 +349,24 @@
             "hardFloorMet": true,
             "minimumOwner": {
               "kind": "edge",
-              "id": "hotkey-summon-shell",
-              "from": "global-hotkeys",
-              "to": "workspace-shell"
+              "id": "user-presses-hotkey",
+              "from": "end-user",
+              "to": "global-hotkeys"
             },
             "minimumSourceTextPx": 8,
             "minimumProjectedTextPx": 6.0438667749796915,
-            "semanticTextCount": 63
+            "semanticTextCount": 67
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "e31c6550-72a4-4876-a92f-efb7b87ba8d9"
+        "deliveryReceiptId": "cfb3de6b-bce6-4aec-a4c9-2c1c9831132a"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1817,
+      "durationMs": 1858,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "H:\\Projects\\Wiz\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -351,11 +384,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "e31c6550-72a4-4876-a92f-efb7b87ba8d9",
+        "deliveryReceiptId": "cfb3de6b-bce6-4aec-a4c9-2c1c9831132a",
         "artifact": {
           "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
-          "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
-          "bytes": 801904
+          "sha256": "80966fafc413d249e604d51454914a6ba55a826a1c9d5711dfcbbb8a6a481adb",
+          "bytes": 805908
         },
         "state": {
           "detail": "read",
@@ -400,13 +433,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -452,13 +485,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -504,13 +537,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -556,13 +589,13 @@
               "minimumProjectedNodeTextPx": 8,
               "minimumProjectedNonEdgeTextPx": 8.1,
               "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -661,13 +694,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -713,13 +746,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -765,13 +798,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -817,13 +850,13 @@
               "minimumProjectedNodeTextPx": 8,
               "minimumProjectedNonEdgeTextPx": 8.1,
               "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -874,13 +907,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -926,13 +959,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -978,13 +1011,13 @@
               "minimumProjectedNodeTextPx": 7.408610885458977,
               "minimumProjectedNonEdgeTextPx": 7.501218521527214,
               "minimumProjectedEdgeTextPx": 7.408610885458977,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1030,13 +1063,13 @@
               "minimumProjectedNodeTextPx": 8,
               "minimumProjectedNonEdgeTextPx": 8.1,
               "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "hotkey summon",
+              "minimumProjectedNodeText": "Ctrl+Shift+Space",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
                 "kind": "edge",
-                "id": "hotkey-summon-shell",
-                "from": "global-hotkeys",
-                "to": "workspace-shell"
+                "id": "user-presses-hotkey",
+                "from": "end-user",
+                "to": "global-hotkeys"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1073,8 +1106,8 @@
     "browserCheckReceipt": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-02T07:41:52.800Z",
-  "durationMs": 3841,
+  "finishedAt": "2026-10-02T07:50:51.587Z",
+  "durationMs": 3554,
   "update": {
     "status": "current",
     "installedVersion": "3.0.1",
