@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="assets/screenshots/wizdesk-hero-banner.jpg" width="100%" alt="WizDesk Hero Banner" style="border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.4);" />
-
-<br /><br />
+<img src="assets/WizDesk%20Logo%20v1.jpeg" width="360" alt="WizDesk Logo" style="border-radius: 16px;" />
 
 # WizDesk
 
@@ -15,11 +13,11 @@
 [![Storage](https://img.shields.io/badge/Database-SQLite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Integration](https://img.shields.io/badge/Sync-Obsidian%20Vault-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md/)
 [![License](https://img.shields.io/badge/License-GPL%20v3-F59E0B?style=for-the-badge)](LICENSE)
-[![Test Suite](https://img.shields.io/badge/Tests-143%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-141%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
 
 <br />
 
-[Workspace Preview](#workspace-preview) &bull; [Architecture](#system-architecture) &bull; [Codebase Guide](docs/CODEBASE_ARCHITECTURE.md) &bull; [Interactive Map](docs/wizdesk-interactive-map.html) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Download](#download--quickstart) &bull; [Shortcuts](#keyboard-shortcuts--gestures) &bull; [Testing](#automated-testing)
+[Workspace Preview](#workspace-preview) &bull; [Architecture](#system-architecture) &bull; [Codebase Guide](docs/CODEBASE_ARCHITECTURE.md) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Download](#download--quickstart) &bull; [Shortcuts](#keyboard-shortcuts--gestures) &bull; [Testing](#automated-testing)
 
 </div>
 
@@ -61,7 +59,7 @@ Unlike cloud-based tracking software that requires manual clocks or uploads priv
 
 ## System Architecture
 
-> For comprehensive subsystem breakdowns, class line references, and module maps, see the [Codebase Architecture Specification](docs/CODEBASE_ARCHITECTURE.md) and the standalone interactive visualization in [docs/wizdesk-interactive-map.html](docs/wizdesk-interactive-map.html).
+> For comprehensive subsystem breakdowns, class line references, and module maps, see the [Codebase Architecture Specification](docs/CODEBASE_ARCHITECTURE.md) and the interactive Archify diagram in [.archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html](.archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html).
 
 WizDesk is architected around decoupled components connected through Qt signals, an automated Win32 idle engine, and local-first cryptographic storage:
 
