@@ -4,7 +4,6 @@
   <img src="assets/WizDesk%20Logo%20v1.jpeg" width="160" height="160" alt="WizDesk Logo" style="border-radius: 28px; box-shadow: 0 12px 32px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);" />
 </a>
 
-<br /><br />
 
 # WizDesk
 
@@ -23,9 +22,7 @@
 
 [Overview](#overview) &bull; [Core Features and Functions](#core-features-and-functions) &bull; [System Design or Architecture](#system-design-or-architecture) &bull; [Interactive Map](docs/wizdesk-interactive-map.html) &bull; [Privacy and Security](#privacy-and-security) &bull; [Download](#download) &bull; [Repository Structure](#repository-structure) &bull; [Contribution and License](#contribution-and-license)
 
-<br /><br />
 
-<img src="assets/screenshots/wizdesk-hero-banner.jpg" width="100%" alt="WizDesk Workspace Preview" style="border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.4);" />
 
 </div>
 
