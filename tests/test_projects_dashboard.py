@@ -897,19 +897,21 @@ def test_project_tracking_widget_standalone_card(qapp):
     assert len(selected) == 1
     assert selected[0] == target_row.project_name
 
-    # Test scrollable list with >3 projects (e.g. 5 projects)
-    five_projects = sample_projects + [
+    # Test scrollable list with >3 projects (e.g. 6 projects including a zero-activity project)
+    six_projects = sample_projects + [
         {"name": "Design System", "color": "#EC4899", "tracked_minutes": 90.0, "total_tasks": 2, "completion_rate": 0.50},
         {"name": "API Docs", "color": "#06B6D4", "tracked_minutes": 45.0, "total_tasks": 1, "completion_rate": 1.0},
+        {"name": "Zero Activity", "color": "#8B5CF6", "tracked_minutes": 0.0, "total_tasks": 0, "completion_rate": 0.0},
     ]
-    widget.set_project_targets(five_projects, total_hours=10.0)
-    rows_five = [
+    widget.set_project_targets(six_projects, total_hours=10.0)
+    rows_six = [
         widget.targets_layout.itemAt(i).widget()
         for i in range(widget.targets_layout.count())
         if isinstance(widget.targets_layout.itemAt(i).widget(), ProjectTargetRow)
     ]
-    assert len(rows_five) == 5
-    assert "5 Active" in widget.lbl_targets_count.text()
+    assert len(rows_six) == 6
+    assert "6 Active" in widget.lbl_targets_count.text()
+    assert widget.lbl_subtitle.text() == "Tracked time by project"
 
     # Switch theme
     widget.set_theme(is_dark=False)

@@ -1602,7 +1602,7 @@ class ProjectTrackingWidget(QFrame):
 
         layout.addLayout(header_row)
 
-        self.lbl_subtitle = QLabel("Target vs Actual progress")
+        self.lbl_subtitle = QLabel("Tracked time by project")
         self.lbl_subtitle.setFont(get_font(9, QFont.Weight.Medium))
         layout.addWidget(self.lbl_subtitle)
 
@@ -1645,13 +1645,12 @@ class ProjectTrackingWidget(QFrame):
                 w.setParent(None)
                 w.deleteLater()
 
-        active_projects = [p for p in projects if p.get("tracked_minutes", 0) > 0 or p.get("total_tasks", 0) > 0]
-        display_projects = active_projects if active_projects else projects
+        display_projects = projects
 
         self.lbl_targets_count.setText(f"{len(projects)} Active")
 
         if not display_projects:
-            empty = QLabel("No active projects. Click '+ New Project' to start.")
+            empty = QLabel("No projects found. Click '+ New Project' to start.")
             empty.setFont(get_font(8))
             empty.setStyleSheet("color: #71717A; padding: 6px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1929,15 +1928,12 @@ class AppUsageAnalyticsWidget(QFrame):
                 w.setParent(None)
                 w.deleteLater()
 
-        active_projects = [p for p in projects if p.get("tracked_minutes", 0) > 0 or p.get("total_tasks", 0) > 0]
-        if not active_projects and projects:
-            active_projects = projects[:3]
-        display_projects = active_projects[:3] if active_projects else projects[:3]
+        display_projects = projects
 
         self.lbl_targets_count.setText(f"{len(projects)} Active")
 
         if not display_projects:
-            empty = QLabel("No active projects. Click '+ New Project' to start.")
+            empty = QLabel("No projects found. Click '+ New Project' to start.")
             empty.setFont(get_font(8))
             empty.setStyleSheet("color: #71717A; padding: 6px 0;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
