@@ -106,12 +106,28 @@ Press `Ctrl+Shift+W` anytime to summon the central 920x680 PyQt6 workspace hub:
 WizDesk is architected using the Archify system design model, enforcing clear boundaries between user triggers, presentation surfaces, background tracking engines, cryptographic storage, and local file synchronization.
 
 <div align="center">
-  <img src="assets/screenshots/archify-system-design.png" width="100%" alt="WizDesk Archify System Design" style="border-radius: 12px; border: 1px solid #27272A; box-shadow: 0 12px 40px rgba(0,0,0,0.5);" />
+  <a href="https://lukog10.github.io/WizDesk/" target="_blank" rel="noopener noreferrer">
+    <img src="assets/screenshots/archify-system-design.png" width="100%" alt="Launch WizDesk Live Interactive Architecture Map" style="border-radius: 12px; border: 1px solid #27272A; box-shadow: 0 12px 40px rgba(0,0,0,0.5);" />
+  </a>
+  <p align="center" style="margin-top: 12px;">
+    <a href="https://lukog10.github.io/WizDesk/" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/badge/Live_Interactive_App-Launch_Archify_Map-blue?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Launch Live Archify Map" />
+    </a>
+    &nbsp;&nbsp;
+    <a href="docs/wizdesk-interactive-map.html">
+      <img src="https://img.shields.io/badge/Source_Code-HTML5_%2F_Canvas-30363D?style=for-the-badge&logo=html5&logoColor=E34F26" alt="View HTML Source" />
+    </a>
+  </p>
 </div>
 
 <br />
 
-> For interactive architectural exploration with live subsystem inspection, node highlights, and code maps, open the standalone [WizDesk Interactive System Map](docs/wizdesk-interactive-map.html) (local: [H:\Projects\Wiz\docs\wizdesk-interactive-map.html](file:///H:/Projects/Wiz/docs/wizdesk-interactive-map.html)). For comprehensive code contracts, see the [Codebase Architecture Specification](docs/CODEBASE_ARCHITECTURE.md).
+> **Live Interactive System Map**:
+> Because GitHub markdown sanitizes embedded scripts, the real-time interactive Archify application is deployed live via GitHub Pages. Click **[Launch Live Interactive System Map](https://lukog10.github.io/WizDesk/)** to explore subsystem pan/zoom, interactive node highlights, code drawer inspection, and theme toggling in real time.
+>
+> - **Live Web App**: [https://lukog10.github.io/WizDesk/](https://lukog10.github.io/WizDesk/)
+> - **Stand-alone HTML Source**: [docs/wizdesk-interactive-map.html](docs/wizdesk-interactive-map.html) (or open locally: `docs/wizdesk-interactive-map.html`)
+> - **Codebase Architecture Specification**: [docs/CODEBASE_ARCHITECTURE.md](docs/CODEBASE_ARCHITECTURE.md)
 
 ```mermaid
 graph TD
