@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="assets/WizDesk%20Logo%20v1.jpeg" width="360" alt="WizDesk Logo" style="border-radius: 16px;" />
+<img src="assets/screenshots/wizdesk-hero-banner.jpg" width="100%" alt="WizDesk Hero Banner" style="border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.4);" />
+
+<br /><br />
 
 # WizDesk
 
@@ -13,11 +15,11 @@
 [![Storage](https://img.shields.io/badge/Database-SQLite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Integration](https://img.shields.io/badge/Sync-Obsidian%20Vault-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md/)
 [![License](https://img.shields.io/badge/License-GPL%20v3-F59E0B?style=for-the-badge)](LICENSE)
-[![Test Suite](https://img.shields.io/badge/Tests-141%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-143%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
 
 <br />
 
-[Workspace Preview](#workspace-preview) &bull; [Architecture](#system-architecture) &bull; [Codebase Guide](docs/CODEBASE_ARCHITECTURE.md) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Download](#download--quickstart) &bull; [Shortcuts](#keyboard-shortcuts--gestures) &bull; [Testing](#automated-testing)
+[Overview](#overview) &bull; [System Design](#system-design) &bull; [Interactive Map](docs/wizdesk-interactive-map.html) &bull; [Codebase Guide](docs/CODEBASE_ARCHITECTURE.md) &bull; [Core Workflow](#core-workflow) &bull; [Privacy & Security](#privacy-and-security) &bull; [Download](#download--quickstart) &bull; [Contributing](#contributing)
 
 </div>
 
@@ -31,113 +33,113 @@ Unlike cloud-based tracking software that requires manual clocks or uploads priv
 
 ---
 
-## Workspace Preview
-
-<div align="center">
-
-### Tasks & Subtask Management
-<img src="assets/screenshots/tasks-view-preview.png" width="960" alt="WizDesk Hierarchical Tasks and Subtasks View" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
-
-<br /><br />
-
-### Projects Dashboard & Time Analytics
-<img src="assets/screenshots/projects-dashboard-preview.png" width="960" alt="WizDesk Projects Dashboard, Comparison Bar Charts, and App Distribution Donut" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
-
-<br /><br />
-
-### Autonomous Activity Timeline
-<img src="assets/screenshots/activity-timeline-preview.png" width="960" alt="WizDesk Activity Timeline with Aggregated Sessions and Clean App Names" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
-
-<br /><br />
-
-### Calendar & Schedule
-<img src="assets/screenshots/calendar-view-preview.png" width="960" alt="WizDesk Calendar View with Day and Week Schedule" style="border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
-
-</div>
-
 ---
 
-## System Architecture
+## System Design
 
-> For comprehensive subsystem breakdowns, class line references, and module maps, see the [Codebase Architecture Specification](docs/CODEBASE_ARCHITECTURE.md) and the interactive Archify diagram in [.archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html](.archify/architecture-wizdesk-core-20261001-121500/wizdesk-architecture.html).
+> For interactive architectural exploration with live subsystem inspection, node highlights, and code maps, open the standalone [WizDesk Interactive System Map](docs/wizdesk-interactive-map.html) and view the detailed [Codebase Architecture Specification](docs/CODEBASE_ARCHITECTURE.md).
 
-WizDesk is architected around decoupled components connected through Qt signals, an automated Win32 idle engine, and local-first cryptographic storage:
+WizDesk is engineered around an event-driven desktop shell, decoupled interaction triggers, an autonomous background tracking pipeline, and a local-first cryptographic storage architecture:
 
 ```mermaid
 graph TD
-    subgraph UI_Shell [PyQt6 Desktop Shell]
-        APP[WizApplication]
-        TRAY[System Tray Service]
-        HOTKEY[Global Hotkey Manager]
-        MASCOT[Animated Companion Widget]
-        WORKSPACE[QuickEntryDialog: 920x680 Canvas]
-        SETTINGS[Settings View: General / Security / Hotkeys]
-        DOCS[Help & Documentation View]
+    USER([User / Operator])
+
+    subgraph Triggers [User Interaction Triggers]
+        HOTKEYS[Global Hotkeys Engine<br><i>Ctrl+Shift+W, T, N, M</i>]
+        MASCOT[Mascot Companion Shell<br><i>Left Click, Double Click, Drag</i>]
+        TRAY[System Tray Service<br><i>Menu, Quick Moods, Exit</i>]
     end
 
-    subgraph Companion_Engine [Companion Engine]
-        SM[StateMachine]
-        IDLE[Win32 Idle Detector: GetLastInputInfo]
-        AUDIO[Procedural Sound Synthesizer]
-        PUPIL[Eye-Tracking Math Engine]
+    subgraph Hub [WizDesk Workspace Hub]
+        WORKSPACE[QuickEntryDialog Canvas: 920x680]
+        VIEW_TASKS[1. Tasks & Subtasks View]
+        VIEW_DASH[2. Projects Dashboard & Analytics]
+        VIEW_CAL[3. Calendar & Schedule View]
+        VIEW_TIMELINE[4. Activity Timeline View]
+        VIEW_NOTES[5. Notes Scratchpad View]
     end
 
-    subgraph Tracking_Engine [Autonomous Time Engine]
-        TRACKER[WindowTracker: 5-Second Poller]
-        RULES[Keyword Matching Engine]
+    subgraph Tracking_Pipeline [Autonomous Time Tracking Pipeline]
+        ACTIVE_WIN[Active Desktop Windows]
+        POLLER[Autonomous Window Tracker<br><i>5s Win32 Poller</i>]
+        SANITIZER[Title & App Sanitizer<br><i>Clean Names & Keyword Match</i>]
     end
 
-    subgraph Storage_Crypto [Storage & Cryptographic Layer]
-        CRYPTO[AES-256-GCM Engine]
-        DPAPI[Windows DPAPI Key Storage]
-        REPO[StorageRepository]
-        MEMDB[(In-Memory Active SQLite DB)]
-        DISKDB[(Encrypted Disk File: wizdesk.db)]
+    subgraph Storage_Pipeline [Storage & Security Architecture]
+        REPO[(Data Repository Layer)]
+        GATE[OS Credential Gate<br><i>Windows DPAPI / Keyring</i>]
+        CRYPTO[AES-256-GCM Crypto Manager]
+        SQLITE[(Encrypted SQLite Engine<br><i>wizdesk.db / Memory DB</i>)]
+        BACKUP[Automated Snapshot Engine<br><i>.wbak / .bak Pruning</i>]
     end
 
-    subgraph Backup_Sync [Backup & Integration]
-        BACKUP[Automated Snapshot & Pruning Engine]
+    subgraph Sync_Integration [External Integration]
         OBSIDIAN[Obsidian Markdown Sync]
-        VAULT[(Obsidian Vault: Daily Notes)]
-        BAKFILES[(Snapshot Backups: .wbak / .bak)]
+        VAULT[(Local Obsidian Vault)]
     end
 
-    APP --> HOTKEY
-    APP --> TRAY
-    APP --> MASCOT
-    APP --> WORKSPACE
-    APP --> SETTINGS
-    APP --> DOCS
+    USER -->|Global Shortcuts| HOTKEYS
+    USER -->|Direct Clicks & Drag| MASCOT
+    USER -->|Tray Actions| TRAY
+    USER -->|Direct Input / Focus| WORKSPACE
 
-    MASCOT --> SM
-    SM --> IDLE
-    SM --> AUDIO
-    SM --> PUPIL
+    HOTKEYS --> WORKSPACE
+    MASCOT --> WORKSPACE
+    TRAY --> WORKSPACE
 
-    APP --> TRACKER
-    TRACKER --> RULES
-    RULES --> REPO
+    WORKSPACE --> VIEW_TASKS
+    WORKSPACE --> VIEW_DASH
+    WORKSPACE --> VIEW_CAL
+    WORKSPACE --> VIEW_TIMELINE
+    WORKSPACE --> VIEW_NOTES
 
-    WORKSPACE --> REPO
-    SETTINGS --> REPO
-    SETTINGS --> CRYPTO
-    SETTINGS --> BACKUP
+    VIEW_TASKS --> REPO
+    VIEW_DASH --> REPO
+    VIEW_CAL --> REPO
+    VIEW_TIMELINE --> REPO
+    VIEW_NOTES --> REPO
 
-    REPO --> MEMDB
-    CRYPTO --> DPAPI
-    CRYPTO --> DISKDB
-    MEMDB -.->|Atomic Encrypted Write| DISKDB
+    ACTIVE_WIN --> POLLER
+    POLLER --> SANITIZER
+    SANITIZER --> VIEW_TIMELINE
+    SANITIZER --> REPO
 
-    BACKUP --> BAKFILES
-    OBSIDIAN --> REPO
+    REPO --> GATE
+    GATE --> CRYPTO
+    CRYPTO --> SQLITE
+    REPO --> BACKUP
+
+    REPO --> OBSIDIAN
     OBSIDIAN --> VAULT
 ```
 
-### Architectural Highlights
+### System Architecture Breakdown
 
-1. **In-Memory Execution with Encrypted Persistence**: When database encryption is active, the database is decrypted into memory upon startup. All read/write operations execute against memory with zero disk bottleneck. On shutdown and periodic intervals, the database is serialized and encrypted via AES-256-GCM before writing to disk atomically.
-2. **Dynamic Companion Eye-Tracking**: In idle state, the mascot calculates trigonometry angles from its screen coordinates toward your cursor position, moving its pupils in real time across multiple monitors.
-3. **Passive Polling Without Spying**: The tracker queries GetForegroundWindow every 5 seconds, reading only the window title text to associate active time with your configured project keywords. Keystrokes, screenshots, and file contents are never read or stored.
+#### 1. User Triggers & Workspace Shell
+- **Global Hotkey Manager**: Listens system-wide via OS hooks (`pynput`) for instant summoning (`Ctrl+Shift+W` for Workspace Hub, `Ctrl+Shift+T` for Quick Task, `Ctrl+Shift+N` for Quick Note, `Ctrl+Shift+M` for Mascot toggle).
+- **Desktop Companion Mascot**: Always-on-top frameless floating companion with real-time trigonometry pupil math tracking your cursor, sound synthesizer reactions, and gestures (click to interact, double-click to summon workspace, drag to reposition).
+- **System Tray Service**: Background daemon providing quick mood controls, workspace shortcuts, and graceful termination.
+- **WizDesk Workspace Hub**: Central 920x680 PyQt6 hub housing 5 dedicated productivity views:
+  1. **Tasks View**: Hierarchical parent-child task management, subtask progress calculation, segmented status filtering, and inline priority edits.
+  2. **Projects Dashboard**: Time analytics, app distribution donut chart, multi-project comparison bar charts, and keyword color management.
+  3. **Calendar View**: Day and week schedule visualization with historical date dropdowns.
+  4. **Activity Timeline**: Chronological aggregation of active application sessions with clean process titles.
+  5. **Notes View**: Project-bound markdown notes, instant scratchpad captures, and search indexing.
+
+#### 2. Autonomous Tracking & Sanitization Pipeline
+- **Passive Poller**: Queries `GetForegroundWindow` / `GetWindowTextW` every 5 seconds on Windows without intercepting user keystrokes, clipboard, or screen pixels.
+- **Title & App Sanitizer**: Normalizes raw process names (e.g. `Code.exe` -> `VS Code`), strips sensitive browser tabs/URLs, extracts project keywords, and credits focused time directly into the repository layer.
+- **Activity Timeline Sync**: Streams real-time aggregated session blocks into the timeline view for live inspection.
+
+#### 3. Cryptographic Storage & Snapshot Engine
+- **Decoupled Repository**: Individual views and tracker pipelines interact with an abstract `StorageRepository` interface.
+- **OS Credential Gate**: Protects encryption master keys using Windows Data Protection API (DPAPI) bound to the current Windows user login session, ensuring secure unlocking with zero plaintext passwords.
+- **AES-256-GCM Engine**: High-performance authenticated encryption layer. On startup, the encrypted database is decrypted into memory for microsecond read/write execution; on shutdown or timer intervals, atomic encrypted serialization writes back to `%APPDATA%\WizDesk\wizdesk.db`.
+- **Snapshot & Pruning Engine**: Automatic pre-startup backups (`.wbak` / `.bak`), point-in-time on-demand snapshots, and retention pruning with pre-restore SQLite integrity checks.
+
+#### 4. Obsidian Markdown Vault Sync
+- Bidirectional synchronization engine that serializes daily task checkoffs, project notes, and session logs into your local Obsidian vault (`WizDesk Logs/YYYY-MM-DD.md`) with zero network dependencies.
 
 ---
 
@@ -228,7 +230,7 @@ WizDesk is built around verifiable privacy and robust data protection:
 ### Download Standalone Executable (Windows)
 
 Download the latest pre-built Windows bundle from [Releases](https://github.com/Lukog10/WizDesk/releases/latest):
-* **[WizDesk-v1.0.0-windows-x64.zip](https://github.com/Lukog10/WizDesk/releases/download/v1.0.0/WizDesk-v1.0.0-windows-x64.zip)**: Download, extract, and launch `WizDesk.exe`. No Python setup required.
+* **[WizDesk-v1.1.0-windows-x64.zip](https://github.com/Lukog10/WizDesk/releases/download/v1.1.0/WizDesk-v1.1.0-windows-x64.zip)**: Download, extract, and launch `WizDesk.exe`. No Python setup required.
 
 ---
 
@@ -264,59 +266,6 @@ Download the latest pre-built Windows bundle from [Releases](https://github.com/
 
 ---
 
-## Keyboard Shortcuts & Gestures
-
-| Shortcut / Gesture | Scope | Action |
-| :--- | :--- | :--- |
-| `Ctrl + Shift + W` | System-Wide | Open or focus the main **Workspace Window** |
-| `Ctrl + Shift + M` | System-Wide | Toggle companion mascot visibility (show / hide) |
-| `Ctrl + Shift + T` | System-Wide | Summon floating **Quick Task Bar** near companion |
-| `Ctrl + Shift + N` | System-Wide | Summon floating **Quick Note Bar** near companion |
-| **Left Single-Click** | Mascot Widget | Playful companion poke interaction with audio reaction |
-| **Left Double-Click** | Mascot Widget | Instantly open or focus the main **Workspace Window** |
-| **Left Click + Drag** | Mascot Widget | Reposition the companion anywhere on your desktop (auto-saved) |
-| **Right-Click** | System Tray Icon | Open system tray menu (Open Workspace, Moods, Settings, Exit) |
-| `Enter` | Input Fields | Save new task, note, or commit inline title rename |
-| `Escape` | Windows / Modals | Close workspace window or dismiss quick entry floating bars |
-
-All global hotkeys are fully customizable under **Settings > Hotkeys**.
-
----
-
-## Automated Testing
-
-WizDesk maintains a verified test suite covering models, cryptographic operations, UI dialogs, hotkey management, backup routines, and window tracking:
-
-```powershell
-.venv\Scripts\pytest -v
-```
-
-### Verified Test Matrix (116 Tests Passing):
-- `tests/test_backup.py`: Validates snapshot creation, .wbak/.bak formatting, retention pruning, pre-restore safety snapshots, and integrity validation.
-- `tests/test_crypto.py`: Validates AES-256-GCM encryption, decryption, invalid key rejection, DPAPI key storage, and Master Key formatting.
-- `tests/test_dialogs.py`: Validates task rows, subtasks, notes, segmented status filtering, and popover calendar navigation.
-- `tests/test_mascot_core.py`: Validates state machine transitions, automated Win32 idle timeouts, and companion rendering.
-- `tests/test_sound.py`: Validates procedural sound synthesizer, audio volume, and mute states.
-- `tests/test_obsidian_sync.py`: Validates Markdown parsing, log generation, and file synchronization.
-- `tests/test_storage.py`: Validates SQLite schemas, queries, migrations, and keyword matching.
-- `tests/test_sidebar_and_shell.py`: Validates sidebar navigation, SettingsView, HelpFaqView, accordion cards, and topic shortcuts.
-- `tests/test_timeline.py`: Validates session aggregation, metrics, and timeline views.
-- `tests/test_projects_dashboard.py`: Validates project keywords, colors, renames, and tracking dashboards.
-
----
-
-## Building a Standalone Executable (.exe)
-
-WizDesk includes a PyInstaller specification (`wizdesk.spec`) configured for production standalone packaging:
-
-```powershell
-pyinstaller wizdesk.spec
-```
-
-The compiled standalone executable will be written to `dist/WizDesk/WizDesk.exe` with bundled icons, fonts, and assets without requiring a local Python installation.
-
----
-
 ## Repository Structure
 
 ```text
@@ -332,7 +281,7 @@ WizDesk/
 │   ├── wiz-complete.svg             # Mascot completion celebration state
 │   ├── wiz-sleep.svg                # Mascot sleeping state
 │   └── WizDesk Logo v1.jpeg         # Official logo
-├── tests/                           # Complete automated pytest suite (116 tests)
+├── tests/                           # Complete automated pytest suite (143 tests)
 │   ├── conftest.py                  # Pytest fixtures and environment setup
 │   ├── test_backup.py               # Automated backup and restoration tests
 │   ├── test_crypto.py               # AES-256-GCM and DPAPI security tests
