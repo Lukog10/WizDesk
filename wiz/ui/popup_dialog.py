@@ -48,7 +48,7 @@ from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
-from wiz.ui.icons import get_app_icon, get_status_icon
+from wiz.ui.icons import get_app_icon, get_status_icon, render_tinted_svg
 from wiz.sync.obsidian import sync_today_logs
 from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView, PRESET_COLORS
@@ -1154,44 +1154,43 @@ class SubtaskAddButton(QPushButton):
     def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.is_dark = is_dark
+        self._hovered: bool = False
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setToolTip("Add Subtask")
         self.setFixedSize(24, 24)
-        self.setIconSize(QSize(14, 14))
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAutoDefault(False)
         self.setDefault(False)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.set_theme(is_dark)
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.normal_color = "#71717A" if is_dark else "#71717A"
+        self.normal_color = "#71717A"
         self.hover_color = "#FAFAFA" if is_dark else "#18181B"
-        hover_bg = "#27272A" if is_dark else "#EAEAEB"
-        self.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                border: none;
-                border-radius: 4px;
-                padding: 0px;
-            }}
-            QPushButton:hover {{
-                background-color: {hover_bg};
-            }}
-        """)
-        self._update_icon(hover=False)
-
-    def _update_icon(self, hover: bool = False) -> None:
-        c = self.hover_color if hover else self.normal_color
-        self.setIcon(get_status_icon("icons/subtask.svg", c, 14))
+        self.hover_bg = "#27272A" if is_dark else "#EAEAEB"
+        self.update()
 
     def enterEvent(self, event) -> None:
         super().enterEvent(event)
-        self._update_icon(hover=True)
+        self._hovered = True
+        self.update()
 
     def leaveEvent(self, event) -> None:
         super().leaveEvent(event)
-        self._update_icon(hover=False)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(self.hover_bg))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 4, 4)
+        c = self.hover_color if self._hovered else self.normal_color
+        render_tinted_svg(painter, "icons/subtask.svg", c, 5, 5, 14)
+        painter.end()
 
 
 class ScheduleIconButton(QPushButton):
@@ -1201,13 +1200,14 @@ class ScheduleIconButton(QPushButton):
         super().__init__(parent)
         self.is_dark = is_dark
         self.scheduled_date: Optional[str] = None
+        self._hovered: bool = False
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setToolTip("Schedule Date")
         self.setFixedSize(24, 24)
-        self.setIconSize(QSize(14, 14))
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAutoDefault(False)
         self.setDefault(False)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.set_theme(is_dark)
 
     def set_scheduled_date(self, dt_str: Optional[str]) -> None:
@@ -1216,41 +1216,39 @@ class ScheduleIconButton(QPushButton):
             self.setToolTip(f"Scheduled: {dt_str}")
         else:
             self.setToolTip("Schedule Date")
-        self._update_icon(hover=False)
+        self.update()
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.normal_color = "#71717A" if is_dark else "#71717A"
+        self.normal_color = "#71717A"
         self.hover_color = "#FAFAFA" if is_dark else "#18181B"
         self.active_color = "#FF6B3D" if is_dark else "#BA3F1A"
-        hover_bg = "#27272A" if is_dark else "#EAEAEB"
-        self.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                border: none;
-                border-radius: 4px;
-                padding: 0px;
-            }}
-            QPushButton:hover {{
-                background-color: {hover_bg};
-            }}
-        """)
-        self._update_icon(hover=False)
-
-    def _update_icon(self, hover: bool = False) -> None:
-        if self.scheduled_date:
-            c = self.hover_color if hover else self.active_color
-        else:
-            c = self.hover_color if hover else self.normal_color
-        self.setIcon(get_status_icon("icons/schedule.svg", c, 14))
+        self.hover_bg = "#27272A" if is_dark else "#EAEAEB"
+        self.update()
 
     def enterEvent(self, event) -> None:
         super().enterEvent(event)
-        self._update_icon(hover=True)
+        self._hovered = True
+        self.update()
 
     def leaveEvent(self, event) -> None:
         super().leaveEvent(event)
-        self._update_icon(hover=False)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(self.hover_bg))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 4, 4)
+        if self.scheduled_date:
+            c = self.hover_color if self._hovered else self.active_color
+        else:
+            c = self.hover_color if self._hovered else self.normal_color
+        render_tinted_svg(painter, "icons/schedule.svg", c, 5, 5, 14)
+        painter.end()
 
 
 class RepeatIconButton(QPushButton):
@@ -1260,13 +1258,14 @@ class RepeatIconButton(QPushButton):
         super().__init__(parent)
         self.is_dark = is_dark
         self.repeat_mode: str = "none"
+        self._hovered: bool = False
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setToolTip("Repeat Mode")
         self.setFixedSize(24, 24)
-        self.setIconSize(QSize(14, 14))
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAutoDefault(False)
         self.setDefault(False)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.set_theme(is_dark)
 
     def set_repeat_mode(self, mode: str) -> None:
@@ -1275,41 +1274,39 @@ class RepeatIconButton(QPushButton):
             self.setToolTip(f"Repeat: {self.repeat_mode.capitalize()}")
         else:
             self.setToolTip("Repeat Mode")
-        self._update_icon(hover=False)
+        self.update()
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
-        self.normal_color = "#71717A" if is_dark else "#71717A"
+        self.normal_color = "#71717A"
         self.hover_color = "#FAFAFA" if is_dark else "#18181B"
         self.active_color = "#38BDF8" if is_dark else "#0284C7"
-        hover_bg = "#27272A" if is_dark else "#EAEAEB"
-        self.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                border: none;
-                border-radius: 4px;
-                padding: 0px;
-            }}
-            QPushButton:hover {{
-                background-color: {hover_bg};
-            }}
-        """)
-        self._update_icon(hover=False)
-
-    def _update_icon(self, hover: bool = False) -> None:
-        if self.repeat_mode and self.repeat_mode != "none":
-            c = self.hover_color if hover else self.active_color
-        else:
-            c = self.hover_color if hover else self.normal_color
-        self.setIcon(get_status_icon("icons/repeat.svg", c, 14))
+        self.hover_bg = "#27272A" if is_dark else "#EAEAEB"
+        self.update()
 
     def enterEvent(self, event) -> None:
         super().enterEvent(event)
-        self._update_icon(hover=True)
+        self._hovered = True
+        self.update()
 
     def leaveEvent(self, event) -> None:
         super().leaveEvent(event)
-        self._update_icon(hover=False)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(self.hover_bg))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 4, 4)
+        if self.repeat_mode and self.repeat_mode != "none":
+            c = self.hover_color if self._hovered else self.active_color
+        else:
+            c = self.hover_color if self._hovered else self.normal_color
+        render_tinted_svg(painter, "icons/repeat.svg", c, 5, 5, 14)
+        painter.end()
 
 
 class TaskRowWidget(QWidget):
