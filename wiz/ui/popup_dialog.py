@@ -1161,7 +1161,10 @@ class SubtaskAddButton(QPushButton):
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAutoDefault(False)
         self.setDefault(False)
+        self.setFlat(True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setStyleSheet("background: transparent; border: none; padding: 0;")
         self.set_theme(is_dark)
 
     def set_theme(self, is_dark: bool) -> None:
@@ -1184,6 +1187,9 @@ class SubtaskAddButton(QPushButton):
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         if self._hovered:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(self.hover_bg))
@@ -1207,7 +1213,10 @@ class ScheduleIconButton(QPushButton):
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAutoDefault(False)
         self.setDefault(False)
+        self.setFlat(True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setStyleSheet("background: transparent; border: none; padding: 0;")
         self.set_theme(is_dark)
 
     def set_scheduled_date(self, dt_str: Optional[str]) -> None:
@@ -1239,6 +1248,9 @@ class ScheduleIconButton(QPushButton):
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         if self._hovered:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(self.hover_bg))
@@ -1265,7 +1277,10 @@ class RepeatIconButton(QPushButton):
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAutoDefault(False)
         self.setDefault(False)
+        self.setFlat(True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
+        self.setStyleSheet("background: transparent; border: none; padding: 0;")
         self.set_theme(is_dark)
 
     def set_repeat_mode(self, mode: str) -> None:
@@ -1297,6 +1312,9 @@ class RepeatIconButton(QPushButton):
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         if self._hovered:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(self.hover_bg))
@@ -2485,14 +2503,19 @@ class QuickEntryDialog(QDialog):
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.scroll_area.viewport().setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.scroll_area.viewport().setStyleSheet("background: transparent;")
         self.scroll_area.setStyleSheet("""
-            QScrollArea {
+            QScrollArea, QScrollArea > QWidget > QWidget {
                 background: transparent;
                 border: none;
             }
         """)
 
         self.content_widget = QWidget()
+        self.content_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.content_widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.content_widget.setStyleSheet("background: transparent;")
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(4, 4, 4, 4)
@@ -2511,7 +2534,7 @@ class QuickEntryDialog(QDialog):
         self.add_input.returnPressed.connect(self._on_quick_add_task)
         add_task_layout.addWidget(self.add_input, stretch=3)
 
-        self.project_combo = ArrowComboBox(self, is_dark=self.is_dark)
+        self.project_combo = ArrowComboBox(self.tasks_page, is_dark=self.is_dark)
         self.project_combo.setEditable(False)
         self.project_combo.currentIndexChanged.connect(self._on_project_combo_changed)
         add_task_layout.addWidget(self.project_combo, stretch=1)
@@ -2547,14 +2570,19 @@ class QuickEntryDialog(QDialog):
         self.notes_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.notes_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.notes_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.notes_scroll.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.notes_scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.notes_scroll.viewport().setStyleSheet("background: transparent;")
         self.notes_scroll.setStyleSheet("""
-            QScrollArea {
+            QScrollArea, QScrollArea > QWidget > QWidget {
                 background: transparent;
                 border: none;
             }
         """)
 
         self.notes_content_widget = QWidget()
+        self.notes_content_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.notes_content_widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.notes_content_widget.setStyleSheet("background: transparent;")
         self.notes_content_layout = QVBoxLayout(self.notes_content_widget)
         self.notes_content_layout.setContentsMargins(4, 4, 4, 4)
@@ -2573,7 +2601,7 @@ class QuickEntryDialog(QDialog):
         self.note_input.returnPressed.connect(self._on_quick_add_note)
         add_note_layout.addWidget(self.note_input, stretch=3)
 
-        self.note_project_combo = ArrowComboBox(self, is_dark=self.is_dark)
+        self.note_project_combo = ArrowComboBox(self.notes_page, is_dark=self.is_dark)
         self.note_project_combo.setEditable(False)
         self.note_project_combo.currentIndexChanged.connect(self._on_note_project_combo_changed)
         add_note_layout.addWidget(self.note_project_combo, stretch=1)
@@ -2748,6 +2776,28 @@ class QuickEntryDialog(QDialog):
         btn_action_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         btn_action_color = "#FFFFFF"
         btn_action_hover = "#A3360E" if self.is_dark else "#9E3414"
+
+        # Update shadow effect color to match new theme
+        if hasattr(self, "_shadow_effect"):
+            self._shadow_effect.setColor(
+                QColor(0, 0, 0, 50 if self.is_dark else 35)
+            )
+
+        # Style QToolTip so tooltips never render with native Windows Vista white/yellow background
+        tooltip_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        tooltip_color = "#F4F4F5" if self.is_dark else "#18181B"
+        tooltip_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        self.setStyleSheet(f"""
+            QToolTip {{
+                background-color: {tooltip_bg};
+                color: {tooltip_color};
+                border: 1px solid {tooltip_border};
+                border-radius: 6px;
+                padding: 4px 8px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+            }}
+        """)
 
         # 1. Outer Frame & Inner Card
         self.outer_frame.setStyleSheet(f"""
@@ -3158,6 +3208,8 @@ class QuickEntryDialog(QDialog):
 
     def _on_background_task_activity(self, task_id: int) -> None:
         """Refresh dashboard, calendar, or task views when tasks change."""
+        if getattr(self, "_suppress_task_activity_sync", False):
+            return
         if self.isVisible():
             if hasattr(self, "calendar_view") and self.current_view_mode == "calendar":
                 self.calendar_view.load_data()
@@ -3534,7 +3586,11 @@ class QuickEntryDialog(QDialog):
 
         self.refresh_tasks()
         self.state_machine.trigger_notify(duration_ms=3500)
-        app_signals.task_created.emit(task_id)
+        self._suppress_task_activity_sync = True
+        try:
+            app_signals.task_created.emit(task_id)
+        finally:
+            self._suppress_task_activity_sync = False
 
     def _on_quick_add_note(self) -> None:
         """Submit quick work note from bottom input bar."""
