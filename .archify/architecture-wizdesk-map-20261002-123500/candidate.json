@@ -383,36 +383,13 @@
       ]
     },
     {
-      "id": "crypto-manager",
-      "type": "security",
-      "label": "AES-256 Crypto Manager",
-      "sublabel": "GCM Cipher & Key Derivation",
-      "tag": "Zero-Telemetry Protection",
-      "pos": [
-        745,
-        630
-      ],
-      "size": [
-        150,
-        68
-      ],
-      "sources": [
-        {
-          "path": "wiz/core/crypto.py",
-          "line": 50,
-          "end_line": 170,
-          "label": "CryptoManager"
-        }
-      ]
-    },
-    {
       "id": "os-auth",
       "type": "security",
       "label": "OS Credential Gate",
       "sublabel": "CredUI / Polkit Prompt",
       "tag": "Windows Hello Auth",
       "pos": [
-        980,
+        745,
         630
       ],
       "size": [
@@ -425,6 +402,29 @@
           "line": 65,
           "end_line": 185,
           "label": "authenticate_user"
+        }
+      ]
+    },
+    {
+      "id": "crypto-manager",
+      "type": "security",
+      "label": "AES-256 Crypto Manager",
+      "sublabel": "GCM Cipher & Key Derivation",
+      "tag": "Zero-Telemetry Protection",
+      "pos": [
+        745,
+        800
+      ],
+      "size": [
+        150,
+        68
+      ],
+      "sources": [
+        {
+          "path": "wiz/core/crypto.py",
+          "line": 50,
+          "end_line": 170,
+          "label": "CryptoManager"
         }
       ]
     },
@@ -641,13 +641,25 @@
       "id": "tracker-to-privacy",
       "from": "window-tracker",
       "to": "privacy-engine",
-      "label": "active title"
+      "label": "active title",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "privacy-to-timeline",
+      "from": "privacy-engine",
+      "to": "activity-timeline",
+      "label": "timeline feed",
+      "fromSide": "right",
+      "toSide": "bottom"
     },
     {
       "id": "privacy-to-repo",
       "from": "privacy-engine",
       "to": "storage-repo",
-      "label": "sanitized session"
+      "label": "sanitized session",
+      "fromSide": "bottom",
+      "toSide": "left"
     },
     {
       "id": "state-to-audio",
@@ -656,24 +668,39 @@
       "label": "idle audio"
     },
     {
-      "id": "repo-to-db",
+      "id": "repo-to-gate",
       "from": "storage-repo",
-      "to": "sqlite-db",
-      "label": "SQL queries"
+      "to": "os-auth",
+      "label": "credential check",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "security"
+    },
+    {
+      "id": "gate-to-crypto",
+      "from": "os-auth",
+      "to": "crypto-manager",
+      "label": "unlocked keys",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "security"
     },
     {
       "id": "crypto-to-db",
       "from": "crypto-manager",
       "to": "sqlite-db",
       "label": "AES-256 cipher",
+      "fromSide": "left",
+      "toSide": "right",
       "variant": "security"
     },
     {
-      "id": "auth-to-crypto",
-      "from": "os-auth",
-      "to": "crypto-manager",
-      "label": "gates key export",
-      "variant": "security"
+      "id": "repo-to-backup",
+      "from": "storage-repo",
+      "to": "backup-manager",
+      "label": "snapshot triggers",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "repo-to-sync",
@@ -685,7 +712,9 @@
       "id": "backup-to-db",
       "from": "backup-manager",
       "to": "sqlite-db",
-      "label": "database backup"
+      "label": "database backup",
+      "fromSide": "right",
+      "toSide": "left"
     }
   ],
   "cards": [

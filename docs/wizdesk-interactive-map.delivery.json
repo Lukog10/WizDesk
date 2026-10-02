@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "a65c0dcc-2968-418d-a578-6a4eb6cd284e",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\candidate.json",
+  "output": "H:\\Projects\\Wiz\\docs\\wizdesk-interactive-map.html",
+  "specification": {
+    "sha256": "838adf5849506985350bc16a9a1ae8ba912d6b0afc4ec3b1712da48431897bda",
+    "bytes": 18156
+  },
+  "artifact": {
+    "sha256": "b9c8c305d58ba8d620d27abcfda9b870057765ddca01d5465e25d8eed65e308f",
+    "bytes": 808748
+  }
+}

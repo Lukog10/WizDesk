@@ -10,66 +10,76 @@ WizDesk is architected around decoupled components communicating through Qt sign
 
 ```mermaid
 graph TD
-    subgraph UI_Shell [PyQt6 Desktop Presentation Layer]
-        APP[WizApplication: wiz/__main__.py]
-        TRAY[TrayIcon: wiz/ui/tray_icon.py]
-        HOTKEY[GlobalHotkeyListener: wiz/utils/hotkey.py]
-        MASCOT[MascotWindow: wiz/ui/mascot_window.py]
-        WORKSPACE[QuickEntryDialog: wiz/ui/popup_dialog.py]
-        SETTINGS[SettingsView: wiz/ui/settings_view.py]
+    USER([User])
+
+    subgraph Triggers [User Triggers & Presentation Shell]
+        HOTKEYS[Global Hotkey Manager<br><i>Ctrl+Shift+W/T/N/M</i>]
+        MASCOT[Mascot Companion Shell<br><i>Left Click, Double Click, Drag</i>]
+        TRAY[System Tray Service<br><i>Menu, Quick Moods, Exit</i>]
     end
 
-    subgraph Companion_Subsystem [Companion Engine]
-        SM[StateMachine: wiz/core/state_machine.py]
-        IDLE[IdleDetector: wiz/core/idle_detector.py]
-        AUDIO[SoundManager: wiz/core/sound.py]
-        WIDGET[MascotWidget: wiz/ui/mascot_widget.py]
+    subgraph Hub [WizDesk Workspace Hub]
+        WORKSPACE[QuickEntryDialog Canvas: 920x680]
+        VIEW_TASKS[1. Tasks & Subtasks View]
+        VIEW_DASH[2. Projects Dashboard & Analytics]
+        VIEW_CAL[3. Calendar & Schedule View]
+        VIEW_TIMELINE[4. Activity Timeline View]
+        VIEW_NOTES[5. Notes Scratchpad View]
     end
 
-    subgraph Tracking_Subsystem [Autonomous Time Engine]
-        TRACKER[WindowTracker: wiz/tracker/window_tracker.py]
-        SANITIZER[Privacy Sanitizer: wiz/utils/sanitizer.py]
-        RULES[Keyword Matcher: wiz/storage/models.py]
+    subgraph Tracking_Pipeline [Autonomous Time Tracking Pipeline]
+        ACTIVE_WIN[Active Desktop Windows]
+        POLLER[Autonomous Window Tracker<br><i>5s Win32 Poller</i>]
+        SANITIZER[Title & App Sanitizer<br><i>Clean Names & Keyword Match</i>]
     end
 
-    subgraph Storage_Security [Local Storage & Cryptography Layer]
-        REPO[StorageRepository: wiz/storage/models.py]
-        DB[Database: wiz/storage/db.py]
-        CRYPTO[CryptoManager: wiz/core/crypto.py]
-        AUTH[AuthVerifier: wiz/utils/auth.py]
+    subgraph Storage_Pipeline [Storage & Security Architecture]
+        REPO[(Data Repository Layer)]
+        GATE[OS Credential Gate<br><i>Windows DPAPI / Keyring</i>]
+        CRYPTO[AES-256-GCM Crypto Manager]
+        SQLITE[(Encrypted SQLite Engine<br><i>wizdesk.db / Memory DB</i>)]
+        BACKUP[Automated Snapshot Engine<br><i>.wbak / .bak Pruning</i>]
     end
 
-    subgraph Integrations_Subsystem [Sync & Backup Layer]
-        OBSIDIAN[ObsidianSync: wiz/sync/obsidian.py]
-        BACKUP[BackupManager: wiz/storage/backup.py]
+    subgraph Sync_Integration [External Integration]
+        OBSIDIAN[Obsidian Markdown Sync]
+        VAULT[(Local Obsidian Vault)]
     end
 
-    APP --> HOTKEY
-    APP --> TRAY
-    APP --> MASCOT
-    APP --> WORKSPACE
-    APP --> SETTINGS
+    USER -->|Global Shortcuts| HOTKEYS
+    USER -->|Direct Clicks & Drag| MASCOT
+    USER -->|Tray Actions| TRAY
+    USER -->|Direct Input / Focus| WORKSPACE
 
-    MASCOT --> SM
-    MASCOT --> WIDGET
-    SM --> IDLE
-    SM --> AUDIO
+    HOTKEYS --> WORKSPACE
+    MASCOT --> WORKSPACE
+    TRAY --> WORKSPACE
 
-    APP --> TRACKER
-    TRACKER --> SANITIZER
-    SANITIZER --> RULES
-    RULES --> REPO
+    WORKSPACE --> VIEW_TASKS
+    WORKSPACE --> VIEW_DASH
+    WORKSPACE --> VIEW_CAL
+    WORKSPACE --> VIEW_TIMELINE
+    WORKSPACE --> VIEW_NOTES
 
-    WORKSPACE --> REPO
-    SETTINGS --> REPO
-    SETTINGS --> CRYPTO
-    SETTINGS --> BACKUP
+    VIEW_TASKS --> REPO
+    VIEW_DASH --> REPO
+    VIEW_CAL --> REPO
+    VIEW_TIMELINE --> REPO
+    VIEW_NOTES --> REPO
 
-    REPO --> DB
-    CRYPTO --> DB
-    AUTH --> CRYPTO
+    ACTIVE_WIN --> POLLER
+    POLLER --> SANITIZER
+    SANITIZER --> VIEW_TIMELINE
+    SANITIZER --> REPO
+
+    REPO --> GATE
+    GATE --> CRYPTO
+    CRYPTO --> SQLITE
+    REPO --> BACKUP
+    BACKUP --> SQLITE
 
     REPO --> OBSIDIAN
+    OBSIDIAN --> VAULT
 ```
 
 ---
@@ -81,14 +91,13 @@ The formal interactive architecture and feature map is generated using the Archi
 * **Interactive Map Document**: [docs/wizdesk-interactive-map.html](file:///h:/Projects/Wiz/docs/wizdesk-interactive-map.html)
 * **Archify Working Build**: [.archify/architecture-wizdesk-map-20261002-123500/wizdesk-interactive-map.html](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-map-20261002-123500/wizdesk-interactive-map.html)
 * **Specification File**: [candidate.json](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-map-20261002-123500/candidate.json)
-* **Visual Check Report**: [wizdesk-interactive-map.visual-check.html](file:///h:/Projects/Wiz/.archify/architecture-wizdesk-map-20261002-123500/wizdesk-interactive-map.visual-check.html)
-* **Verification Status**: All Archify verification gates (`validate`, `deliver`, `check`, `browser-check`, `visual-check`) passed with 0 errors and zero route crossings across light and dark responsive viewports (1440x900 and 2048x1320).
+* **Verification Status**: All Archify verification gates (`validate`, `deliver`, `check`) passed with 0 errors across light and dark responsive viewports (1440x900 and 2048x1320).
 
 ### Key Subsystems & Features Mapped:
-1. **User Interaction & Presentation**: Desktop User triggers WizDesk via global hotkey (`Ctrl+Shift+Space`) through `GlobalHotkeyListener` or directly from the system tray into `WizDesk Workspace Hub` (`QuickEntryDialog`). The `Mascot Companion` tracks mouse movement and summons the `Quick Capture Bar` on click gestures.
+1. **User Interaction & Presentation Shell**: Desktop User triggers WizDesk via global hotkey (`Ctrl+Shift+Space`) through `GlobalHotkeyListener` or directly from the system tray / window focus into `WizDesk Workspace Hub` (`QuickEntryDialog`). The `Mascot Companion` tracks mouse movement and summons the `Quick Capture Bar` on click gestures.
 2. **Productivity Views (5 Core Views)**: `Tasks & To-Dos Hub` (hierarchical tasks, 24 preset color swatches, description, and auto-track keyword rules), `Projects Dashboard` (Tracked Time KPI hero card, donut and project comparison charts), `Activity Timeline` (chronological day sessions and milestones), `Calendar Schedule` (month grid and agenda presets), and `Quick Work Notes` (daily timestamped scratchpad). All 5 views connect directly and independently into `Storage Repository`.
-3. **Autonomous Tracking & Companion Engines**: 5-second background heartbeat loop `Window Tracker`, client-side `Privacy Sanitizer` (filtering PII, banking portals, and passwords), `Mascot State Engine` (focus, celebration, alerts, sleep), and `Audio & Idle Engine` (procedural tones and Win32 inactivity detection).
-4. **Local-First Security & Storage**: In-memory SQLite execution with atomic disk flush sealed by `AES-256 Crypto Manager` (AES-256-GCM authenticated cipher). `OS Credential Gate` (Windows CredUI / Windows Hello) strictly challenges users before viewing or exporting private recovery keys. Automated `Database Backup Engine` and debounced `Obsidian Vault Sync` complete the persistence pipeline.
+3. **Autonomous Tracking & Sanitization Pipeline**: Continuous 5-second background heartbeat loop `Autonomous Time Tracker`, client-side `Privacy Sanitizer` (filtering PII, banking portals, and passwords). Sanitized sessions feed directly into both `Activity Timeline` for real-time visualization and `Storage Repository` for persistent focus attribution.
+4. **Local-First Security & Cryptographic Storage**: Data access flows from `Storage Repository` through `OS Credential Gate` (Windows Hello / CredUI authentication challenge), then through `AES-256 Crypto Manager` (AES-256-GCM authenticated cipher) into `Encrypted SQLite Engine` (`wizdesk.db` executed in-memory with atomic disk writes). Automated `Database Backup Engine` and debounced `Obsidian Vault Sync` complete the persistence pipeline.
 
 ---
 
