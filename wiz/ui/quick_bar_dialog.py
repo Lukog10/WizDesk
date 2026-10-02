@@ -158,7 +158,7 @@ class QuickBarPopup(QDialog):
             if dlg.exec() == QDialog.DialogCode.Accepted:
                 new_sec = dlg.section_name
                 if new_sec:
-                    self.repo.create_or_update_project(new_sec, [new_sec.lower()])
+                    self.repo.create_or_update_project(new_sec, [new_sec.lower()], color=dlg.selected_color)
                     self._populate_projects()
                     self.project_combo.setCurrentText(new_sec)
                     self._last_selected_project = new_sec

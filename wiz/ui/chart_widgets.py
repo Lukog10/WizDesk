@@ -97,21 +97,21 @@ class MicroSparklineCanvas(QWidget):
 
         grad = QLinearGradient(0, 0, 0, h)
         if self.is_dark:
-            top_alpha = 45 if self.is_hovered else 25
+            top_alpha = 65 if self.is_hovered else 45
             grad.setColorAt(0.0, QColor(255, 255, 255, top_alpha))
-            grad.setColorAt(1.0, QColor(255, 255, 255, 2))
+            grad.setColorAt(1.0, QColor(255, 255, 255, 4))
         else:
-            top_alpha = 30 if self.is_hovered else 15
-            grad.setColorAt(0.0, QColor(113, 113, 122, top_alpha))
-            grad.setColorAt(1.0, QColor(113, 113, 122, 2))
+            top_alpha = 50 if self.is_hovered else 30
+            grad.setColorAt(0.0, QColor(255, 107, 61, top_alpha))
+            grad.setColorAt(1.0, QColor(255, 107, 61, 2))
         painter.fillPath(area_path, grad)
 
         # Line stroke
         stroke_width = 2.0 if self.is_hovered else 1.6
         if self.is_dark:
-            stroke_color = QColor("#FFFFFF" if self.is_hovered else "#D4D4D8")
+            stroke_color = QColor("#FFFFFF" if self.is_hovered else "#F4F4F5")
         else:
-            stroke_color = QColor("#52525B" if self.is_hovered else "#71717A")
+            stroke_color = QColor("#E64A19" if self.is_hovered else "#FF6B3D")
         pen = QPen(stroke_color, stroke_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -121,16 +121,16 @@ class MicroSparklineCanvas(QWidget):
         if points:
             last_pt = points[-1]
             if self.is_hovered:
-                halo_color = QColor(255, 255, 255, 60) if self.is_dark else QColor(113, 113, 122, 45)
+                halo_color = QColor(255, 255, 255, 80) if self.is_dark else QColor(255, 107, 61, 75)
                 painter.setBrush(halo_color)
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.drawEllipse(last_pt, 4.5, 4.5)
-                painter.setBrush(QColor("#FFFFFF" if self.is_dark else "#18181B"))
-                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#059669"), 1.4))
+                painter.drawEllipse(last_pt, 5.0, 5.0)
+                painter.setBrush(QColor("#FFFFFF"))
+                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#FF5722"), 1.6))
                 painter.drawEllipse(last_pt, 2.5, 2.5)
             else:
-                painter.setBrush(QColor("#FFFFFF" if self.is_dark else "#18181B"))
-                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#059669"), 1.2))
+                painter.setBrush(QColor("#FFFFFF"))
+                painter.setPen(QPen(QColor("#10B981" if self.is_dark else "#FF5722"), 1.4))
                 painter.drawEllipse(last_pt, 2.0, 2.0)
 
 
@@ -306,63 +306,99 @@ class KpiStatCard(QFrame):
             self.sparkline.set_theme(self.is_dark)
 
         if self.is_dark:
-            bg = "#242427"
-            border = "#333338"
-            hover_bg = "#2A2A2F"
-            hover_border = "#4A4A54"
-            text_color = "#F4F4F6"
-            sub_color = "#A1A1AA"
-            badge_bg = (
-                "rgba(16, 185, 129, 0.15)"
-                if "+" in self.change_text
-                else ("rgba(244, 63, 94, 0.15)" if "-" in self.change_text else "#2A2A2E")
-            )
-            badge_color = (
-                "#10B981"
-                if "+" in self.change_text
-                else ("#F43F5E" if "-" in self.change_text else "#A1A1AA")
-            )
-            badge_border = (
-                "rgba(16, 185, 129, 0.25)"
-                if "+" in self.change_text
-                else ("rgba(244, 63, 94, 0.25)" if "-" in self.change_text else "#3F3F46")
-            )
-            prog_bg = "#333338"
-            prog_chunk = "#10B981"
-            prog_chunk_hover = "#34D399"
-            card_border = f"1px solid {border}"
-            icon_bg = "#1F1F22"
-            icon_border = "#333338"
-            icon_color = "#A1A1AA"
+            if self.is_hero:
+                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #C83B12, stop:0.55 #8E2506, stop:1 #27140E)"
+                border = "#FF6B3D"
+                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #E04818, stop:0.55 #A72E09, stop:1 #321810)"
+                hover_border = "#FF8E6B"
+                text_color = "#FFFFFF"
+                sub_color = "rgba(255, 255, 255, 0.88)"
+                badge_bg = "rgba(255, 255, 255, 0.22)"
+                badge_color = "#FFFFFF"
+                badge_border = "rgba(255, 255, 255, 0.35)"
+                prog_bg = "rgba(255, 255, 255, 0.2)"
+                prog_chunk = "#FFFFFF"
+                prog_chunk_hover = "#FFFFFF"
+                card_border = f"1px solid {border}"
+                icon_bg = "rgba(255, 255, 255, 0.15)"
+                icon_border = "rgba(255, 255, 255, 0.25)"
+                icon_color = "#FFFFFF"
+            else:
+                bg = "#242427"
+                border = "#333338"
+                hover_bg = "#2A2A2F"
+                hover_border = "#4A4A54"
+                text_color = "#F4F4F6"
+                sub_color = "#A1A1AA"
+                badge_bg = (
+                    "rgba(16, 185, 129, 0.15)"
+                    if "+" in self.change_text
+                    else ("rgba(244, 63, 94, 0.15)" if "-" in self.change_text else "#2A2A2E")
+                )
+                badge_color = (
+                    "#10B981"
+                    if "+" in self.change_text
+                    else ("#F43F5E" if "-" in self.change_text else "#A1A1AA")
+                )
+                badge_border = (
+                    "rgba(16, 185, 129, 0.25)"
+                    if "+" in self.change_text
+                    else ("rgba(244, 63, 94, 0.25)" if "-" in self.change_text else "#3F3F46")
+                )
+                prog_bg = "#333338"
+                prog_chunk = "#10B981"
+                prog_chunk_hover = "#34D399"
+                card_border = f"1px solid {border}"
+                icon_bg = "#1F1F22"
+                icon_border = "#333338"
+                icon_color = "#A1A1AA"
         else:
-            bg = "#FFFFFF"
-            border = "#E4E4E7"
-            hover_bg = "#F4F4F6"
-            hover_border = "#D4D4D8"
-            text_color = "#18181B"
-            sub_color = "#71717A"
-            badge_bg = (
-                "#ECFDF5"
-                if "+" in self.change_text
-                else ("#FFF1F2" if "-" in self.change_text else "#F4F4F6")
-            )
-            badge_color = (
-                "#059669"
-                if "+" in self.change_text
-                else ("#E11D48" if "-" in self.change_text else "#71717A")
-            )
-            badge_border = (
-                "#A7F3D0"
-                if "+" in self.change_text
-                else ("#FECDD3" if "-" in self.change_text else "#E4E4E7")
-            )
-            prog_bg = "#EAEAEB"
-            prog_chunk = "#059669"
-            prog_chunk_hover = "#10B981"
-            card_border = f"1px solid {border}"
-            icon_bg = "#F4F4F6"
-            icon_border = "#E4E4E7"
-            icon_color = "#71717A"
+            if self.is_hero:
+                bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #FFF1EC, stop:0.6 #FFE3D8, stop:1 #FFF8F5)"
+                border = "#FFCCBC"
+                hover_bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #FFEBE3, stop:0.6 #FFDACD, stop:1 #FFF3EE)"
+                hover_border = "#FF6B3D"
+                text_color = "#18181B"
+                sub_color = "#D84315"
+                badge_bg = "#ECFDF5"
+                badge_color = "#059669"
+                badge_border = "#A7F3D0"
+                prog_bg = "#E4E4E7"
+                prog_chunk = "#059669"
+                prog_chunk_hover = "#10B981"
+                card_border = f"1px solid {border}"
+                icon_bg = "#FFDCCF"
+                icon_border = "#FFBCAA"
+                icon_color = "#E64A19"
+            else:
+                bg = "#FFFFFF"
+                border = "#E4E4E7"
+                hover_bg = "#F4F4F6"
+                hover_border = "#D4D4D8"
+                text_color = "#18181B"
+                sub_color = "#71717A"
+                badge_bg = (
+                    "#ECFDF5"
+                    if "+" in self.change_text
+                    else ("#FFF1F2" if "-" in self.change_text else "#F4F4F6")
+                )
+                badge_color = (
+                    "#059669"
+                    if "+" in self.change_text
+                    else ("#E11D48" if "-" in self.change_text else "#71717A")
+                )
+                badge_border = (
+                    "#A7F3D0"
+                    if "+" in self.change_text
+                    else ("#FECDD3" if "-" in self.change_text else "#E4E4E7")
+                )
+                prog_bg = "#EAEAEB"
+                prog_chunk = "#059669"
+                prog_chunk_hover = "#10B981"
+                card_border = f"1px solid {border}"
+                icon_bg = "#F4F4F6"
+                icon_border = "#E4E4E7"
+                icon_color = "#71717A"
 
         card_name = "KpiHeroCard" if self.is_hero else "KpiStatCard"
 

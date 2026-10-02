@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
+    QGridLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -40,6 +41,7 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
     QCalendarWidget,
     QSizePolicy,
+    QColorDialog,
 )
 
 from wiz.core.config import config
@@ -49,7 +51,7 @@ from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, Not
 from wiz.ui.icons import get_app_icon, get_status_icon
 from wiz.sync.obsidian import sync_today_logs
 from wiz.ui.timeline_view import TimelineView
-from wiz.ui.project_dashboard_view import ProjectDashboardView
+from wiz.ui.project_dashboard_view import ProjectDashboardView, PRESET_COLORS
 from wiz.ui.sidebar_widget import SideNavBar
 from wiz.ui.settings_view import SettingsView
 from wiz.ui.help_faq_view import HelpFaqView
@@ -380,25 +382,43 @@ class CalendarPopupDialog(QDialog):
 
 class CreateSectionDialog(QDialog):
     """
-    Custom modal dialog for creating a new Section in WizDesk.
+    Custom modal dialog for creating a new Section / Project in WizDesk.
     Replaces default OS input dialogs with WizDesk's clean minimalist rounded card design.
+    Supports preset color swatches and custom color picker.
     Supports dynamic Light & Dark themes.
     """
+
+    last_selected_color: str = "#FF6B3D"
 
     def __init__(self, parent: Optional[QWidget] = None, is_dark: Optional[bool] = None):
         super().__init__(parent)
         self.setWindowTitle("Create Section - WizDesk")
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
-        self.setFixedSize(380, 200)
+        self.setFixedSize(390, 275)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Dialog)
         self.setModal(True)
 
         self.is_dark = is_dark if is_dark is not None else (config.theme == "dark")
 
+        # Pick a smart default color (first unused palette color or brand orange)
+        used: set[str] = set()
+        try:
+            used = {p.color.upper() for p in StorageRepository().get_all_projects() if p.color}
+        except Exception:
+            pass
+        chosen = None
+        for c in PRESET_COLORS:
+            if c.upper() not in used:
+                chosen = c
+                break
+        self.selected_color = chosen or PRESET_COLORS[0]
+        CreateSectionDialog.last_selected_color = self.selected_color
+
         card_bg = "#18181B" if self.is_dark else "#FFFFFF"
         card_border = "#27272A" if self.is_dark else "#E5E5EA"
         title_color = "#F4F4F5" if self.is_dark else "#18181B"
+        label_color = "#A1A1AA" if self.is_dark else "#71717A"
         close_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
         input_bg = "#27272A" if self.is_dark else "#F4F4F6"
         input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
@@ -433,8 +453,8 @@ class CreateSectionDialog(QDialog):
         self.card.setGraphicsEffect(shadow)
 
         self.card_layout = QVBoxLayout(self.card)
-        self.card_layout.setContentsMargins(20, 18, 20, 18)
-        self.card_layout.setSpacing(12)
+        self.card_layout.setContentsMargins(20, 16, 20, 16)
+        self.card_layout.setSpacing(10)
 
         # Header Row
         hdr_layout = QHBoxLayout()
@@ -481,7 +501,7 @@ class CreateSectionDialog(QDialog):
                 color: {input_text};
                 border: 1px solid {input_border};
                 border-radius: 8px;
-                padding: 9px 12px;
+                padding: 8px 12px;
                 font-family: {FONT_SANS};
                 font-size: 13px;
             }}
@@ -492,6 +512,61 @@ class CreateSectionDialog(QDialog):
         """)
         self.input_field.returnPressed.connect(self._on_submit)
         self.card_layout.addWidget(self.input_field)
+
+        # Color Selection Header
+        color_hdr = QHBoxLayout()
+        color_hdr.setContentsMargins(0, 2, 0, 0)
+        color_lbl = QLabel("Section Color:")
+        color_lbl.setStyleSheet(f"""
+            QLabel {{
+                color: {label_color};
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+        """)
+        color_hdr.addWidget(color_lbl)
+        color_hdr.addStretch()
+
+        self.btn_custom_color = QPushButton("+ Custom…")
+        self.btn_custom_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_custom_color.setFont(get_font(9, QFont.Weight.Medium))
+        self.btn_custom_color.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {"#A1A1AA" if self.is_dark else "#71717A"};
+                border: none;
+                padding: 1px 4px;
+            }}
+            QPushButton:hover {{
+                color: {"#FFFFFF" if self.is_dark else "#18181B"};
+            }}
+        """)
+        self.btn_custom_color.clicked.connect(self._on_pick_custom_color)
+        color_hdr.addWidget(self.btn_custom_color)
+        self.card_layout.addLayout(color_hdr)
+
+        # Preset Color Swatches (2 rows of 8)
+        self.swatch_presets = PRESET_COLORS[:16]
+        swatches_layout = QGridLayout()
+        swatches_layout.setSpacing(6)
+        swatches_layout.setContentsMargins(0, 0, 0, 0)
+        self.swatch_buttons: List[QPushButton] = []
+        for idx, col in enumerate(self.swatch_presets):
+            r = idx // 8
+            c = idx % 8
+            s_btn = QPushButton()
+            s_btn.setFixedSize(22, 22)
+            s_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            is_active = (col.lower() == self.selected_color.lower())
+            active_border = "2.5px solid #FFFFFF" if self.is_dark else "2.5px solid #18181B"
+            normal_border = "1px solid rgba(255, 255, 255, 0.15)" if self.is_dark else "1px solid rgba(0, 0, 0, 0.12)"
+            border = active_border if is_active else normal_border
+            s_btn.setStyleSheet(f"background-color: {col}; border-radius: 11px; border: {border};")
+            s_btn.clicked.connect(lambda checked, col_val=col: self._on_color_selected(col_val))
+            swatches_layout.addWidget(s_btn, r, c)
+            self.swatch_buttons.append(s_btn)
+        self.card_layout.addLayout(swatches_layout)
 
         # Buttons Row
         btn_layout = QHBoxLayout()
@@ -506,7 +581,7 @@ class CreateSectionDialog(QDialog):
                 color: {cancel_text};
                 border: none;
                 border-radius: 8px;
-                padding: 8px 16px;
+                padding: 7px 16px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
                 font-weight: 500;
@@ -527,7 +602,7 @@ class CreateSectionDialog(QDialog):
                 color: {submit_text};
                 border: none;
                 border-radius: 8px;
-                padding: 8px 18px;
+                padding: 7px 18px;
                 font-family: {FONT_SANS};
                 font-size: 12px;
                 font-weight: 600;
@@ -542,8 +617,34 @@ class CreateSectionDialog(QDialog):
         self.card_layout.addLayout(btn_layout)
         self.outer_layout.addWidget(self.card)
 
+    def _on_color_selected(self, color_hex: str) -> None:
+        self.selected_color = color_hex
+        CreateSectionDialog.last_selected_color = color_hex
+        found = False
+        active_border = "2.5px solid #FFFFFF" if self.is_dark else "2.5px solid #18181B"
+        normal_border = "1px solid rgba(255, 255, 255, 0.15)" if self.is_dark else "1px solid rgba(0, 0, 0, 0.12)"
+        for idx, col in enumerate(self.swatch_presets):
+            btn = self.swatch_buttons[idx]
+            is_active = (col.lower() == color_hex.lower())
+            if is_active:
+                found = True
+            b = active_border if is_active else normal_border
+            btn.setStyleSheet(f"background-color: {col}; border-radius: 11px; border: {b};")
+
+        if not found:
+            self.btn_custom_color.setText(f"Custom: {color_hex}")
+        else:
+            self.btn_custom_color.setText("+ Custom…")
+
+    def _on_pick_custom_color(self) -> None:
+        initial = QColor(self.selected_color) if QColor.isValidColor(self.selected_color) else QColor("#FF6B3D")
+        color = QColorDialog.getColor(initial, self, "Select Section Color")
+        if color.isValid():
+            self._on_color_selected(color.name().upper())
+
     def _on_submit(self) -> None:
         if self.section_name:
+            CreateSectionDialog.last_selected_color = self.selected_color
             self.accept()
 
     @property
@@ -564,8 +665,26 @@ class CreateSectionDialog(QDialog):
             )
         result = dlg.exec()
         if result == QDialog.DialogCode.Accepted and dlg.section_name:
+            cls.last_selected_color = dlg.selected_color
             return dlg.section_name, True
         return "", False
+
+    @classmethod
+    def get_section_data(cls, parent: Optional[QWidget] = None) -> tuple[str, str, bool]:
+        """Show custom modal dialog and return (section_name, color, accepted)."""
+        dlg = cls(parent)
+        dlg.input_field.setFocus()
+        if parent:
+            p_geo = parent.geometry()
+            dlg.move(
+                p_geo.center().x() - (dlg.width() // 2),
+                p_geo.center().y() - (dlg.height() // 2),
+            )
+        result = dlg.exec()
+        if result == QDialog.DialogCode.Accepted and dlg.section_name:
+            cls.last_selected_color = dlg.selected_color
+            return dlg.section_name, dlg.selected_color, True
+        return "", "", False
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -1731,7 +1850,9 @@ class TaskRowWidget(QWidget):
         elif action == action_new_sec:
             name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
-                self.project_changed.emit(self.task_id, name.strip())
+                clean_name = name.strip()
+                StorageRepository().create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                self.project_changed.emit(self.task_id, clean_name)
         elif action == action_delete:
             self.action_requested.emit("delete", self.task_id)
 
@@ -1886,7 +2007,9 @@ class NoteRowWidget(QWidget):
         if action == action_new_sec:
             name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
-                self.project_changed.emit(self.note_id, name.strip())
+                clean_name = name.strip()
+                StorageRepository().create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                self.project_changed.emit(self.note_id, clean_name)
         elif action == action_delete:
             self.delete_requested.emit(self.note_id)
 
@@ -1908,7 +2031,9 @@ class NoteRowWidget(QWidget):
         if action == action_new_sec:
             name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
-                self.project_changed.emit(self.note_id, name.strip())
+                clean_name = name.strip()
+                StorageRepository().create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
+                self.project_changed.emit(self.note_id, clean_name)
 
     def _update_text_style(self, is_done: bool) -> None:
         done_color = "#71717A" if self.is_dark else "#A1A1AA"
@@ -2825,7 +2950,7 @@ class QuickEntryDialog(QDialog):
             name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
                 clean_name = name.strip()
-                self.repo.create_or_update_project(clean_name, [clean_name.lower()])
+                self.repo.create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
                 self._populate_projects()
                 self.project_combo.setCurrentText(clean_name)
             else:
@@ -2839,7 +2964,7 @@ class QuickEntryDialog(QDialog):
             name, ok = CreateSectionDialog.get_section_name(self)
             if ok and name.strip():
                 clean_name = name.strip()
-                self.repo.create_or_update_project(clean_name, [clean_name.lower()])
+                self.repo.create_or_update_project(clean_name, [clean_name.lower()], color=CreateSectionDialog.last_selected_color)
                 self._populate_projects()
                 self.note_project_combo.setCurrentText(clean_name)
             else:
