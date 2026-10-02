@@ -1,7 +1,7 @@
 <div align="center">
 
 <a href="https://github.com/Lukog10/WizDesk">
-  <img src="assets/WizDesk%20Logo%20v1.jpeg" width="160" height="160" alt="WizDesk Logo" style="border-radius: 28px; box-shadow: 0 12px 32px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);" />
+  <img src="assets/WizDesk%20Logo%20v1.jpeg" width="280" height="280" alt="WizDesk Logo" style="border-radius: 28px; box-shadow: 0 12px 32px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);" />
 </a>
 
 
