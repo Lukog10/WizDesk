@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\candidate.json",
-    "sha256": "02cbc2e523b6122229c3992c39f3c2d9dbbc7d648a7cc6c9a1812ecf7289e777",
-    "bytes": 12358
+    "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
+    "bytes": 16089
   },
   "artifact": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
-    "sha256": "fadec983e64ce0bc6f297a16fbe151448ae871f54066f2c508ef53a535aaae9e",
-    "bytes": 797523
+    "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
+    "bytes": 801904
   },
   "gates": {
     "validate": "pass",
@@ -43,33 +43,96 @@
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 3033,
+  "durationMs": 3841,
   "visualReviewRecommendation": {
     "action": "inspect-route-readability",
     "signals": {
-      "routesOverSuggestedBends": 1
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 2
     },
     "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
     "affectedRoutes": {
-      "crossings": [],
+      "crossings": [
+        {
+          "left": {
+            "id": "shell-to-tasks",
+            "from": "workspace-shell",
+            "to": "tasks-hub",
+            "label": "tasks view",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "shell-to-dashboard",
+            "from": "workspace-shell",
+            "to": "projects-dashboard",
+            "label": "analytics view",
+            "collectionIndex": 4,
+            "artifactIndex": 5
+          },
+          "point": [
+            557,
+            172
+          ],
+          "sharedNode": "workspace-shell"
+        },
+        {
+          "left": {
+            "id": "tasks-to-repo",
+            "from": "tasks-hub",
+            "to": "storage-repo",
+            "label": "tasks &amp; rules",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "right": {
+            "id": "dashboard-to-repo",
+            "from": "projects-dashboard",
+            "to": "storage-repo",
+            "label": "metrics",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "point": [
+            350,
+            402
+          ],
+          "sharedNode": "storage-repo"
+        }
+      ],
       "detours": [
         {
           "relationship": {
             "id": "tasks-to-repo",
             "from": "tasks-hub",
             "to": "storage-repo",
-            "label": "tasks &amp; project rules",
-            "collectionIndex": 11,
-            "artifactIndex": 12
+            "label": "tasks &amp; rules",
+            "collectionIndex": 8,
+            "artifactIndex": 9
           },
           "bends": 3,
-          "stretch": 1.069
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "dashboard-to-repo",
+            "from": "projects-dashboard",
+            "to": "storage-repo",
+            "label": "metrics",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "bends": 4,
+          "stretch": 1
         }
       ],
       "truncated": false
     },
     "hints": [
-      "tasks-hub → storage-repo needs 3 bends: move node tasks-hub or storage-repo so they share a row or column with matching centers, or sit diagonally with a clear corner."
+      "workspace-shell → tasks-hub and workspace-shell → projects-dashboard cross next to workspace-shell: move node tasks-hub or projects-dashboard so the two reach workspace-shell from different sides (for example one level with it, one directly above or below it).",
+      "tasks-hub → storage-repo and projects-dashboard → storage-repo cross next to storage-repo: move node tasks-hub or projects-dashboard so the two reach storage-repo from different sides (for example one level with it, one directly above or below it).",
+      "tasks-hub → storage-repo needs 3 bends: move node tasks-hub or storage-repo so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "projects-dashboard → storage-repo needs 4 bends: move node projects-dashboard or storage-repo so they share a row or column with matching centers, or sit diagonally with a clear corner."
     ],
     "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
   }

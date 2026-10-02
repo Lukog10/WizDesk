@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "architecture",
   "quality": "showcase",
-  "startedAt": "2026-10-02T07:08:06.920Z",
+  "startedAt": "2026-10-02T07:41:48.959Z",
   "specification": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\candidate.json",
-    "sha256": "02cbc2e523b6122229c3992c39f3c2d9dbbc7d648a7cc6c9a1812ecf7289e777",
-    "bytes": 12358
+    "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
+    "bytes": 16089
   },
   "artifact": {
     "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
-    "sha256": "fadec983e64ce0bc6f297a16fbe151448ae871f54066f2c508ef53a535aaae9e",
-    "bytes": 797523
+    "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
+    "bytes": 801904
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "02cbc2e523b6122229c3992c39f3c2d9dbbc7d648a7cc6c9a1812ecf7289e777",
-          "bytes": 12358
+          "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
+          "bytes": 16089
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 923,
+      "durationMs": 1238,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "H:\\Projects\\Wiz\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "0fbff045-3395-40df-a1f1-a8645d23d1a2",
+        "receiptId": "e31c6550-72a4-4876-a92f-efb7b87ba8d9",
         "ok": true,
         "command": "deliver",
         "type": "architecture",
         "input": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\candidate.json",
         "output": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
         "specification": {
-          "sha256": "02cbc2e523b6122229c3992c39f3c2d9dbbc7d648a7cc6c9a1812ecf7289e777",
-          "bytes": 12358
+          "sha256": "aad3001175367197dac73fa0871c1d89b081789ec707f0d39726b0afb262ee25",
+          "bytes": 16089
         },
         "artifact": {
-          "sha256": "fadec983e64ce0bc6f297a16fbe151448ae871f54066f2c508ef53a535aaae9e",
-          "bytes": 797523
+          "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
+          "bytes": 801904
         },
         "validation": {
           "checksPassed": 9,
@@ -97,8 +97,8 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/Lukog10/WizDesk",
-          "revision": "244a7c1db2c9beca8d7b3828b505a390ed88905d",
-          "references": 18,
+          "revision": "c2e6a469270d41b11a2d764b877251005a02c34f",
+          "references": 19,
           "linkMode": "local-only"
         },
         "update": {
@@ -117,7 +117,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 173,
+      "durationMs": 256,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "H:\\Projects\\Wiz\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -129,8 +129,8 @@
         "ok": true,
         "file": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
         "artifact": {
-          "sha256": "fadec983e64ce0bc6f297a16fbe151448ae871f54066f2c508ef53a535aaae9e",
-          "bytes": 797523
+          "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
+          "bytes": 801904
         },
         "checks": [
           {
@@ -191,22 +191,22 @@
           },
           "metrics": {
             "properCrossings": 0,
-            "resolvedCrossovers": 0,
+            "resolvedCrossovers": 2,
             "ambiguousCorridors": 0,
             "arrowheadCollisions": 0,
             "containerBorderRuns": 0,
             "labelRouteClearanceIssues": 0,
             "labelCanvasOverflowIssues": 0,
-            "minLabelRouteClearance": 20,
+            "minLabelRouteClearance": 12,
             "desktopReadabilityIssues": 0,
             "viewportHeightIssues": 0,
-            "minProjectedNodeTextPx": 6.2,
-            "maxBends": 3,
-            "routesOverSuggestedBends": 1,
-            "maxStretch": 1.139,
+            "minProjectedNodeTextPx": 6.0438667749796915,
+            "maxBends": 4,
+            "routesOverSuggestedBends": 2,
+            "maxStretch": 1.133,
             "routesOverSuggestedStretch": 0,
             "minSegmentPx": 24,
-            "minInteriorSegmentPx": 173,
+            "minInteriorSegmentPx": 62.4,
             "shortSegmentCount": 0,
             "shortEndpointSegmentCount": 0,
             "shortInteriorSegmentCount": 0,
@@ -219,29 +219,88 @@
             "microSegmentPx": 8
           },
           "routeReview": {
-            "crossings": [],
+            "crossings": [
+              {
+                "left": {
+                  "id": "shell-to-tasks",
+                  "from": "workspace-shell",
+                  "to": "tasks-hub",
+                  "label": "tasks view",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "shell-to-dashboard",
+                  "from": "workspace-shell",
+                  "to": "projects-dashboard",
+                  "label": "analytics view",
+                  "collectionIndex": 4,
+                  "artifactIndex": 5
+                },
+                "point": [
+                  557,
+                  172
+                ],
+                "sharedNode": "workspace-shell"
+              },
+              {
+                "left": {
+                  "id": "tasks-to-repo",
+                  "from": "tasks-hub",
+                  "to": "storage-repo",
+                  "label": "tasks &amp; rules",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "dashboard-to-repo",
+                  "from": "projects-dashboard",
+                  "to": "storage-repo",
+                  "label": "metrics",
+                  "collectionIndex": 9,
+                  "artifactIndex": 10
+                },
+                "point": [
+                  350,
+                  402
+                ],
+                "sharedNode": "storage-repo"
+              }
+            ],
             "detours": [
               {
                 "relationship": {
                   "id": "tasks-to-repo",
                   "from": "tasks-hub",
                   "to": "storage-repo",
-                  "label": "tasks &amp; project rules",
-                  "collectionIndex": 11,
-                  "artifactIndex": 12
+                  "label": "tasks &amp; rules",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
                 },
                 "bends": 3,
-                "stretch": 1.069
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "dashboard-to-repo",
+                  "from": "projects-dashboard",
+                  "to": "storage-repo",
+                  "label": "metrics",
+                  "collectionIndex": 9,
+                  "artifactIndex": 10
+                },
+                "bends": 4,
+                "stretch": 1
               }
             ]
           },
           "leadingSpace": {
             "measured": true,
-            "emptyTopPx": 60,
-            "emptyTopRatio": 0.062,
-            "occupiedTop": 60,
+            "emptyTopPx": 50,
+            "emptyTopRatio": 0.052,
+            "occupiedTop": 50,
             "viewBoxTop": 0,
-            "canvasHeight": 966,
+            "canvasHeight": 956,
             "typicalNodeHeight": 68,
             "reviewSuggested": false
           },
@@ -262,19 +321,19 @@
               "to": "workspace-shell"
             },
             "minimumSourceTextPx": 8,
-            "minimumProjectedTextPx": 6.2,
-            "semanticTextCount": 58
+            "minimumProjectedTextPx": 6.0438667749796915,
+            "semanticTextCount": 63
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "0fbff045-3395-40df-a1f1-a8645d23d1a2"
+        "deliveryReceiptId": "e31c6550-72a4-4876-a92f-efb7b87ba8d9"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1514,
+      "durationMs": 1817,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "H:\\Projects\\Wiz\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -292,11 +351,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "0fbff045-3395-40df-a1f1-a8645d23d1a2",
+        "deliveryReceiptId": "e31c6550-72a4-4876-a92f-efb7b87ba8d9",
         "artifact": {
           "path": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.html",
-          "sha256": "fadec983e64ce0bc6f297a16fbe151448ae871f54066f2c508ef53a535aaae9e",
-          "bytes": 797523
+          "sha256": "5a7a98ee92dd54f20f89fb267a258f2211b1e89cfcddd880b968c4174d6ace81",
+          "bytes": 801904
         },
         "state": {
           "detail": "read",
@@ -318,7 +377,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 974,
+              "scrollHeight": 1053,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -327,20 +386,20 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1030,
-              "diagramWidth": 1000,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 78,
                 "diagramChromePx": 78,
-                "svgPx": 805,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.666666666666667,
-              "minimumProjectedNonEdgeTextPx": 7.5,
-              "minimumProjectedEdgeTextPx": 6.666666666666667,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -370,7 +429,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1040,
+              "scrollHeight": 1119,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -379,20 +438,20 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1030,
-              "diagramWidth": 1000,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 805,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.666666666666667,
-              "minimumProjectedNonEdgeTextPx": 7.5,
-              "minimumProjectedEdgeTextPx": 6.666666666666667,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -422,29 +481,29 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1080,
+              "scrollHeight": 1119,
               "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
               "readerLayout": "adaptive",
-              "readerOverflow": null,
+              "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1066,
-              "diagramWidth": 1036,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 834,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.906666666666666,
-              "minimumProjectedNonEdgeTextPx": 7.77,
-              "minimumProjectedEdgeTextPx": 6.906666666666666,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -483,19 +542,19 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1362,
-              "diagramWidth": 1312,
+              "readerWidth": 1410,
+              "diagramWidth": 1360,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 94,
                 "diagramChromePx": 94,
                 "svgPx": 1056,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
+              "viewBoxWidth": 1231,
               "minimumProjectedNodeTextPx": 8,
-              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedNonEdgeTextPx": 8.1,
               "minimumProjectedEdgeTextPx": 8,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
@@ -579,7 +638,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 974,
+              "scrollHeight": 1053,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -588,20 +647,20 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1030,
-              "diagramWidth": 1000,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 78,
                 "diagramChromePx": 78,
-                "svgPx": 805,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.666666666666667,
-              "minimumProjectedNonEdgeTextPx": 7.5,
-              "minimumProjectedEdgeTextPx": 6.666666666666667,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -631,7 +690,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1040,
+              "scrollHeight": 1119,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -640,20 +699,20 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1030,
-              "diagramWidth": 1000,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 805,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.666666666666667,
-              "minimumProjectedNonEdgeTextPx": 7.5,
-              "minimumProjectedEdgeTextPx": 6.666666666666667,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -683,29 +742,29 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1080,
+              "scrollHeight": 1119,
               "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
               "readerLayout": "adaptive",
-              "readerOverflow": null,
+              "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1066,
-              "diagramWidth": 1036,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 834,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.906666666666666,
-              "minimumProjectedNonEdgeTextPx": 7.77,
-              "minimumProjectedEdgeTextPx": 6.906666666666666,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -744,19 +803,19 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1362,
-              "diagramWidth": 1312,
+              "readerWidth": 1410,
+              "diagramWidth": 1360,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 94,
                 "diagramChromePx": 94,
                 "svgPx": 1056,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
+              "viewBoxWidth": 1231,
               "minimumProjectedNodeTextPx": 8,
-              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedNonEdgeTextPx": 8.1,
               "minimumProjectedEdgeTextPx": 8,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
@@ -792,7 +851,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 974,
+              "scrollHeight": 1053,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -801,20 +860,20 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1030,
-              "diagramWidth": 1000,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 78,
                 "diagramChromePx": 78,
-                "svgPx": 805,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.666666666666667,
-              "minimumProjectedNonEdgeTextPx": 7.5,
-              "minimumProjectedEdgeTextPx": 6.666666666666667,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -844,7 +903,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1040,
+              "scrollHeight": 1119,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -853,20 +912,20 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1030,
-              "diagramWidth": 1000,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 805,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.666666666666667,
-              "minimumProjectedNonEdgeTextPx": 7.5,
-              "minimumProjectedEdgeTextPx": 6.666666666666667,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -896,29 +955,29 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1080,
+              "scrollHeight": 1119,
               "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
+              "overflowY": true,
+              "verticalScrollAccepted": true,
+              "overflowDisposition": "readable-vertical-scroll",
               "readerLayout": "adaptive",
-              "readerOverflow": null,
+              "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1066,
-              "diagramWidth": 1036,
+              "readerWidth": 1170,
+              "diagramWidth": 1140,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 834,
+                "svgPx": 885,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
-              "minimumProjectedNodeTextPx": 6.906666666666666,
-              "minimumProjectedNonEdgeTextPx": 7.77,
-              "minimumProjectedEdgeTextPx": 6.906666666666666,
+              "viewBoxWidth": 1231,
+              "minimumProjectedNodeTextPx": 7.408610885458977,
+              "minimumProjectedNonEdgeTextPx": 7.501218521527214,
+              "minimumProjectedEdgeTextPx": 7.408610885458977,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
               "minimumProjectedNodeTextOwner": {
@@ -957,19 +1016,19 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1362,
-              "diagramWidth": 1312,
+              "readerWidth": 1410,
+              "diagramWidth": 1360,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 94,
                 "diagramChromePx": 94,
                 "svgPx": 1056,
                 "cardsPx": 0,
-                "viewBoxHeight": 966
+                "viewBoxHeight": 956
               },
-              "viewBoxWidth": 1200,
+              "viewBoxWidth": 1231,
               "minimumProjectedNodeTextPx": 8,
-              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedNonEdgeTextPx": 8.1,
               "minimumProjectedEdgeTextPx": 8,
               "minimumProjectedNodeText": "hotkey summon",
               "minimumProjectedNodeTextDetail": "edge",
@@ -1014,8 +1073,8 @@
     "browserCheckReceipt": "H:\\Projects\\Wiz\\.archify\\architecture-wizdesk-map-20261002-123500\\wizdesk-interactive-map.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-02T07:08:09.953Z",
-  "durationMs": 3033,
+  "finishedAt": "2026-10-02T07:41:52.800Z",
+  "durationMs": 3841,
   "update": {
     "status": "current",
     "installedVersion": "3.0.1",

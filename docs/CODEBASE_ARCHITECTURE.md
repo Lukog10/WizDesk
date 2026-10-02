@@ -86,7 +86,7 @@ The formal interactive architecture and feature map is generated using the Archi
 
 ### Key Subsystems & Features Mapped:
 1. **Presentation & Quick Capture**: Global Hotkey Listener (`Ctrl+Shift+Space`), `QuickEntryDialog` Workspace Shell, Mascot Companion floating window, and `QuickBarPopup` rapid task/note bars.
-2. **Productivity Views**: Tasks & To-Dos Hub (with 24 preset color swatches and keyword rules), Projects Dashboard (Tracked Time KPI hero card, donut and project comparison charts), Timeline & Calendar View, and Timestamped Quick Work Notes.
+2. **Productivity Views (5 Core Views)**: Tasks & To-Dos Hub (with 24 preset color swatches and keyword rules), Projects Dashboard (Tracked Time KPI hero card, donut and project comparison charts), Activity Timeline (chronological day sessions), Calendar Schedule (month schedule and agenda presets), and Quick Work Notes (timestamped scratchpad). All 5 views connect directly and independently into the Storage Repository.
 3. **Autonomous Engines**: 5-second heartbeat Window Tracker, Zero-Snoop Privacy Sanitizer, Mascot State Machine with mood controller, and Procedural Audio / Inactivity Detection.
 4. **Local-First Security & Storage**: AES-256-GCM Crypto Manager, Windows Hello Credential Gate, SQLite In-Memory Database with atomic disk flush, Automated Database Backups, and Obsidian Vault Markdown Sync.
 

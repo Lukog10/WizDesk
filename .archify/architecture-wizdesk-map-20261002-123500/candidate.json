@@ -3,40 +3,61 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "WizDesk Interactive System & Feature Map",
-    "subtitle": "Autonomous Companion, Local-First Architecture & Feature Breakdown",
-    "output": ".archify/architecture-wizdesk-map-20261002-123500/wizdesk-interactive-map.html",
-    "animation": "trace",
+    "subtitle": "5 Core Workspace Views, Background Tracking & Local-First Encrypted Storage",
+    "output": "wizdesk-interactive-map.html",
+    "visual_preset": "classic",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/Lukog10/WizDesk",
-      "provider": "github",
-      "link_mode": "local-only",
-      "revision": "244a7c1db2c9beca8d7b3828b505a390ed88905d"
+      "revision": "c2e6a469270d41b11a2d764b877251005a02c34f",
+      "link_mode": "local-only"
     }
   },
   "components": [
     {
       "id": "global-hotkeys",
-      "type": "external",
+      "type": "backend",
       "label": "Global Hotkey Service",
       "sublabel": "pynput Background Dispatcher",
-      "tag": "5 System Shortcuts",
-      "pos": [60, 90],
-      "size": [170, 68],
+      "tag": "Ctrl+Shift+Space Hook",
+      "pos": [
+        40,
+        80
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/utils/hotkey.py", "line": 60, "end_line": 113, "label": "GlobalHotkeyListener" }
+        {
+          "path": "wiz/utils/hotkey.py",
+          "line": 60,
+          "end_line": 113,
+          "label": "GlobalHotkeyListener"
+        }
       ]
     },
     {
       "id": "workspace-shell",
       "type": "frontend",
       "label": "WizDesk Workspace Hub",
-      "sublabel": "QuickEntryDialog Canvas",
-      "tag": "Frameless Qt Multi-View",
-      "pos": [360, 90],
-      "size": [170, 68],
+      "sublabel": "QuickEntryDialog 5-View Shell",
+      "tag": "Frameless Multi-View Canvas",
+      "pos": [
+        510,
+        80
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/ui/popup_dialog.py", "line": 85, "end_line": 3481, "label": "QuickEntryDialog" }
+        {
+          "path": "wiz/ui/popup_dialog.py",
+          "line": 85,
+          "end_line": 3481,
+          "label": "QuickEntryDialog"
+        }
       ]
     },
     {
@@ -45,22 +66,44 @@
       "label": "Quick Capture Bar",
       "sublabel": "Mascot-Proximal Popup",
       "tag": "Instant Task & Note Bar",
-      "pos": [660, 90],
-      "size": [170, 68],
+      "pos": [
+        745,
+        80
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/ui/quick_bar_dialog.py", "line": 35, "end_line": 280, "label": "QuickBarPopup" }
+        {
+          "path": "wiz/ui/quick_bar_dialog.py",
+          "line": 35,
+          "end_line": 280,
+          "label": "QuickBarPopup"
+        }
       ]
     },
     {
       "id": "mascot-companion",
       "type": "frontend",
-      "label": "Desktop Mascot Companion",
+      "label": "Mascot Companion",
       "sublabel": "Transparent Floating Window",
       "tag": "Cursor Eye Tracking",
-      "pos": [960, 90],
-      "size": [170, 68],
+      "pos": [
+        980,
+        80
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/ui/mascot_window.py", "line": 16, "end_line": 180, "label": "MascotWindow" }
+        {
+          "path": "wiz/ui/mascot_window.py",
+          "line": 16,
+          "end_line": 180,
+          "label": "MascotWindow"
+        }
       ]
     },
     {
@@ -68,11 +111,22 @@
       "type": "frontend",
       "label": "Tasks & To-Dos Hub",
       "sublabel": "Sections, Colors & Rules",
-      "tag": "24 Preset Swatches & Kws",
-      "pos": [60, 270],
-      "size": [170, 68],
+      "tag": "24 Preset Swatches & Rules",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/ui/popup_dialog.py", "line": 383, "end_line": 690, "label": "CreateSectionDialog" }
+        {
+          "path": "wiz/ui/popup_dialog.py",
+          "line": 383,
+          "end_line": 690,
+          "label": "CreateSectionDialog"
+        }
       ]
     },
     {
@@ -81,34 +135,90 @@
       "label": "Projects Dashboard",
       "sublabel": "KPIs, Donut & Bar Charts",
       "tag": "Tracked Time Hero Card",
-      "pos": [360, 270],
-      "size": [170, 68],
+      "pos": [
+        275,
+        260
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/ui/project_dashboard_view.py", "line": 575, "end_line": 860, "label": "ProjectsOverviewPage" }
+        {
+          "path": "wiz/ui/project_dashboard_view.py",
+          "line": 575,
+          "end_line": 860,
+          "label": "ProjectsOverviewPage"
+        }
       ]
     },
     {
-      "id": "timeline-calendar",
+      "id": "activity-timeline",
       "type": "frontend",
-      "label": "Timeline & Calendar",
-      "sublabel": "Visual Day & Month Flow",
-      "tag": "App Sessions & Milestones",
-      "pos": [660, 270],
-      "size": [170, 68],
+      "label": "Activity Timeline",
+      "sublabel": "Day Timeline & App Sessions",
+      "tag": "Chronological Activity Flow",
+      "pos": [
+        510,
+        260
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/ui/timeline_view.py", "line": 335, "end_line": 741, "label": "TimelineView" }
+        {
+          "path": "wiz/ui/timeline_view.py",
+          "line": 335,
+          "end_line": 741,
+          "label": "TimelineView"
+        }
       ]
     },
     {
-      "id": "state-machine",
-      "type": "backend",
-      "label": "Mascot State Engine",
-      "sublabel": "Moods & Behavior Controller",
-      "tag": "Focus, Bored, Sleep, Notify",
-      "pos": [960, 270],
-      "size": [170, 68],
+      "id": "calendar-view",
+      "type": "frontend",
+      "label": "Calendar Schedule",
+      "sublabel": "Month Grid & Agenda Presets",
+      "tag": "Visual Day & Month Planning",
+      "pos": [
+        745,
+        260
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/core/state_machine.py", "line": 20, "end_line": 140, "label": "StateMachine" }
+        {
+          "path": "wiz/ui/calendar_view.py",
+          "line": 306,
+          "end_line": 650,
+          "label": "CalendarView"
+        }
+      ]
+    },
+    {
+      "id": "notes-hub",
+      "type": "frontend",
+      "label": "Quick Work Notes",
+      "sublabel": "Timestamped Scratchpad",
+      "tag": "Daily Project Notes Log",
+      "pos": [
+        980,
+        260
+      ],
+      "size": [
+        150,
+        68
+      ],
+      "sources": [
+        {
+          "path": "wiz/ui/popup_dialog.py",
+          "line": 1966,
+          "end_line": 2040,
+          "label": "NoteRowWidget"
+        }
       ]
     },
     {
@@ -117,10 +227,21 @@
       "label": "Autonomous Time Tracker",
       "sublabel": "Active Window Poller",
       "tag": "5s Heartbeat Loop",
-      "pos": [60, 450],
-      "size": [170, 68],
+      "pos": [
+        40,
+        440
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/tracker/window_tracker.py", "line": 57, "end_line": 195, "label": "WindowTracker" }
+        {
+          "path": "wiz/tracker/window_tracker.py",
+          "line": 57,
+          "end_line": 195,
+          "label": "WindowTracker"
+        }
       ]
     },
     {
@@ -129,34 +250,67 @@
       "label": "Privacy Sanitizer",
       "sublabel": "PII & Password Filter",
       "tag": "Zero-Snoop Title Redactor",
-      "pos": [360, 450],
-      "size": [170, 68],
+      "pos": [
+        275,
+        440
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/utils/sanitizer.py", "line": 35, "end_line": 65, "label": "sanitize_window_title" }
-      ]
-    },
-    {
-      "id": "notes-hub",
-      "type": "frontend",
-      "label": "Quick Work Notes",
-      "sublabel": "Timestamped Scratchpad",
-      "tag": "Daily Project Notes",
-      "pos": [660, 450],
-      "size": [170, 68],
-      "sources": [
-        { "path": "wiz/ui/popup_dialog.py", "line": 1966, "end_line": 2040, "label": "NoteRowWidget" }
+        {
+          "path": "wiz/utils/sanitizer.py",
+          "line": 35,
+          "end_line": 65,
+          "label": "sanitize_window_title"
+        }
       ]
     },
     {
       "id": "audio-idle",
       "type": "backend",
-      "label": "Audio & Inactivity Engine",
+      "label": "Audio & Idle Engine",
       "sublabel": "Procedural Audio & LastInput",
       "tag": "SoundManager & IdleDetector",
-      "pos": [960, 450],
-      "size": [170, 68],
+      "pos": [
+        745,
+        440
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/core/sound.py", "line": 20, "end_line": 120, "label": "SoundManager" }
+        {
+          "path": "wiz/core/sound.py",
+          "line": 20,
+          "end_line": 120,
+          "label": "SoundManager"
+        }
+      ]
+    },
+    {
+      "id": "state-machine",
+      "type": "backend",
+      "label": "Mascot State Engine",
+      "sublabel": "Moods & Behavior Controller",
+      "tag": "Focus, Bored, Sleep, Notify",
+      "pos": [
+        980,
+        440
+      ],
+      "size": [
+        150,
+        68
+      ],
+      "sources": [
+        {
+          "path": "wiz/core/state_machine.py",
+          "line": 20,
+          "end_line": 140,
+          "label": "StateMachine"
+        }
       ]
     },
     {
@@ -165,10 +319,21 @@
       "label": "Obsidian Vault Sync",
       "sublabel": "Daily Work Log Markdown",
       "tag": "Debounced Auto-Sync",
-      "pos": [60, 630],
-      "size": [170, 68],
+      "pos": [
+        40,
+        620
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/sync/obsidian.py", "line": 11, "end_line": 135, "label": "ObsidianSync" }
+        {
+          "path": "wiz/sync/obsidian.py",
+          "line": 11,
+          "end_line": 135,
+          "label": "ObsidianSync"
+        }
       ]
     },
     {
@@ -177,10 +342,21 @@
       "label": "Storage Repository",
       "sublabel": "SQLite CRUD & Aggregations",
       "tag": "In-Memory Cached Models",
-      "pos": [360, 630],
-      "size": [170, 68],
+      "pos": [
+        510,
+        620
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/storage/models.py", "line": 130, "end_line": 600, "label": "StorageRepository" }
+        {
+          "path": "wiz/storage/models.py",
+          "line": 130,
+          "end_line": 600,
+          "label": "StorageRepository"
+        }
       ]
     },
     {
@@ -189,10 +365,21 @@
       "label": "AES-256 Crypto Manager",
       "sublabel": "GCM Cipher & Key Derivation",
       "tag": "Zero-Telemetry Protection",
-      "pos": [660, 630],
-      "size": [170, 68],
+      "pos": [
+        745,
+        620
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/core/crypto.py", "line": 50, "end_line": 170, "label": "CryptoManager" }
+        {
+          "path": "wiz/core/crypto.py",
+          "line": 50,
+          "end_line": 170,
+          "label": "CryptoManager"
+        }
       ]
     },
     {
@@ -201,10 +388,21 @@
       "label": "OS Credential Gate",
       "sublabel": "CredUI / Polkit Prompt",
       "tag": "Windows Hello Auth",
-      "pos": [960, 630],
-      "size": [170, 68],
+      "pos": [
+        980,
+        620
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/utils/auth.py", "line": 65, "end_line": 185, "label": "authenticate_user" }
+        {
+          "path": "wiz/utils/auth.py",
+          "line": 65,
+          "end_line": 185,
+          "label": "authenticate_user"
+        }
       ]
     },
     {
@@ -213,10 +411,21 @@
       "label": "Database Backup Engine",
       "sublabel": "Encrypted Database Snapshots",
       "tag": "Automated Disaster Recovery",
-      "pos": [60, 810],
-      "size": [170, 68],
+      "pos": [
+        275,
+        800
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/storage/backup.py", "line": 18, "end_line": 130, "label": "BackupManager" }
+        {
+          "path": "wiz/storage/backup.py",
+          "line": 18,
+          "end_line": 130,
+          "label": "BackupManager"
+        }
       ]
     },
     {
@@ -225,10 +434,21 @@
       "label": "Encrypted SQLite Engine",
       "sublabel": "In-Memory + Sealed File",
       "tag": "Atomic ACID Transactions",
-      "pos": [360, 810],
-      "size": [170, 68],
+      "pos": [
+        510,
+        800
+      ],
+      "size": [
+        150,
+        68
+      ],
       "sources": [
-        { "path": "wiz/storage/db.py", "line": 20, "end_line": 150, "label": "Database" }
+        {
+          "path": "wiz/storage/db.py",
+          "line": 20,
+          "end_line": 150,
+          "label": "Database"
+        }
       ]
     }
   ],
@@ -236,22 +456,45 @@
     {
       "kind": "region",
       "label": "Presentation Layer & Quick Capture Surfaces",
-      "wraps": ["global-hotkeys", "workspace-shell", "quick-bar", "mascot-companion"]
+      "wraps": [
+        "global-hotkeys",
+        "workspace-shell",
+        "quick-bar",
+        "mascot-companion"
+      ]
     },
     {
       "kind": "region",
-      "label": "Productivity Features & Interactive Workspaces",
-      "wraps": ["tasks-hub", "projects-dashboard", "timeline-calendar", "state-machine"]
+      "label": "Productivity Features & Interactive Workspaces (5 Views)",
+      "wraps": [
+        "tasks-hub",
+        "projects-dashboard",
+        "activity-timeline",
+        "calendar-view",
+        "notes-hub"
+      ]
     },
     {
       "kind": "region",
       "label": "Autonomous Tracking & Companion Engines",
-      "wraps": ["window-tracker", "privacy-engine", "notes-hub", "audio-idle"]
+      "wraps": [
+        "window-tracker",
+        "privacy-engine",
+        "audio-idle",
+        "state-machine"
+      ]
     },
     {
       "kind": "security-group",
       "label": "Local Storage, Cryptography & Sync Boundaries",
-      "wraps": ["obsidian-sync", "storage-repo", "crypto-manager", "os-auth", "backup-manager", "sqlite-db"]
+      "wraps": [
+        "obsidian-sync",
+        "storage-repo",
+        "crypto-manager",
+        "os-auth",
+        "backup-manager",
+        "sqlite-db"
+      ]
     }
   ],
   "connections": [
@@ -262,54 +505,98 @@
       "label": "hotkey summon"
     },
     {
-      "id": "shell-to-quickbar",
-      "from": "workspace-shell",
+      "id": "mascot-to-quickbar",
+      "from": "mascot-companion",
       "to": "quick-bar",
-      "label": "quick capture",
-      "variant": "dashed"
+      "label": "click summon"
     },
     {
       "id": "mascot-to-state",
       "from": "mascot-companion",
       "to": "state-machine",
-      "label": "animates mood"
+      "label": "animates mood",
+      "fromSide": "right",
+      "toSide": "right"
     },
     {
       "id": "shell-to-tasks",
       "from": "workspace-shell",
       "to": "tasks-hub",
-      "label": "tasks view"
+      "label": "tasks view",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "shell-to-dashboard",
       "from": "workspace-shell",
       "to": "projects-dashboard",
-      "label": "analytics view"
+      "label": "analytics view",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
       "id": "shell-to-timeline",
       "from": "workspace-shell",
-      "to": "timeline-calendar",
-      "label": "activity view"
+      "to": "activity-timeline",
+      "label": "activity view",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
-      "id": "timeline-to-notes",
-      "from": "timeline-calendar",
+      "id": "shell-to-calendar",
+      "from": "workspace-shell",
+      "to": "calendar-view",
+      "label": "calendar view",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "shell-to-notes",
+      "from": "workspace-shell",
       "to": "notes-hub",
-      "label": "embeds notes"
+      "label": "notes view",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "tasks-to-repo",
+      "from": "tasks-hub",
+      "to": "storage-repo",
+      "label": "tasks & rules",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "id": "dashboard-to-repo",
+      "from": "projects-dashboard",
+      "to": "storage-repo",
+      "label": "metrics",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "timeline-to-repo",
+      "from": "activity-timeline",
+      "to": "storage-repo",
+      "label": "day logs"
+    },
+    {
+      "id": "calendar-to-repo",
+      "from": "calendar-view",
+      "to": "storage-repo",
+      "label": "schedules"
     },
     {
       "id": "notes-to-repo",
       "from": "notes-hub",
       "to": "storage-repo",
-      "label": "persists notes",
-      "variant": "dashed"
+      "label": "notes log"
     },
     {
       "id": "tracker-to-privacy",
       "from": "window-tracker",
       "to": "privacy-engine",
-      "label": "raw active title"
+      "label": "active title"
     },
     {
       "id": "privacy-to-repo",
@@ -321,19 +608,7 @@
       "id": "state-to-audio",
       "from": "state-machine",
       "to": "audio-idle",
-      "label": "audio & idle events"
-    },
-    {
-      "id": "tasks-to-repo",
-      "from": "tasks-hub",
-      "to": "storage-repo",
-      "label": "tasks & project rules"
-    },
-    {
-      "id": "dashboard-to-repo",
-      "from": "projects-dashboard",
-      "to": "storage-repo",
-      "label": "overview metrics"
+      "label": "idle audio"
     },
     {
       "id": "repo-to-db",
@@ -352,31 +627,32 @@
       "id": "auth-to-crypto",
       "from": "os-auth",
       "to": "crypto-manager",
-      "label": "master key access",
+      "label": "gates key export",
       "variant": "security"
     },
     {
-      "id": "repo-to-obsidian",
+      "id": "repo-to-sync",
       "from": "storage-repo",
       "to": "obsidian-sync",
-      "label": "export daily logs"
+      "label": "log export"
     },
     {
-      "id": "repo-to-backup",
-      "from": "storage-repo",
-      "to": "backup-manager",
+      "id": "backup-to-db",
+      "from": "backup-manager",
+      "to": "sqlite-db",
       "label": "database backup"
     }
   ],
   "cards": [
     {
       "dot": "emerald",
-      "title": "Productivity Features & Workspaces",
+      "title": "5 Core Workspace Views",
       "items": [
-        "Tasks & To-Dos: Projects with 24 colors, description, auto-track keywords, subtasks, and repeat rules",
-        "Projects Dashboard: Hero KPI card, dual-mode project comparison bar chart, app donut, and tracked time breakdown",
-        "Timeline & Calendar: Chronological day stream, application sessions, milestone cards, and visual monthly scheduler",
-        "Quick Work Notes: Daily timestamped scratchpad with section categorization and completion tracking"
+        "Tasks Hub: Projects with 24 colors, descriptions, auto-track keywords, subtasks, and repeat rules",
+        "Projects Dashboard: Hero KPI card, dual-mode project comparison bar chart, and app donut",
+        "Activity Timeline: Chronological day stream, application sessions, and milestone cards",
+        "Calendar Schedule: Monthly visual scheduler with day/week views and agenda filter presets",
+        "Quick Work Notes: Daily timestamped scratchpad directly persistent to local SQLite"
       ]
     },
     {
@@ -384,9 +660,9 @@
       "title": "Desktop Companion & Autonomous Tracking",
       "items": [
         "Desktop Mascot: Transparent floating window with real-time cursor eye tracking and procedural audio",
-        "Autonomous Tracking: Background 5-second polling loop attributing app sessions without manual timers",
+        "Autonomous Tracking: 5s background polling loop attributing app sessions without manual timers",
         "Privacy-First Sanitizer: Client-side redaction of sensitive titles, banking portals, and password managers",
-        "Companion State Engine: Mascot moods reflecting working focus, celebrations, notify, and idle inactivity"
+        "Companion State Engine: Mascot moods reflecting working focus, celebrations, notify, and idle sleep"
       ]
     },
     {
@@ -396,7 +672,7 @@
         "Encrypted at Rest: Database file sealed with AES-256-GCM authenticated encryption",
         "In-Memory Speed: Zero-lag UI execution over an in-memory SQLite database",
         "OS Credential Gate: Windows Hello / CredUI authentication protects private master recovery key exports",
-        "Sync & Backup: Automatic debounced sync to Obsidian Markdown vaults and automated encrypted snapshot backups"
+        "Sync & Backup: Automatic debounced sync to Obsidian Markdown vaults and encrypted snapshot backups"
       ]
     }
   ]
