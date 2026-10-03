@@ -1,31 +1,57 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>WizDesk Banner</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
-<style>
-  /* Layout: one 16:9 pure neutral monochrome line-art banner. Reduced compact task card upper left, reduced compact dashboard card lower right, ghost between, headline right. Single look by design. */
-  :root {
-    --ground: #EBEBEB;
-    --bg: #DADADA;
-    --ink: #000000;
-    --paper: #F8F8F8;
-    --soft: #E9E9E9;
-    --muted: #444444;
-    --ghost-fill: #F8F8F8;
-    --ghost-ink: #000000;
-    --line: rgba(0, 0, 0, .18);
-    --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
-    --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
-  }
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>WizDesk Banner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap');
 
-  body { background: var(--ground); color: var(--ink); }
-  .wrap { max-width: 1360px; margin-inline: auto; padding-inline: 16px; padding-block: 24px; }
+    :root {
+      color-scheme: light;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      --ground: #EBEBEB;
+      --bg: #DADADA;
+      --ink: #000000;
+      --paper: #F8F8F8;
+      --soft: #E9E9E9;
+      --muted: #444444;
+      --ghost-fill: #F8F8F8;
+      --ghost-ink: #000000;
+      --line: rgba(0, 0, 0, .18);
+      --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+      --body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-  .stage { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
-  .bg { fill: var(--bg); }
+    html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--body);
+      background: var(--ground);
+      color: var(--ink);
+    }
+    img { max-width: 100%; }
+    [hidden]:not([hidden=until-found i]) { display: none !important; }
 
-  .wordmark { font: 700 56px var(--display); letter-spacing: -0.03em; fill: var(--ink); }
-  .headline { font: 500 80px var(--display); letter-spacing: -0.035em; fill: var(--ink); }
-  .caption { font: 400 26px var(--body); fill: var(--muted); }
+    .wrap { max-width: 1360px; margin-inline: auto; padding-inline: 16px; padding-block: 24px; }
+    .stage { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
+    .bg { fill: var(--bg); }
+
+    .wordmark { font-family: var(--display); font-size: 56px; font-weight: 700; letter-spacing: -0.03em; fill: var(--ink); }
+    .headline { font-family: var(--display); font-size: 80px; font-weight: 500; letter-spacing: -0.035em; fill: var(--ink); }
+    .caption {
+      font-family: "IBM Plex Sans", var(--body);
+      font-size: 26px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      fill: var(--muted);
+    }
 
   /* Background line art */
   #deco, #icons { transition: transform .6s ease-out; }
@@ -147,10 +173,12 @@
     #deco, #icons, .eyes, .chart-bar, .chk-box { transition: none; }
   }
 </style>
+</head>
+<body>
 
 <main class="wrap">
   <svg id="stage" class="stage" viewBox="0 0 1360 768" role="img"
-       aria-label="WizDesk banner. A ghost mascot floats above a dark portal, with a compact hierarchical task card on one side and a compact dashboard bar chart card on the other. Headline: Know what you got done. A desktop companion that tracks your work.">
+       aria-label="WizDesk banner. A ghost mascot floats above a dark portal, with a compact hierarchical task card on one side and a compact dashboard bar chart card on the other. Headline: Know what you got done. A Desktop Companion that tracks your Work.">
     <defs>
       <path id="wb" d="M55,100 A45,45 0 1,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 A11.25,15 0 0,1 77.5,195 A11.25,15 0 0,1 55,195 Z"/>
     </defs>
@@ -289,7 +317,7 @@
     <text class="wordmark" x="50" y="104">WizDesk</text>
     <text class="headline" x="696" y="380">Know what you</text>
     <text class="headline" x="696" y="470">got done.</text>
-    <text class="caption" x="700" y="534">A desktop companion that tracks your work.</text>
+    <text class="caption" x="700" y="534">A Desktop Companion that tracks your Work</text>
   </svg>
 </main>
 
