@@ -1395,12 +1395,12 @@ class AppUsageDonutCanvas(QWidget):
                     painter.strokePath(path, glow_pen)
 
                 slice_grad = QLinearGradient(outer_rect.topLeft(), outer_rect.bottomRight())
-                slice_grad.setColorAt(0.0, app_color.lighter(112))
-                slice_grad.setColorAt(1.0, app_color.darker(106))
+                slice_grad.setColorAt(0.0, app_color.lighter(105 if self.is_dark else 108))
+                slice_grad.setColorAt(1.0, app_color.darker(114 if self.is_dark else 108))
                 painter.fillPath(path, slice_grad)
 
                 # Thin subtle inner stroke for slice separation
-                stroke_pen = QPen(QColor(255, 255, 255, 140 if is_hovered else 30), 1.0)
+                stroke_pen = QPen(QColor(255, 255, 255, 140 if is_hovered else 25), 1.0)
                 painter.strokePath(path, stroke_pen)
 
         # Draw Center Hole Text
@@ -2005,7 +2005,7 @@ class AppUsageAnalyticsWidget(QFrame):
 
             pct_lbl = QLabel(f"{int(round(app.get('percentage', 0)))}%")
             pct_lbl.setFont(get_font(8, QFont.Weight.DemiBold))
-            pct_color = "#10B981" if self.is_dark else "#059669"
+            pct_color = "#A1A1AA" if self.is_dark else "#71717A"
             pct_lbl.setStyleSheet(f"color: {pct_color};")
             row.addWidget(pct_lbl)
 

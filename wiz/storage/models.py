@@ -1248,6 +1248,7 @@ class StorageRepository:
             total_minutes = 0.0
             app_durations: Dict[str, float] = {}
             project_durations: Dict[str, float] = {}
+            app_proj_minutes: Dict[str, Dict[str, float]] = {}
 
             if tf == "all_time":
                 if all_projects:
@@ -1272,6 +1273,10 @@ class StorageRepository:
 
                 proj_name = r["project_tag"] or "Untagged"
                 project_durations[proj_name] = project_durations.get(proj_name, 0.0) + dur
+
+                if app_name not in app_proj_minutes:
+                    app_proj_minutes[app_name] = {}
+                app_proj_minutes[app_name][proj_name] = app_proj_minutes[app_name].get(proj_name, 0.0) + dur
 
                 if proj_name not in project_bucket_mins:
                     project_bucket_mins[proj_name] = [0.0] * num_buckets
@@ -1314,35 +1319,62 @@ class StorageRepository:
                 if 0 <= b_idx < num_buckets:
                     project_bucket_mins[proj_name][b_idx] += dur
 
-            # Build app breakdown list using WizDesk brand palette (16 colors)
+            # Build app breakdown list using bar chart color style & project alignment
             APP_PALETTE = [
-                "#FF6B3D",  # Mascot Orange-Red (Brand)
-                "#10B981",  # Emerald
-                "#3B82F6",  # Electric Blue
-                "#F59E0B",  # Amber Gold
-                "#8B5CF6",  # Violet
-                "#EC4899",  # Hot Pink
-                "#06B6D4",  # Cyan
-                "#14B8A6",  # Teal
+                "#FF6B3D",  # Mascot Orange-Red (Brand - Coding)
+                "#10B981",  # Emerald (Gaming)
+                "#6366F1",  # Indigo (WizDesk)
+                "#64748B",  # Slate (Untagged)
+                "#38BDF8",  # Sky Blue
                 "#F97316",  # Tangerine
-                "#84CC16",  # Lime Green
-                "#6366F1",  # Indigo
-                "#F43F5E",  # Rose
-                "#0EA5E9",  # Sky Blue
-                "#D946EF",  # Fuchsia
-                "#EAB308",  # Sunburst Yellow
-                "#64748B",  # Slate
+                "#14B8A6",  # Teal
+                "#A855F7",  # Soft Purple
+                "#E11D48",  # Rose (Browsing)
+                "#84CC16",  # Lime
+                "#475569",  # Steel
+                "#EC4899",  # Pink
+                "#0EA5E9",  # Ocean Blue
+                "#059669",  # Forest Jade
+                "#D97706",  # Bronze Ochre
+                "#52525B",  # Zinc Gray
             ]
+
+            app_dominant_proj = {
+                an: max(pm.items(), key=lambda x: x[1])[0]
+                for an, pm in app_proj_minutes.items()
+            }
+
+            used_app_colors: set[str] = set()
+            palette_app_idx = 0
             apps_list = []
             for idx, (app_name, mins) in enumerate(sorted(app_durations.items(), key=lambda x: x[1], reverse=True)):
                 pct = round((mins / total_minutes * 100), 1) if total_minutes > 0 else 0.0
-                color = APP_PALETTE[idx % len(APP_PALETTE)]
+                dom_proj = app_dominant_proj.get(app_name)
+                assigned_c = None
+                if dom_proj:
+                    if dom_proj == "Untagged":
+                        cand_c = "#64748B"
+                    else:
+                        cand_c = proj_colors.get(dom_proj)
+                    if cand_c and cand_c.upper() not in used_app_colors:
+                        assigned_c = cand_c
+
+                if not assigned_c:
+                    while palette_app_idx < len(APP_PALETTE) and APP_PALETTE[palette_app_idx].upper() in used_app_colors:
+                        palette_app_idx += 1
+                    if palette_app_idx < len(APP_PALETTE):
+                        assigned_c = APP_PALETTE[palette_app_idx]
+                        palette_app_idx += 1
+                    else:
+                        assigned_c = APP_PALETTE[idx % len(APP_PALETTE)]
+
+                used_app_colors.add(assigned_c.upper())
                 apps_list.append({
                     "app_name": app_name,
                     "minutes": round(mins, 1),
                     "hours": round(mins / 60.0, 1),
                     "percentage": pct,
-                    "color": color,
+                    "color": assigned_c,
                 })
 
             top_app = apps_list[0] if apps_list else None
