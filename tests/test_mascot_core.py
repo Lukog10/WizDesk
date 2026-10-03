@@ -247,3 +247,39 @@ def test_workspace_minimize_signals_mascot_visible(qapp):
     dialog.close()
 
 
+def test_mascot_ensure_on_top(qapp):
+    """Test that MascotWindow reinforces topmost Z-order via ensure_on_top and timer."""
+    from unittest.mock import patch
+    from wiz.core.signals import app_signals
+
+    sm = StateMachine(initial_state=MascotState.IDLE, enable_idle_monitoring=False)
+    window = MascotWindow(sm)
+    window.show()
+    qapp.processEvents()
+
+    assert window._topmost_timer.isActive()
+    assert window._topmost_timer.interval() == 2000
+
+    # ensure_on_top can be invoked safely
+    window.ensure_on_top()
+
+    # ensure_on_top is invoked on activity_logged, session_polled, and state changes
+    with patch.object(window, "ensure_on_top") as mock_ensure:
+        app_signals.activity_logged.emit("Code.exe", 30)
+        qapp.processEvents()
+        assert mock_ensure.called
+
+        mock_ensure.reset_mock()
+        app_signals.session_polled.emit("Code.exe", "test.py", "Work")
+        qapp.processEvents()
+        assert mock_ensure.called
+
+        mock_ensure.reset_mock()
+        sm.set_state(MascotState.COMPLETE)
+        qapp.processEvents()
+        assert mock_ensure.called
+
+    window.close()
+
+
+

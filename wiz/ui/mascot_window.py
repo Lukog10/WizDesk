@@ -1,5 +1,6 @@
 """Frameless, transparent, draggable, always-on-top companion window."""
 
+import sys
 from typing import Optional
 from PyQt6.QtCore import Qt, QPoint, QTimer
 from PyQt6.QtGui import QMouseEvent, QGuiApplication, QCursor
@@ -62,6 +63,15 @@ class MascotWindow(QWidget):
         app_signals.toggle_mascot_visibility.connect(self.toggle_visibility)
         app_signals.ensure_mascot_visible.connect(self.ensure_visible)
         app_signals.always_on_top_changed.connect(self._apply_always_on_top)
+        app_signals.activity_logged.connect(lambda *_: self.ensure_on_top())
+        app_signals.session_polled.connect(lambda *_: self.ensure_on_top())
+        self.state_machine.state_changed.connect(lambda *_: self.ensure_on_top())
+
+        # Periodic top-level Z-order keep-alive timer (enforces floating above active external windows)
+        self._topmost_timer = QTimer(self)
+        self._topmost_timer.setInterval(2000)
+        self._topmost_timer.timeout.connect(self.ensure_on_top)
+        self._topmost_timer.start()
 
     def _init_window_position(self) -> None:
         """Place window at saved position or default to bottom-right corner."""
@@ -81,6 +91,28 @@ class MascotWindow(QWidget):
             self.move(x, y)
             config.save_window_position(x, y)
 
+    def ensure_on_top(self) -> None:
+        """Reinforce companion window topmost Z-order above active applications without stealing focus."""
+        if not self.isVisible() or self.isMinimized():
+            return
+        if not bool(self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint):
+            return
+        self.raise_()
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                hwnd = int(self.winId())
+                if hwnd:
+                    # HWND_TOPMOST (-1), SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_SHOWWINDOW (0x40)
+                    ctypes.windll.user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
+            except Exception:
+                pass
+
+    def showEvent(self, event) -> None:
+        """Reinforce topmost status upon display."""
+        super().showEvent(event)
+        self.ensure_on_top()
+
     def ensure_visible(self) -> None:
         """Bring mascot to front, un-minimize if needed, and make visible."""
         if self.isMinimized():
@@ -88,6 +120,7 @@ class MascotWindow(QWidget):
         self.show()
         self.raise_()
         self.activateWindow()
+        self.ensure_on_top()
 
     def toggle_visibility(self) -> None:
         """Toggle mascot window between visible and hidden, or bring to front if minimized."""
@@ -109,6 +142,9 @@ class MascotWindow(QWidget):
             if was_visible:
                 self.show()
                 self.raise_()
+                self.ensure_on_top()
+        elif always_on_top:
+            self.ensure_on_top()
 
     # --- Mouse & Drag Handling with Multi-Click Gesture Detection ---
 
