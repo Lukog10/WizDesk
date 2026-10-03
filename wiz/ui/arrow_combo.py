@@ -15,8 +15,6 @@ class ArrowComboBox(QComboBox):
     def __init__(self, parent: Optional[QWidget] = None, is_dark: bool = True):
         super().__init__(parent)
         self.is_dark: bool = is_dark
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark

@@ -24,8 +24,6 @@ class RoundedCheckbox(QWidget):
         self.is_dark = is_dark
         self.setFixedSize(size, size)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setStyleSheet("background: transparent;")
 
     @property
@@ -59,9 +57,6 @@ class RoundedCheckbox(QWidget):
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
 
         margin = 2.0
         s = float(self._size) - (margin * 2)

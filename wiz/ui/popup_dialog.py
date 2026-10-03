@@ -1162,8 +1162,6 @@ class SubtaskAddButton(QPushButton):
         self.setAutoDefault(False)
         self.setDefault(False)
         self.setFlat(True)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setStyleSheet("background: transparent; border: none; padding: 0;")
         self.set_theme(is_dark)
 
@@ -1187,9 +1185,6 @@ class SubtaskAddButton(QPushButton):
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         if self._hovered:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(self.hover_bg))
@@ -1214,8 +1209,6 @@ class ScheduleIconButton(QPushButton):
         self.setAutoDefault(False)
         self.setDefault(False)
         self.setFlat(True)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setStyleSheet("background: transparent; border: none; padding: 0;")
         self.set_theme(is_dark)
 
@@ -1248,9 +1241,6 @@ class ScheduleIconButton(QPushButton):
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         if self._hovered:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(self.hover_bg))
@@ -1278,8 +1268,6 @@ class RepeatIconButton(QPushButton):
         self.setAutoDefault(False)
         self.setDefault(False)
         self.setFlat(True)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.setStyleSheet("background: transparent; border: none; padding: 0;")
         self.set_theme(is_dark)
 
@@ -1312,9 +1300,6 @@ class RepeatIconButton(QPushButton):
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-        painter.fillRect(self.rect(), Qt.GlobalColor.transparent)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         if self._hovered:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(self.hover_bg))
@@ -2514,8 +2499,6 @@ class QuickEntryDialog(QDialog):
         """)
 
         self.content_widget = QWidget()
-        self.content_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.content_widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.content_widget.setStyleSheet("background: transparent;")
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(4, 4, 4, 4)
@@ -2581,8 +2564,6 @@ class QuickEntryDialog(QDialog):
         """)
 
         self.notes_content_widget = QWidget()
-        self.notes_content_widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.notes_content_widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         self.notes_content_widget.setStyleSheet("background: transparent;")
         self.notes_content_layout = QVBoxLayout(self.notes_content_widget)
         self.notes_content_layout.setContentsMargins(4, 4, 4, 4)
