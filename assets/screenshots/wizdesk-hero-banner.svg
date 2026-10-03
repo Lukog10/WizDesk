@@ -1,0 +1,148 @@
+<svg id="stage" class="stage" viewBox="0 0 1360 768" role="img"
+       aria-label="WizDesk banner. A ghost mascot floats above a dark portal, with a compact hierarchical task card on one side and a compact dashboard bar chart card on the other. Headline: Know what you got done. A Desktop Companion that tracks your Work.">
+    <defs>
+      <path id="wb" d="M55,100 A45,45 0 1,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 A11.25,15 0 0,1 77.5,195 A11.25,15 0 0,1 55,195 Z"/>
+    </defs>
+
+    <rect fill="#DADADA" width="1360" height="768"/>
+
+    <g id="deco">
+      <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M668 90 L772 -20 H862 L712 128 Z"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M668 90 L712 94 V128"/>
+      <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M1172 72 L1264 -20 H1380 V150 L1296 198 Z"/>
+      <path fill="#E9E9E9" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M1244 52 L1316 -20 H1380 V20 L1296 76 Z"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M1296 198 V76"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M930 68 L1012 0 M942 82 L1024 14"/>
+      <circle fill="none" stroke="#000000" stroke-width="3.2" cx="922" cy="76" r="11"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M1140 236 L1236 144 M1156 242 L1240 164"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M548 244 L618 176 M560 260 L626 196"/>
+      <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M56 662 L90 626 L174 704 V790 H56 Z"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M56 662 L90 700 V790 M90 700 L174 704"/>
+      <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M488 790 L598 678 L612 692 L526 790 Z"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M488 790 L526 790"/>
+      <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M606 790 L714 646 L729 661 L650 790 Z"/>
+      <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M1166 724 L1380 488 V790 H1210 Z"/>
+      <path fill="#E9E9E9" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M1262 790 L1380 646 V706 L1318 790 Z"/>
+      <circle fill="#000000" cx="262" cy="170" r="4.5"/>
+      <circle fill="#000000" cx="110" cy="410" r="7"/>
+      <circle fill="#000000" cx="1105" cy="85" r="6"/>
+      <circle fill="#000000" cx="1018" cy="208" r="6"/>
+      <circle fill="#000000" cx="724" cy="637" r="5"/>
+      <circle fill="#000000" cx="1054" cy="688" r="12"/>
+      <circle fill="none" stroke="#000000" stroke-width="3.2" cx="566" cy="128" r="11"/>
+      <circle fill="none" stroke="#000000" stroke-width="3.2" cx="240" cy="440" r="11"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" d="M1266 266 H1280 M1273 259 V273"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" d="M693 575 H707 M700 568 V582"/>
+      <path fill="none" stroke="#000000" stroke-width="3.2" d="M1141 605 H1155 M1148 598 V612"/>
+    </g>
+
+    <g id="icons">
+      <!-- 1. Task Card: Compact Size scale 0.50, 1 Main Task with Black Tick + 2 Subtasks, Pure Black & White -->
+      <g class="fl">
+        <g id="task-card" transform="translate(116 244) rotate(-3) scale(.50)" style="--s:.50">
+          <rect fill="#E9E9E9" stroke="#000000" stroke-width="6.4" stroke-linejoin="round" x="8" y="8" width="176" height="126" rx="12"/>
+          <rect fill="#F8F8F8" stroke="#000000" stroke-width="6.4" stroke-linejoin="round" width="176" height="126" rx="12"/>
+
+          <!-- Hierarchy Tree branching lines -->
+          <path fill="none" stroke="#000000" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" d="M28 38 V91 M28 59 H38 M28 91 H38"/>
+
+          <!-- Main Task: Black Tick -->
+          <g class="chk-group" id="task-parent" data-checked="true">
+            <rect fill="#F8F8F8" stroke="#000000" stroke-width="5.6" stroke-linejoin="round" x="18" y="18" width="20" height="20" rx="5"/>
+            <g fill="none" stroke="#000000" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" opacity="1">
+              <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M22.5 28 L26.5 32.5 L33.5 23.5"/>
+            </g>
+            <path fill="none" stroke="#000000" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45" d="M48 28 H154"/>
+          </g>
+
+          <!-- Sub-task 1: Black Tick -->
+          <g class="chk-group" id="task-sub1" data-checked="true">
+            <rect fill="#F8F8F8" stroke="#000000" stroke-width="5.6" stroke-linejoin="round" x="38" y="50" width="18" height="18" rx="4"/>
+            <g fill="none" stroke="#000000" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" opacity="1">
+              <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M42 59 L45.5 62.5 L51.5 54.5"/>
+            </g>
+            <path fill="none" stroke="#000000" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45" d="M66 59 H144"/>
+          </g>
+
+          <!-- Sub-task 2: Normal Empty Paper Box -->
+          <g class="chk-group" id="task-sub2" data-checked="false">
+            <rect fill="#F8F8F8" stroke="#000000" stroke-width="5.6" stroke-linejoin="round" x="38" y="82" width="18" height="18" rx="4"/>
+            <g fill="none" stroke="#000000" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" opacity="0" style="opacity: 0;">
+              <path fill="#F8F8F8" stroke="#000000" stroke-width="3.2" stroke-linejoin="miter" d="M42 91 L45.5 94.5 L51.5 86.5"/>
+            </g>
+            <path fill="none" stroke="#000000" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" d="M66 91 H124"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- 2. Dashboard Card: Compact Size scale 0.50, Pure Black & White (Highest Bar Solid Black, others Soft Gray) -->
+      <g class="fl f2">
+        <g id="dash-card" transform="translate(534 464) scale(.50)" style="--s:.50">
+          <rect fill="#E9E9E9" stroke="#000000" stroke-width="6.4" stroke-linejoin="round" x="8" y="8" width="156" height="116" rx="12"/>
+          <rect fill="#F8F8F8" stroke="#000000" stroke-width="6.4" stroke-linejoin="round" width="156" height="116" rx="12"/>
+          <path fill="none" stroke="#000000" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" d="M16 94 H140"/>
+
+          <!-- Bar 1: Normal Soft Gray #E9E9E9 -->
+          <g class="bar-group">
+            <rect fill="#E9E9E9" stroke="#000000" stroke-width="5.6" stroke-linejoin="round" x="22" y="60" width="19" height="34" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="14" y="38" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="31.5" y="46">14.0h</text>
+            </g>
+          </g>
+
+          <!-- Bar 2: Normal Soft Gray #E9E9E9 -->
+          <g class="bar-group">
+            <rect fill="#E9E9E9" stroke="#000000" stroke-width="5.6" stroke-linejoin="round" x="51" y="40" width="19" height="54" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="43" y="18" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="60.5" y="26">20.1h</text>
+            </g>
+          </g>
+
+          <!-- Bar 3: HIGHEST BAR -> Solid Black #000000 -->
+          <g class="bar-group">
+            <rect fill="#000000" stroke="#000000" stroke-width="5.6" stroke-linejoin="round" x="80" y="24" width="19" height="70" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="72" y="2" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="89.5" y="10">8.8h</text>
+            </g>
+          </g>
+
+          <!-- Bar 4: Normal Soft Gray #E9E9E9 -->
+          <g class="bar-group">
+            <rect fill="#E9E9E9" stroke="#000000" stroke-width="5.6" stroke-linejoin="round" x="109" y="52" width="19" height="42" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="101" y="30" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="118.5" y="38">2.8h</text>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- Portal under the ghost -->
+    <g class="portal">
+      <ellipse fill="none" stroke="#000000" stroke-width="2.6" cx="390" cy="628" rx="200" ry="48"/>
+      <ellipse fill="#000000" cx="390" cy="628" rx="168" ry="35"/>
+    </g>
+
+    <!-- Ghost Mascot with clean geometric shadow -->
+    <g class="float">
+      <g id="ghost" transform="translate(170 72) scale(2.2)">
+        <use href="#wb" fill="#F8F8F8"/>
+        <path fill="#000000" fill-opacity="0.09" d="M100,55 A45,45 0 0,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 Z"/>
+        <use href="#wb" fill="none" stroke="#000000" stroke-width="6.5" stroke-linejoin="round"/>
+        <circle id="eye-anchor" cx="100" cy="128" r="1" fill="none"/>
+        <g id="eyes" class="eyes">
+          <circle fill="#000000" cx="82" cy="128" r="7"/>
+          <circle fill="#000000" cx="118" cy="128" r="7"/>
+        </g>
+      </g>
+    </g>
+
+    <text font-family="Space Grotesk, sans-serif" font-size="56" font-weight="700" fill="#000000" letter-spacing="-2" x="50" y="104">WizDesk</text>
+    <text font-family="Space Grotesk, sans-serif" font-size="80" font-weight="500" fill="#000000" letter-spacing="-3" x="696" y="380">Know what you</text>
+    <text font-family="Space Grotesk, sans-serif" font-size="80" font-weight="500" fill="#000000" letter-spacing="-3" x="696" y="470">got done.</text>
+    <text font-family="IBM Plex Sans, sans-serif" font-size="26" font-weight="400" fill="#444444" x="700" y="534">A Desktop Companion that tracks your Work</text>
+  </svg>

@@ -1,7 +1,7 @@
 <div align="center">
 
 <a href="https://github.com/Lukog10/WizDesk">
-  <img src="assets/WizDesk%20Logo%20v1.jpeg" width="240" height="240" alt="WizDesk Logo" style="border-radius: 28px; box-shadow: 0 12px 32px rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);" />
+  <img src="assets/screenshots/wizdesk-hero-banner.png" alt="WizDesk Banner" width="100%" style="border-radius: 12px;" />
 </a>
 
 
@@ -310,7 +310,8 @@ WizDesk/
 ├── assets/                          # Graphic assets, typography, icons, and audio
 │   ├── screenshots/                 # Application visuals, hero banners, and diagrams
 │   │   ├── archify-system-design.png # Archify system architecture visual
-│   │   └── wizdesk-hero-banner.jpg   # Official high-resolution workspace hero banner
+│   │   ├── wizdesk-hero-banner.png   # Official high-resolution workspace hero banner
+│   │   └── wizdesk-hero-banner.jpg   # High-resolution hero banner (JPEG)
 │   ├── sounds/                      # Procedural and sound effect assets
 │   ├── fonts/                       # Bundled typography (Plus Jakarta Sans, Space Grotesk)
 │   ├── icons/                       # Navigation and status icons

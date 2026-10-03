@@ -228,21 +228,27 @@
           <!-- Main Task: Black Tick -->
           <g class="chk-group" id="task-parent" data-checked="true">
             <rect class="chk-box" x="18" y="18" width="20" height="20" rx="5"/>
-            <path class="chk-mark" d="M22.5 28 L26.5 32.5 L33.5 23.5"/>
+            <g class="chk-mark" opacity="1">
+              <path d="M22.5 28 L26.5 32.5 L33.5 23.5"/>
+            </g>
             <path class="task-line done" d="M48 28 H154"/>
           </g>
 
           <!-- Sub-task 1: Black Tick -->
           <g class="chk-group" id="task-sub1" data-checked="true">
             <rect class="chk-box" x="38" y="50" width="18" height="18" rx="4"/>
-            <path class="chk-mark" d="M42 59 L45.5 62.5 L51.5 54.5"/>
+            <g class="chk-mark" opacity="1">
+              <path d="M42 59 L45.5 62.5 L51.5 54.5"/>
+            </g>
             <path class="task-line done" d="M66 59 H144"/>
           </g>
 
           <!-- Sub-task 2: Normal Empty Paper Box -->
           <g class="chk-group" id="task-sub2" data-checked="false">
             <rect class="chk-box" x="38" y="82" width="18" height="18" rx="4"/>
-            <path class="chk-mark" d="M42 91 L45.5 94.5 L51.5 86.5" style="opacity: 0;"/>
+            <g class="chk-mark" opacity="0" style="opacity: 0;">
+              <path d="M42 91 L45.5 94.5 L51.5 86.5"/>
+            </g>
             <path class="task-line" d="M66 91 H124"/>
           </g>
         </g>
@@ -355,12 +361,12 @@
       if (isChecked) {
         // Uncheck
         group.setAttribute('data-checked', 'false');
-        if (mark) mark.style.opacity = '0';
+        if (mark) { mark.style.opacity = '0'; mark.setAttribute('opacity', '0'); }
         if (line) line.classList.remove('done');
       } else {
         // Check
         group.setAttribute('data-checked', 'true');
-        if (mark) mark.style.opacity = '1';
+        if (mark) { mark.style.opacity = '1'; mark.setAttribute('opacity', '1'); }
         if (line) line.classList.add('done');
       }
     });
