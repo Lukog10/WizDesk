@@ -15,7 +15,7 @@
 
 **A Minimalist Desktop Companion for Autonomous Work Tracking, Hierarchical Tasks, and Obsidian Markdown Sync**
 
-[![Python Version](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.14-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/Python-3.14-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Framework](https://img.shields.io/badge/GUI-PyQt6-41CD52?style=for-the-badge&logo=qt&logoColor=white)](https://www.riverbankcomputing.com/software/pyqt/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![Security](https://img.shields.io/badge/Security-AES%20256%20GCM-10B981?style=for-the-badge&logo=security&logoColor=white)](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
@@ -42,7 +42,7 @@
 
 ## Overview
 
-WizDesk is a lightweight, local-first productivity companion for Windows and Linux. It runs quietly on your desktop, automatically tracking time spent on active applications, providing instant task and note capture through global hotkeys and mouse gestures, and compiling your daily work into clean Markdown notes inside your local Obsidian vault.
+WizDesk is a lightweight, local-first productivity companion for Windows. It runs quietly on your desktop, automatically tracking time spent on active applications, providing instant task and note capture through global hotkeys and mouse gestures, and compiling your daily work into clean Markdown notes inside your local Obsidian vault.
 
 ### Why WizDesk?
 
@@ -249,7 +249,7 @@ graph TD
 WizDesk is built with a zero-trust approach toward cloud services and a steadfast commitment to personal data privacy:
 
 ### Zero Telemetry and Local-First Storage
-- **100% Local Storage**: All tasks, notes, sessions, and configuration settings reside strictly in `%APPDATA%\WizDesk\wizdesk.db` on Windows (or `~/.local/share/WizDesk/wizdesk.db` on Linux).
+- **100% Local Storage**: All tasks, notes, sessions, and configuration settings reside strictly in `%APPDATA%\WizDesk\wizdesk.db` on Windows.
 - **No Network Requests**: WizDesk contains no analytics tracking, no crash reporting beacons, no telemetry pings, and no remote dependencies. It functions entirely offline.
 - **Safe Window Title Inspection Only**: The activity tracker reads only the text of the active foreground window title. Keystrokes, clipboard contents, network packets, and screen pixels are never inspected or recorded.
 
@@ -286,8 +286,8 @@ Download the latest pre-built standalone bundle for Windows from the GitHub Rele
 ### Running from Source
 
 #### Prerequisites
-- **Operating System**: Windows 10, Windows 11, or Linux (X11 / Wayland)
-- **Python**: Python 3.10, 3.11, 3.12, or 3.14 (64-bit recommended)
+- **Operating System**: Windows 10 or Windows 11 (64-bit)
+- **Python**: Python 3.14 (64-bit recommended)
 
 #### Setup Steps
 
