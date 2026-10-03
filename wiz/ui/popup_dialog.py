@@ -11,6 +11,7 @@ Implements the exact layout hierarchy:
    - Bottom Add Bar with Section selector & Create Section option
 """
 
+import sys
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer, QSize
@@ -2696,17 +2697,28 @@ class QuickEntryDialog(QDialog):
         self.repaint()
 
     def _apply_always_on_top(self, always_on_top: bool) -> None:
-        """Update window flags when Always On Top setting changes."""
-        flags = Qt.WindowType.FramelessWindowHint
-        if always_on_top:
-            flags |= Qt.WindowType.WindowStaysOnTopHint
-        if self.windowFlags() != flags:
-            geo = self.geometry()
-            was_visible = self.isVisible()
-            self.setWindowFlags(flags)
-            self.setGeometry(geo)
-            if was_visible:
-                self.show()
+        """Update window flags when Always On Top setting changes smoothly without glitching."""
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, always_on_top)
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                hwnd = int(self.winId())
+                if hwnd:
+                    # HWND_TOPMOST (-1) if always_on_top else HWND_NOTOPMOST (-2)
+                    # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_FRAMECHANGED (0x20) | SWP_SHOWWINDOW (0x40)
+                    target_z = -1 if always_on_top else -2
+                    ctypes.windll.user32.SetWindowPos(
+                        hwnd,
+                        target_z,
+                        0, 0, 0, 0,
+                        0x0001 | 0x0002 | 0x0010 | 0x0020 | 0x0040
+                    )
+            except Exception:
+                pass
+        elif self.isVisible():
+            self.show()
+        # Reinforce mascot companion visibility above workspace dialog
+        app_signals.ensure_mascot_visible.emit()
 
     def toggle_theme(self) -> None:
         """Toggle between light and dark themes and broadcast."""

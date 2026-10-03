@@ -95,16 +95,17 @@ class MascotWindow(QWidget):
         """Reinforce companion window topmost Z-order above active applications without stealing focus."""
         if not self.isVisible() or self.isMinimized():
             return
-        if not bool(self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint):
-            return
         self.raise_()
         if sys.platform == "win32":
             try:
                 import ctypes
                 hwnd = int(self.winId())
                 if hwnd:
-                    # HWND_TOPMOST (-1), SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_SHOWWINDOW (0x40)
-                    ctypes.windll.user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
+                    is_topmost = bool(self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
+                    target_z = -1 if is_topmost else 0
+                    # HWND_TOPMOST (-1) or HWND_TOP (0)
+                    # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_SHOWWINDOW (0x40)
+                    ctypes.windll.user32.SetWindowPos(hwnd, target_z, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
             except Exception:
                 pass
 
@@ -113,38 +114,45 @@ class MascotWindow(QWidget):
         super().showEvent(event)
         self.ensure_on_top()
 
-    def ensure_visible(self) -> None:
+    def ensure_visible(self, activate: bool = False) -> None:
         """Bring mascot to front, un-minimize if needed, and make visible."""
         if self.isMinimized():
             self.showNormal()
         self.show()
         self.raise_()
-        self.activateWindow()
+        if activate:
+            self.activateWindow()
         self.ensure_on_top()
 
     def toggle_visibility(self) -> None:
         """Toggle mascot window between visible and hidden, or bring to front if minimized."""
         if not self.isVisible() or self.isMinimized():
-            self.ensure_visible()
+            self.ensure_visible(activate=True)
         else:
             self.hide()
 
     def _apply_always_on_top(self, always_on_top: bool) -> None:
-        """Update mascot window flags when Always On Top setting changes."""
-        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
-        if always_on_top:
-            flags |= Qt.WindowType.WindowStaysOnTopHint
-        if self.windowFlags() != flags:
-            geo = self.geometry()
-            was_visible = self.isVisible()
-            self.setWindowFlags(flags)
-            self.setGeometry(geo)
-            if was_visible:
-                self.show()
-                self.raise_()
-                self.ensure_on_top()
-        elif always_on_top:
-            self.ensure_on_top()
+        """Update mascot window flags when Always On Top setting changes smoothly without glitching."""
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, always_on_top)
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                hwnd = int(self.winId())
+                if hwnd:
+                    # HWND_TOPMOST (-1) if always_on_top else HWND_NOTOPMOST (-2)
+                    # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_FRAMECHANGED (0x20) | SWP_SHOWWINDOW (0x40)
+                    target_z = -1 if always_on_top else -2
+                    ctypes.windll.user32.SetWindowPos(
+                        hwnd,
+                        target_z,
+                        0, 0, 0, 0,
+                        0x0001 | 0x0002 | 0x0010 | 0x0020 | 0x0040
+                    )
+            except Exception:
+                pass
+        elif self.isVisible():
+            self.show()
+        self.ensure_on_top()
 
     # --- Mouse & Drag Handling with Multi-Click Gesture Detection ---
 
