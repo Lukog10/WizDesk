@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>WizDesk Banner</title>
+  <title>WizDesk Interactive Companion Banner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
@@ -90,126 +90,133 @@
       fill: var(--muted);
     }
 
-  /* Background line art */
-  #deco, #icons { transition: transform .6s ease-out; }
-  #deco path { fill: var(--paper); stroke: var(--ink); stroke-width: 3.2; stroke-linejoin: miter; }
-  #deco .open { fill: none; }
-  #deco .shade { fill: var(--soft); }
-  #deco circle.hollow { fill: none; stroke: var(--ink); stroke-width: 3.2; }
-  #deco circle.solid { fill: var(--ink); }
-  #deco .plus { fill: none; stroke: var(--ink); stroke-width: 3.2; }
+    /* Background line art */
+    #deco, #icons { transition: transform .6s ease-out; }
+    #deco path { fill: var(--paper); stroke: var(--ink); stroke-width: 3.2; stroke-linejoin: miter; }
+    #deco .open { fill: none; }
+    #deco .shade { fill: var(--soft); }
+    #deco circle.hollow { fill: none; stroke: var(--ink); stroke-width: 3.2; }
+    #deco circle.solid { fill: var(--ink); }
+    #deco .plus { fill: none; stroke: var(--ink); stroke-width: 3.2; }
 
-  /* Workspace icons: cards and styling. Stroke widths divide by the group scale so lines match the rest of the banner. */
-  .i-card { fill: var(--paper); stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linejoin: round; }
-  .i-back { fill: var(--soft); stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linejoin: round; }
-  .i-line { fill: none; stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linecap: round; stroke-linejoin: round; }
+    /* Workspace icons: cards and styling. Stroke widths divide by the group scale so lines match the rest of the banner. */
+    .i-card { fill: var(--paper); stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linejoin: round; }
+    .i-back { fill: var(--soft); stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linejoin: round; }
+    .i-line { fill: none; stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linecap: round; stroke-linejoin: round; }
 
-  /* Checkbox & Hierarchical Task Card (Pure Black & White) */
-  .chk-group { cursor: pointer; user-select: none; }
-  .chk-box {
-    fill: var(--paper);
-    stroke: var(--ink);
-    stroke-width: calc(2.8px / var(--s, 1));
-    stroke-linejoin: round;
-    transition: transform .15s ease, background .15s ease;
-    transform-origin: center;
-    transform-box: fill-box;
-  }
-  .chk-group:hover .chk-box { transform: scale(1.1); }
-  .chk-mark {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: calc(3.2px / var(--s, 1));
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    pointer-events: none;
-    transition: opacity .18s ease;
-  }
-  .chk-tree {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: calc(2.2px / var(--s, 1));
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    opacity: .35;
-  }
-  .task-line {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: calc(3.2px / var(--s, 1));
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    transition: opacity .18s ease;
-  }
-  .task-line.done { opacity: .45; }
+    /* Checkbox & Hierarchical Task Card (Pure Black & White) */
+    .chk-group { cursor: pointer; user-select: none; }
+    .chk-box {
+      fill: var(--paper);
+      stroke: var(--ink);
+      stroke-width: calc(2.8px / var(--s, 1));
+      stroke-linejoin: round;
+      transition: transform .15s ease, background .15s ease;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+    .chk-group:hover .chk-box { transform: scale(1.1); }
+    .chk-mark {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: calc(3.2px / var(--s, 1));
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+      transition: opacity .18s ease;
+    }
+    .chk-tree {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: calc(2.2px / var(--s, 1));
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: .35;
+    }
+    .task-line {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: calc(3.2px / var(--s, 1));
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: opacity .18s ease;
+    }
+    .task-line.done { opacity: .45; }
 
-  /* Dashboard Chart (Pure Black & White) */
-  .bar-group { cursor: pointer; }
-  .chart-bar {
-    stroke: var(--ink);
-    stroke-width: calc(2.8px / var(--s, 1));
-    stroke-linejoin: round;
-    transform-box: fill-box;
-    transform-origin: bottom center;
-    transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1), filter .18s ease;
-  }
-  .bar-group:hover .chart-bar {
-    transform: scaleY(1.08);
-    filter: brightness(1.06);
-  }
-  .bar-solid { fill: var(--ink); }
-  .bar-soft { fill: var(--soft); }
+    /* Dashboard Chart (Pure Black & White) */
+    .bar-group { cursor: pointer; }
+    .chart-bar {
+      stroke: var(--ink);
+      stroke-width: calc(2.8px / var(--s, 1));
+      stroke-linejoin: round;
+      transform-box: fill-box;
+      transform-origin: bottom center;
+      transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1), filter .18s ease;
+    }
+    .bar-group:hover .chart-bar {
+      transform: scaleY(1.08);
+      filter: brightness(1.06);
+    }
+    .bar-solid { fill: var(--ink); }
+    .bar-soft { fill: var(--soft); }
 
-  /* Chart Tooltips */
-  .bar-tip {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .15s ease, transform .15s ease;
-    transform: translateY(2px);
-  }
-  .bar-group:hover .bar-tip {
-    opacity: 1 !important;
-    transform: translateY(-2px);
-  }
-  .tip-box { fill: var(--ink); }
-  .tip-txt { font: 600 11px var(--body); fill: var(--paper); text-anchor: middle; dominant-baseline: central; }
+    /* Chart Tooltips */
+    .bar-tip {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease, transform .15s ease;
+      transform: translateY(2px);
+    }
+    .bar-group:hover .bar-tip {
+      opacity: 1 !important;
+      transform: translateY(-2px);
+    }
+    .tip-box { fill: var(--ink); }
+    .tip-txt { font: 600 11px var(--body); fill: var(--paper); text-anchor: middle; dominant-baseline: central; }
 
-  .fl { animation: drift 6s ease-in-out infinite alternate; }
-  .f2 { animation-duration: 7s; animation-delay: -2s; }
+    .fl { animation: drift 6s ease-in-out infinite alternate; }
+    .f2 { animation-duration: 7s; animation-delay: -2s; }
 
-  /* Portal under the ghost */
-  .portal { transform-box: fill-box; transform-origin: center; animation: shrink 5s ease-in-out infinite alternate; }
-  .p-ring { fill: none; stroke: var(--ink); stroke-width: 2.6; }
-  .p-hole { fill: var(--ink); }
+    /* Portal under the ghost */
+    .portal { transform-box: fill-box; transform-origin: center; animation: shrink 5s ease-in-out infinite alternate; }
+    .p-ring { fill: none; stroke: var(--ink); stroke-width: 2.6; }
+    .p-hole { fill: var(--ink); }
 
-  /* Ghost Companion */
-  .float { animation: bob 5s ease-in-out infinite alternate; }
-  .g-fill { fill: var(--ghost-fill); }
-  .g-shade { fill: #000000; opacity: .09; }
-  .g-line { fill: none; stroke: var(--ghost-ink); stroke-width: 6.5; stroke-linejoin: round; }
-  .eyes { transition: transform .12s ease-out; }
-  .dot { fill: var(--ghost-ink); }
+    /* Ghost Companion */
+    .float { animation: bob 5s ease-in-out infinite alternate; }
+    .g-fill { fill: var(--ghost-fill); }
+    .g-shade { fill: #000000; opacity: .09; }
+    .g-line { fill: none; stroke: var(--ghost-ink); stroke-width: 6.5; stroke-linejoin: round; }
+    .eyes { transition: transform .12s ease-out; }
+    .dot { fill: var(--ghost-ink); }
 
-  #ghost { cursor: pointer; user-select: none; }
-  .poked { animation: pokeBounce .45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    #ghost { cursor: pointer; user-select: none; }
+    .poked { animation: pokeBounce .45s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-  @keyframes pokeBounce {
-    0% { transform: scale(1); }
-    25% { transform: scale(1.08, .92); }
-    50% { transform: scale(.94, 1.08); }
-    75% { transform: scale(1.02, .98); }
-    100% { transform: scale(1); }
-  }
+    @keyframes pokeBounce {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.08, .92); }
+      50% { transform: scale(.94, 1.08); }
+      75% { transform: scale(1.02, .98); }
+      100% { transform: scale(1); }
+    }
 
-  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-14px); } }
-  @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-8px); } }
-  @keyframes shrink { from { transform: scale(1); } to { transform: scale(.92, .88); } }
+    @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+    @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+    @keyframes shrink { from { transform: scale(1); } to { transform: scale(.92, .88); } }
 
-  @media (prefers-reduced-motion: reduce) {
-    .float, .portal, .fl { animation: none !important; }
-    #deco, #icons, .eyes, .chart-bar, .chk-box { transition: none; }
-  }
-</style>
+    @media (prefers-reduced-motion: reduce) {
+      .float, .portal, .fl { animation: none !important; }
+      #deco, #icons, .eyes, .chart-bar, .chk-box { transition: none; }
+    }
+  </style>
+  <script>
+    try {
+      if (new URLSearchParams(window.location.search).get('embed') === '1') {
+        document.documentElement.setAttribute('data-embed', 'true');
+      }
+    } catch (_) {}
+  </script>
 </head>
 <body>
 
@@ -219,7 +226,7 @@
       <span class="nav-badge">WizDesk Interactive Banner</span>
     </div>
     <div class="nav-right">
-      <a href="docs/wizdesk-interactive-map.html">Interactive System Design Map &rarr;</a>
+      <a href="wizdesk-interactive-map.html">Interactive System Design Map &rarr;</a>
       <a href="https://github.com/Lukog10/WizDesk">GitHub Repository &rarr;</a>
     </div>
   </header>

@@ -1,8 +1,14 @@
 <div align="center">
 
-<a href="https://github.com/Lukog10/WizDesk">
-  <img src="assets/screenshots/wizdesk-hero-banner.png" alt="WizDesk Banner" width="100%" style="border-radius: 12px;" />
+<a href="https://lukog10.github.io/WizDesk/banner.html" title="Launch Live Interactive Companion Banner">
+  <img src="assets/screenshots/wizdesk-hero-banner.png" alt="WizDesk Banner" width="100%" style="border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.15);" />
 </a>
+
+<p align="center">
+  <b><a href="https://lukog10.github.io/WizDesk/banner.html">Launch Interactive Banner</a></b> &bull;
+  <b><a href="docs/wizdesk-banner.html">Standalone Banner Source (HTML)</a></b> &bull;
+  <b><a href="https://lukog10.github.io/WizDesk/">Interactive System Design Map</a></b>
+</p>
 
 
 # WizDesk
@@ -20,11 +26,17 @@
 
 <br />
 
-[Overview](#overview) &bull; [Core Features and Functions](#core-features-and-functions) &bull; [System Design or Architecture](#system-design-or-architecture) &bull; [Interactive Map](docs/wizdesk-interactive-map.html) &bull; [Privacy and Security](#privacy-and-security) &bull; [Download](#download) &bull; [Repository Structure](#repository-structure) &bull; [Contribution and License](#contribution-and-license)
+[Overview](#overview) &bull; [Interactive Banner](docs/wizdesk-banner.html) &bull; [Core Features and Functions](#core-features-and-functions) &bull; [System Design or Architecture](#system-design-or-architecture) &bull; [Interactive Map](docs/wizdesk-interactive-map.html) &bull; [Privacy and Security](#privacy-and-security) &bull; [Download](#download) &bull; [Repository Structure](#repository-structure) &bull; [Contribution and License](#contribution-and-license)
 
 
 
 </div>
+
+> **Live Interactive Companion Banner**:
+> Like the interactive system design map, you can run and interact with the real-time WizDesk banner directly in your browser. It includes trigonometric mouse cursor pupil tracking, clickable hierarchical task checkboxes, hoverable analytics bar charts with tooltips, and a reactive ghost mascot with procedural Web Audio feedback:
+>
+> - **Live Web App**: [https://lukog10.github.io/WizDesk/banner.html](https://lukog10.github.io/WizDesk/banner.html)
+> - **Standalone HTML Source**: [docs/wizdesk-banner.html](docs/wizdesk-banner.html) (or open locally: `docs/wizdesk-banner.html`)
 
 ---
 
@@ -323,6 +335,7 @@ WizDesk/
 │   └── WizDesk Logo v1.jpeg         # Official WizDesk brand logo
 ├── docs/                            # Architecture and interactive documentation
 │   ├── CODEBASE_ARCHITECTURE.md     # In-depth architectural specification and contracts
+│   ├── wizdesk-banner.html          # Interactive standalone banner application
 │   └── wizdesk-interactive-map.html # Interactive Archify system and feature map
 ├── tests/                           # Complete automated pytest suite (143 tests)
 │   ├── conftest.py                  # Pytest fixtures and environment setup
