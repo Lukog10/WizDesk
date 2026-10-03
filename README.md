@@ -107,9 +107,9 @@ Press `Ctrl+Shift+W` anytime to summon the central 920x680 PyQt6 workspace hub:
 
 ### 5. Global Hotkeys and Fast Capture
 - `Ctrl+Shift+W`: Summon or dismiss the central 920x680 Workspace Hub.
-- `Ctrl+Shift+T`: Open the Quick Task capture dialog from any application.
-- `Ctrl+Shift+N`: Open the Quick Note capture dialog from any application.
-- `Ctrl+Shift+M`: Toggle desktop companion visibility.
+- `Ctrl+Shift+T`: Open or dismiss the compact Quick Task capture bar.
+- `Ctrl+Shift+N`: Open or dismiss the compact Quick Note capture bar.
+- `Ctrl+Shift+M`: Show or hide the desktop companion mascot.
 
 ---
 

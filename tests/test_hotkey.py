@@ -45,15 +45,15 @@ def test_global_hotkey_listener_lifecycle(qapp):
         registered_dict = mock_hotkeys_cls.call_args[0][0]
         assert "<ctrl>+<shift>+w" in registered_dict
         assert "<ctrl>+<shift>+m" in registered_dict
-        assert "<ctrl>+m" in registered_dict
+        assert "<ctrl>+m" not in registered_dict
         assert "<ctrl>+<shift>+t" in registered_dict
         assert "<ctrl>+<shift>+n" in registered_dict
         assert mock_instance.start.called
 
-        # Verify executing <ctrl>+m callback emits toggle_mascot_visibility
+        # Verify executing <ctrl>+<shift>+m callback emits toggle_mascot_visibility
         emitted = []
         app_signals.toggle_mascot_visibility.connect(lambda: emitted.append(True))
-        registered_dict["<ctrl>+m"]()
+        registered_dict["<ctrl>+<shift>+m"]()
         assert len(emitted) == 1
 
         # Test reload on signal
@@ -65,3 +65,85 @@ def test_global_hotkey_listener_lifecycle(qapp):
         # Test stop
         listener.stop()
         assert listener._listener is None
+
+
+def test_wiz_application_hotkey_toggles(qapp):
+    """Test show/close toggle behavior for workspace, quick task bar, and quick note bar."""
+    from wiz.__main__ import WizApplication
+
+    with patch("wiz.__main__.MascotWindow"), \
+         patch("wiz.__main__.TrayIcon"), \
+         patch("wiz.__main__.WindowTracker"), \
+         patch("wiz.__main__.GlobalHotkeyListener"), \
+         patch("wiz.__main__.ObsidianSync"), \
+         patch("wiz.__main__.sound_manager"):
+        app = WizApplication()
+
+        # 1. Workspace toggle: when closed -> opens; when open -> closes
+        mock_entry = MagicMock()
+        mock_entry.isVisible.return_value = False
+        mock_entry.isMinimized.return_value = False
+        app._quick_entry_dialog = mock_entry
+
+        app.show_quick_entry()
+        assert mock_entry.show.called
+        assert not mock_entry.close.called
+
+        mock_entry.reset_mock()
+        mock_entry.isVisible.return_value = True
+        mock_entry.isMinimized.return_value = False
+
+        app.show_quick_entry()
+        assert mock_entry.close.called
+
+        # 2. Workspace force open (e.g. from settings or secondary instance)
+        mock_entry.reset_mock()
+        mock_entry.isVisible.return_value = True
+        mock_entry.isMinimized.return_value = False
+
+        app.show_quick_entry(toggle=False)
+        assert mock_entry.show.called
+        assert not mock_entry.close.called
+
+        # 3. Quick task bar toggle: when closed -> opens; when open in task mode -> closes
+        mock_bar = MagicMock()
+        mock_bar.isVisible.return_value = False
+        mock_bar.mode = "task"
+        app._quick_bar_dialog = mock_bar
+
+        app.show_quick_task_bar()
+        assert mock_bar.show_mode.called
+        assert not mock_bar.close.called
+
+        mock_bar.reset_mock()
+        mock_bar.isVisible.return_value = True
+        mock_bar.mode = "task"
+
+        app.show_quick_task_bar()
+        assert mock_bar.close.called
+
+        # 4. Quick note bar toggle: when closed -> opens; when open in note mode -> closes
+        mock_bar.reset_mock()
+        mock_bar.isVisible.return_value = False
+        mock_bar.mode = "note"
+
+        app.show_quick_note_bar()
+        assert mock_bar.show_mode.called
+        assert not mock_bar.close.called
+
+        mock_bar.reset_mock()
+        mock_bar.isVisible.return_value = True
+        mock_bar.mode = "note"
+
+        app.show_quick_note_bar()
+        assert mock_bar.close.called
+
+        # 5. Mode switching: open in task mode, user triggers note bar -> switches mode without closing
+        mock_bar.reset_mock()
+        mock_bar.isVisible.return_value = True
+        mock_bar.mode = "task"
+
+        app.show_quick_note_bar()
+        assert not mock_bar.close.called
+        mock_bar.show_mode.assert_called_with("note", mascot_rect=app.mascot_window.geometry())
+

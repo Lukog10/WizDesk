@@ -118,8 +118,17 @@ class WizApplication:
             except Exception as e:
                 print(f"[WizDesk] Auto-backup notice: {e}")
 
-    def show_quick_entry(self) -> None:
-        """Open or focus the full Quick-Entry workspace dialog."""
+    def show_quick_entry(self, toggle: bool = True) -> None:
+        """Open or toggle the full Quick-Entry workspace dialog."""
+        if (
+            toggle
+            and self._quick_entry_dialog is not None
+            and self._quick_entry_dialog.isVisible()
+            and not self._quick_entry_dialog.isMinimized()
+        ):
+            self._quick_entry_dialog.close()
+            return
+
         sound_manager.play_window_open()
         if self._quick_entry_dialog is None:
             self._quick_entry_dialog = QuickEntryDialog(self.state_machine, self.repo)
@@ -129,15 +138,33 @@ class WizApplication:
         self._quick_entry_dialog.raise_()
         self._quick_entry_dialog.activateWindow()
 
-    def show_quick_task_bar(self) -> None:
-        """Open the compact Quick Task bar positioned near the mascot (Double-click gesture)."""
+    def show_quick_task_bar(self, toggle: bool = True) -> None:
+        """Open or toggle the compact Quick Task bar positioned near the mascot."""
+        if (
+            toggle
+            and self._quick_bar_dialog is not None
+            and self._quick_bar_dialog.isVisible()
+            and getattr(self._quick_bar_dialog, "mode", None) == "task"
+        ):
+            self._quick_bar_dialog.close()
+            return
+
         sound_manager.play_window_open()
         if self._quick_bar_dialog is None:
             self._quick_bar_dialog = QuickBarPopup(self.state_machine, self.repo)
         self._quick_bar_dialog.show_mode("task", mascot_rect=self.mascot_window.geometry())
 
-    def show_quick_note_bar(self) -> None:
-        """Open the compact Quick Note bar positioned near the mascot (Triple-click gesture)."""
+    def show_quick_note_bar(self, toggle: bool = True) -> None:
+        """Open or toggle the compact Quick Note bar positioned near the mascot."""
+        if (
+            toggle
+            and self._quick_bar_dialog is not None
+            and self._quick_bar_dialog.isVisible()
+            and getattr(self._quick_bar_dialog, "mode", None) == "note"
+        ):
+            self._quick_bar_dialog.close()
+            return
+
         sound_manager.play_window_open()
         if self._quick_bar_dialog is None:
             self._quick_bar_dialog = QuickBarPopup(self.state_machine, self.repo)
@@ -145,7 +172,7 @@ class WizApplication:
 
     def show_settings(self) -> None:
         """Open or focus the embedded settings view inside the workspace."""
-        self.show_quick_entry()
+        self.show_quick_entry(toggle=False)
         if self._quick_entry_dialog:
             self._quick_entry_dialog._set_view_mode("settings")
 
@@ -244,7 +271,7 @@ def main() -> None:
     def _on_socket_read(sock: QLocalSocket):
         data = bytes(sock.readAll()).decode("utf-8", errors="ignore")
         if "show_workspace" in data:
-            wiz_app.show_quick_entry()
+            wiz_app.show_quick_entry(toggle=False)
         sock.close()
 
     local_server.newConnection.connect(_handle_instance_message)
