@@ -1,0 +1,384 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>WizDesk Banner</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  /* Layout: one 16:9 neutral line-art banner with WizDesk brand accents. Task card upper left, dashboard card lower right, ghost between, headline right. */
+  :root {
+    --ground: #EBEBEB;
+    --bg: #DADADA;
+    --ink: #000000;
+    --paper: #F8F8F8;
+    --soft: #E9E9E9;
+    --muted: #444444;
+    --ghost-fill: #F8F8F8;
+    --ghost-ink: #000000;
+    --line: rgba(0, 0, 0, .18);
+    --accent-orange: #FF6B3D;
+    --accent-green: #10B981;
+    --accent-indigo: #6366F1;
+    --accent-blue: #38BDF8;
+    --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+    --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  body { background: var(--ground); color: var(--ink); }
+  .wrap { max-width: 1360px; margin-inline: auto; padding-inline: 16px; padding-block: 24px; }
+
+  .stage { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
+  .bg { fill: var(--bg); }
+
+  .wordmark { font: 700 56px var(--display); letter-spacing: -0.03em; fill: var(--ink); }
+  .headline { font: 500 80px var(--display); letter-spacing: -0.035em; fill: var(--ink); }
+  .caption { font: 400 26px var(--body); fill: var(--muted); }
+
+  /* Background line art */
+  #deco, #icons { transition: transform .6s ease-out; }
+  #deco path { fill: var(--paper); stroke: var(--ink); stroke-width: 3.2; stroke-linejoin: miter; }
+  #deco .open { fill: none; }
+  #deco .shade { fill: var(--soft); }
+  #deco circle.hollow { fill: none; stroke: var(--ink); stroke-width: 3.2; }
+  #deco circle.solid { fill: var(--ink); }
+  #deco .plus { fill: none; stroke: var(--ink); stroke-width: 3.2; }
+
+  /* Workspace icons: cards and styling. Stroke widths divide by the group scale so lines match the rest of the banner. */
+  .i-card { fill: var(--paper); stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linejoin: round; }
+  .i-back { fill: var(--soft); stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linejoin: round; }
+  .i-line { fill: none; stroke: var(--ink); stroke-width: calc(3.2px / var(--s, 1)); stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Checkbox & Hierarchical Task Card */
+  .chk-group { cursor: pointer; user-select: none; }
+  .chk-box {
+    stroke: var(--ink);
+    stroke-width: calc(2.8px / var(--s, 1));
+    stroke-linejoin: round;
+    transition: fill .18s ease, transform .15s ease;
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+  .chk-group:hover .chk-box { transform: scale(1.08); }
+  .chk-box.c-orange { fill: var(--accent-orange); }
+  .chk-box.c-green { fill: var(--accent-green); }
+  .chk-box.c-empty { fill: var(--paper); }
+  .chk-mark {
+    fill: none;
+    stroke: #FFFFFF;
+    stroke-width: calc(3.2px / var(--s, 1));
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+    transition: opacity .18s ease;
+  }
+  .chk-tree {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: calc(2.4px / var(--s, 1));
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: .35;
+  }
+  .task-line {
+    fill: none;
+    stroke: var(--ink);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: opacity .18s ease;
+  }
+  .task-line.done { opacity: .35; }
+
+  /* Dashboard Chart with Accent Bars */
+  .bar-group { cursor: pointer; }
+  .chart-bar {
+    stroke: var(--ink);
+    stroke-width: calc(2.8px / var(--s, 1));
+    stroke-linejoin: round;
+    transform-box: fill-box;
+    transform-origin: bottom center;
+    transition: transform .18s cubic-bezier(0.34, 1.56, 0.64, 1), filter .18s ease;
+  }
+  .bar-group:hover .chart-bar {
+    transform: scaleY(1.08);
+    filter: brightness(1.06);
+  }
+  .bar-orange { fill: var(--accent-orange); }
+  .bar-green { fill: var(--accent-green); }
+  .bar-indigo { fill: var(--accent-indigo); }
+  .bar-blue { fill: var(--accent-blue); }
+
+  /* Chart Tooltips */
+  .bar-tip {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    transform: translateY(2px);
+  }
+  .bar-group:hover .bar-tip {
+    opacity: 1 !important;
+    transform: translateY(-2px);
+  }
+  .tip-box { fill: var(--ink); }
+  .tip-txt { font: 600 11px var(--body); fill: var(--paper); text-anchor: middle; dominant-baseline: central; }
+
+  .fl { animation: drift 6s ease-in-out infinite alternate; }
+  .f2 { animation-duration: 7s; animation-delay: -2s; }
+
+  /* Portal under the ghost */
+  .portal { transform-box: fill-box; transform-origin: center; animation: shrink 5s ease-in-out infinite alternate; }
+  .p-ring { fill: none; stroke: var(--ink); stroke-width: 2.6; }
+  .p-hole { fill: var(--ink); }
+
+  /* Ghost Companion */
+  .float { animation: bob 5s ease-in-out infinite alternate; }
+  .g-fill { fill: var(--ghost-fill); }
+  .g-shade { fill: #000000; opacity: .09; }
+  .g-line { fill: none; stroke: var(--ghost-ink); stroke-width: 6.5; stroke-linejoin: round; }
+  .eyes { transition: transform .12s ease-out; }
+  .dot { fill: var(--ghost-ink); }
+
+  #ghost { cursor: pointer; user-select: none; }
+  .poked { animation: pokeBounce .45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  @keyframes pokeBounce {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.08, .92); }
+    50% { transform: scale(.94, 1.08); }
+    75% { transform: scale(1.02, .98); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+  @keyframes drift { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+  @keyframes shrink { from { transform: scale(1); } to { transform: scale(.92, .88); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .float, .portal, .fl { animation: none !important; }
+    #deco, #icons, .eyes, .chart-bar, .chk-box { transition: none; }
+  }
+</style>
+
+<main class="wrap">
+  <svg id="stage" class="stage" viewBox="0 0 1360 768" role="img"
+       aria-label="WizDesk banner. A ghost mascot floats above a dark portal, with a hierarchical task card on one side and an accent bar chart card on the other. Headline: Know what you got done. A desktop companion that tracks your work.">
+    <defs>
+      <path id="wb" d="M55,100 A45,45 0 1,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 A11.25,15 0 0,1 77.5,195 A11.25,15 0 0,1 55,195 Z"/>
+    </defs>
+
+    <rect class="bg" width="1360" height="768"/>
+
+    <g id="deco">
+      <path d="M668 90 L772 -20 H862 L712 128 Z"/>
+      <path class="open" d="M668 90 L712 94 V128"/>
+      <path d="M1172 72 L1264 -20 H1380 V150 L1296 198 Z"/>
+      <path class="shade" d="M1244 52 L1316 -20 H1380 V20 L1296 76 Z"/>
+      <path class="open" d="M1296 198 V76"/>
+      <path class="open" d="M930 68 L1012 0 M942 82 L1024 14"/>
+      <circle class="hollow" cx="922" cy="76" r="11"/>
+      <path class="open" d="M1140 236 L1236 144 M1156 242 L1240 164"/>
+      <path class="open" d="M548 244 L618 176 M560 260 L626 196"/>
+      <path d="M56 662 L90 626 L174 704 V790 H56 Z"/>
+      <path class="open" d="M56 662 L90 700 V790 M90 700 L174 704"/>
+      <path d="M488 790 L598 678 L612 692 L526 790 Z"/>
+      <path class="open" d="M488 790 L526 790"/>
+      <path d="M606 790 L714 646 L729 661 L650 790 Z"/>
+      <path d="M1166 724 L1380 488 V790 H1210 Z"/>
+      <path class="shade" d="M1262 790 L1380 646 V706 L1318 790 Z"/>
+      <circle class="solid" cx="262" cy="170" r="4.5"/>
+      <circle class="solid" cx="110" cy="410" r="7"/>
+      <circle class="solid" cx="1105" cy="85" r="6"/>
+      <circle class="solid" cx="1018" cy="208" r="6"/>
+      <circle class="solid" cx="724" cy="637" r="5"/>
+      <circle class="solid" cx="1054" cy="688" r="12"/>
+      <circle class="hollow" cx="566" cy="128" r="11"/>
+      <circle class="hollow" cx="240" cy="440" r="11"/>
+      <path class="plus" d="M1266 266 H1280 M1273 259 V273"/>
+      <path class="plus" d="M693 575 H707 M700 568 V582"/>
+      <path class="plus" d="M1141 605 H1155 M1148 598 V612"/>
+    </g>
+
+    <g id="icons">
+      <!-- 1. Task Card: 1 Main Task with 2 Hierarchical Sub-tasks (Scale: .71) -->
+      <g class="fl">
+        <g id="task-card" transform="translate(95 226) rotate(-3) scale(.71)" style="--s:.71">
+          <rect class="i-back" x="8" y="8" width="176" height="128" rx="12"/>
+          <rect class="i-card" width="176" height="128" rx="12"/>
+          
+          <!-- Branching tree lines connecting 1 Task to 2 Subtasks -->
+          <path class="chk-tree" d="M28 42 V94 M28 62 H38 M28 94 H38"/>
+
+          <!-- Main Task: Checked with Brand Orange Accent -->
+          <g class="chk-group" id="task-parent" data-checked="true" data-accent="orange">
+            <rect class="chk-box c-orange" x="18" y="18" width="20" height="20" rx="5"/>
+            <path class="chk-mark" d="M23 28 L27 32 L33 24"/>
+            <path class="task-line done" style="stroke-width: calc(3.4px / var(--s, 1));" d="M48 28 H156"/>
+          </g>
+
+          <!-- Sub-task 1: Checked with Emerald Green Accent -->
+          <g class="chk-group" id="task-sub1" data-checked="true" data-accent="green">
+            <rect class="chk-box c-green" x="40" y="52" width="18" height="18" rx="4"/>
+            <path class="chk-mark" d="M44.5 61 L48 64.5 L53.5 57.5"/>
+            <path class="task-line done" style="stroke-width: calc(2.8px / var(--s, 1));" d="M68 61 H144"/>
+          </g>
+
+          <!-- Sub-task 2: Open / Pending with Paper Fill & Accent Hover -->
+          <g class="chk-group" id="task-sub2" data-checked="false" data-accent="orange">
+            <rect class="chk-box c-empty" x="40" y="84" width="18" height="18" rx="4"/>
+            <path class="chk-mark" d="M44.5 93 L48 96.5 L53.5 89.5" style="opacity: 0;"/>
+            <path class="task-line" style="stroke-width: calc(2.8px / var(--s, 1));" d="M68 93 H126"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- 2. Dashboard Card: Grouped Comparison Chart with Accent Colors (Scale: .71) -->
+      <g class="fl f2">
+        <g id="dash-card" transform="translate(528 450) scale(.71)" style="--s:.71">
+          <rect class="i-back" x="8" y="8" width="156" height="116" rx="12"/>
+          <rect class="i-card" width="156" height="116" rx="12"/>
+          <path class="i-line" d="M16 94 H140"/>
+
+          <!-- Bar 1: Mascot Orange (#FF6B3D - Coding) -->
+          <g class="bar-group">
+            <rect class="chart-bar bar-orange" x="22" y="60" width="19" height="34" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="14" y="38" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="31.5" y="46">14.0h</text>
+            </g>
+          </g>
+
+          <!-- Bar 2: Emerald Green (#10B981 - Gaming / Focus) -->
+          <g class="bar-group">
+            <rect class="chart-bar bar-green" x="51" y="40" width="19" height="54" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="43" y="18" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="60.5" y="26">20.1h</text>
+            </g>
+          </g>
+
+          <!-- Bar 3: Indigo (#6366F1 - WizDesk) -->
+          <g class="bar-group">
+            <rect class="chart-bar bar-indigo" x="80" y="24" width="19" height="70" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="72" y="2" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="89.5" y="10">8.8h</text>
+            </g>
+          </g>
+
+          <!-- Bar 4: Sky Blue (#38BDF8 - Browsing) -->
+          <g class="bar-group">
+            <rect class="chart-bar bar-blue" x="109" y="52" width="19" height="42" rx="3"/>
+            <g class="bar-tip" opacity="0">
+              <rect class="tip-box" x="101" y="30" width="35" height="16" rx="3"/>
+              <text class="tip-txt" x="118.5" y="38">2.8h</text>
+            </g>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- Portal under the ghost -->
+    <g class="portal">
+      <ellipse class="p-ring" cx="390" cy="628" rx="200" ry="48"/>
+      <ellipse class="p-hole" cx="390" cy="628" rx="168" ry="35"/>
+    </g>
+
+    <!-- Ghost Mascot with clean geometric shadow -->
+    <g class="float">
+      <g id="ghost" transform="translate(170 72) scale(2.2)">
+        <use href="#wb" class="g-fill"/>
+        <path class="g-shade" d="M100,55 A45,45 0 0,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 Z"/>
+        <use href="#wb" class="g-line"/>
+        <circle id="eye-anchor" cx="100" cy="128" r="1" fill="none"/>
+        <g id="eyes" class="eyes">
+          <circle class="dot" cx="82" cy="128" r="7"/>
+          <circle class="dot" cx="118" cy="128" r="7"/>
+        </g>
+      </g>
+    </g>
+
+    <text class="wordmark" x="50" y="104">WizDesk</text>
+    <text class="headline" x="696" y="380">Know what you</text>
+    <text class="headline" x="696" y="470">got done.</text>
+    <text class="caption" x="700" y="534">A desktop companion that tracks your work.</text>
+  </svg>
+</main>
+
+<script>
+(function () {
+  var eyes = document.getElementById('eyes');
+  var anchor = document.getElementById('eye-anchor');
+  var deco = document.getElementById('deco');
+  var icons = document.getElementById('icons');
+  var ghost = document.getElementById('ghost');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 1. Mouse cursor eye tracking & subtle parallax
+  window.addEventListener('pointermove', function (e) {
+    var r = anchor.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy) || 1;
+    var k = Math.min(d / 160, 1);
+    eyes.style.transform = 'translate(' + (dx / d * k * 8).toFixed(2) + 'px, ' + (dy / d * k * 6).toFixed(2) + 'px)';
+    if (!reduce) {
+      var nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5;
+      deco.style.transform = 'translate(' + (-nx * 16).toFixed(1) + 'px, ' + (-ny * 12).toFixed(1) + 'px)';
+      icons.style.transform = 'translate(' + (nx * 8).toFixed(1) + 'px, ' + (ny * 6).toFixed(1) + 'px)';
+    }
+  }, { passive: true });
+
+  // 2. Interactive Task Checkbox Toggling
+  var taskGroups = document.querySelectorAll('.chk-group');
+  taskGroups.forEach(function (group) {
+    group.addEventListener('click', function () {
+      var isChecked = group.getAttribute('data-checked') === 'true';
+      var box = group.querySelector('.chk-box');
+      var mark = group.querySelector('.chk-mark');
+      var line = group.querySelector('.task-line');
+      var accent = group.getAttribute('data-accent') || 'orange';
+
+      if (isChecked) {
+        // Uncheck
+        group.setAttribute('data-checked', 'false');
+        box.classList.remove('c-orange', 'c-green');
+        box.classList.add('c-empty');
+        if (mark) mark.style.opacity = '0';
+        if (line) line.classList.remove('done');
+      } else {
+        // Check
+        group.setAttribute('data-checked', 'true');
+        box.classList.remove('c-empty');
+        box.classList.add(accent === 'green' ? 'c-green' : 'c-orange');
+        if (mark) mark.style.opacity = '1';
+        if (line) line.classList.add('done');
+      }
+    });
+  });
+
+  // 3. Playful Ghost Companion Poke Reaction
+  if (ghost) {
+    ghost.addEventListener('click', function () {
+      ghost.classList.remove('poked');
+      void ghost.offsetWidth; // Trigger reflow for animation restart
+      ghost.classList.add('poked');
+
+      // Subtle Web Audio chirp synthesis (matching WizDesk procedural tone)
+      try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          var ctx = new AudioCtx();
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(540, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(780, ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.16);
+        }
+      } catch (err) {}
+    });
+  }
+})();
+</script>
+
+</body></html>
