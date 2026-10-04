@@ -21,6 +21,8 @@ a = Analysis(
         'psutil',
         'win32gui',
         'win32process',
+        'winreg',
+        'wiz.core.autostart',
     ],
     hookspath=[],
     hooksconfig={},
