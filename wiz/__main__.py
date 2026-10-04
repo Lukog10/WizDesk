@@ -59,6 +59,12 @@ class WizApplication:
         self.tracker = WindowTracker(self.repo)
         self.hotkey_listener = GlobalHotkeyListener()
 
+        # Synchronize Windows autostart registry state with user configuration
+        if sys.platform == "win32" and config.get("auto_start_on_login", False):
+            from wiz.core.autostart import is_autostart_enabled, set_autostart
+            if not is_autostart_enabled():
+                set_autostart(True)
+
         # Connect signals
         self._connect_signals()
 

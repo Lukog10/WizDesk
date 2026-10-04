@@ -217,3 +217,43 @@ def test_calendar_view_mouse_clicks_do_not_move_window(qapp, repo):
         assert dialog._is_dragging is False
 
     dialog.close()
+
+
+def test_calendar_view_delete_task(qapp, repo):
+    """Test deleting a created task in CalendarView via delete button and action request."""
+    from wiz.core.signals import app_signals
+
+    today = date.today()
+    task_id = repo.create_task(
+        "Calendar Task to Delete",
+        project_tag="Work",
+        scheduled_date=today.strftime("%Y-%m-%d"),
+    )
+    assert task_id is not None
+
+    deleted_signal_ids = []
+    app_signals.task_deleted.connect(deleted_signal_ids.append)
+
+    cal_view = CalendarView(repo, is_dark=True)
+    qapp.processEvents()
+
+    # Find the task row in agenda
+    assert cal_view.task_list_layout.count() == 1
+    row = cal_view.task_list_layout.itemAt(0).widget()
+    assert row is not None
+    assert hasattr(row, "delete_btn")
+
+    # Click the delete button
+    row.delete_btn.click()
+    qapp.processEvents()
+
+    # Verify task was deleted from database
+    active_tasks = repo.get_task_hierarchy(target_date=today)
+    assert task_id not in [t.id for t in active_tasks]
+
+    # Verify task was removed from agenda layout
+    assert cal_view.task_list_layout.count() == 0
+    assert "0 tasks" in cal_view.task_count_badge.text()
+    assert task_id in deleted_signal_ids
+
+    cal_view.close()

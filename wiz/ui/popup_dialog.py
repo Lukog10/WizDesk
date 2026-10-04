@@ -1313,6 +1313,52 @@ class RepeatIconButton(QPushButton):
         painter.end()
 
 
+class TaskDeleteButton(QPushButton):
+    """Icon-only button for deleting a task with red hover state."""
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self._hovered: bool = False
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip("Delete Task")
+        self.setFixedSize(24, 24)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.setFlat(True)
+        self.setStyleSheet("background: transparent; border: none; padding: 0;")
+        self.set_theme(is_dark)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.normal_color = "#71717A"
+        self.hover_color = "#EF4444"
+        self.hover_bg = "rgba(239, 68, 68, 0.15)"
+        self.update()
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._hovered = True
+        self.update()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(self.hover_bg))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 4, 4)
+        c = self.hover_color if self._hovered else self.normal_color
+        render_tinted_svg(painter, "icons/delete.svg", c, 5, 5, 14)
+        painter.end()
+
+
 class TaskRowWidget(QWidget):
     """
     Parent task row featuring:
@@ -1401,6 +1447,11 @@ class TaskRowWidget(QWidget):
         self.add_sub_btn = SubtaskAddButton(is_dark=self.is_dark, parent=self.top_widget)
         self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
         top_layout.addWidget(self.add_sub_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+
+        # Delete icon-only button
+        self.delete_btn = TaskDeleteButton(is_dark=self.is_dark, parent=self.top_widget)
+        self.delete_btn.clicked.connect(self._on_delete_clicked)
+        top_layout.addWidget(self.delete_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.main_layout.addWidget(self.top_widget)
 
@@ -1565,6 +1616,8 @@ class TaskRowWidget(QWidget):
             self.schedule_btn.set_theme(is_dark)
         if hasattr(self, "repeat_btn") and hasattr(self.repeat_btn, "set_theme"):
             self.repeat_btn.set_theme(is_dark)
+        if hasattr(self, "delete_btn") and hasattr(self.delete_btn, "set_theme"):
+            self.delete_btn.set_theme(is_dark)
         self._populate_status_combo()
         self._update_status_ui(self.task.status)
         self._update_badges()
@@ -1896,6 +1949,10 @@ class TaskRowWidget(QWidget):
             self.task.title = new_title
             self.label.setText(new_title)
             self.task_renamed.emit(self.task_id, new_title)
+
+    def _on_delete_clicked(self) -> None:
+        """Trigger task deletion request."""
+        self.action_requested.emit("delete", self.task_id)
 
     def _cancel_renaming(self) -> None:
         """Cancel inline task renaming."""
@@ -3488,6 +3545,7 @@ class QuickEntryDialog(QDialog):
         """Handle task deletion or other actions."""
         if action_type == "delete":
             self.repo.delete_task(task_id)
+            app_signals.task_deleted.emit(task_id)
             self.refresh_tasks()
             self._trigger_debounced_sync()
 

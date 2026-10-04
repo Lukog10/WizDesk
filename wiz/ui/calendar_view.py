@@ -956,6 +956,7 @@ class CalendarView(QWidget):
     def _connect_task_row(self, row) -> None:
         """Bind TaskRowWidget signals to storage updates and local refresh."""
         row.status_toggled.connect(self._on_row_status_changed)
+        row.action_requested.connect(self._on_row_task_action)
         row.task_renamed.connect(self._on_row_task_renamed)
         row.project_changed.connect(self._on_row_project_changed)
         row.subtask_added.connect(self._on_row_subtask_added)
@@ -964,6 +965,16 @@ class CalendarView(QWidget):
         row.subtask_renamed.connect(self._on_row_subtask_renamed)
         row.schedule_changed.connect(self._on_row_schedule_changed)
         row.repeat_changed.connect(self._on_row_repeat_changed)
+
+    def _on_row_task_action(self, action_type: str, task_id: int) -> None:
+        """Handle task deletion or other actions requested from calendar agenda rows."""
+        if action_type == "delete":
+            self.repo.delete_task(task_id)
+            self.task_updated.emit(task_id)
+            app_signals.task_deleted.emit(task_id)
+            self._refresh_month_grid()
+            self._refresh_agenda()
+            self._populate_sections()
 
     def _on_row_status_changed(self, task_id: int, new_status: str) -> None:
         self.repo.update_task_status(task_id, new_status)

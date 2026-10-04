@@ -32,6 +32,7 @@ from PyQt6.QtWidgets import (
 )
 
 from wiz.core.config import config
+from wiz.core.autostart import is_autostart_enabled, set_autostart
 from wiz.core.crypto import CryptoManager, crypto_manager
 from wiz.core.signals import app_signals
 from wiz.core.sound import sound_manager
@@ -511,12 +512,14 @@ class SettingsView(QWidget):
         )
 
         # Row 4: Launch on startup
+        init_autostart = is_autostart_enabled() or config.get("auto_start_on_login", False)
         self.autostart_check = SettingsCheckbox(
-            checked=config.get("auto_start_on_login", False),
+            checked=init_autostart,
             size=18,
             parent=container,
             is_dark=self.is_dark,
         )
+        self.autostart_check.toggled.connect(self._on_autostart_toggled)
         self._create_setting_row(
             title="Launch on Windows Startup",
             description="Automatically launch WizDesk in the background when your computer turns on.",
@@ -1288,7 +1291,7 @@ class SettingsView(QWidget):
         self.vault_logs_folder_input.setText(config.get("obsidian_logs_folder", "WizDesk Logs"))
         self.float_anim_check.setChecked(config.get("enable_floating_animation", True))
         self.always_on_top_check.setChecked(config.get("always_on_top", True))
-        self.autostart_check.setChecked(config.get("auto_start_on_login", False))
+        self.autostart_check.setChecked(is_autostart_enabled() or config.get("auto_start_on_login", False))
         self.sound_check.setChecked(config.sound_effects_enabled)
         self.sound_volume_slider.setValue(int(config.sound_volume * 100))
         self.sound_volume_label.setText(f"{int(config.sound_volume * 100)}%")
@@ -1318,7 +1321,9 @@ class SettingsView(QWidget):
         config.set("always_on_top", is_always_on_top)
         app_signals.always_on_top_changed.emit(is_always_on_top)
         config.set("tracking_interval_seconds", self.interval_spin.value() * 60)
-        config.set("auto_start_on_login", bool(self.autostart_check.isChecked()))
+        is_autostart = bool(self.autostart_check.isChecked())
+        config.set("auto_start_on_login", is_autostart)
+        set_autostart(is_autostart)
         
         # Audio & Inactivity settings
         is_sound_on = bool(self.sound_check.isChecked())
@@ -1394,6 +1399,11 @@ class SettingsView(QWidget):
         """Immediately update config and broadcast always on top preference."""
         config.set("always_on_top", bool(checked))
         app_signals.always_on_top_changed.emit(bool(checked))
+
+    def _on_autostart_toggled(self, checked: bool) -> None:
+        """Immediately update Windows startup registry and user configuration."""
+        set_autostart(bool(checked))
+        config.set("auto_start_on_login", bool(checked))
 
     def set_theme(self, is_dark: bool) -> None:
         """Apply dark or light theme with WizDesk brand colors."""
