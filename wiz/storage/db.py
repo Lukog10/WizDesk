@@ -274,9 +274,7 @@ class Database:
                     'shellhost', 'shellhost.exe',
                     'pickerhost', 'pickerhost.exe',
                     'lockapp', 'lockapp.exe',
-                    'logonui', 'logonui.exe',
-                    'taskmgr', 'taskmgr.exe',
-                    'wizdesk', 'wizdesk.exe'
+                    'logonui', 'logonui.exe'
                 )
                 OR LOWER(window_title) IN (
                     'program manager',

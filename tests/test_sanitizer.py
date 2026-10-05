@@ -84,14 +84,15 @@ def test_is_system_excluded_search_and_system_hosts():
     assert is_system_excluded("ShellExperienceHost.exe", "New notification") is True
     assert is_system_excluded("ShellHost.exe", "Windows Input Experience") is True
     assert is_system_excluded("PickerHost.exe", "Open") is True
-    assert is_system_excluded("Taskmgr.exe", "Task Manager") is True
 
 
-def test_is_system_excluded_wizdesk_self():
-    """Verify WizDesk itself is excluded by process name and current PID."""
-    assert is_system_excluded("WizDesk.exe", "WizDesk Workspace") is True
-    assert is_system_excluded("WizDesk", "Settings") is True
-    assert is_system_excluded("python.exe", "WizDesk", pid=os.getpid()) is True
+def test_is_system_excluded_allows_taskmgr_and_wizdesk():
+    """Verify Task Manager and WizDesk are NOT excluded and can be logged."""
+    assert is_system_excluded("Taskmgr.exe", "Task Manager") is False
+    assert is_system_excluded("taskmgr", "Task Manager") is False
+    assert is_system_excluded("WizDesk.exe", "WizDesk Workspace") is False
+    assert is_system_excluded("WizDesk", "Settings") is False
+    assert is_system_excluded("python.exe", "WizDesk", pid=os.getpid()) is False
 
 
 def test_is_system_excluded_allowed_work_apps():
@@ -136,29 +137,36 @@ def test_log_session_sanitization_integration(tmp_path):
 
 
 def test_repo_log_session_blocks_excluded_system_processes(tmp_path):
-    """Verify StorageRepository.log_session rejects Windows Explorer and system noise."""
+    """Verify StorageRepository.log_session rejects Windows Explorer and system noise, but permits WizDesk and Taskmgr."""
     db = Database(tmp_path / "test_exclusion_repo.db")
     repo = StorageRepository(db)
 
     t1 = datetime(2026, 10, 5, 10, 0, 0)
     t2 = t1 + timedelta(minutes=10)
 
-    # Attempt to log explorer.exe
+    # 1. Attempt to log explorer.exe -> blocked
     s1 = repo.log_session("explorer.exe", "Downloads - File Explorer", t1, t2)
     assert s1 == 0
 
-    # Attempt to log SearchHost.exe
+    # 2. Attempt to log SearchHost.exe -> blocked
     s2 = repo.log_session("SearchHost.exe", "Search", t1, t2)
     assert s2 == 0
 
-    # Attempt to log WizDesk self
-    s3 = repo.log_session("WizDesk.exe", "Settings", t1, t2)
-    assert s3 == 0
+    # 3. Log WizDesk -> allowed
+    s3 = repo.log_session("WizDesk.exe", "Settings", t1, t2, project_tag="WizDesk")
+    assert s3 > 0
 
-    # Log legitimate session
-    s4 = repo.log_session("Code.exe", "main.py - WizDesk", t1, t2, project_tag="WizDesk")
+    # 4. Log Task Manager -> allowed
+    s4 = repo.log_session("Taskmgr.exe", "Task Manager", t1, t2)
     assert s4 > 0
 
+    # 5. Log legitimate developer session
+    s5 = repo.log_session("Code.exe", "main.py - WizDesk", t1, t2, project_tag="WizDesk")
+    assert s5 > 0
+
     records = repo.get_sessions_for_date(t1.date())
-    assert len(records) == 1
-    assert records[0].app_name == "Code.exe"
+    assert len(records) == 3
+    apps = [r.app_name for r in records]
+    assert "WizDesk.exe" in apps
+    assert "Taskmgr.exe" in apps
+    assert "Code.exe" in apps

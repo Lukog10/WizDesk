@@ -59,6 +59,31 @@ def test_get_active_window_info_allows_code():
         assert info.pid == 9999
 
 
+def test_get_active_window_info_allows_taskmgr_and_wizdesk():
+    """Verify get_active_window_info returns ActiveWindowInfo for Task Manager and WizDesk."""
+    with patch("wiz.tracker.window_tracker.HAS_WIN32", True), \
+         patch("wiz.tracker.window_tracker.win32gui.GetForegroundWindow", return_value=12345), \
+         patch("wiz.tracker.window_tracker.win32gui.GetWindowText", return_value="Task Manager"), \
+         patch("wiz.tracker.window_tracker.win32process.GetWindowThreadProcessId", return_value=(0, 1111)), \
+         patch("wiz.tracker.window_tracker.psutil.Process") as mock_proc:
+        mock_proc.return_value.name.return_value = "Taskmgr.exe"
+        info = get_active_window_info()
+        assert info is not None
+        assert info.app_name == "Taskmgr"
+        assert info.window_title == "Task Manager"
+
+    with patch("wiz.tracker.window_tracker.HAS_WIN32", True), \
+         patch("wiz.tracker.window_tracker.win32gui.GetForegroundWindow", return_value=12346), \
+         patch("wiz.tracker.window_tracker.win32gui.GetWindowText", return_value="WizDesk Workspace"), \
+         patch("wiz.tracker.window_tracker.win32process.GetWindowThreadProcessId", return_value=(0, 2222)), \
+         patch("wiz.tracker.window_tracker.psutil.Process") as mock_proc:
+        mock_proc.return_value.name.return_value = "WizDesk.exe"
+        info2 = get_active_window_info()
+        assert info2 is not None
+        assert info2.app_name == "WizDesk"
+        assert info2.window_title == "WizDesk Workspace"
+
+
 def test_tracker_excluded_window_transition(test_repo):
     """
     Verify that when user switches from a tracked app to an excluded window (info is None),

@@ -66,10 +66,6 @@ SYSTEM_EXCLUDED_PROCESSES = {
     "pickerhost",
     "screenclippinghost.exe",
     "screenclippinghost",
-    "taskmgr.exe",
-    "taskmgr",
-    "wizdesk.exe",
-    "wizdesk",
 }
 
 SYSTEM_EXCLUDED_TITLES = {
@@ -110,17 +106,10 @@ def is_system_excluded(
     """
     Determine whether an active window or process represents Windows system shell
     infrastructure (e.g. Windows Explorer, Search, Lock Screen, Desktop wallpaper)
-    or WizDesk self-process, and should therefore be excluded from activity logging.
+    and should therefore be excluded from activity logging.
+    Task Manager and WizDesk are explicitly tracked and not excluded.
     """
-    # 1. Check self PID
-    if pid is not None and pid > 0:
-        try:
-            if pid == os.getpid():
-                return True
-        except Exception:
-            pass
-
-    # 2. Check empty or unidentifiable window states
+    # 1. Check empty or unidentifiable window states
     raw_app = (app_name or "").strip()
     title = (window_title or "").strip()
     title_lower = title.lower()
@@ -128,23 +117,23 @@ def is_system_excluded(
     if not raw_app and not title:
         return True
 
-    # 3. Check process name against system exclusions
+    # 2. Check process name against system exclusions
     app_lower = raw_app.lower()
     clean_app_lower = clean_app_name(raw_app).lower()
 
     if app_lower in SYSTEM_EXCLUDED_PROCESSES or clean_app_lower in SYSTEM_EXCLUDED_PROCESSES:
         return True
 
-    # 4. Check specific shell host frames
+    # 3. Check specific shell host frames
     if clean_app_lower == "applicationframehost":
         if not title or title_lower in SYSTEM_EXCLUDED_TITLES:
             return True
 
-    # 5. Check window title against system titles (e.g. Program Manager desktop, Search popup)
+    # 4. Check window title against system titles (e.g. Program Manager desktop, Search popup)
     if title_lower in SYSTEM_EXCLUDED_TITLES:
         return True
 
-    # 6. Check unknown app with empty title
+    # 5. Check unknown app with empty title
     if app_lower in ("unknown", "") and not title:
         return True
 
