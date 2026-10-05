@@ -1,7 +1,7 @@
 """Unit tests for QuickEntryDialog and SettingsDialog."""
 
 import sys
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import pytest
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
@@ -9,7 +9,7 @@ from PyQt6.QtCore import Qt
 from wiz.core.config import config
 from wiz.core.state_machine import StateMachine, MascotState
 from wiz.storage.db import Database
-from wiz.storage.models import StorageRepository
+from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord
 from wiz.ui.popup_dialog import QuickEntryDialog, RoundedCheckbox, CreateSectionDialog, TaskRowWidget, CalendarPopupDialog
 from wiz.ui.quick_bar_dialog import QuickBarPopup
 from wiz.ui.settings_dialog import SettingsDialog
@@ -403,6 +403,33 @@ def test_task_and_subtask_time_display(qapp, repo):
     assert " - " in row.time_label.text()
     assert expected_created in row.time_label.text()
 
+    row.deleteLater()
+
+
+def test_task_time_tracking_rescheduled_older_task(qapp):
+    """Verify that an older rescheduled task completed today displays date as well as time."""
+    older_dt = datetime(2026, 9, 25, 9, 30, 0)
+    completed_dt = datetime(2026, 10, 5, 14, 15, 0)
+    task = TaskRecord(
+        id=888,
+        title="Rescheduled Older Task",
+        project_tag="Work",
+        status="not_started",
+        created_at=older_dt,
+        scheduled_date="2026-10-05",
+    )
+    row = TaskRowWidget(task, all_projects=["Work"])
+
+    # Before completion: shows date and time because it was created on an older date
+    assert "Sep 25, 9:30 AM" in row.time_label.text()
+
+    # Mark completed on today
+    task.completed_at = completed_dt
+    row.task.completed_at = completed_dt
+    row._update_status_ui("done")
+
+    # After completion: shows both start date+time and completion date+time
+    assert "Sep 25, 9:30 AM - Oct 5, 2:15 PM" in row.time_label.text()
     row.deleteLater()
 
 

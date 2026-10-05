@@ -940,6 +940,51 @@ class InlineEditInput(QLineEdit):
             super().keyPressEvent(event)
 
 
+def format_task_time_tracking(
+    created_at: Optional[datetime],
+    completed_at: Optional[datetime],
+    is_done: bool = False,
+    is_cancelled: bool = False,
+) -> str:
+    """
+    Format task or subtask time tracking metadata.
+    When created and completed on the same day:
+        '(9:30 AM - 1:15 PM)'
+    When an older task is completed on a different day (e.g. rescheduled to today):
+        '(Oct 1, 9:30 AM - Oct 5, 1:15 PM)'
+    When uncompleted on the same day as created:
+        '(9:30 AM)'
+    When uncompleted on a later day than created:
+        '(Oct 1, 9:30 AM)'
+    """
+    if not created_at:
+        return ""
+
+    time_created = created_at.strftime("%I:%M %p").lstrip("0")
+    current_year = datetime.now().year
+
+    def format_date_part(dt: datetime) -> str:
+        if dt.year != current_year:
+            return f"{dt.strftime('%b')} {dt.day}, {dt.year}"
+        return f"{dt.strftime('%b')} {dt.day}"
+
+    date_created = format_date_part(created_at)
+
+    if (is_done or is_cancelled) and completed_at:
+        time_completed = completed_at.strftime("%I:%M %p").lstrip("0")
+        date_completed = format_date_part(completed_at)
+
+        if created_at.date() == completed_at.date():
+            return f"({time_created} - {time_completed})"
+        else:
+            return f"({date_created}, {time_created} - {date_completed}, {time_completed})"
+
+    if created_at.date() == datetime.now().date():
+        return f"({time_created})"
+    else:
+        return f"({date_created}, {time_created})"
+
+
 class SubtaskRowWidget(QWidget):
     """Single subtask row nested under a parent task with rename & delete support."""
 
@@ -1072,14 +1117,14 @@ class SubtaskRowWidget(QWidget):
         self.label.setVisible(True)
 
     def _update_time_label(self, is_done: bool) -> None:
-        created_str = self.subtask.created_at.strftime("%I:%M %p").lstrip("0") if self.subtask.created_at else ""
-        if is_done and self.subtask.completed_at and created_str:
-            comp_str = self.subtask.completed_at.strftime("%I:%M %p").lstrip("0")
-            self.time_label.setText(f"({created_str} - {comp_str})")
-        elif created_str:
-            self.time_label.setText(f"({created_str})")
-        else:
-            self.time_label.setText("")
+        self.time_label.setText(
+            format_task_time_tracking(
+                created_at=self.subtask.created_at,
+                completed_at=self.subtask.completed_at,
+                is_done=is_done,
+                is_cancelled=False,
+            )
+        )
 
     def _update_label_style(self, is_done: bool) -> None:
         self._update_time_label(is_done)
@@ -1807,15 +1852,15 @@ class TaskRowWidget(QWidget):
         is_cancelled = status in ("cancelled", "canceled")
         is_in_progress = status in ("in_progress", "pending", "ongoing")
 
-        # Time metadata display (e.g. (1:36 PM - 1:57 PM) or (1:36 PM))
-        created_str = self.task.created_at.strftime("%I:%M %p").lstrip("0") if self.task.created_at else ""
-        if (is_done or is_cancelled) and self.task.completed_at and created_str:
-            comp_str = self.task.completed_at.strftime("%I:%M %p").lstrip("0")
-            self.time_label.setText(f"({created_str} - {comp_str})")
-        elif created_str:
-            self.time_label.setText(f"({created_str})")
-        else:
-            self.time_label.setText("")
+        # Time metadata display (e.g. (1:36 PM - 1:57 PM) or (Oct 1, 1:36 PM - Oct 5, 1:57 PM))
+        self.time_label.setText(
+            format_task_time_tracking(
+                created_at=self.task.created_at,
+                completed_at=self.task.completed_at,
+                is_done=is_done,
+                is_cancelled=is_cancelled,
+            )
+        )
 
         # Sync checkbox state without re-triggering signal
         self.checkbox.blockSignals(True)
