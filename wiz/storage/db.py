@@ -260,6 +260,34 @@ class Database:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_repeat_mode ON tasks(repeat_mode)")
         except sqlite3.OperationalError:
             pass
+
+        # Clean up legacy system noise from sessions table (explorer, search, lock screen, wizdesk self)
+        try:
+            conn.execute(
+                """
+                DELETE FROM sessions
+                WHERE LOWER(app_name) IN (
+                    'explorer', 'explorer.exe',
+                    'searchhost', 'searchhost.exe',
+                    'searchapp', 'searchapp.exe',
+                    'shellexperiencehost', 'shellexperiencehost.exe',
+                    'shellhost', 'shellhost.exe',
+                    'pickerhost', 'pickerhost.exe',
+                    'lockapp', 'lockapp.exe',
+                    'logonui', 'logonui.exe',
+                    'taskmgr', 'taskmgr.exe',
+                    'wizdesk', 'wizdesk.exe'
+                )
+                OR LOWER(window_title) IN (
+                    'program manager',
+                    'windows default lock screen',
+                    'search',
+                    'task switching'
+                )
+                """
+            )
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
 
     def _flush_to_disk(self, key: Optional[bytes] = None) -> None:

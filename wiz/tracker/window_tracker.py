@@ -12,7 +12,11 @@ from PyQt6.QtCore import QThread
 from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.storage.models import StorageRepository
-from wiz.utils.sanitizer import sanitize_window_title, clean_app_name
+from wiz.utils.sanitizer import (
+    sanitize_window_title,
+    clean_app_name,
+    is_system_excluded,
+)
 
 # Windows API imports
 if sys.platform == "win32":
@@ -75,8 +79,8 @@ def get_active_window_info() -> Optional[ActiveWindowInfo]:
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             app_name = "Unknown"
 
-        # Ignore empty/shell tray windows
-        if not window_title and app_name in ("ShellExperienceHost.exe", "SearchHost.exe"):
+        # Ignore system processes and shell infrastructure (Windows Explorer, Search, Lock screen, WizDesk self)
+        if is_system_excluded(app_name, window_title, pid):
             return None
 
         # Sanitize window title to prevent logging passwords, banking, or private PII
@@ -146,15 +150,51 @@ class WindowTracker(QThread):
                 if info:
                     project_tag = self.repo.match_project_tag(f"{info.window_title} {info.app_name}")
 
-                    # Check if active window/app changed or if 5m session limit reached
-                    elapsed = (now - self._session_start).total_seconds()
-                    max_session_sec = config.get("tracking_interval_seconds", 300)
+                    if self._current_app is None:
+                        # Starting tracking a new active app after an idle or excluded period
+                        self._session_start = now
+                        self._current_app = info.app_name
+                        self._current_title = info.window_title
+                        self._current_project = project_tag
+                    else:
+                        # Check if active window/app changed or if session chunk limit reached
+                        elapsed = (now - self._session_start).total_seconds()
+                        max_session_sec = config.get("tracking_interval_seconds", 300)
 
-                    app_changed = (self._current_app != info.app_name)
-                    title_changed = (self._current_title != info.window_title)
+                        app_changed = (self._current_app != info.app_name)
+                        title_changed = (self._current_title != info.window_title)
 
-                    if self._current_app is not None and (app_changed or elapsed >= max_session_sec):
-                        # Flush previous session to database if valid duration (> 10s)
+                        if app_changed or elapsed >= max_session_sec:
+                            # Flush previous session to database if valid duration (> 10s)
+                            if elapsed >= 10:
+                                self.repo.log_session(
+                                    app_name=self._current_app,
+                                    window_title=self._current_title or "",
+                                    start_time=self._session_start,
+                                    end_time=now,
+                                    project_tag=self._current_project,
+                                )
+                                app_signals.session_polled.emit(
+                                    self._current_app,
+                                    self._current_title or "",
+                                    self._current_project or "",
+                                )
+                                app_signals.activity_logged.emit(
+                                    self._current_app,
+                                    int(elapsed),
+                                )
+
+                            # Reset session start
+                            self._session_start = now
+
+                        # Update current tracking state
+                        self._current_app = info.app_name
+                        self._current_title = info.window_title
+                        self._current_project = project_tag
+                else:
+                    # Foreground window is excluded or inaccessible (e.g. Explorer, Search, Lock screen, WizDesk)
+                    if self._current_app is not None:
+                        elapsed = (now - self._session_start).total_seconds()
                         if elapsed >= 10:
                             self.repo.log_session(
                                 app_name=self._current_app,
@@ -172,14 +212,10 @@ class WindowTracker(QThread):
                                 self._current_app,
                                 int(elapsed),
                             )
-
-                        # Reset session start
+                        self._current_app = None
+                        self._current_title = None
+                        self._current_project = None
                         self._session_start = now
-
-                    # Update current tracking state
-                    self._current_app = info.app_name
-                    self._current_title = info.window_title
-                    self._current_project = project_tag
 
             except Exception as e:
                 print(f"[WindowTracker] Exception in tracking loop: {e}")

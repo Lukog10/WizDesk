@@ -1,13 +1,17 @@
-"""Unit tests for window title sanitization and privacy redaction."""
+"""Unit tests for window title sanitization, privacy redaction, and system process exclusion."""
 
+import os
 from datetime import datetime, timedelta
 import pytest
 
 from wiz.utils.sanitizer import (
     sanitize_window_title,
     clean_app_name,
+    is_system_excluded,
     PASSWORD_MANAGER_APPS,
     SENSITIVE_TITLE_KEYWORDS,
+    SYSTEM_EXCLUDED_PROCESSES,
+    SYSTEM_EXCLUDED_TITLES,
 )
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository
@@ -49,6 +53,55 @@ def test_sanitize_normal_development_titles():
         assert sanitize_window_title(title, app_name=app) == title
 
 
+def test_clean_app_name():
+    """Verify that .exe file extensions are stripped from process names."""
+    assert clean_app_name("Antigravity IDE.exe") == "Antigravity IDE"
+    assert clean_app_name("explorer.exe") == "explorer"
+    assert clean_app_name("CONTROLResonant.exe") == "CONTROLResonant"
+    assert clean_app_name("zen.exe") == "zen"
+    assert clean_app_name("Code") == "Code"
+    assert clean_app_name("my_app.EXE") == "my_app"
+    assert clean_app_name(None) == "Unknown"
+    assert clean_app_name("") == "Unknown"
+
+
+def test_is_system_excluded_explorer():
+    """Verify Windows Explorer folder windows, desktop, and task switching are excluded."""
+    assert is_system_excluded("explorer.exe", "Downloads - File Explorer") is True
+    assert is_system_excluded("explorer.exe", "H:\\Projects\\Wiz - File Explorer") is True
+    assert is_system_excluded("explorer.exe", "Program Manager") is True
+    assert is_system_excluded("explorer", "Task Switching") is True
+    assert is_system_excluded("explorer.exe", "") is True
+    assert is_system_excluded("explorer", "This PC") is True
+
+
+def test_is_system_excluded_search_and_system_hosts():
+    """Verify Windows Search, Lock Screen, and system shell hosts are excluded."""
+    assert is_system_excluded("SearchHost.exe", "Search") is True
+    assert is_system_excluded("SearchApp.exe", "Search") is True
+    assert is_system_excluded("LockApp.exe", "Windows Default Lock Screen") is True
+    assert is_system_excluded("LogonUI.exe", "Logon") is True
+    assert is_system_excluded("ShellExperienceHost.exe", "New notification") is True
+    assert is_system_excluded("ShellHost.exe", "Windows Input Experience") is True
+    assert is_system_excluded("PickerHost.exe", "Open") is True
+    assert is_system_excluded("Taskmgr.exe", "Task Manager") is True
+
+
+def test_is_system_excluded_wizdesk_self():
+    """Verify WizDesk itself is excluded by process name and current PID."""
+    assert is_system_excluded("WizDesk.exe", "WizDesk Workspace") is True
+    assert is_system_excluded("WizDesk", "Settings") is True
+    assert is_system_excluded("python.exe", "WizDesk", pid=os.getpid()) is True
+
+
+def test_is_system_excluded_allowed_work_apps():
+    """Verify legitimate work applications are not excluded."""
+    assert is_system_excluded("Code.exe", "Wiz - Visual Studio Code") is False
+    assert is_system_excluded("chrome.exe", "GitHub - Lukog10/WizDesk") is False
+    assert is_system_excluded("zen.exe", "Research papers") is False
+    assert is_system_excluded("ApplicationFrameHost.exe", "Settings") is False
+
+
 def test_log_session_sanitization_integration(tmp_path):
     """Verify StorageRepository.log_session applies sanitization to recorded sessions."""
     db = Database(tmp_path / "test_sec_sessions.db")
@@ -82,14 +135,30 @@ def test_log_session_sanitization_integration(tmp_path):
     assert sessions2[1].window_title == "WizDesk - storage/models.py"
 
 
-def test_clean_app_name():
-    """Verify that .exe file extensions are stripped from process names."""
-    assert clean_app_name("Antigravity IDE.exe") == "Antigravity IDE"
-    assert clean_app_name("explorer.exe") == "explorer"
-    assert clean_app_name("CONTROLResonant.exe") == "CONTROLResonant"
-    assert clean_app_name("zen.exe") == "zen"
-    assert clean_app_name("Code") == "Code"
-    assert clean_app_name("my_app.EXE") == "my_app"
-    assert clean_app_name(None) == "Unknown"
-    assert clean_app_name("") == "Unknown"
+def test_repo_log_session_blocks_excluded_system_processes(tmp_path):
+    """Verify StorageRepository.log_session rejects Windows Explorer and system noise."""
+    db = Database(tmp_path / "test_exclusion_repo.db")
+    repo = StorageRepository(db)
 
+    t1 = datetime(2026, 10, 5, 10, 0, 0)
+    t2 = t1 + timedelta(minutes=10)
+
+    # Attempt to log explorer.exe
+    s1 = repo.log_session("explorer.exe", "Downloads - File Explorer", t1, t2)
+    assert s1 == 0
+
+    # Attempt to log SearchHost.exe
+    s2 = repo.log_session("SearchHost.exe", "Search", t1, t2)
+    assert s2 == 0
+
+    # Attempt to log WizDesk self
+    s3 = repo.log_session("WizDesk.exe", "Settings", t1, t2)
+    assert s3 == 0
+
+    # Log legitimate session
+    s4 = repo.log_session("Code.exe", "main.py - WizDesk", t1, t2, project_tag="WizDesk")
+    assert s4 > 0
+
+    records = repo.get_sessions_for_date(t1.date())
+    assert len(records) == 1
+    assert records[0].app_name == "Code.exe"

@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 
 from wiz.core.config import config
 from wiz.storage.db import Database, get_db
-from wiz.utils.sanitizer import sanitize_window_title
+from wiz.utils.sanitizer import sanitize_window_title, is_system_excluded
 
 
 @dataclass
@@ -181,6 +181,9 @@ class StorageRepository:
         project_tag: Optional[str] = None,
     ) -> int:
         """Insert a tracked application session."""
+        if is_system_excluded(app_name, window_title):
+            return 0
+
         if config.get("sanitize_tracked_titles", True):
             clean_title = sanitize_window_title(window_title, app_name)
         else:
