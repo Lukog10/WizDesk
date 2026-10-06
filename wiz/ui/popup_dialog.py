@@ -43,6 +43,7 @@ from PyQt6.QtWidgets import (
     QCalendarWidget,
     QSizePolicy,
     QColorDialog,
+    QPlainTextEdit,
 )
 
 from wiz.core.config import config
@@ -50,7 +51,7 @@ from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord, TagRecord, ProjectRecord
 from wiz.ui.icons import get_app_icon, get_status_icon, render_tinted_svg
-from wiz.sync.obsidian import sync_today_logs
+from wiz.sync.obsidian import sync_today_logs, sync_permanent_note
 from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView, PRESET_COLORS
 from wiz.ui.sidebar_widget import SideNavBar
@@ -3466,6 +3467,796 @@ class NoteRowWidget(QWidget):
         self.toggled.emit(self.note_id, checked)
 
 
+class NoteCardWidget(QWidget):
+    """
+    Card representing a permanent note in the left master list.
+    Displays:
+    - Note title (bold, prominent)
+    - Pinned badge / indicator
+    - Body preview snippet
+    - Project badge and Tag pills
+    - Formatted updated timestamp
+    - Delete button
+    """
+
+    selected = pyqtSignal(int)  # note_id
+    delete_requested = pyqtSignal(int)  # note_id
+    pin_toggled = pyqtSignal(int, bool)  # note_id, is_pinned
+
+    def __init__(
+        self,
+        note: NoteRecord,
+        is_selected: bool = False,
+        is_dark: bool = False,
+        parent: Optional[QWidget] = None,
+    ):
+        super().__init__(parent)
+        self.note = note
+        self.note_id = note.id or 0
+        self.is_selected = is_selected
+        self.is_dark = is_dark
+        self._hovered = False
+
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setFixedHeight(74)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(3)
+
+        # Top row: Pinned badge, Title, Delete button
+        top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(6)
+
+        if note.is_pinned:
+            pin_lbl = QLabel("PINNED")
+            pin_lbl.setFont(get_font(8, QFont.Weight.Bold))
+            pin_lbl.setStyleSheet("color: #F97316; font-size: 8px; font-weight: bold;")
+            top_row.addWidget(pin_lbl)
+
+        title_text = note.title.strip() if note.title else "Untitled Note"
+        self.title_lbl = QLabel(title_text)
+        self.title_lbl.setFont(get_font(10, QFont.Weight.Bold))
+        top_row.addWidget(self.title_lbl, stretch=1)
+
+        self.del_btn = QPushButton("x")
+        self.del_btn.setFixedSize(16, 16)
+        self.del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.del_btn.setToolTip("Delete note")
+        del_color = "#71717A" if self.is_dark else "#A1A1AA"
+        self.del_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {del_color};
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 10px;
+                font-weight: bold;
+                border-radius: 8px;
+            }}
+            QPushButton:hover {{
+                color: #EF4444;
+                background-color: rgba(239, 68, 68, 0.15);
+            }}
+        """)
+        self.del_btn.clicked.connect(lambda: self.delete_requested.emit(self.note_id))
+        top_row.addWidget(self.del_btn)
+        layout.addLayout(top_row)
+
+        # Snippet preview
+        snippet = (note.content or "").strip().replace("\n", " ")
+        if len(snippet) > 55:
+            snippet = snippet[:52] + "..."
+        if not snippet:
+            snippet = "Empty note..."
+
+        snip_color = "#A1A1AA" if self.is_dark else "#71717A"
+        self.snip_lbl = QLabel(snippet)
+        self.snip_lbl.setFont(get_font(9))
+        self.snip_lbl.setStyleSheet(f"color: {snip_color}; font-size: 11px;")
+        layout.addWidget(self.snip_lbl)
+
+        # Bottom row: project badge, tag pills, time
+        bot_row = QHBoxLayout()
+        bot_row.setContentsMargins(0, 0, 0, 0)
+        bot_row.setSpacing(4)
+
+        if note.project_tag:
+            p_badge = QLabel(f"[{note.project_tag}]")
+            p_badge.setFont(get_font(8, QFont.Weight.Medium))
+            p_badge.setStyleSheet(f"color: {'#38BDF8' if self.is_dark else '#0284C7'}; font-size: 9px;")
+            bot_row.addWidget(p_badge)
+
+        for tag in getattr(note, "tags", [])[:2]:
+            t_badge = QLabel(tag.name)
+            t_badge.setFont(get_font(8))
+            c = tag.color or "#3B82F6"
+            t_badge.setStyleSheet(f"""
+                QLabel {{
+                    background-color: rgba(59, 130, 246, 0.15);
+                    color: {c};
+                    border: 1px solid rgba(59, 130, 246, 0.3);
+                    border-radius: 4px;
+                    padding: 0 4px;
+                    font-size: 9px;
+                }}
+            """)
+            bot_row.addWidget(t_badge)
+
+        bot_row.addStretch()
+
+        time_val = note.updated_at or note.created_at
+        time_str = time_val.strftime("%b %d") if time_val else ""
+        self.time_lbl = QLabel(time_str)
+        self.time_lbl.setFont(get_font(8))
+        self.time_lbl.setStyleSheet(f"color: {del_color}; font-size: 9px;")
+        bot_row.addWidget(self.time_lbl)
+
+        layout.addLayout(bot_row)
+        self._update_style()
+
+    def set_selected(self, selected: bool) -> None:
+        self.is_selected = selected
+        self._update_style()
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self._update_style()
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._hovered = True
+        self._update_style()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._hovered = False
+        self._update_style()
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.selected.emit(self.note_id)
+        super().mousePressEvent(event)
+
+    def _update_style(self) -> None:
+        accent = "#C2410C" if self.is_dark else "#BA3F1A"
+        if self.is_selected:
+            bg = "rgba(194, 65, 12, 0.18)" if self.is_dark else "#FFF7ED"
+            border = f"1.5px solid {accent}"
+        elif self._hovered:
+            bg = "#27272A" if self.is_dark else "#F4F4F6"
+            border = f"1px solid {'#3F3F46' if self.is_dark else '#E4E4E7'}"
+        else:
+            bg = "#1F1F23" if self.is_dark else "#FFFFFF"
+            border = f"1px solid {'#27272A' if self.is_dark else '#E5E5EA'}"
+
+        text_color = "#F4F4F5" if self.is_dark else "#18181B"
+        self.title_lbl.setStyleSheet(f"color: {text_color}; font-weight: 600; font-size: 11px;")
+        self.setStyleSheet(f"""
+            NoteCardWidget {{
+                background-color: {bg};
+                border: {border};
+                border-radius: 8px;
+            }}
+        """)
+
+
+class NoteEditorWidget(QWidget):
+    """
+    Document editor pane for permanent notes.
+    Features:
+    - Large editable title
+    - Project icon button
+    - Tag icon button
+    - Pin toggle
+    - Delete button
+    - Multi-line Markdown editor (QPlainTextEdit)
+    - Auto-save timer with debouncing (300ms)
+    - Obsidian Vault synchronization
+    - Word and character counter
+    """
+
+    note_updated = pyqtSignal(int)  # note_id
+    note_deleted = pyqtSignal(int)  # note_id
+
+    def __init__(
+        self,
+        repo: StorageRepository,
+        is_dark: bool = False,
+        parent: Optional[QWidget] = None,
+    ):
+        super().__init__(parent)
+        self.repo = repo
+        self.is_dark = is_dark
+        self.active_note: Optional[NoteRecord] = None
+        self._is_loading: bool = False
+
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(10, 8, 10, 8)
+        self.main_layout.setSpacing(8)
+
+        # Empty state container
+        self.empty_widget = QWidget(self)
+        empty_layout = QVBoxLayout(self.empty_widget)
+        empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.setSpacing(8)
+
+        empty_fg = "#71717A" if self.is_dark else "#A1A1AA"
+        empty_title = QLabel("Select a Note to Edit")
+        empty_title.setFont(get_font(12, QFont.Weight.Bold))
+        empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_title.setStyleSheet(f"color: {empty_fg}; font-size: 13px; font-weight: 600;")
+        empty_layout.addWidget(empty_title)
+
+        empty_sub = QLabel("Select a note from the left, or enter a title above to create a new permanent note.")
+        empty_sub.setFont(get_font(10))
+        empty_sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_sub.setStyleSheet(f"color: {empty_fg}; font-size: 11px;")
+        empty_layout.addWidget(empty_sub)
+        self.main_layout.addWidget(self.empty_widget, stretch=1)
+
+        # Editor container
+        self.editor_widget = QWidget(self)
+        editor_layout = QVBoxLayout(self.editor_widget)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(8)
+
+        # Top toolbar
+        toolbar = QHBoxLayout()
+        toolbar.setContentsMargins(0, 0, 0, 0)
+        toolbar.setSpacing(6)
+
+        # Note title input
+        self.title_input = QLineEdit()
+        self.title_input.setFont(get_font(13, QFont.Weight.Bold))
+        self.title_input.setPlaceholderText("Untitled Note")
+        self.title_input.textChanged.connect(self._on_title_changed)
+        toolbar.addWidget(self.title_input, stretch=1)
+
+        # Project icon button
+        self.project_btn = ProjectIconButton(is_dark=self.is_dark, parent=self.editor_widget)
+        self.project_btn.project_selected.connect(self._on_project_selected)
+        toolbar.addWidget(self.project_btn)
+
+        # Tag icon button
+        self.tag_btn = TagIconButton(repo=self.repo, is_dark=self.is_dark, parent=self.editor_widget)
+        self.tag_btn.tags_selection_changed.connect(self._on_tags_selected)
+        toolbar.addWidget(self.tag_btn)
+
+        # Pin toggle button
+        self.pin_btn = QPushButton("Pin")
+        self.pin_btn.setFixedHeight(28)
+        self.pin_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.pin_btn.setFont(get_font(9, QFont.Weight.Medium))
+        self.pin_btn.clicked.connect(self._toggle_pin)
+        toolbar.addWidget(self.pin_btn)
+
+        # Delete button
+        self.del_btn = QPushButton("Delete")
+        self.del_btn.setFixedHeight(28)
+        self.del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.del_btn.setFont(get_font(9, QFont.Weight.Medium))
+        self.del_btn.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: #EF4444;
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                border-radius: 5px;
+                padding: 0 8px;
+            }
+            QPushButton:hover {
+                background-color: rgba(239, 68, 68, 0.15);
+            }
+        """)
+        self.del_btn.clicked.connect(self._on_delete_clicked)
+        toolbar.addWidget(self.del_btn)
+
+        editor_layout.addLayout(toolbar)
+
+        # Multi-line Markdown plain text editor
+        self.text_edit = QPlainTextEdit()
+        self.text_edit.setFont(get_font(10))
+        self.text_edit.setPlaceholderText("Start writing your note in Markdown... Use # Headers, - Lists, bold, and code")
+        self.text_edit.textChanged.connect(self._on_content_changed)
+        editor_layout.addWidget(self.text_edit, stretch=1)
+
+        # Bottom info bar: Save status and Word count
+        bot_bar = QHBoxLayout()
+        bot_bar.setContentsMargins(4, 0, 4, 0)
+        bot_bar.setSpacing(10)
+
+        self.save_status_lbl = QLabel("Saved")
+        self.save_status_lbl.setFont(get_font(9))
+        self.save_status_lbl.setStyleSheet("color: #10B981; font-weight: 500;")
+        bot_bar.addWidget(self.save_status_lbl)
+
+        bot_bar.addStretch()
+
+        self.stats_lbl = QLabel("0 words | 0 chars")
+        self.stats_lbl.setFont(get_font(9))
+        bot_bar.addWidget(self.stats_lbl)
+
+        editor_layout.addLayout(bot_bar)
+        self.main_layout.addWidget(self.editor_widget, stretch=1)
+
+        # Auto-save debounce timer
+        self.save_timer = QTimer(self)
+        self.save_timer.setInterval(300)
+        self.save_timer.setSingleShot(True)
+        self.save_timer.timeout.connect(self._save_active_note)
+
+        self.editor_widget.setVisible(False)
+        self.empty_widget.setVisible(True)
+        self.set_theme(self.is_dark)
+
+    def load_note(self, note: Optional[NoteRecord]) -> None:
+        """Load a note into the editor or show empty state if None."""
+        if self.save_timer.isActive():
+            self.save_timer.stop()
+            self._save_active_note()
+
+        self._is_loading = True
+        self.active_note = note
+        if note is None:
+            self.empty_widget.setVisible(True)
+            self.editor_widget.setVisible(False)
+            self._is_loading = False
+            return
+
+        self.empty_widget.setVisible(False)
+        self.editor_widget.setVisible(True)
+
+        self.title_input.setText(note.title or "")
+        self.text_edit.setPlainText(note.content or "")
+
+        # Set project and tags
+        projects = self.repo.get_all_projects()
+        self.project_btn.set_projects(projects)
+        if note.project_tag:
+            self.project_btn.setCurrentText(note.project_tag)
+
+        tag_ids = [t.id for t in getattr(note, "tags", []) if t.id is not None]
+        self.tag_btn.set_selected_tag_ids(tag_ids)
+
+        self._update_pin_btn_style()
+        self._update_stats()
+        self.save_status_lbl.setText("Saved")
+        self.save_status_lbl.setStyleSheet("color: #10B981; font-weight: 500;")
+        self._is_loading = False
+
+    def _on_title_changed(self) -> None:
+        if self._is_loading or not self.active_note:
+            return
+        self.save_status_lbl.setText("Saving...")
+        self.save_status_lbl.setStyleSheet("color: #F59E0B; font-weight: 500;")
+        self.save_timer.start()
+
+    def _on_content_changed(self) -> None:
+        if self._is_loading or not self.active_note:
+            return
+        self._update_stats()
+        self.save_status_lbl.setText("Saving...")
+        self.save_status_lbl.setStyleSheet("color: #F59E0B; font-weight: 500;")
+        self.save_timer.start()
+
+    def _update_stats(self) -> None:
+        text = self.text_edit.toPlainText()
+        words = len(text.split()) if text.strip() else 0
+        chars = len(text)
+        stats_color = "#71717A" if self.is_dark else "#A1A1AA"
+        self.stats_lbl.setText(f"{words} words | {chars} chars")
+        self.stats_lbl.setStyleSheet(f"color: {stats_color}; font-size: 10px;")
+
+    def _on_project_selected(self, proj_name: str) -> None:
+        if not self.active_note:
+            return
+        self.active_note.project_tag = proj_name
+        self.save_timer.start()
+
+    def _on_tags_selected(self, tag_ids: List[int]) -> None:
+        if not self.active_note:
+            return
+        self.save_timer.start()
+
+    def _toggle_pin(self) -> None:
+        if not self.active_note:
+            return
+        self.active_note.is_pinned = not self.active_note.is_pinned
+        self._update_pin_btn_style()
+        self.save_timer.start()
+
+    def _update_pin_btn_style(self) -> None:
+        if not self.active_note:
+            return
+        is_pinned = self.active_note.is_pinned
+        if is_pinned:
+            self.pin_btn.setText("Pinned")
+            self.pin_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(249, 115, 22, 0.15);
+                    color: #F97316;
+                    border: 1px solid rgba(249, 115, 22, 0.4);
+                    border-radius: 5px;
+                    padding: 0 8px;
+                    font-weight: 600;
+                }
+            """)
+        else:
+            border_c = "#3F3F46" if self.is_dark else "#E4E4E7"
+            fg_c = "#A1A1AA" if self.is_dark else "#71717A"
+            self.pin_btn.setText("Pin")
+            self.pin_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: transparent;
+                    color: {fg_c};
+                    border: 1px solid {border_c};
+                    border-radius: 5px;
+                    padding: 0 8px;
+                }}
+            """)
+
+    def _save_active_note(self) -> None:
+        if not self.active_note or self.active_note.id is None:
+            return
+        title = self.title_input.text().strip()
+        content = self.text_edit.toPlainText()
+        project = self.project_btn.currentText()
+        tags = self.tag_btn.selected_tag_ids
+
+        self.repo.update_permanent_note(
+            note_id=self.active_note.id,
+            title=title,
+            content=content,
+            project_tag=project,
+            tag_ids=tags,
+            is_pinned=self.active_note.is_pinned,
+        )
+        self.active_note.title = title
+        self.active_note.content = content
+        self.active_note.project_tag = project
+
+        # Sync to Obsidian vault
+        try:
+            sync_permanent_note(self.active_note)
+        except Exception:
+            pass
+
+        self.save_status_lbl.setText("Saved")
+        self.save_status_lbl.setStyleSheet("color: #10B981; font-weight: 500;")
+        self.note_updated.emit(self.active_note.id)
+
+    def _on_delete_clicked(self) -> None:
+        if not self.active_note or self.active_note.id is None:
+            return
+        nid = self.active_note.id
+        self.repo.delete_permanent_note(nid)
+        self.load_note(None)
+        self.note_deleted.emit(nid)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.project_btn.set_theme(is_dark)
+        self.tag_btn.set_theme(is_dark)
+
+        title_bg = "#27272A" if is_dark else "#FFFFFF"
+        title_fg = "#F4F4F5" if is_dark else "#18181B"
+        title_border = "#3F3F46" if is_dark else "#E4E4E7"
+        editor_bg = "#18181B" if is_dark else "#FFFFFF"
+        editor_fg = "#F4F4F5" if is_dark else "#18181B"
+        editor_border = "#27272A" if is_dark else "#E4E4E7"
+
+        self.title_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {title_bg};
+                color: {title_fg};
+                border: 1px solid {title_border};
+                border-radius: 6px;
+                padding: 4px 8px;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+                font-weight: 600;
+            }}
+            QLineEdit:focus {{
+                border: 1.5px solid {"#C2410C" if is_dark else "#BA3F1A"};
+            }}
+        """)
+        self.text_edit.setStyleSheet(f"""
+            QPlainTextEdit {{
+                background-color: {editor_bg};
+                color: {editor_fg};
+                border: 1px solid {editor_border};
+                border-radius: 8px;
+                padding: 10px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+            QPlainTextEdit:focus {{
+                border: 1.5px solid {"#C2410C" if is_dark else "#BA3F1A"};
+            }}
+        """)
+        self._update_pin_btn_style()
+        self._update_stats()
+
+
+class PermanentNotesWorkspaceWidget(QWidget):
+    """
+    Two-pane knowledge base workspace for permanent long-form notes.
+    Features:
+    - Top creation bar: Title input + Project button + Tag button + Create button
+    - Left Master List: Search filter + scrollable NoteCardWidget cards list
+    - Right Detail Editor: NoteEditorWidget with real-time editing and debounced auto-save
+    """
+
+    note_selected = pyqtSignal(int)
+    note_created = pyqtSignal(int)
+
+    def __init__(
+        self,
+        repo: StorageRepository,
+        is_dark: bool = False,
+        parent: Optional[QWidget] = None,
+    ):
+        super().__init__(parent)
+        self.repo = repo
+        self.is_dark = is_dark
+        self.active_note_id: Optional[int] = None
+        self.all_notes: List[NoteRecord] = []
+
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(10)
+
+        # 1. Top Create Note Bar
+        create_bar = QHBoxLayout()
+        create_bar.setContentsMargins(0, 0, 0, 0)
+        create_bar.setSpacing(8)
+
+        self.note_title_input = QLineEdit()
+        self.note_title_input.setPlaceholderText("+ Enter Note Title... (e.g. Architecture Decisions, API Contract)")
+        self.note_title_input.returnPressed.connect(self._on_create_clicked)
+        create_bar.addWidget(self.note_title_input, stretch=1)
+
+        self.note_project_btn = ProjectIconButton(is_dark=self.is_dark, parent=self)
+        create_bar.addWidget(self.note_project_btn)
+
+        self.note_tag_btn = TagIconButton(repo=self.repo, is_dark=self.is_dark, parent=self)
+        create_bar.addWidget(self.note_tag_btn)
+
+        self.create_note_btn = QPushButton("Create Note")
+        self.create_note_btn.setFont(get_font(11, QFont.Weight.Bold))
+        self.create_note_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.create_note_btn.clicked.connect(self._on_create_clicked)
+        create_bar.addWidget(self.create_note_btn)
+
+        outer_layout.addLayout(create_bar)
+
+        # 2. Main Body Split Pane (Left Master List + Right Detail Editor)
+        body_widget = QWidget(self)
+        body_layout = QHBoxLayout(body_widget)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(10)
+
+        # Left Master Pane: Search + Notes Cards Scroll Area (260px wide)
+        left_pane = QWidget()
+        left_pane.setFixedWidth(260)
+        left_layout = QVBoxLayout(left_pane)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(8)
+
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search notes...")
+        self.search_input.textChanged.connect(self._on_search_changed)
+        left_layout.addWidget(self.search_input)
+
+        self.cards_scroll = QScrollArea()
+        self.cards_scroll.setWidgetResizable(True)
+        self.cards_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.cards_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.cards_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.cards_scroll.setStyleSheet("background: transparent; border: none;")
+
+        self.cards_container = QWidget()
+        self.cards_layout = QVBoxLayout(self.cards_container)
+        self.cards_layout.setContentsMargins(0, 0, 0, 0)
+        self.cards_layout.setSpacing(6)
+        self.cards_layout.addStretch()
+
+        self.cards_scroll.setWidget(self.cards_container)
+        left_layout.addWidget(self.cards_scroll, stretch=1)
+        body_layout.addWidget(left_pane)
+
+        # Divider line
+        div = QFrame()
+        div.setFrameShape(QFrame.Shape.VLine)
+        div.setFixedWidth(1)
+        self.divider = div
+        body_layout.addWidget(div)
+
+        # Right Detail Pane: Document Editor
+        self.editor = NoteEditorWidget(repo=self.repo, is_dark=self.is_dark, parent=body_widget)
+        self.editor.note_updated.connect(self._on_note_saved)
+        self.editor.note_deleted.connect(self._on_note_deleted)
+        body_layout.addWidget(self.editor, stretch=1)
+
+        outer_layout.addWidget(body_widget, stretch=1)
+
+        self.set_theme(self.is_dark)
+
+    def set_projects(self, projects: List[Any]) -> None:
+        """Update projects list across child buttons."""
+        self.note_project_btn.set_projects(projects)
+        self.editor.project_btn.set_projects(projects)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.note_project_btn.set_theme(is_dark)
+        self.note_tag_btn.set_theme(is_dark)
+        self.editor.set_theme(is_dark)
+
+        in_bg = "#27272A" if is_dark else "#FFFFFF"
+        in_fg = "#F4F4F5" if is_dark else "#18181B"
+        in_border = "#3F3F46" if is_dark else "#E4E4E7"
+        focus_border = "#C2410C" if is_dark else "#BA3F1A"
+        btn_bg = "#C2410C" if is_dark else "#BA3F1A"
+        btn_hover = "#A3360E" if is_dark else "#9E3414"
+        div_color = "rgba(255, 255, 255, 0.12)" if is_dark else "rgba(0, 0, 0, 0.10)"
+
+        input_style = f"""
+            QLineEdit {{
+                background-color: {in_bg};
+                color: {in_fg};
+                border: 1px solid {in_border};
+                border-radius: 8px;
+                padding: 6px 10px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+            }}
+            QLineEdit:focus {{
+                border: 1.5px solid {focus_border};
+            }}
+        """
+        self.note_title_input.setStyleSheet(input_style)
+        self.search_input.setStyleSheet(input_style)
+
+        self.create_note_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_bg};
+                color: #FFFFFF;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 14px;
+                font-family: {FONT_SANS};
+                font-size: 12px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_hover};
+            }}
+        """)
+        self.divider.setStyleSheet(f"background-color: {div_color}; border: none;")
+
+        # Update cards theme
+        for i in range(self.cards_layout.count()):
+            w = self.cards_layout.itemAt(i).widget()
+            if isinstance(w, NoteCardWidget):
+                w.set_theme(is_dark)
+
+    def load_notes(self) -> None:
+        """Fetch permanent notes and populate the cards list."""
+        self.all_notes = self.repo.get_permanent_notes()
+        self._render_cards()
+
+    def _render_cards(self) -> None:
+        """Render filtered note cards."""
+        while self.cards_layout.count() > 0:
+            item = self.cards_layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+        query = self.search_input.text().strip().lower()
+        filtered = self.all_notes
+        if query:
+            filtered = [
+                n for n in self.all_notes
+                if query in (n.title or "").lower()
+                or query in (n.content or "").lower()
+                or query in (n.project_tag or "").lower()
+            ]
+
+        if not filtered:
+            empty_lbl = QLabel("No notes found.")
+            empty_lbl.setFont(get_font(9))
+            empty_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            c = "#71717A" if self.is_dark else "#A1A1AA"
+            empty_lbl.setStyleSheet(f"color: {c}; padding: 30px 0;")
+            self.cards_layout.addWidget(empty_lbl)
+            self.cards_layout.addStretch()
+            if self.active_note_id is None:
+                self.editor.load_note(None)
+            return
+
+        for note in filtered:
+            is_sel = (note.id == self.active_note_id)
+            card = NoteCardWidget(note, is_selected=is_sel, is_dark=self.is_dark, parent=self.cards_container)
+            card.selected.connect(self.select_note)
+            card.delete_requested.connect(self._on_note_deleted)
+            self.cards_layout.addWidget(card)
+
+        self.cards_layout.addStretch()
+
+        # If active note is not set, select first note
+        if (self.active_note_id is None or not any(n.id == self.active_note_id for n in filtered)) and filtered:
+            self.select_note(filtered[0].id)
+
+    def select_note(self, note_id: int) -> None:
+        """Select a note as active in the cards list and editor."""
+        self.active_note_id = note_id
+        matching = [n for n in self.all_notes if n.id == note_id]
+        note = matching[0] if matching else None
+
+        # Update card selection states
+        for i in range(self.cards_layout.count()):
+            w = self.cards_layout.itemAt(i).widget()
+            if isinstance(w, NoteCardWidget):
+                w.set_selected(w.note_id == note_id)
+
+        self.editor.load_note(note)
+        self.note_selected.emit(note_id)
+
+    def _on_search_changed(self) -> None:
+        self._render_cards()
+
+    def _on_create_clicked(self) -> None:
+        """Create new permanent note from top input bar."""
+        title = self.note_title_input.text().strip()
+        if not title:
+            self.note_title_input.setFocus()
+            return
+
+        proj = self.note_project_btn.currentText()
+        if proj == "+ Create Section..." or not proj:
+            proj = "Work"
+        tags = self.note_tag_btn.selected_tag_ids
+
+        note_id = self.repo.create_permanent_note(
+            title=title,
+            content="",
+            project_tag=proj,
+            tag_ids=tags,
+        )
+        self.note_title_input.clear()
+        self.note_tag_btn.clear_selection()
+        self.load_notes()
+        self.select_note(note_id)
+        self.editor.text_edit.setFocus()
+        self.note_created.emit(note_id)
+        app_signals.note_created.emit(note_id)
+
+    def _on_note_saved(self, note_id: int) -> None:
+        """Refresh snippets on note cards after auto-save."""
+        self.all_notes = self.repo.get_permanent_notes()
+        for i in range(self.cards_layout.count()):
+            w = self.cards_layout.itemAt(i).widget()
+            if isinstance(w, NoteCardWidget) and w.note_id == note_id:
+                matching = [n for n in self.all_notes if n.id == note_id]
+                if matching:
+                    w.note = matching[0]
+                    w.title_lbl.setText(w.note.title or "Untitled Note")
+                    snip = (w.note.content or "").strip().replace("\n", " ")
+                    w.snip_lbl.setText(snip[:52] + "..." if len(snip) > 55 else (snip or "Empty note..."))
+                    t_val = w.note.updated_at or w.note.created_at
+                    w.time_lbl.setText(t_val.strftime("%b %d") if t_val else "")
+
+    def _on_note_deleted(self, note_id: int) -> None:
+        """Handle deletion of a note."""
+        self.all_notes = [n for n in self.all_notes if n.id != note_id]
+        if self.active_note_id == note_id:
+            self.active_note_id = None
+        self._render_cards()
+
+
 class ProjectGroupWidget(QWidget):
     """Collapsible project section with SVG arrow header and divider line."""
 
@@ -3830,61 +4621,28 @@ class QuickEntryDialog(QDialog):
         self.stack.addWidget(self.tasks_page)
 
         # ==========================================
-        # PAGE 2: QUICK NOTES VIEW
+        # PAGE 2: PERMANENT NOTES WORKSPACE
         # ==========================================
         self.notes_page = QWidget()
         notes_page_layout = QVBoxLayout(self.notes_page)
-        notes_page_layout.setContentsMargins(0, 6, 0, 0)
-        notes_page_layout.setSpacing(12)
+        notes_page_layout.setContentsMargins(0, 4, 0, 0)
+        notes_page_layout.setSpacing(0)
 
-        # Scrollable Notes Area (Without visible scrollbar)
-        self.notes_scroll = QScrollArea()
-        self.notes_scroll.setWidgetResizable(True)
-        self.notes_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.notes_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.notes_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.notes_scroll.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.notes_scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.notes_scroll.viewport().setStyleSheet("background: transparent;")
-        self.notes_scroll.setStyleSheet("""
-            QScrollArea, QScrollArea > QWidget > QWidget {
-                background: transparent;
-                border: none;
-            }
-        """)
-
-        self.notes_content_widget = QWidget()
-        self.notes_content_widget.setStyleSheet("background: transparent;")
-        self.notes_content_layout = QVBoxLayout(self.notes_content_widget)
-        self.notes_content_layout.setContentsMargins(4, 4, 4, 4)
-        self.notes_content_layout.setSpacing(8)
-        self.notes_content_layout.addStretch()
-
-        self.notes_scroll.setWidget(self.notes_content_widget)
-        notes_page_layout.addWidget(self.notes_scroll, stretch=1)
-
-        # Bottom Add Note Bar
-        add_note_layout = QHBoxLayout()
-        add_note_layout.setSpacing(8)
-
-        self.note_input = QLineEdit()
-        self.note_input.setPlaceholderText("+ Log a quick work note... (Press Enter)")
-        self.note_input.returnPressed.connect(self._on_quick_add_note)
-        add_note_layout.addWidget(self.note_input, stretch=3)
-
-        self.note_project_combo = ArrowComboBox(self.notes_page, is_dark=self.is_dark)
-        self.note_project_combo.setEditable(False)
-        self.note_project_combo.currentIndexChanged.connect(self._on_note_project_combo_changed)
-        add_note_layout.addWidget(self.note_project_combo, stretch=1)
-
-        self.add_note_btn = QPushButton("Log Note")
-        self.add_note_btn.setFont(get_font(12, QFont.Weight.Bold))
-        self.add_note_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.add_note_btn.clicked.connect(self._on_quick_add_note)
-        add_note_layout.addWidget(self.add_note_btn)
-
-        notes_page_layout.addLayout(add_note_layout)
+        self.notes_workspace = PermanentNotesWorkspaceWidget(
+            self.repo,
+            is_dark=self.is_dark,
+            parent=self.notes_page,
+        )
+        notes_page_layout.addWidget(self.notes_workspace)
         self.stack.addWidget(self.notes_page)
+
+        # Backward compatibility aliases for existing tests and dialog interactions
+        self.notes_scroll = self.notes_workspace.cards_scroll
+        self.notes_content_widget = self.notes_workspace.cards_container
+        self.notes_content_layout = self.notes_workspace.cards_layout
+        self.note_input = self.notes_workspace.note_title_input
+        self.note_project_combo = self.notes_workspace.note_project_btn
+        self.add_note_btn = self.notes_workspace.create_note_btn
 
         # 3. Dedicated Calendar & Scheduling Page
         self.calendar_view = CalendarView(self.repo, is_dark=self.is_dark, parent=self.stack)
@@ -4265,10 +5023,22 @@ class QuickEntryDialog(QDialog):
                 font-size: 12px;
             }}
         """
-        self.project_combo.set_theme(self.is_dark)
-        self.project_combo.setStyleSheet(combo_qss)
-        self.note_project_combo.set_theme(self.is_dark)
-        self.note_project_combo.setStyleSheet(combo_qss)
+        if hasattr(self, "project_combo"):
+            if isinstance(self.project_combo, ProjectIconButton):
+                self.project_combo.set_theme(self.is_dark)
+            elif hasattr(self.project_combo, "setStyleSheet"):
+                self.project_combo.set_theme(self.is_dark)
+                self.project_combo.setStyleSheet(combo_qss)
+
+        if hasattr(self, "note_project_combo"):
+            if isinstance(self.note_project_combo, ProjectIconButton):
+                self.note_project_combo.set_theme(self.is_dark)
+            elif hasattr(self.note_project_combo, "setStyleSheet"):
+                self.note_project_combo.set_theme(self.is_dark)
+                self.note_project_combo.setStyleSheet(combo_qss)
+
+        if hasattr(self, "notes_workspace"):
+            self.notes_workspace.set_theme(self.is_dark)
 
         if hasattr(self, "add_schedule_btn"):
             self.add_schedule_btn.set_theme(self.is_dark)
@@ -4391,20 +5161,26 @@ class QuickEntryDialog(QDialog):
                 self.project_combo.setCurrentIndex(0)
             self.project_combo.blockSignals(False)
 
-        if hasattr(self, "note_project_combo"):
-            note_sel = self.note_project_combo.currentText()
-            self.note_project_combo.blockSignals(True)
-            self.note_project_combo.clear()
-            for name in names:
-                self.note_project_combo.addItem(name)
-            self.note_project_combo.insertSeparator(self.note_project_combo.count())
-            self.note_project_combo.addItem("+ Create Section...")
+        if hasattr(self, "notes_workspace"):
+            self.notes_workspace.set_projects(projects)
 
-            if note_sel and note_sel in names:
-                self.note_project_combo.setCurrentText(note_sel)
-            else:
-                self.note_project_combo.setCurrentIndex(0)
-            self.note_project_combo.blockSignals(False)
+        if hasattr(self, "note_project_combo"):
+            if isinstance(self.note_project_combo, ProjectIconButton):
+                self.note_project_combo.set_projects(projects)
+            elif hasattr(self.note_project_combo, "clear"):
+                note_sel = self.note_project_combo.currentText()
+                self.note_project_combo.blockSignals(True)
+                self.note_project_combo.clear()
+                for name in names:
+                    self.note_project_combo.addItem(name)
+                self.note_project_combo.insertSeparator(self.note_project_combo.count())
+                self.note_project_combo.addItem("+ Create Section...")
+
+                if note_sel and note_sel in names:
+                    self.note_project_combo.setCurrentText(note_sel)
+                else:
+                    self.note_project_combo.setCurrentIndex(0)
+                self.note_project_combo.blockSignals(False)
 
     def _on_create_project_requested(self) -> None:
         """Handle request to create a new section from project icon button."""
@@ -4752,7 +5528,11 @@ class QuickEntryDialog(QDialog):
         self.content_layout.addStretch()
 
     def refresh_notes(self) -> None:
-        """Re-render the quick notes list for the selected date."""
+        """Re-render the notes workspace."""
+        if hasattr(self, "notes_workspace"):
+            self.notes_workspace.load_notes()
+            return
+
         while self.notes_content_layout.count() > 0:
             item = self.notes_content_layout.takeAt(0)
             widget = item.widget()
@@ -4877,6 +5657,7 @@ class QuickEntryDialog(QDialog):
     def _on_note_toggled(self, note_id: int, is_completed: bool) -> None:
         """Toggle note completion status."""
         self.repo.toggle_note_completed(note_id, is_completed)
+        self.refresh_notes()
         if is_completed:
             self.state_machine.trigger_complete(duration_ms=3500)
         else:
@@ -4951,9 +5732,11 @@ class QuickEntryDialog(QDialog):
         if self.selected_date != date.today():
             self.set_selected_date(date.today())
 
-        note_id = self.repo.create_note(content, project_tag=proj)
+        note_id = self.repo.create_note(content, project_tag=proj, title=content)
         self.note_input.clear()
         self.refresh_notes()
+        if hasattr(self, "notes_workspace"):
+            self.notes_workspace.select_note(note_id)
         self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.note_created.emit(note_id)
 

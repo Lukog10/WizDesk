@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
-from wiz.storage.models import StorageRepository
+from wiz.storage.models import StorageRepository, NoteRecord
 
 
 class ObsidianSync:
@@ -133,8 +133,59 @@ class ObsidianSync:
                 app_signals.sync_finished.emit(False, msg)
             return False, msg
 
+    def sync_note(self, note: "NoteRecord", emit_signal: bool = False) -> Tuple[bool, str]:
+        """Write or overwrite a permanent Note in the Obsidian Vault under WizNotes folder."""
+        vault_path = config.obsidian_vault_path
+        if not vault_path or not vault_path.exists():
+            return False, "Obsidian vault path not configured or directory does not exist."
+
+        notes_dir = (vault_path / "WizNotes").resolve()
+        notes_dir.mkdir(parents=True, exist_ok=True)
+
+        clean_title = "".join(c for c in (note.title or "Untitled") if c.isalnum() or c in (" ", "-", "_")).strip()
+        if not clean_title:
+            clean_title = f"Note_{note.id}"
+        dest_file = notes_dir / f"{clean_title}.md"
+
+        tag_names = [t.name for t in note.tags] if getattr(note, "tags", None) else []
+        yaml_fence = "-" * 3
+        frontmatter = [
+            yaml_fence,
+            f"title: \"{note.title}\"",
+            f"project: \"{note.project_tag or ''}\"",
+            f"tags: {tag_names}",
+            f"created: \"{note.created_at.isoformat()}\"",
+            f"updated: \"{(note.updated_at or note.created_at).isoformat()}\"",
+            yaml_fence,
+            "",
+            f"# {note.title or 'Untitled Note'}",
+            "",
+            note.content or "",
+        ]
+        content = "\n".join(frontmatter)
+
+        try:
+            temp_file = dest_file.with_suffix(".tmp")
+            temp_file.write_text(content, encoding="utf-8")
+            temp_file.replace(dest_file)
+            msg = f"Successfully synced note to {dest_file.name}"
+            if emit_signal:
+                app_signals.sync_finished.emit(True, msg)
+            return True, msg
+        except Exception as e:
+            msg = f"Error writing note to Obsidian vault: {e}"
+            if emit_signal:
+                app_signals.sync_finished.emit(False, msg)
+            return False, msg
+
 
 def sync_today_logs(emit_signal: bool = True) -> Tuple[bool, str]:
     """Helper to sync today's logs directly."""
     sync_engine = ObsidianSync()
     return sync_engine.sync_date(date.today(), emit_signal=emit_signal)
+
+
+def sync_permanent_note(note: "NoteRecord", emit_signal: bool = False) -> Tuple[bool, str]:
+    """Helper to sync a permanent note to Obsidian WizNotes folder."""
+    sync_engine = ObsidianSync()
+    return sync_engine.sync_note(note, emit_signal=emit_signal)

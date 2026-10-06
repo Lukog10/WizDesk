@@ -656,6 +656,54 @@ class StorageRepository:
                 )
             return notes
 
+    def create_permanent_note(
+        self,
+        title: str,
+        content: str = "",
+        project_tag: Optional[str] = None,
+        tag_ids: Optional[List[int]] = None,
+        is_pinned: bool = False,
+    ) -> int:
+        """Create a permanent titled note with optional content, project tag, and tags."""
+        return self.create_note(
+            content=content,
+            project_tag=project_tag,
+            title=title,
+            tag_ids=tag_ids,
+            is_pinned=is_pinned,
+        )
+
+    def get_permanent_notes(
+        self,
+        project_tag: Optional[str] = None,
+        tag_id: Optional[int] = None,
+    ) -> List[NoteRecord]:
+        """Fetch all permanent notes ordered by pinned state, updated date, and creation date."""
+        return self.get_notes(project_tag=project_tag, tag_id=tag_id, include_completed=True)
+
+    def update_permanent_note(
+        self,
+        note_id: int,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        project_tag: Optional[str] = None,
+        tag_ids: Optional[List[int]] = None,
+        is_pinned: Optional[bool] = None,
+    ) -> bool:
+        """Update title, content, project tag, tags, or pinned status of a permanent note."""
+        return self.update_note(
+            note_id=note_id,
+            title=title,
+            content=content,
+            project_tag=project_tag,
+            is_pinned=is_pinned,
+            tag_ids=tag_ids,
+        )
+
+    def delete_permanent_note(self, note_id: int) -> bool:
+        """Delete a permanent note by ID."""
+        return self.delete_note(note_id)
+
     # Task & Subtask Operations
 
     def create_task(
