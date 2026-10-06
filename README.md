@@ -274,10 +274,10 @@ WizDesk is built with a zero-trust approach toward cloud services and a steadfas
 Download the latest pre-built standalone bundle for Windows from the GitHub Releases page:
 
 - **[Latest Releases on GitHub](https://github.com/Lukog10/WizDesk/releases/latest)** (Redirects to the latest version)
-- **[Direct Download: WizDesk-v1.1.0-windows-x64.zip](https://github.com/Lukog10/WizDesk/releases/download/v1.1.0/WizDesk-v1.1.0-windows-x64.zip)**
+- **[Direct Download: WizDesk-v1.2.0-windows-x64.zip](https://github.com/Lukog10/WizDesk/releases/download/v1.2.0/WizDesk-v1.2.0-windows-x64.zip)**
 
 **Installation Instructions:**
-1. Download the `WizDesk-v1.1.0-windows-x64.zip` package from the release link above.
+1. Download the `WizDesk-v1.2.0-windows-x64.zip` package from the release link above.
 2. Extract the ZIP archive to your preferred directory (e.g. `C:\Program Files\WizDesk` or your User folder).
 3. Double-click `WizDesk.exe` to launch. No Python runtime, compilers, or admin privileges are required.
 
