@@ -1765,11 +1765,23 @@ class TagCreateDialog(QDialog):
 
         # Icon Grid Picker
         icon_scroll = QScrollArea()
-        icon_scroll.setFixedHeight(110)
+        icon_scroll.setFixedHeight(128)
         icon_scroll.setWidgetResizable(True)
         icon_scroll.setFrameShape(QFrame.Shape.NoFrame)
         icon_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        icon_scroll.setStyleSheet("background: transparent; border: none;")
+        icon_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        icon_scroll.setStyleSheet("""
+            QScrollArea {
+                background: transparent;
+                border: none;
+            }
+            QScrollBar:vertical, QScrollBar:horizontal {
+                width: 0px;
+                height: 0px;
+                border: none;
+                background: transparent;
+            }
+        """)
 
         icon_container = QWidget()
         icon_container.setStyleSheet("background: transparent;")
@@ -1786,7 +1798,7 @@ class TagCreateDialog(QDialog):
             icon_grid.addWidget(ibtn, row, col)
             self.icon_buttons[icon_key] = ibtn
             col += 1
-            if col >= 8:
+            if col >= 9:
                 col = 0
                 row += 1
 
@@ -2032,12 +2044,16 @@ class ProjectIconButton(QPushButton):
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
         action_map: Dict[Any, str] = {}
         for name in self.all_projects:
-            prefix = "✓ " if name == self.current_project else "   "
-            act = menu.addAction(f"{prefix}{name}")
+            is_active = (name == self.current_project)
+            display_text = f"{name}  ✓" if is_active else name
+            proj_color = self.project_colors.get(name, "#3B82F6")
+            proj_icon = get_status_icon("folder.svg", proj_color, size=16)
+            act = menu.addAction(proj_icon, display_text)
             action_map[act] = name
 
         menu.addSeparator()
-        act_create = menu.addAction("+ Create Section...")
+        create_icon = get_status_icon("icons/subtask.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
+        act_create = menu.addAction(create_icon, "+ Create Section...")
 
         menu_size = menu.sizeHint()
         btn_pos = self.mapToGlobal(QPoint(0, 0))
@@ -2122,11 +2138,27 @@ class TagIconButton(QPushButton):
 
         has_tags = bool(self.selected_tag_ids)
         c = self.active_color if has_tags else (self.hover_color if self._hovered else self.normal_color)
-        render_tinted_svg(painter, "tag.svg", c, 6, 6, 16)
+
+        if len(self.selected_tag_ids) == 1:
+            all_tags_map = {t.id: t for t in self.repo.get_all_tags() if t.id is not None}
+            sel_tag = all_tags_map.get(self.selected_tag_ids[0])
+            if sel_tag:
+                icon_file = f"tags/{sel_tag.icon or 'tag'}.svg"
+                render_tinted_svg(painter, icon_file, sel_tag.color or self.active_color, 6, 6, 16)
+            else:
+                render_tinted_svg(painter, "tag.svg", c, 6, 6, 16)
+        else:
+            render_tinted_svg(painter, "tag.svg", c, 6, 6, 16)
 
         if has_tags:
+            dot_color = self.active_color
+            if len(self.selected_tag_ids) == 1:
+                all_tags_map = {t.id: t for t in self.repo.get_all_tags() if t.id is not None}
+                sel_tag = all_tags_map.get(self.selected_tag_ids[0])
+                if sel_tag and sel_tag.color:
+                    dot_color = sel_tag.color
             painter.setPen(QColor("#18181B" if self.is_dark else "#FFFFFF"))
-            painter.setBrush(QColor(self.active_color))
+            painter.setBrush(QColor(dot_color))
             painter.drawEllipse(18, 18, 7, 7)
         painter.end()
 
@@ -2138,14 +2170,17 @@ class TagIconButton(QPushButton):
         act_tag_map: Dict[Any, TagRecord] = {}
         for tag in all_tags:
             is_checked = (tag.id in self.selected_tag_ids)
-            prefix = "✓ " if is_checked else "   "
-            act = menu.addAction(f"{prefix}{tag.name}")
+            display_text = f"{tag.name}  ✓" if is_checked else tag.name
+            tag_icon = get_status_icon(f"tags/{tag.icon or 'tag'}.svg", tag.color or "#3B82F6", size=16)
+            act = menu.addAction(tag_icon, display_text)
             act_tag_map[act] = tag
 
         menu.addSeparator()
-        act_create = menu.addAction("+ Create Tag...")
+        create_icon = get_status_icon("tags/tag.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
+        act_create = menu.addAction(create_icon, "+ Create Tag...")
         if self.selected_tag_ids:
-            act_clear = menu.addAction("Clear Tags")
+            clear_icon = get_status_icon("icons/delete.svg", "#EF4444", size=14)
+            act_clear = menu.addAction(clear_icon, "Clear Tags")
         else:
             act_clear = None
 
@@ -2189,12 +2224,22 @@ class TagFilterBar(QWidget):
         self.repo = repo
         self.is_dark = is_dark
         self.selected_tag_id: Optional[int] = None
+        self._explicitly_hidden: bool = False
 
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(4, 2, 4, 2)
         self.layout.setSpacing(6)
 
         self.rebuild_chips()
+
+    def hide(self) -> None:
+        self._explicitly_hidden = True
+        super().hide()
+
+    def setVisible(self, visible: bool) -> None:
+        if not visible:
+            self._explicitly_hidden = True
+        super().setVisible(visible)
 
     def set_dark_mode(self, is_dark: bool) -> None:
         self.is_dark = is_dark
@@ -2207,12 +2252,15 @@ class TagFilterBar(QWidget):
             if w:
                 w.deleteLater()
 
-        all_tags = self.repo.get_all_tags()
-        if not all_tags:
-            self.setVisible(False)
+        if self._explicitly_hidden:
             return
 
-        self.setVisible(True)
+        all_tags = self.repo.get_all_tags()
+        if not all_tags:
+            super().setVisible(False)
+            return
+
+        super().setVisible(True)
 
         all_btn = QPushButton("All")
         all_btn.setFixedHeight(22)
@@ -2830,12 +2878,14 @@ class TaskRowWidget(QWidget):
         act_tag_map: Dict[Any, TagRecord] = {}
         for tag in all_tags:
             is_checked = (tag.id in current_tag_ids)
-            prefix = "✓ " if is_checked else "   "
-            act = menu.addAction(f"{prefix}{tag.name}")
+            display_text = f"{tag.name}  ✓" if is_checked else tag.name
+            tag_icon = get_status_icon(f"tags/{tag.icon or 'tag'}.svg", tag.color or "#3B82F6", size=16)
+            act = menu.addAction(tag_icon, display_text)
             act_tag_map[act] = tag
 
         menu.addSeparator()
-        act_create = menu.addAction("+ Create Tag...")
+        create_icon = get_status_icon("tags/tag.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
+        act_create = menu.addAction(create_icon, "+ Create Tag...")
 
         menu_size = menu.sizeHint()
         btn_pos = self.row_tag_btn.mapToGlobal(QPoint(0, 0))
@@ -4554,10 +4604,10 @@ class QuickEntryDialog(QDialog):
         self.filter_bar.filter_changed.connect(self._on_filter_changed)
         tasks_page_layout.addWidget(self.filter_bar)
 
-        # 3b. Tag Filter Bar
+        # Hidden tag filter helper retained for internal/test compatibility
         self.tag_filter_bar = TagFilterBar(self.repo, is_dark=self.is_dark, parent=self.tasks_page)
         self.tag_filter_bar.tag_selected.connect(self._on_tag_filter_changed)
-        tasks_page_layout.addWidget(self.tag_filter_bar)
+        self.tag_filter_bar.hide()
 
         # 4. Scrollable Tasks Area (Without visible scrollbar)
         self.scroll_area = QScrollArea()

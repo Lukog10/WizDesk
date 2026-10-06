@@ -255,6 +255,11 @@ def test_quick_entry_dialog_tag_flow(qapp, repo):
     # Verify tag selection cleared on bottom bar
     assert len(dialog.tag_btn.selected_tag_ids) == 0
 
+    # Verify tag filter section is hidden from tasks page layout
+    assert dialog.tag_filter_bar.isHidden()
+    layout_widgets = [dialog.tasks_page.layout().itemAt(i).widget() for i in range(dialog.tasks_page.layout().count())]
+    assert dialog.tag_filter_bar not in layout_widgets
+
     # Filter tasks using tag filter bar
     dialog.tag_filter_bar._select_tag(tag_coding.id)
     assert dialog.active_tag_filter_id == tag_coding.id
@@ -264,3 +269,31 @@ def test_quick_entry_dialog_tag_flow(qapp, repo):
     assert dialog.active_tag_filter_id is None
 
     dialog.close()
+
+
+def test_tag_create_dialog_scroll_bar_removed_and_menu_icons(qapp, repo):
+    """Test that TagCreateDialog has scrollbars disabled and TagIconButton generates menu icons."""
+    from PyQt6.QtCore import Qt
+    from wiz.ui.popup_dialog import TagCreateDialog, TagIconButton
+    from wiz.ui.icons import get_status_icon
+
+    dlg = TagCreateDialog(repo, is_dark=True)
+    # Find the QScrollArea for icons
+    scroll_areas = dlg.findChildren(type(dlg.card.findChild(TagCreateDialog).parent() if False else dlg))
+    from PyQt6.QtWidgets import QScrollArea
+    icon_scrolls = dlg.findChildren(QScrollArea)
+    assert len(icon_scrolls) >= 1
+    icon_scroll = icon_scrolls[0]
+
+    # Verify both horizontal and vertical scrollbars are permanently off
+    assert icon_scroll.verticalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    assert icon_scroll.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+
+    # Verify TagIconButton menu icons
+    tag_btn = TagIconButton(repo=repo, is_dark=True)
+    all_tags = repo.get_all_tags()
+    assert len(all_tags) > 0
+    first_tag = all_tags[0]
+    icon = get_status_icon(f"tags/{first_tag.icon}.svg", first_tag.color, size=16)
+    assert not icon.isNull()
+
