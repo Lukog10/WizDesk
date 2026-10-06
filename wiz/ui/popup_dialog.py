@@ -48,7 +48,7 @@ from PyQt6.QtWidgets import (
 from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
-from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord
+from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord, TagRecord, ProjectRecord
 from wiz.ui.icons import get_app_icon, get_status_icon, render_tinted_svg
 from wiz.sync.obsidian import sync_today_logs
 from wiz.ui.timeline_view import TimelineView
@@ -1404,6 +1404,853 @@ class TaskDeleteButton(QPushButton):
         painter.end()
 
 
+AVAILABLE_TAG_ICONS = [
+    "code", "terminal", "bug", "git", "database", "server", "api", "cpu",
+    "palette", "pen", "layout", "sparkle", "camera", "image",
+    "target", "compass", "flag", "star", "bookmark", "folder", "briefcase",
+    "book", "search", "clipboard", "file-text", "link", "lightbulb",
+    "message", "mail", "globe", "shield", "coffee", "heart",
+]
+
+
+class TagIconChoiceButton(QPushButton):
+    """Button in TagCreateDialog icon picker grid."""
+
+    def __init__(self, icon_key: str, is_dark: bool = False, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.icon_key = icon_key
+        self.is_dark = is_dark
+        self.is_selected = False
+        self._hovered = False
+        self.setFixedSize(28, 28)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        clean_tooltip = icon_key.replace("-", " ").capitalize()
+        self.setToolTip(clean_tooltip)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+    def set_selected(self, selected: bool) -> None:
+        self.is_selected = selected
+        self.update()
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._hovered = True
+        self.update()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        bg = "#3F3F46" if self.is_dark else "#E4E4E7"
+        if self.is_selected:
+            painter.setPen(QColor("#C2410C" if self.is_dark else "#BA3F1A"))
+            painter.setBrush(QColor("rgba(194, 65, 12, 0.2)" if self.is_dark else "rgba(186, 63, 26, 0.15)"))
+            painter.drawRoundedRect(1, 1, self.width() - 2, self.height() - 2, 6, 6)
+        elif self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(bg))
+            painter.drawRoundedRect(1, 1, self.width() - 2, self.height() - 2, 6, 6)
+
+        c = "#FF8E6B" if (self.is_selected or self._hovered) else ("#A1A1AA" if self.is_dark else "#71717A")
+        render_tinted_svg(painter, f"tags/{self.icon_key}.svg", c, 6, 6, 16)
+        painter.end()
+
+
+class TagPreviewPill(QWidget):
+    """Live preview badge shown inside TagCreateDialog."""
+
+    def __init__(self, icon_key: str, name: str, color_hex: str, is_dark: bool = False, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.icon_key = icon_key
+        self.tag_name = name
+        self.color_hex = color_hex
+        self.is_dark = is_dark
+        self.setFixedHeight(22)
+
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(22, 0, 10, 0)
+        self.layout.setSpacing(4)
+
+        self.lbl = QLabel(name)
+        self.lbl.setFont(get_font(10, QFont.Weight.Medium))
+        self.layout.addWidget(self.lbl)
+        self._update_style()
+
+    def update_content(self, icon_key: str, name: str, color_hex: str, is_dark: bool) -> None:
+        self.icon_key = icon_key
+        self.tag_name = name
+        self.color_hex = color_hex
+        self.is_dark = is_dark
+        self.lbl.setText(name)
+        self._update_style()
+        self.update()
+
+    def _update_style(self) -> None:
+        c = QColor(self.color_hex) if self.color_hex else QColor("#3B82F6")
+        r, g, b = c.red(), c.green(), c.blue()
+        bg_alpha = 0.22 if self.is_dark else 0.12
+        border_alpha = 0.45 if self.is_dark else 0.30
+        text_color = "#F4F4F5" if self.is_dark else "#18181B"
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: rgba({r}, {g}, {b}, {bg_alpha});
+                border: 1px solid rgba({r}, {g}, {b}, {border_alpha});
+                border-radius: 11px;
+            }}
+            QLabel {{
+                background: transparent;
+                border: none;
+                color: {text_color};
+            }}
+        """)
+
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        render_tinted_svg(painter, f"tags/{self.icon_key}.svg", self.color_hex, 6, 5, 12)
+        painter.end()
+
+
+class TagBadgeWidget(QWidget):
+    """Compact pill badge displaying a tag icon, name, and color theme."""
+
+    clicked = pyqtSignal(int)  # tag_id
+
+    def __init__(self, tag: TagRecord, parent: Optional[QWidget] = None, is_dark: bool = False):
+        super().__init__(parent)
+        self.tag = tag
+        self.is_dark = is_dark
+        self.setFixedHeight(18)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip(f"Tag: {tag.name}")
+        self._hovered = False
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(19, 0, 7, 0)
+        layout.setSpacing(4)
+
+        self.name_label = QLabel(tag.name)
+        self.name_label.setFont(get_font(9, QFont.Weight.Medium))
+        self.name_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        layout.addWidget(self.name_label)
+
+        self._update_style()
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self._update_style()
+        self.update()
+
+    def _update_style(self) -> None:
+        c = QColor(self.tag.color) if self.tag.color else QColor("#3B82F6")
+        r, g, b = c.red(), c.green(), c.blue()
+        bg_alpha = 0.22 if self.is_dark else 0.12
+        border_alpha = 0.45 if self.is_dark else 0.30
+        text_color = "#F4F4F5" if self.is_dark else "#18181B"
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: rgba({r}, {g}, {b}, {bg_alpha});
+                border: 1px solid rgba({r}, {g}, {b}, {border_alpha});
+                border-radius: 9px;
+            }}
+            QLabel {{
+                background: transparent;
+                border: none;
+                color: {text_color};
+            }}
+        """)
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._hovered = True
+        self.update()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._hovered = False
+        self.update()
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            if self.tag.id is not None:
+                self.clicked.emit(self.tag.id)
+        super().mousePressEvent(event)
+
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        icon_name = self.tag.icon or "tag"
+        c_hex = self.tag.color or "#3B82F6"
+        render_tinted_svg(painter, f"tags/{icon_name}.svg", c_hex, 5, 4, 10)
+        painter.end()
+
+
+class RowTagButton(QPushButton):
+    """Subtle icon-only button to manage tags on a task row."""
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self._hovered: bool = False
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip("Add or manage tags")
+        self.setFixedSize(18, 18)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.setFlat(True)
+        self.setStyleSheet("background: transparent; border: none; padding: 0;")
+        self.set_theme(is_dark)
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.normal_color = "#71717A"
+        self.hover_color = "#FF8E6B" if is_dark else "#BA3F1A"
+        self.hover_bg = "#27272A" if is_dark else "#EAEAEB"
+        self.update()
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._hovered = True
+        self.update()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(self.hover_bg))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 4, 4)
+        c = self.hover_color if self._hovered else self.normal_color
+        render_tinted_svg(painter, "tag.svg", c, 3, 3, 12)
+        painter.end()
+
+
+class TagCreateDialog(QDialog):
+    """Modal dialog for creating a custom tag with name, curated vector icon, and accent color."""
+
+    def __init__(self, repo: StorageRepository, parent: Optional[QWidget] = None, is_dark: bool = False):
+        super().__init__(parent)
+        self.repo = repo
+        self.is_dark = is_dark
+        self.selected_icon = "code"
+        self.selected_color = "#3B82F6"
+        self.created_tag: Optional[TagRecord] = None
+
+        self.setWindowTitle("Create Tag - WizDesk")
+        self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setFixedWidth(360)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+
+        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        card_border = "#27272A" if self.is_dark else "#E5E5EA"
+        title_color = "#F4F4F5" if self.is_dark else "#18181B"
+        label_color = "#A1A1AA" if self.is_dark else "#71717A"
+        input_bg = "#27272A" if self.is_dark else "#F4F4F6"
+        input_border = "#3F3F46" if self.is_dark else "#E4E4E7"
+        input_text = "#F4F4F5" if self.is_dark else "#18181B"
+        input_focus_border = "#C2410C" if self.is_dark else "#BA3F1A"
+        close_btn_color = "#71717A" if self.is_dark else "#A1A1AA"
+
+        self.card = QFrame()
+        self.card.setObjectName("tagDialogCard")
+        self.card.setStyleSheet(f"""
+            QFrame#tagDialogCard {{
+                background-color: {card_bg};
+                border: 1px solid {card_border};
+                border-radius: 12px;
+            }}
+        """)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(28)
+        shadow.setColor(QColor(0, 0, 0, 60 if self.is_dark else 40))
+        shadow.setOffset(0, 6)
+        self.card.setGraphicsEffect(shadow)
+
+        self.card_layout = QVBoxLayout(self.card)
+        self.card_layout.setContentsMargins(18, 16, 18, 16)
+        self.card_layout.setSpacing(10)
+
+        # Header Row
+        hdr_layout = QHBoxLayout()
+        hdr_title = QLabel("Create New Tag")
+        hdr_title.setFont(get_font(13, QFont.Weight.Bold))
+        hdr_title.setStyleSheet(f"color: {title_color};")
+        hdr_layout.addWidget(hdr_title)
+        hdr_layout.addStretch()
+
+        close_btn = QPushButton("x")
+        close_btn.setFixedSize(20, 20)
+        close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        close_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {close_btn_color};
+                border: none;
+                font-family: {FONT_MONO};
+                font-size: 12px;
+                font-weight: bold;
+                border-radius: 10px;
+            }}
+            QPushButton:hover {{
+                color: {title_color};
+                background-color: {input_bg};
+            }}
+        """)
+        close_btn.clicked.connect(self.reject)
+        hdr_layout.addWidget(close_btn)
+        self.card_layout.addLayout(hdr_layout)
+
+        # Tag Name Input
+        name_lbl = QLabel("Tag Name:")
+        name_lbl.setFont(get_font(11, QFont.Weight.DemiBold))
+        name_lbl.setStyleSheet(f"color: {label_color};")
+        self.card_layout.addWidget(name_lbl)
+
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("e.g. Coding, Debug, Design, Research")
+        self.name_input.setFont(get_font(11))
+        self.name_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {input_bg};
+                color: {input_text};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 6px 10px;
+            }}
+            QLineEdit:focus {{
+                border: 1.5px solid {input_focus_border};
+            }}
+        """)
+        self.name_input.textChanged.connect(self._update_preview)
+        self.card_layout.addWidget(self.name_input)
+
+        # Icon Selection Header
+        icon_lbl = QLabel("Choose Icon:")
+        icon_lbl.setFont(get_font(11, QFont.Weight.DemiBold))
+        icon_lbl.setStyleSheet(f"color: {label_color};")
+        self.card_layout.addWidget(icon_lbl)
+
+        # Icon Grid Picker
+        icon_scroll = QScrollArea()
+        icon_scroll.setFixedHeight(110)
+        icon_scroll.setWidgetResizable(True)
+        icon_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        icon_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        icon_scroll.setStyleSheet("background: transparent; border: none;")
+
+        icon_container = QWidget()
+        icon_container.setStyleSheet("background: transparent;")
+        icon_grid = QGridLayout(icon_container)
+        icon_grid.setSpacing(4)
+        icon_grid.setContentsMargins(0, 0, 0, 0)
+
+        self.icon_buttons: Dict[str, TagIconChoiceButton] = {}
+        row = 0
+        col = 0
+        for icon_key in AVAILABLE_TAG_ICONS:
+            ibtn = TagIconChoiceButton(icon_key, self.is_dark, self)
+            ibtn.clicked.connect(lambda _, k=icon_key: self._on_icon_selected(k))
+            icon_grid.addWidget(ibtn, row, col)
+            self.icon_buttons[icon_key] = ibtn
+            col += 1
+            if col >= 8:
+                col = 0
+                row += 1
+
+        icon_scroll.setWidget(icon_container)
+        self.card_layout.addWidget(icon_scroll)
+
+        # Color Selection Header
+        color_hdr = QHBoxLayout()
+        color_lbl = QLabel("Tag Color:")
+        color_lbl.setFont(get_font(11, QFont.Weight.DemiBold))
+        color_lbl.setStyleSheet(f"color: {label_color};")
+        color_hdr.addWidget(color_lbl)
+        color_hdr.addStretch()
+
+        self.btn_custom_color = QPushButton("+ Custom Color...")
+        self.btn_custom_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_custom_color.setFont(get_font(10, QFont.Weight.Medium))
+        self.btn_custom_color.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {"#FF8E6B" if self.is_dark else "#C2410C"};
+                border: none;
+                padding: 1px 4px;
+            }}
+            QPushButton:hover {{
+                color: {"#FFFFFF" if self.is_dark else "#18181B"};
+            }}
+        """)
+        self.btn_custom_color.clicked.connect(self._on_pick_custom_color)
+        color_hdr.addWidget(self.btn_custom_color)
+        self.card_layout.addLayout(color_hdr)
+
+        # Preset Color Swatches (2 rows of 8)
+        swatch_layout = QGridLayout()
+        swatch_layout.setSpacing(5)
+        swatch_layout.setContentsMargins(0, 0, 0, 0)
+        self.swatch_buttons: List[tuple] = []
+        preset_tag_colors = PRESET_COLORS[:16] if len(PRESET_COLORS) >= 16 else PRESET_COLORS
+        for idx, c_val in enumerate(preset_tag_colors):
+            r_idx = idx // 8
+            c_idx = idx % 8
+            s_btn = QPushButton()
+            s_btn.setFixedSize(22, 22)
+            s_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            s_btn.clicked.connect(lambda _, col=c_val: self._on_color_selected(col))
+            swatch_layout.addWidget(s_btn, r_idx, c_idx)
+            self.swatch_buttons.append((s_btn, c_val))
+        self.card_layout.addLayout(swatch_layout)
+
+        # Live Preview Pill Row
+        preview_hdr = QLabel("Live Preview:")
+        preview_hdr.setFont(get_font(10, QFont.Weight.DemiBold))
+        preview_hdr.setStyleSheet(f"color: {label_color}; margin-top: 2px;")
+        self.card_layout.addWidget(preview_hdr)
+
+        self.preview_pill = TagPreviewPill(self.selected_icon, "Sample Tag", self.selected_color, self.is_dark)
+        self.card_layout.addWidget(self.preview_pill, 0, Qt.AlignmentFlag.AlignLeft)
+
+        # Action Buttons (Cancel / Create)
+        btn_layout = QHBoxLayout()
+        btn_layout.setContentsMargins(0, 6, 0, 0)
+        btn_layout.setSpacing(8)
+
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.setFont(get_font(11, QFont.Weight.Medium))
+        cancel_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {input_bg};
+                color: {input_text};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 6px 14px;
+            }}
+            QPushButton:hover {{
+                background-color: {"#3F3F46" if self.is_dark else "#E4E4E7"};
+            }}
+        """)
+        cancel_btn.clicked.connect(self.reject)
+        btn_layout.addWidget(cancel_btn)
+
+        self.create_btn = QPushButton("Create Tag")
+        self.create_btn.setFont(get_font(11, QFont.Weight.Bold))
+        self.create_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        action_bg = "#C2410C" if self.is_dark else "#BA3F1A"
+        self.create_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {action_bg};
+                color: #FFFFFF;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 18px;
+            }}
+            QPushButton:hover {{
+                background-color: {"#A3360E" if self.is_dark else "#9E3414"};
+            }}
+        """)
+        self.create_btn.clicked.connect(self._on_create_clicked)
+        btn_layout.addWidget(self.create_btn)
+
+        self.card_layout.addLayout(btn_layout)
+        layout.addWidget(self.card)
+
+        # Set initial selections
+        self._update_icon_buttons_style()
+        self._update_color_buttons_style()
+        self._update_preview()
+
+    def _on_icon_selected(self, icon_key: str) -> None:
+        self.selected_icon = icon_key
+        self._update_icon_buttons_style()
+        self._update_preview()
+
+    def _on_color_selected(self, color_hex: str) -> None:
+        self.selected_color = color_hex
+        self._update_color_buttons_style()
+        self._update_preview()
+
+    def _on_pick_custom_color(self) -> None:
+        initial = QColor(self.selected_color)
+        chosen = QColorDialog.getColor(initial, self, "Select Tag Color")
+        if chosen.isValid():
+            self.selected_color = chosen.name().upper()
+            self._update_color_buttons_style()
+            self._update_preview()
+
+    def _update_icon_buttons_style(self) -> None:
+        for k, btn in self.icon_buttons.items():
+            btn.set_selected(k == self.selected_icon)
+
+    def _update_color_buttons_style(self) -> None:
+        for btn, c_val in self.swatch_buttons:
+            is_sel = (c_val.lower() == self.selected_color.lower())
+            active_border = "2.5px solid #FFFFFF" if self.is_dark else "2.5px solid #18181B"
+            normal_border = "1px solid rgba(255, 255, 255, 0.15)" if self.is_dark else "1px solid rgba(0, 0, 0, 0.12)"
+            border = active_border if is_sel else normal_border
+            btn.setStyleSheet(f"background-color: {c_val}; border-radius: 11px; border: {border};")
+
+    def _update_preview(self) -> None:
+        name = self.name_input.text().strip() or "Sample Tag"
+        self.preview_pill.update_content(self.selected_icon, name, self.selected_color, self.is_dark)
+
+    def _on_create_clicked(self) -> None:
+        name = self.name_input.text().strip()
+        if not name:
+            self.name_input.setFocus()
+            return
+        tag = self.repo.create_tag(name, self.selected_icon, self.selected_color)
+        self.created_tag = tag
+        app_signals.tags_changed.emit()
+        self.accept()
+
+
+class ProjectIconButton(QPushButton):
+    """Icon-only 28x28 button for choosing active project with upward popup menu."""
+
+    project_selected = pyqtSignal(str)
+    create_project_requested = pyqtSignal()
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+        self.current_project: str = "Work"
+        self.project_colors: Dict[str, str] = {}
+        self.all_projects: List[str] = ["Work", "Personal Projects"]
+        self._hovered: bool = False
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip(f"Project: {self.current_project}")
+        self.setFixedSize(28, 28)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.setFlat(True)
+        self.setStyleSheet("background: transparent; border: none; padding: 0;")
+        self.clicked.connect(self._show_project_menu)
+        self.set_theme(is_dark)
+
+    def currentText(self) -> str:
+        """Compatibility accessor for code expecting a QComboBox interface."""
+        return self.current_project
+
+    def setCurrentText(self, text: str) -> None:
+        """Compatibility setter for code expecting a QComboBox interface."""
+        self.current_project = text.strip() if text else "Work"
+        self.setToolTip(f"Project: {self.current_project}")
+        self.update()
+
+    def set_projects(self, projects: List[Any]) -> None:
+        """Update available project choices and their colors."""
+        names: List[str] = []
+        colors: Dict[str, str] = {}
+        for p in projects:
+            if hasattr(p, "name"):
+                names.append(p.name)
+                if hasattr(p, "color") and p.color:
+                    colors[p.name] = p.color
+            elif isinstance(p, str):
+                names.append(p)
+        if names:
+            self.all_projects = names
+            self.project_colors = colors
+            if self.current_project not in names:
+                self.current_project = names[0]
+                self.setToolTip(f"Project: {self.current_project}")
+        self.update()
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.normal_color = "#71717A"
+        self.hover_color = "#FAFAFA" if is_dark else "#18181B"
+        self.hover_bg = "#27272A" if is_dark else "#EAEAEB"
+        self.update()
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._hovered = True
+        self.update()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(self.hover_bg))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 6, 6)
+
+        c = self.hover_color if self._hovered else self.normal_color
+        render_tinted_svg(painter, "folder.svg", c, 6, 6, 16)
+
+        dot_color_hex = self.project_colors.get(self.current_project, "#3B82F6")
+        painter.setPen(QColor("#18181B" if self.is_dark else "#FFFFFF"))
+        painter.setBrush(QColor(dot_color_hex))
+        painter.drawEllipse(18, 18, 7, 7)
+        painter.end()
+
+    def _show_project_menu(self) -> None:
+        menu = QMenu(self)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
+        action_map: Dict[Any, str] = {}
+        for name in self.all_projects:
+            prefix = "✓ " if name == self.current_project else "   "
+            act = menu.addAction(f"{prefix}{name}")
+            action_map[act] = name
+
+        menu.addSeparator()
+        act_create = menu.addAction("+ Create Section...")
+
+        menu_size = menu.sizeHint()
+        btn_pos = self.mapToGlobal(QPoint(0, 0))
+        target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
+
+        chosen = menu.exec(target_pos)
+        if chosen == act_create:
+            self.create_project_requested.emit()
+        elif chosen in action_map:
+            new_proj = action_map[chosen]
+            self.current_project = new_proj
+            self.setToolTip(f"Project: {self.current_project}")
+            self.project_selected.emit(new_proj)
+            self.update()
+
+
+class TagIconButton(QPushButton):
+    """Icon-only 28x28 button for choosing tags with upward popup checklist and tag creation."""
+
+    tags_selection_changed = pyqtSignal(list)  # list of int (tag_ids)
+
+    def __init__(self, repo: StorageRepository, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.repo = repo
+        self.is_dark = is_dark
+        self.selected_tag_ids: List[int] = []
+        self._hovered: bool = False
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.setToolTip("Assign Tags")
+        self.setFixedSize(28, 28)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setAutoDefault(False)
+        self.setDefault(False)
+        self.setFlat(True)
+        self.setStyleSheet("background: transparent; border: none; padding: 0;")
+        self.clicked.connect(self._show_tags_menu)
+        self.set_theme(is_dark)
+
+    def clear_selection(self) -> None:
+        self.selected_tag_ids = []
+        self._update_tooltip()
+        self.update()
+
+    def set_selected_tag_ids(self, tag_ids: List[int]) -> None:
+        self.selected_tag_ids = list(tag_ids)
+        self._update_tooltip()
+        self.update()
+
+    def _update_tooltip(self) -> None:
+        if not self.selected_tag_ids:
+            self.setToolTip("Assign Tags")
+            return
+        all_tags = {t.id: t.name for t in self.repo.get_all_tags() if t.id is not None}
+        names = [all_tags[tid] for tid in self.selected_tag_ids if tid in all_tags]
+        self.setToolTip(f"Tags: {', '.join(names)}" if names else "Assign Tags")
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.normal_color = "#71717A"
+        self.hover_color = "#FAFAFA" if is_dark else "#18181B"
+        self.active_color = "#FF6B3D" if is_dark else "#BA3F1A"
+        self.hover_bg = "#27272A" if is_dark else "#EAEAEB"
+        self.update()
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        self._hovered = True
+        self.update()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self._hovered = False
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        if self._hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(self.hover_bg))
+            painter.drawRoundedRect(0, 0, self.width(), self.height(), 6, 6)
+
+        has_tags = bool(self.selected_tag_ids)
+        c = self.active_color if has_tags else (self.hover_color if self._hovered else self.normal_color)
+        render_tinted_svg(painter, "tag.svg", c, 6, 6, 16)
+
+        if has_tags:
+            painter.setPen(QColor("#18181B" if self.is_dark else "#FFFFFF"))
+            painter.setBrush(QColor(self.active_color))
+            painter.drawEllipse(18, 18, 7, 7)
+        painter.end()
+
+    def _show_tags_menu(self) -> None:
+        menu = QMenu(self)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
+        all_tags = self.repo.get_all_tags()
+
+        act_tag_map: Dict[Any, TagRecord] = {}
+        for tag in all_tags:
+            is_checked = (tag.id in self.selected_tag_ids)
+            prefix = "✓ " if is_checked else "   "
+            act = menu.addAction(f"{prefix}{tag.name}")
+            act_tag_map[act] = tag
+
+        menu.addSeparator()
+        act_create = menu.addAction("+ Create Tag...")
+        if self.selected_tag_ids:
+            act_clear = menu.addAction("Clear Tags")
+        else:
+            act_clear = None
+
+        menu_size = menu.sizeHint()
+        btn_pos = self.mapToGlobal(QPoint(0, 0))
+        target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
+
+        chosen = menu.exec(target_pos)
+        if chosen == act_create:
+            dlg = TagCreateDialog(self.repo, self, is_dark=self.is_dark)
+            cal_pos = self.mapToGlobal(QPoint(0, 0))
+            dlg.move(cal_pos.x() - 150, cal_pos.y() - 360)
+            if dlg.exec() == QDialog.DialogCode.Accepted and hasattr(dlg, "created_tag") and dlg.created_tag and dlg.created_tag.id:
+                if dlg.created_tag.id not in self.selected_tag_ids:
+                    self.selected_tag_ids.append(dlg.created_tag.id)
+                self._update_tooltip()
+                self.tags_selection_changed.emit(self.selected_tag_ids)
+                self.update()
+        elif act_clear and chosen == act_clear:
+            self.clear_selection()
+            self.tags_selection_changed.emit(self.selected_tag_ids)
+        elif chosen in act_tag_map:
+            tag = act_tag_map[chosen]
+            if tag.id is not None:
+                if tag.id in self.selected_tag_ids:
+                    self.selected_tag_ids.remove(tag.id)
+                else:
+                    self.selected_tag_ids.append(tag.id)
+                self._update_tooltip()
+                self.tags_selection_changed.emit(self.selected_tag_ids)
+                self.update()
+
+
+class TagFilterBar(QWidget):
+    """Horizontal filter chips for filtering tasks by tag."""
+
+    tag_selected = pyqtSignal(object)  # tag_id: Optional[int]
+
+    def __init__(self, repo: StorageRepository, is_dark: bool = False, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.repo = repo
+        self.is_dark = is_dark
+        self.selected_tag_id: Optional[int] = None
+
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(4, 2, 4, 2)
+        self.layout.setSpacing(6)
+
+        self.rebuild_chips()
+
+    def set_dark_mode(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.rebuild_chips()
+
+    def rebuild_chips(self) -> None:
+        while self.layout.count() > 0:
+            item = self.layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+        all_tags = self.repo.get_all_tags()
+        if not all_tags:
+            self.setVisible(False)
+            return
+
+        self.setVisible(True)
+
+        all_btn = QPushButton("All")
+        all_btn.setFixedHeight(22)
+        all_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        all_btn.setFont(get_font(9, QFont.Weight.Medium))
+        is_all_active = (self.selected_tag_id is None)
+        self._style_chip(all_btn, is_all_active, None)
+        all_btn.clicked.connect(lambda: self._select_tag(None))
+        self.layout.addWidget(all_btn)
+
+        for tag in all_tags:
+            is_active = (self.selected_tag_id == tag.id)
+            btn = QPushButton(f"{tag.name}")
+            btn.setFixedHeight(22)
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setFont(get_font(9, QFont.Weight.Medium))
+            self._style_chip(btn, is_active, tag.color)
+            btn.clicked.connect(lambda _, tid=tag.id: self._select_tag(tid))
+            self.layout.addWidget(btn)
+
+        self.layout.addStretch()
+
+    def _select_tag(self, tag_id: Optional[int]) -> None:
+        if self.selected_tag_id == tag_id and tag_id is not None:
+            self.selected_tag_id = None
+        else:
+            self.selected_tag_id = tag_id
+        self.rebuild_chips()
+        self.tag_selected.emit(self.selected_tag_id)
+
+    def _style_chip(self, btn: QPushButton, is_active: bool, tag_color: Optional[str]) -> None:
+        if is_active:
+            bg = "#C2410C" if self.is_dark else "#BA3F1A"
+            text_color = "#FFFFFF"
+            border = "none"
+        else:
+            bg = "#27272A" if self.is_dark else "#E4E4E7"
+            text_color = "#F4F4F5" if self.is_dark else "#3F3F46"
+            border = f"1px solid {tag_color}" if tag_color else ("1px solid #3F3F46" if self.is_dark else "1px solid #D4D4D8")
+
+        hover_bg = "#3F3F46" if self.is_dark else "#D4D4D8"
+        btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {bg};
+                color: {text_color};
+                border: {border};
+                border-radius: 11px;
+                padding: 0 10px;
+            }}
+            QPushButton:hover {{
+                background-color: {hover_bg if not is_active else bg};
+            }}
+        """)
+
+
 class TaskRowWidget(QWidget):
     """
     Parent task row featuring:
@@ -1424,13 +2271,15 @@ class TaskRowWidget(QWidget):
     subtask_renamed = pyqtSignal(int, str)  # subtask_id, new_title
     schedule_changed = pyqtSignal(int, str)  # task_id, new_scheduled_date
     repeat_changed = pyqtSignal(int, str)  # task_id, new_repeat_mode
+    task_tags_changed = pyqtSignal(int, list)  # task_id, tag_ids
 
-    def __init__(self, task: TaskRecord, all_projects: List[str], parent: Optional[QWidget] = None, is_dark: bool = False):
+    def __init__(self, task: TaskRecord, all_projects: List[str], parent: Optional[QWidget] = None, is_dark: bool = False, repo: Optional[StorageRepository] = None):
         super().__init__(parent)
         self.task = task
         self.task_id = task.id or 0
         self.all_projects = all_projects
         self.is_dark = is_dark
+        self.repo = repo
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 2, 0, 2)
@@ -1536,6 +2385,18 @@ class TaskRowWidget(QWidget):
         self.repeat_badge.setFixedHeight(18)
         self.repeat_badge.setVisible(False)
         status_bar_layout.addWidget(self.repeat_badge)
+
+        # Tag badges container
+        self.tags_container = QWidget()
+        self.tags_layout = QHBoxLayout(self.tags_container)
+        self.tags_layout.setContentsMargins(0, 0, 0, 0)
+        self.tags_layout.setSpacing(4)
+        status_bar_layout.addWidget(self.tags_container)
+
+        # Row tag button to edit tags directly on this task
+        self.row_tag_btn = RowTagButton(is_dark=self.is_dark, parent=self.status_bar_widget)
+        self.row_tag_btn.clicked.connect(self._on_manage_tags_clicked)
+        status_bar_layout.addWidget(self.row_tag_btn)
 
         status_bar_layout.addStretch()
         self.main_layout.addWidget(self.status_bar_widget)
@@ -1704,6 +2565,76 @@ class TaskRowWidget(QWidget):
         else:
             self.repeat_badge.setVisible(False)
             self.repeat_btn.set_repeat_mode("none")
+
+        # Update tag badges
+        if hasattr(self, "tags_layout"):
+            while self.tags_layout.count() > 0:
+                item = self.tags_layout.takeAt(0)
+                w = item.widget()
+                if w:
+                    w.deleteLater()
+
+            for tag in getattr(self.task, "tags", []):
+                badge = TagBadgeWidget(tag, parent=self.tags_container, is_dark=self.is_dark)
+                badge.clicked.connect(lambda _, tid=tag.id: self._on_manage_tags_clicked())
+                self.tags_layout.addWidget(badge)
+
+    def _on_manage_tags_clicked(self) -> None:
+        """Open popup menu to manage tags on this task."""
+        repo = getattr(self, "repo", None)
+        if not repo:
+            p = self.parent()
+            while p is not None:
+                if hasattr(p, "repo"):
+                    repo = p.repo
+                    break
+                p = p.parent()
+        if not repo:
+            repo = StorageRepository()
+
+        all_tags = repo.get_all_tags()
+        current_tag_ids = [t.id for t in getattr(self.task, "tags", []) if t.id is not None]
+
+        menu = QMenu(self)
+        menu.setStyleSheet(get_context_menu_style(self.is_dark))
+
+        act_tag_map: Dict[Any, TagRecord] = {}
+        for tag in all_tags:
+            is_checked = (tag.id in current_tag_ids)
+            prefix = "✓ " if is_checked else "   "
+            act = menu.addAction(f"{prefix}{tag.name}")
+            act_tag_map[act] = tag
+
+        menu.addSeparator()
+        act_create = menu.addAction("+ Create Tag...")
+
+        menu_size = menu.sizeHint()
+        btn_pos = self.row_tag_btn.mapToGlobal(QPoint(0, 0))
+        target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
+
+        chosen = menu.exec(target_pos)
+        if chosen == act_create:
+            dlg = TagCreateDialog(repo, self, is_dark=self.is_dark)
+            cal_pos = self.row_tag_btn.mapToGlobal(QPoint(0, 0))
+            dlg.move(cal_pos.x() - 150, cal_pos.y() - 360)
+            if dlg.exec() == QDialog.DialogCode.Accepted and hasattr(dlg, "created_tag") and dlg.created_tag and dlg.created_tag.id:
+                new_tag = dlg.created_tag
+                if new_tag.id not in current_tag_ids:
+                    current_tag_ids.append(new_tag.id)
+                    self.task.tags.append(new_tag)
+                    self.task_tags_changed.emit(self.task_id, current_tag_ids)
+                    self._update_badges()
+        elif chosen in act_tag_map:
+            tag = act_tag_map[chosen]
+            if tag.id is not None:
+                if tag.id in current_tag_ids:
+                    current_tag_ids.remove(tag.id)
+                    self.task.tags = [t for t in self.task.tags if t.id != tag.id]
+                else:
+                    current_tag_ids.append(tag.id)
+                    self.task.tags.append(tag)
+                self.task_tags_changed.emit(self.task_id, current_tag_ids)
+                self._update_badges()
 
     def _pick_schedule(self) -> None:
         """Open menu to update schedule date for this task."""
@@ -2025,6 +2956,9 @@ class TaskRowWidget(QWidget):
         action_add_sub = menu.addAction(
             get_status_icon("icons/subtask.svg", icon_color, 14), "Add Subtask"
         )
+        action_tags = menu.addAction(
+            get_status_icon("icons/tag.svg", icon_color, 14), "Manage Tags..."
+        )
         menu.addSeparator()
 
         # "Move to Section" submenu
@@ -2056,6 +2990,8 @@ class TaskRowWidget(QWidget):
             self._pick_repeat()
         elif action == action_add_sub:
             self._toggle_subtask_input(force_show=True)
+        elif action == action_tags:
+            self._on_manage_tags_clicked()
         elif action == action_new_sec:
             name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
             if ok and name.strip():
@@ -2585,6 +3521,11 @@ class QuickEntryDialog(QDialog):
         self.filter_bar.filter_changed.connect(self._on_filter_changed)
         tasks_page_layout.addWidget(self.filter_bar)
 
+        # 3b. Tag Filter Bar
+        self.tag_filter_bar = TagFilterBar(self.repo, is_dark=self.is_dark, parent=self.tasks_page)
+        self.tag_filter_bar.tag_selected.connect(self._on_tag_filter_changed)
+        tasks_page_layout.addWidget(self.tag_filter_bar)
+
         # 4. Scrollable Tasks Area (Without visible scrollbar)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
@@ -2611,19 +3552,23 @@ class QuickEntryDialog(QDialog):
         self.scroll_area.setWidget(self.content_widget)
         tasks_page_layout.addWidget(self.scroll_area, stretch=1)
 
-        # 5. Bottom Add Task Bar with Section Selector, Schedule, Repeat & Create Section Option
+        # 5. Bottom Add Task Bar with Project Button, Tag Button, Schedule, Repeat & Add Button
         add_task_layout = QHBoxLayout()
         add_task_layout.setSpacing(6)
 
         self.add_input = QLineEdit()
         self.add_input.setPlaceholderText("+ Add task... (Press Enter)")
         self.add_input.returnPressed.connect(self._on_quick_add_task)
-        add_task_layout.addWidget(self.add_input, stretch=3)
+        add_task_layout.addWidget(self.add_input, stretch=1)
 
-        self.project_combo = ArrowComboBox(self.tasks_page, is_dark=self.is_dark)
-        self.project_combo.setEditable(False)
-        self.project_combo.currentIndexChanged.connect(self._on_project_combo_changed)
-        add_task_layout.addWidget(self.project_combo, stretch=1)
+        self.project_btn = ProjectIconButton(is_dark=self.is_dark, parent=self.tasks_page)
+        self.project_btn.create_project_requested.connect(self._on_create_project_requested)
+        add_task_layout.addWidget(self.project_btn)
+        # Compatibility alias for existing tests and methods
+        self.project_combo = self.project_btn
+
+        self.tag_btn = TagIconButton(self.repo, is_dark=self.is_dark, parent=self.tasks_page)
+        add_task_layout.addWidget(self.tag_btn)
 
         self.add_schedule_btn = ScheduleIconButton(is_dark=self.is_dark, parent=self.tasks_page)
         self.add_schedule_btn.clicked.connect(self._pick_quick_add_schedule)
@@ -2739,6 +3684,9 @@ class QuickEntryDialog(QDialog):
         app_signals.task_updated.connect(self._on_background_task_activity)
         app_signals.task_completed.connect(self._on_background_task_activity)
         app_signals.projects_changed.connect(self._on_projects_changed_sync)
+        app_signals.tags_changed.connect(self._on_tags_changed_sync)
+
+        self.active_tag_filter_id: Optional[int] = None
 
         # Apply initial theme stylesheet
         self.apply_theme(config.theme)
@@ -2841,6 +3789,14 @@ class QuickEntryDialog(QDialog):
         # Update filter bar theme
         if hasattr(self, "filter_bar"):
             self.filter_bar.set_dark_mode(self.is_dark)
+
+        # Update tag filter bar and bottom add buttons
+        if hasattr(self, "tag_filter_bar"):
+            self.tag_filter_bar.set_dark_mode(self.is_dark)
+        if hasattr(self, "project_btn"):
+            self.project_btn.set_theme(self.is_dark)
+        if hasattr(self, "tag_btn"):
+            self.tag_btn.set_theme(self.is_dark)
 
         # Color tokens - Brand aligned & Crisp Modern Light Mode
         outer_bg = "#121214" if self.is_dark else "#F4F4F6"
@@ -3170,26 +4126,28 @@ class QuickEntryDialog(QDialog):
             self.repo.create_or_update_project("Personal Projects", ["personal"])
 
     def _populate_projects(self) -> None:
-        """Populate project/section choices with '+ Create Section...' option."""
+        """Populate project choices with '+ Create Section...' option."""
         projects = self.repo.get_all_projects()
         names = [p.name for p in projects]
         if not names:
             names = ["Work", "Personal Projects"]
 
-        current_sel = self.project_combo.currentText() if hasattr(self, "project_combo") else ""
+        if hasattr(self, "project_btn") and isinstance(self.project_btn, ProjectIconButton):
+            self.project_btn.set_projects(projects)
+        elif hasattr(self, "project_combo") and hasattr(self.project_combo, "clear"):
+            current_sel = self.project_combo.currentText()
+            self.project_combo.blockSignals(True)
+            self.project_combo.clear()
+            for name in names:
+                self.project_combo.addItem(name)
+            self.project_combo.insertSeparator(self.project_combo.count())
+            self.project_combo.addItem("+ Create Section...")
 
-        self.project_combo.blockSignals(True)
-        self.project_combo.clear()
-        for name in names:
-            self.project_combo.addItem(name)
-        self.project_combo.insertSeparator(self.project_combo.count())
-        self.project_combo.addItem("+ Create Section...")
-
-        if current_sel and current_sel in names:
-            self.project_combo.setCurrentText(current_sel)
-        else:
-            self.project_combo.setCurrentIndex(0)
-        self.project_combo.blockSignals(False)
+            if current_sel and current_sel in names:
+                self.project_combo.setCurrentText(current_sel)
+            else:
+                self.project_combo.setCurrentIndex(0)
+            self.project_combo.blockSignals(False)
 
         if hasattr(self, "note_project_combo"):
             note_sel = self.note_project_combo.currentText()
@@ -3205,6 +4163,41 @@ class QuickEntryDialog(QDialog):
             else:
                 self.note_project_combo.setCurrentIndex(0)
             self.note_project_combo.blockSignals(False)
+
+    def _on_create_project_requested(self) -> None:
+        """Handle request to create a new section from project icon button."""
+        name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
+        if ok and name.strip():
+            clean_name = name.strip()
+            self.repo.create_or_update_project(
+                clean_name,
+                kws or [clean_name.lower()],
+                color=color,
+                description=desc,
+            )
+            self._populate_projects()
+            if hasattr(self, "project_btn"):
+                self.project_btn.setCurrentText(clean_name)
+
+    def _on_tag_filter_changed(self, tag_id: Optional[int]) -> None:
+        """Handle tag filter chip selection."""
+        self.active_tag_filter_id = tag_id
+        self.refresh_tasks()
+
+    def _on_tags_changed_sync(self) -> None:
+        """Synchronize tag changes across filter chips and task rows."""
+        if hasattr(self, "tag_filter_bar"):
+            self.tag_filter_bar.rebuild_chips()
+        if hasattr(self, "tag_btn"):
+            self.tag_btn.update()
+        if hasattr(self, "refresh_tasks"):
+            self.refresh_tasks()
+
+    def _on_task_tags_changed(self, task_id: int, tag_ids: List[int]) -> None:
+        """Handle updating tags assigned to a task."""
+        self.repo.set_task_tags(task_id, tag_ids)
+        self.refresh_tasks()
+        self._trigger_debounced_sync()
 
     def _on_project_combo_changed(self, index: int) -> None:
         """Handle selection of '+ Create Section...' in task project combo."""
@@ -3444,7 +4437,12 @@ class QuickEntryDialog(QDialog):
                 widget.deleteLater()
 
         active_filter = self.filter_bar.current_filter
-        tasks = self.repo.get_task_hierarchy(target_date=self.selected_date, status_filter=active_filter)
+        active_tag_id = getattr(self, "active_tag_filter_id", None)
+        tasks = self.repo.get_task_hierarchy(
+            target_date=self.selected_date,
+            status_filter=active_filter,
+            tag_id=active_tag_id,
+        )
 
         all_projects = [p.name for p in self.repo.get_all_projects()]
         if not all_projects:
@@ -3493,11 +4491,12 @@ class QuickEntryDialog(QDialog):
             group_widget = ProjectGroupWidget(project_name, task_list, self.content_widget, is_dark=self.is_dark)
 
             for task in task_list:
-                row = TaskRowWidget(task, all_projects, group_widget.tasks_container, is_dark=self.is_dark)
+                row = TaskRowWidget(task, all_projects, group_widget.tasks_container, is_dark=self.is_dark, repo=self.repo)
                 row.status_toggled.connect(self._on_task_status_toggled)
                 row.action_requested.connect(self._on_task_action)
                 row.project_changed.connect(self._on_task_project_changed)
                 row.task_renamed.connect(self._on_task_renamed)
+                row.task_tags_changed.connect(self._on_task_tags_changed)
                 row.subtask_added.connect(self._on_subtask_added)
                 row.subtask_toggled.connect(self._on_subtask_toggled)
                 row.subtask_deleted.connect(self._on_subtask_deleted)
@@ -3672,6 +4671,13 @@ class QuickEntryDialog(QDialog):
             scheduled_date=sched,
             repeat_mode=rep,
         )
+
+        # Attach pending tags from tag_btn
+        if hasattr(self, "tag_btn"):
+            for tid in self.tag_btn.selected_tag_ids:
+                self.repo.add_task_tag(task_id, tid)
+            self.tag_btn.clear_selection()
+
         self.add_input.clear()
         self._pending_task_schedule = None
         self._pending_task_repeat = "none"
@@ -3679,6 +4685,8 @@ class QuickEntryDialog(QDialog):
             self.add_schedule_btn.set_scheduled_date(None)
         if hasattr(self, "add_repeat_btn"):
             self.add_repeat_btn.set_repeat_mode("none")
+        if hasattr(self, "tag_btn"):
+            self.tag_btn.clear_selection()
 
         self.refresh_tasks()
         self.state_machine.trigger_notify(duration_ms=3500)

@@ -148,3 +148,119 @@ def test_tag_cascade_deletion(repo):
     assert any(t.id == task_id for t in tasks)
     notes = repo.get_notes()
     assert any(n.id == note_id for n in notes)
+
+
+@pytest.fixture(scope="session")
+def qapp():
+    """Ensure QApplication instance is initialized."""
+    import sys
+    from PyQt6.QtWidgets import QApplication
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    yield app
+
+
+def test_project_icon_button(qapp, repo):
+    """Test ProjectIconButton properties, project selection, and backward compatibility."""
+    from wiz.ui.popup_dialog import ProjectIconButton
+    btn = ProjectIconButton(is_dark=True)
+    assert btn.currentText() == "Work"
+
+    btn.setCurrentText("Personal Projects")
+    assert btn.currentText() == "Personal Projects"
+
+    projects = repo.get_all_projects()
+    btn.set_projects(projects)
+    assert "Work" in btn.all_projects
+
+
+def test_tag_icon_button(qapp, repo):
+    """Test TagIconButton selection, clear, and tooltip."""
+    from wiz.ui.popup_dialog import TagIconButton
+    tag = repo.get_tag_by_name("Coding")
+    assert tag is not None
+
+    tag_btn = TagIconButton(repo=repo, is_dark=True)
+    assert len(tag_btn.selected_tag_ids) == 0
+
+    tag_btn.set_selected_tag_ids([tag.id])
+    assert tag_btn.selected_tag_ids == [tag.id]
+    assert "Coding" in tag_btn.toolTip()
+
+    tag_btn.clear_selection()
+    assert len(tag_btn.selected_tag_ids) == 0
+    assert tag_btn.toolTip() == "Assign Tags"
+
+
+def test_tag_badge_widget(qapp, repo):
+    """Test TagBadgeWidget rendering and clicked signal."""
+    from wiz.ui.popup_dialog import TagBadgeWidget
+    tag = repo.get_tag_by_name("Design")
+    assert tag is not None
+
+    badge = TagBadgeWidget(tag, is_dark=True)
+    assert badge.name_label.text() == "Design"
+
+    clicked_ids = []
+    badge.clicked.connect(clicked_ids.append)
+    badge.clicked.emit(tag.id)
+    assert clicked_ids == [tag.id]
+
+
+def test_tag_filter_bar(qapp, repo):
+    """Test TagFilterBar chip construction and selection toggle."""
+    from wiz.ui.popup_dialog import TagFilterBar
+    bar = TagFilterBar(repo, is_dark=False)
+    assert bar.isVisible()
+
+    tag = repo.get_tag_by_name("Debug")
+    assert tag is not None
+
+    selected_ids = []
+    bar.tag_selected.connect(selected_ids.append)
+
+    bar._select_tag(tag.id)
+    assert bar.selected_tag_id == tag.id
+    assert selected_ids[-1] == tag.id
+
+    # Toggle off back to None (All)
+    bar._select_tag(tag.id)
+    assert bar.selected_tag_id is None
+    assert selected_ids[-1] is None
+
+
+def test_quick_entry_dialog_tag_flow(qapp, repo):
+    """Test creating a task with tags and filtering by tag in QuickEntryDialog."""
+    from wiz.core.state_machine import StateMachine
+    from wiz.ui.popup_dialog import QuickEntryDialog
+
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+
+    tag_coding = repo.get_tag_by_name("Coding")
+    assert tag_coding is not None
+
+    # Set task title, project, and tag
+    dialog.add_input.setText("Write parser tests")
+    dialog.project_btn.setCurrentText("Work")
+    dialog.tag_btn.set_selected_tag_ids([tag_coding.id])
+
+    dialog._on_quick_add_task()
+
+    # Verify task was created with tag in database
+    tasks = repo.get_task_hierarchy(tag_id=tag_coding.id)
+    assert any(t.title == "Write parser tests" for t in tasks)
+
+    # Verify tag selection cleared on bottom bar
+    assert len(dialog.tag_btn.selected_tag_ids) == 0
+
+    # Filter tasks using tag filter bar
+    dialog.tag_filter_bar._select_tag(tag_coding.id)
+    assert dialog.active_tag_filter_id == tag_coding.id
+
+    # Clear filter
+    dialog.tag_filter_bar._select_tag(None)
+    assert dialog.active_tag_filter_id is None
+
+    dialog.close()

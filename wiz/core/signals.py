@@ -34,6 +34,7 @@ class AppSignals(QObject):
     task_deleted = pyqtSignal(int)      # task_id
     task_cancelled = pyqtSignal(int)    # task_id
     projects_changed = pyqtSignal()     # emitted when a project is added, renamed, edited, or deleted
+    tags_changed = pyqtSignal()         # emitted when a tag is added, edited, or deleted
 
     # Obsidian sync status
     # sync_finished: (success: bool, message: str)
