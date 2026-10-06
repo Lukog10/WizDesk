@@ -1085,14 +1085,14 @@ class SubtaskRowWidget(QWidget):
         top_layout.addWidget(del_btn)
         self.main_layout.addWidget(self.top_widget)
 
-        # Bottom row: Timestamp placed below the subtask title
-        self.time_bar_widget = QWidget()
+        # Bottom row: Timestamp placed below the subtask title (hidden from UI)
+        self.time_bar_widget = QWidget(self)
         time_layout = QHBoxLayout(self.time_bar_widget)
         time_layout.setContentsMargins(52, 0, 4, 2)
         time_layout.setSpacing(4)
 
         time_color = "#71717A" if self.is_dark else "#71717A"
-        self.time_label = QLabel()
+        self.time_label = QLabel(self.time_bar_widget)
         self.time_label.setStyleSheet(f"""
             QLabel {{
                 color: {time_color};
@@ -1103,7 +1103,8 @@ class SubtaskRowWidget(QWidget):
         """)
         time_layout.addWidget(self.time_label)
         time_layout.addStretch()
-        self.main_layout.addWidget(self.time_bar_widget)
+        self.time_label.hide()
+        self.time_bar_widget.hide()
 
         self._update_label_style(is_done)
 
@@ -1142,6 +1143,8 @@ class SubtaskRowWidget(QWidget):
                 is_cancelled=False,
             )
         )
+        self.time_label.hide()
+        self.time_bar_widget.hide()
 
     def _update_label_style(self, is_done: bool) -> None:
         self._update_time_label(is_done)
@@ -2598,10 +2601,10 @@ class TaskRowWidget(QWidget):
         self.add_sub_btn.clicked.connect(self._toggle_subtask_input)
         top_layout.addWidget(self.add_sub_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        # Delete icon-only button
+        # Delete icon-only button (retained hidden for test compatibility)
         self.delete_btn = TaskDeleteButton(is_dark=self.is_dark, parent=self.top_widget)
         self.delete_btn.clicked.connect(self._on_delete_clicked)
-        top_layout.addWidget(self.delete_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.delete_btn.hide()
 
         self.main_layout.addWidget(self.top_widget)
 
@@ -2618,9 +2621,9 @@ class TaskRowWidget(QWidget):
         self.status_combo.currentIndexChanged.connect(self._on_status_combo_changed)
         status_bar_layout.addWidget(self.status_combo)
 
-        # Time metadata label
+        # Time metadata label (hidden from UI)
         time_color = "#71717A" if self.is_dark else "#71717A"
-        self.time_label = QLabel()
+        self.time_label = QLabel(self.status_bar_widget)
         self.time_label.setStyleSheet(f"""
             QLabel {{
                 color: {time_color};
@@ -2629,7 +2632,7 @@ class TaskRowWidget(QWidget):
                 font-weight: 500;
             }}
         """)
-        status_bar_layout.addWidget(self.time_label)
+        self.time_label.hide()
 
         # Active task stopwatch widget
         self.stopwatch_widget = TaskStopwatchWidget(
@@ -3083,6 +3086,7 @@ class TaskRowWidget(QWidget):
                 is_cancelled=is_cancelled,
             )
         )
+        self.time_label.hide()
 
         # Sync checkbox state without re-triggering signal
         self.checkbox.blockSignals(True)
