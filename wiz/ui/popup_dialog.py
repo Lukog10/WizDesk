@@ -44,6 +44,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QColorDialog,
     QPlainTextEdit,
+    QTextBrowser,
 )
 
 from wiz.core.config import config
@@ -3317,13 +3318,22 @@ class NoteRowWidget(QWidget):
     toggled = pyqtSignal(int, bool)  # note_id, is_completed
     delete_requested = pyqtSignal(int)  # note_id
     project_changed = pyqtSignal(int, str)  # note_id, new_project
+    open_requested = pyqtSignal(int)  # note_id
 
-    def __init__(self, note: NoteRecord, all_projects: List[str], parent: Optional[QWidget] = None, is_dark: bool = False):
+    def __init__(
+        self,
+        note: NoteRecord,
+        all_projects: List[str],
+        parent: Optional[QWidget] = None,
+        is_dark: bool = False,
+        repo: Optional[StorageRepository] = None,
+    ):
         super().__init__(parent)
         self.note = note
         self.note_id = note.id or 0
         self.all_projects = all_projects
         self.is_dark = is_dark
+        self.repo = repo
 
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(4, 6, 4, 6)
@@ -3337,14 +3347,20 @@ class NoteRowWidget(QWidget):
         content_layout = QVBoxLayout()
         content_layout.setSpacing(2)
 
-        self.label = QLabel(note.content)
+        display_title = note.title or note.content
+        if note.title and note.content and note.content.strip() != note.title.strip():
+            first_line = note.content.strip().split("\n")[0][:80]
+            sub_color = "#A1A1AA" if self.is_dark else "#71717A"
+            self.label = QLabel(f"<b>{display_title}</b> &nbsp;<span style='color: {sub_color}; font-size: 10px;'>{first_line}</span>")
+        else:
+            self.label = QLabel(display_title)
         self.label.setFont(get_font(10))
         self._update_text_style(note.is_completed)
         content_layout.addWidget(self.label)
 
-        # Meta row: tag + timestamp
+        # Meta row: tag + badges + timestamp
         meta_layout = QHBoxLayout()
-        meta_layout.setSpacing(8)
+        meta_layout.setSpacing(6)
 
         tag_text = note.project_tag or "General"
         self.tag_btn = QPushButton(f"[{tag_text}]")
@@ -3374,6 +3390,12 @@ class NoteRowWidget(QWidget):
         self.tag_btn.clicked.connect(self._show_section_menu)
         meta_layout.addWidget(self.tag_btn)
 
+        # Custom tag badges
+        if hasattr(note, "tags") and note.tags:
+            for tag in note.tags:
+                badge = TagBadgeWidget(tag, parent=self, is_dark=self.is_dark)
+                meta_layout.addWidget(badge)
+
         time_str = note.created_at.strftime("%I:%M %p").lstrip("0")
         time_color = "#71717A" if self.is_dark else "#71717A"
         time_lbl = QLabel(time_str)
@@ -3389,6 +3411,28 @@ class NoteRowWidget(QWidget):
 
         content_layout.addLayout(meta_layout)
         self.layout.addLayout(content_layout, stretch=1)
+
+        # Open button for modal markdown editing
+        self.open_btn = QPushButton("Open")
+        self.open_btn.setFixedHeight(22)
+        self.open_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.open_btn.setFont(get_font(9, QFont.Weight.Medium))
+        open_color = "#FF6B3D" if self.is_dark else "#BA3F1A"
+        open_bg = "rgba(255, 107, 61, 0.12)" if self.is_dark else "rgba(186, 63, 26, 0.08)"
+        self.open_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {open_bg};
+                color: {open_color};
+                border: 1px solid rgba(255, 107, 61, 0.25);
+                border-radius: 4px;
+                padding: 1px 8px;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(255, 107, 61, 0.22);
+            }}
+        """)
+        self.open_btn.clicked.connect(lambda: self.open_requested.emit(self.note_id))
+        self.layout.addWidget(self.open_btn)
 
         # Delete button
         del_btn = QPushButton("x")
@@ -3416,6 +3460,11 @@ class NoteRowWidget(QWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
 
+    def mouseDoubleClickEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.open_requested.emit(self.note_id)
+        super().mouseDoubleClickEvent(event)
+
     def _show_section_menu(self) -> None:
         """Show section selection menu when clicking on section badge."""
         self._open_section_menu(self.tag_btn.mapToGlobal(QPoint(0, self.tag_btn.height())))
@@ -3427,6 +3476,10 @@ class NoteRowWidget(QWidget):
     def _open_context_menu(self, global_pos: QPoint) -> None:
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
+
+        act_open = menu.addAction("Open Note...")
+        act_open.triggered.connect(lambda: self.open_requested.emit(self.note_id))
+        menu.addSeparator()
 
         icon_color = "#D4D4D8" if self.is_dark else "#44403C"
         delete_color = "#EF4444"
@@ -3806,6 +3859,14 @@ class NoteEditorWidget(QWidget):
         self.del_btn.clicked.connect(self._on_delete_clicked)
         toolbar.addWidget(self.del_btn)
 
+        # Mode toggle button: Write / Preview Markdown
+        self.mode_btn = QPushButton("Preview")
+        self.mode_btn.setFixedHeight(28)
+        self.mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.mode_btn.setFont(get_font(9, QFont.Weight.Medium))
+        self.mode_btn.clicked.connect(self._toggle_preview_mode)
+        toolbar.addWidget(self.mode_btn)
+
         editor_layout.addLayout(toolbar)
 
         # Multi-line Markdown plain text editor
@@ -3814,6 +3875,12 @@ class NoteEditorWidget(QWidget):
         self.text_edit.setPlaceholderText("Start writing your note in Markdown... Use # Headers, - Lists, bold, and code")
         self.text_edit.textChanged.connect(self._on_content_changed)
         editor_layout.addWidget(self.text_edit, stretch=1)
+
+        # Markdown rich preview browser
+        self.preview_browser = QTextBrowser()
+        self.preview_browser.setOpenExternalLinks(True)
+        self.preview_browser.hide()
+        editor_layout.addWidget(self.preview_browser, stretch=1)
 
         # Bottom info bar: Save status and Word count
         bot_bar = QHBoxLayout()
@@ -3843,6 +3910,37 @@ class NoteEditorWidget(QWidget):
         self.editor_widget.setVisible(False)
         self.empty_widget.setVisible(True)
         self.set_theme(self.is_dark)
+
+    def _toggle_preview_mode(self) -> None:
+        """Toggle between Markdown plain text editor and rich rendered preview."""
+        if self.text_edit.isVisible():
+            md_content = self.text_edit.toPlainText()
+            self.preview_browser.setMarkdown(md_content)
+            self._update_preview_style()
+            self.text_edit.hide()
+            self.preview_browser.show()
+            self.mode_btn.setText("Write")
+        else:
+            self.preview_browser.hide()
+            self.text_edit.show()
+            self.mode_btn.setText("Preview")
+
+    def _update_preview_style(self) -> None:
+        bg = "#18181B" if self.is_dark else "#FFFFFF"
+        fg = "#F4F4F5" if self.is_dark else "#18181B"
+        border = "#27272A" if self.is_dark else "#E5E5EA"
+        self.preview_browser.setStyleSheet(f"""
+            QTextBrowser {{
+                background-color: {bg};
+                color: {fg};
+                border: 1px solid {border};
+                border-radius: 8px;
+                padding: 12px;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+                line-height: 1.6;
+            }}
+        """)
 
     def load_note(self, note: Optional[NoteRecord]) -> None:
         """Load a note into the editor or show empty state if None."""
@@ -4031,6 +4129,78 @@ class NoteEditorWidget(QWidget):
         """)
         self._update_pin_btn_style()
         self._update_stats()
+        self._update_preview_style()
+
+
+class NoteDetailModalDialog(QDialog):
+    """Clean modal dialog hosting NoteEditorWidget for rich Markdown note viewing and editing."""
+
+    note_updated = pyqtSignal(int)
+
+    def __init__(
+        self,
+        note: NoteRecord,
+        repo: StorageRepository,
+        parent: Optional[QWidget] = None,
+        is_dark: bool = False,
+    ):
+        super().__init__(parent)
+        self.note = note
+        self.repo = repo
+        self.is_dark = is_dark
+
+        self.setWindowTitle(f"{note.title or 'Note'} - WizDesk")
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowCloseButtonHint)
+        self.resize(720, 560)
+
+        card_bg = "#18181B" if self.is_dark else "#FFFFFF"
+        self.setStyleSheet(f"QDialog {{ background-color: {card_bg}; }}")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(10)
+
+        self.editor = NoteEditorWidget(repo=self.repo, is_dark=self.is_dark, parent=self)
+        self.editor.load_note(self.note)
+        self.editor.note_updated.connect(self._on_note_saved)
+        self.editor.note_deleted.connect(self._on_note_deleted)
+        layout.addWidget(self.editor, stretch=1)
+
+        # Footer with Done button
+        footer = QHBoxLayout()
+        footer.addStretch()
+        self.done_btn = QPushButton("Done")
+        self.done_btn.setFixedHeight(30)
+        self.done_btn.setFixedWidth(80)
+        self.done_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.done_btn.setFont(get_font(10, QFont.Weight.Bold))
+        btn_bg = "#FF6B3D" if self.is_dark else "#BA3F1A"
+        self.done_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_bg};
+                color: #FFFFFF;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 12px;
+            }}
+            QPushButton:hover {{
+                background-color: {"#FF8E6B" if self.is_dark else "#D84315"};
+            }}
+        """)
+        self.done_btn.clicked.connect(self.accept)
+        footer.addWidget(self.done_btn)
+        layout.addLayout(footer)
+
+    def _on_note_saved(self, note_id: int) -> None:
+        self.note_updated.emit(note_id)
+
+    def _on_note_deleted(self, note_id: int) -> None:
+        self.reject()
+
+    def closeEvent(self, event) -> None:
+        if hasattr(self.editor, "_save_active_note"):
+            self.editor._save_active_note()
+        super().closeEvent(event)
 
 
 class PermanentNotesWorkspaceWidget(QWidget):
@@ -4675,28 +4845,74 @@ class QuickEntryDialog(QDialog):
         self.stack.addWidget(self.tasks_page)
 
         # ==========================================
-        # PAGE 2: PERMANENT NOTES WORKSPACE
+        # PAGE 2: QUICK NOTES VIEW
         # ==========================================
         self.notes_page = QWidget()
         notes_page_layout = QVBoxLayout(self.notes_page)
         notes_page_layout.setContentsMargins(0, 4, 0, 0)
-        notes_page_layout.setSpacing(0)
+        notes_page_layout.setSpacing(10)
 
-        self.notes_workspace = PermanentNotesWorkspaceWidget(
-            self.repo,
-            is_dark=self.is_dark,
-            parent=self.notes_page,
-        )
-        notes_page_layout.addWidget(self.notes_workspace)
+        # Search bar for filtering notes
+        self.notes_search = QLineEdit()
+        self.notes_search.setPlaceholderText("Search notes...")
+        self.notes_search.setFont(get_font(10))
+        self.notes_search.textChanged.connect(self._on_notes_search_changed)
+        notes_page_layout.addWidget(self.notes_search)
+
+        # Scrollable Notes Area (Without visible scrollbar)
+        self.notes_scroll = QScrollArea()
+        self.notes_scroll.setWidgetResizable(True)
+        self.notes_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.notes_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.notes_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.notes_scroll.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.notes_scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.notes_scroll.viewport().setStyleSheet("background: transparent;")
+        self.notes_scroll.setStyleSheet("""
+            QScrollArea, QScrollArea > QWidget > QWidget {
+                background: transparent;
+                border: none;
+            }
+        """)
+
+        self.notes_content_widget = QWidget()
+        self.notes_content_widget.setStyleSheet("background: transparent;")
+        self.notes_content_layout = QVBoxLayout(self.notes_content_widget)
+        self.notes_content_layout.setContentsMargins(4, 4, 4, 4)
+        self.notes_content_layout.setSpacing(8)
+        self.notes_content_layout.addStretch()
+
+        self.notes_scroll.setWidget(self.notes_content_widget)
+        notes_page_layout.addWidget(self.notes_scroll, stretch=1)
+
+        # Bottom Add Note Bar
+        add_note_layout = QHBoxLayout()
+        add_note_layout.setSpacing(6)
+
+        self.note_input = QLineEdit()
+        self.note_input.setPlaceholderText("+ Log a quick work note... (Press Enter)")
+        self.note_input.returnPressed.connect(self._on_quick_add_note)
+        add_note_layout.addWidget(self.note_input, stretch=1)
+
+        self.note_project_btn = ProjectIconButton(is_dark=self.is_dark, parent=self.notes_page)
+        self.note_project_combo = self.note_project_btn  # alias for tests
+        add_note_layout.addWidget(self.note_project_btn)
+
+        self.note_tag_btn = TagIconButton(self.repo, is_dark=self.is_dark, parent=self.notes_page)
+        add_note_layout.addWidget(self.note_tag_btn)
+
+        self.add_note_btn = QPushButton("Log Note")
+        self.add_note_btn.setFont(get_font(12, QFont.Weight.Bold))
+        self.add_note_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.add_note_btn.clicked.connect(self._on_quick_add_note)
+        add_note_layout.addWidget(self.add_note_btn)
+
+        notes_page_layout.addLayout(add_note_layout)
         self.stack.addWidget(self.notes_page)
 
-        # Backward compatibility aliases for existing tests and dialog interactions
-        self.notes_scroll = self.notes_workspace.cards_scroll
-        self.notes_content_widget = self.notes_workspace.cards_container
-        self.notes_content_layout = self.notes_workspace.cards_layout
-        self.note_input = self.notes_workspace.note_title_input
-        self.note_project_combo = self.notes_workspace.note_project_btn
-        self.add_note_btn = self.notes_workspace.create_note_btn
+        # Retain hidden workspace for backward compatibility with isolated tests
+        self.notes_workspace = PermanentNotesWorkspaceWidget(self.repo, is_dark=self.is_dark)
+        self.notes_workspace.hide()
 
         # 3. Dedicated Calendar & Scheduling Page
         self.calendar_view = CalendarView(self.repo, is_dark=self.is_dark, parent=self.stack)
@@ -5098,6 +5314,10 @@ class QuickEntryDialog(QDialog):
             self.add_schedule_btn.set_theme(self.is_dark)
         if hasattr(self, "add_repeat_btn"):
             self.add_repeat_btn.set_theme(self.is_dark)
+        if hasattr(self, "note_tag_btn"):
+            self.note_tag_btn.set_theme(self.is_dark)
+        if hasattr(self, "notes_search"):
+            self.notes_search.setStyleSheet(input_qss)
 
         btn_action_qss = f"""
             QPushButton {{
@@ -5581,12 +5801,23 @@ class QuickEntryDialog(QDialog):
 
         self.content_layout.addStretch()
 
-    def refresh_notes(self) -> None:
-        """Re-render the notes workspace."""
-        if hasattr(self, "notes_workspace"):
-            self.notes_workspace.load_notes()
-            return
+    def _on_notes_search_changed(self, text: str) -> None:
+        """Filter notes list as user types in search bar."""
+        self.refresh_notes()
 
+    def _on_open_note_dialog(self, note_id: int) -> None:
+        """Open dedicated modal Markdown editor for the selected note."""
+        all_notes = self.repo.get_permanent_notes()
+        target = next((n for n in all_notes if n.id == note_id), None)
+        if not target:
+            return
+        dlg = NoteDetailModalDialog(target, self.repo, parent=self, is_dark=self.is_dark)
+        dlg.note_updated.connect(lambda _: self.refresh_notes())
+        dlg.exec()
+        self.refresh_notes()
+
+    def refresh_notes(self) -> None:
+        """Re-render the quick notes list with search filtering and open options."""
         while self.notes_content_layout.count() > 0:
             item = self.notes_content_layout.takeAt(0)
             widget = item.widget()
@@ -5594,14 +5825,27 @@ class QuickEntryDialog(QDialog):
                 widget.setParent(None)
                 widget.deleteLater()
 
-        notes = self.repo.get_notes_for_date(self.selected_date)
+        notes = self.repo.get_permanent_notes()
+        search_query = ""
+        if hasattr(self, "notes_search") and self.notes_search.text():
+            search_query = self.notes_search.text().strip().lower()
+
+        if search_query:
+            notes = [
+                n for n in notes
+                if search_query in (n.title or "").lower()
+                or search_query in (n.content or "").lower()
+                or search_query in (n.project_tag or "").lower()
+            ]
+
         all_projects = [p.name for p in self.repo.get_all_projects()]
         if not all_projects:
             all_projects = ["Work", "Personal Projects"]
 
         if not notes:
             empty_color = "#71717A" if self.is_dark else "#A1A1AA"
-            empty_label = QLabel(f"No notes logged for {self.selected_date.strftime('%B %d')}.")
+            msg = "No notes found matching search." if search_query else "No notes logged yet."
+            empty_label = QLabel(msg)
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty_label.setStyleSheet(f"""
                 QLabel {{
@@ -5616,10 +5860,17 @@ class QuickEntryDialog(QDialog):
             return
 
         for note in notes:
-            row = NoteRowWidget(note, all_projects, self.notes_content_widget, is_dark=self.is_dark)
+            row = NoteRowWidget(
+                note=note,
+                all_projects=all_projects,
+                parent=self.notes_content_widget,
+                is_dark=self.is_dark,
+                repo=self.repo,
+            )
             row.toggled.connect(self._on_note_toggled)
             row.delete_requested.connect(self._on_note_deleted)
             row.project_changed.connect(self._on_note_project_changed)
+            row.open_requested.connect(self._on_open_note_dialog)
             self.notes_content_layout.addWidget(row)
 
         self.notes_content_layout.addStretch()
@@ -5779,18 +6030,26 @@ class QuickEntryDialog(QDialog):
         if not content:
             return
 
-        proj = self.note_project_combo.currentText()
-        if proj == "+ Create Section..." or not proj:
-            proj = "Work"
+        proj = "Work"
+        if hasattr(self, "note_project_btn") and hasattr(self.note_project_btn, "current_project"):
+            proj = self.note_project_btn.current_project or "Work"
+        elif hasattr(self, "note_project_combo") and hasattr(self.note_project_combo, "currentText"):
+            proj = self.note_project_combo.currentText()
+            if proj == "+ Create Section..." or not proj:
+                proj = "Work"
+
+        tag_ids = []
+        if hasattr(self, "note_tag_btn") and hasattr(self.note_tag_btn, "selected_tag_ids"):
+            tag_ids = list(self.note_tag_btn.selected_tag_ids)
 
         if self.selected_date != date.today():
             self.set_selected_date(date.today())
 
-        note_id = self.repo.create_note(content, project_tag=proj, title=content)
+        note_id = self.repo.create_note(content, project_tag=proj, title=content, tag_ids=tag_ids)
         self.note_input.clear()
+        if hasattr(self, "note_tag_btn"):
+            self.note_tag_btn.clear_selection()
         self.refresh_notes()
-        if hasattr(self, "notes_workspace"):
-            self.notes_workspace.select_note(note_id)
         self.state_machine.trigger_notify(duration_ms=3500)
         app_signals.note_created.emit(note_id)
 

@@ -10,8 +10,16 @@ from PyQt6.QtTest import QTest
 from wiz.core.config import config
 from wiz.storage.db import Database
 from wiz.storage.models import StorageRepository, NoteRecord
+from wiz.core.state_machine import StateMachine
 from wiz.sync.obsidian import ObsidianSync, sync_permanent_note
-from wiz.ui.popup_dialog import NoteCardWidget, NoteEditorWidget, PermanentNotesWorkspaceWidget
+from wiz.ui.popup_dialog import (
+    NoteCardWidget,
+    NoteEditorWidget,
+    PermanentNotesWorkspaceWidget,
+    NoteRowWidget,
+    NoteDetailModalDialog,
+    QuickEntryDialog,
+)
 
 
 @pytest.fixture
@@ -280,3 +288,104 @@ def test_permanent_notes_workspace_widget(qapp, repo: StorageRepository):
         if isinstance(workspace.cards_layout.itemAt(i).widget(), NoteCardWidget)
     ]
     assert len(all_rendered) == 2
+
+
+def test_note_row_widget_open_and_badges(qapp, repo: StorageRepository):
+    """Verify NoteRowWidget renders Open button, tags, and emits open_requested signal."""
+    tag = repo.get_tag_by_name("coding")
+    assert tag is not None
+    note_id = repo.create_permanent_note(
+        title="API Spec",
+        content="Markdown notes for REST contracts.",
+        project_tag="Work",
+        tag_ids=[tag.id],
+    )
+    note = repo.get_permanent_notes()[0]
+    row = NoteRowWidget(note=note, all_projects=["Work"], parent=None, is_dark=True, repo=repo)
+
+    assert hasattr(row, "open_btn")
+    assert row.open_btn.text() == "Open"
+
+    opened_ids = []
+    row.open_requested.connect(opened_ids.append)
+
+    # Click Open button
+    row.open_btn.click()
+    assert opened_ids == [note_id]
+
+    # Double click on row
+    opened_ids.clear()
+    QTest.mouseDClick(row, Qt.MouseButton.LeftButton)
+    assert opened_ids == [note_id]
+
+
+def test_note_detail_modal_dialog_markdown_preview(qapp, repo: StorageRepository):
+    """Verify NoteDetailModalDialog hosts editor and toggles Markdown Write and Preview modes."""
+    note_id = repo.create_permanent_note(
+        title="Markdown Guide",
+        content="# Header 1\n* Bullet item 1\n* Bullet item 2",
+        project_tag="Work",
+    )
+    note = repo.get_permanent_notes()[0]
+
+    dlg = NoteDetailModalDialog(note=note, repo=repo, is_dark=False)
+    dlg.show()
+    editor = dlg.editor
+    assert editor.title_input.text() == "Markdown Guide"
+    assert editor.text_edit.isVisible() is True
+    assert editor.preview_browser.isVisible() is False
+
+    # Toggle to Markdown Preview
+    editor._toggle_preview_mode()
+    assert editor.text_edit.isVisible() is False
+    assert editor.preview_browser.isVisible() is True
+    assert "Header 1" in editor.preview_browser.toPlainText()
+
+    # Toggle back to Write mode
+    editor._toggle_preview_mode()
+    assert editor.text_edit.isVisible() is True
+    assert editor.preview_browser.isVisible() is False
+
+    dlg.close()
+
+
+def test_quick_entry_notes_bottom_bar_and_search(qapp, repo: StorageRepository):
+    """Verify QuickEntryDialog notes page bottom add-note bar and search filtering."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+    dialog._set_view_mode("notes")
+
+    # 1. Add note using bottom input bar and project selector
+    dialog.note_input.setText("Setup Postgres Database")
+    dialog._on_quick_add_note()
+
+    notes = repo.get_permanent_notes()
+    assert any("Setup Postgres Database" in n.content for n in notes)
+
+    # Add a second note
+    dialog.note_input.setText("Implement Redis Cache")
+    dialog._on_quick_add_note()
+
+    assert len(repo.get_permanent_notes()) >= 2
+
+    # 2. Test search filter on notes page
+    dialog.notes_search.setText("Redis")
+    rendered_rows = [
+        dialog.notes_content_layout.itemAt(i).widget()
+        for i in range(dialog.notes_content_layout.count())
+        if isinstance(dialog.notes_content_layout.itemAt(i).widget(), NoteRowWidget)
+    ]
+    assert len(rendered_rows) == 1
+    assert "Redis" in rendered_rows[0].label.text()
+
+    # Clear search
+    dialog.notes_search.setText("")
+    all_rendered = [
+        dialog.notes_content_layout.itemAt(i).widget()
+        for i in range(dialog.notes_content_layout.count())
+        if isinstance(dialog.notes_content_layout.itemAt(i).widget(), NoteRowWidget)
+    ]
+    assert len(all_rendered) >= 2
+
+    dialog.close()
+
