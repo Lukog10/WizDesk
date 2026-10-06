@@ -389,3 +389,34 @@ def test_quick_entry_notes_bottom_bar_and_search(qapp, repo: StorageRepository):
 
     dialog.close()
 
+
+def test_quick_entry_notes_in_workspace_editor_navigation(qapp, repo: StorageRepository):
+    """Verify clicking a note row navigates within the workspace to NoteEditorWidget and back."""
+    sm = StateMachine()
+    dialog = QuickEntryDialog(sm, repository=repo)
+    dialog._set_view_mode("notes")
+
+    note_id = repo.create_permanent_note(
+        title="Architecture Decision Record",
+        content="We chose SQLite for local persistence.",
+        project_tag="Work",
+    )
+    dialog.refresh_notes()
+
+    # Initial sub-stack page is list widget
+    assert dialog.notes_sub_stack.currentWidget() == dialog.notes_list_widget
+
+    # Open note (simulating user clicking the note row)
+    dialog._on_open_note_dialog(note_id)
+
+    # Now sub-stack page is embedded note editor
+    assert dialog.notes_sub_stack.currentWidget() == dialog.note_editor
+    assert dialog.note_editor.title_input.text() == "Architecture Decision Record"
+    assert "SQLite" in dialog.note_editor.text_edit.toPlainText()
+
+    # Click back button to return to list
+    dialog.note_editor.back_btn.click()
+    assert dialog.notes_sub_stack.currentWidget() == dialog.notes_list_widget
+
+    dialog.close()
+

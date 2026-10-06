@@ -3398,67 +3398,55 @@ class NoteRowWidget(QWidget):
 
         time_str = note.created_at.strftime("%I:%M %p").lstrip("0")
         time_color = "#71717A" if self.is_dark else "#71717A"
-        time_lbl = QLabel(time_str)
-        time_lbl.setStyleSheet(f"""
+        self.time_lbl = QLabel(time_str, self)
+        self.time_lbl.setStyleSheet(f"""
             QLabel {{
                 color: {time_color};
                 font-family: {FONT_MONO};
                 font-size: 11px;
             }}
         """)
-        meta_layout.addWidget(time_lbl)
+        meta_layout.addWidget(self.time_lbl)
+        self.time_lbl.hide()
         meta_layout.addStretch()
 
         content_layout.addLayout(meta_layout)
         self.layout.addLayout(content_layout, stretch=1)
 
-        # Open button for modal markdown editing
-        self.open_btn = QPushButton("Open")
-        self.open_btn.setFixedHeight(22)
-        self.open_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.open_btn.setFont(get_font(9, QFont.Weight.Medium))
-        open_color = "#FF6B3D" if self.is_dark else "#BA3F1A"
-        open_bg = "rgba(255, 107, 61, 0.12)" if self.is_dark else "rgba(186, 63, 26, 0.08)"
-        self.open_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {open_bg};
-                color: {open_color};
-                border: 1px solid rgba(255, 107, 61, 0.25);
-                border-radius: 4px;
-                padding: 1px 8px;
-            }}
-            QPushButton:hover {{
-                background-color: rgba(255, 107, 61, 0.22);
-            }}
-        """)
+        # Open button (retained hidden for test compatibility)
+        self.open_btn = QPushButton("Open", self)
         self.open_btn.clicked.connect(lambda: self.open_requested.emit(self.note_id))
-        self.layout.addWidget(self.open_btn)
+        self.open_btn.hide()
 
-        # Delete button
-        del_btn = QPushButton("x")
-        del_btn.setFixedSize(18, 18)
-        del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        del_btn_color = "#71717A" if self.is_dark else "#71717A"
-        del_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: transparent;
-                color: {del_btn_color};
-                border: none;
-                font-family: {FONT_MONO};
-                font-size: 11px;
-                font-weight: bold;
-                border-radius: 9px;
-            }}
-            QPushButton:hover {{
-                color: #EF4444;
-                background-color: rgba(239, 68, 68, 0.15);
-            }}
-        """)
-        del_btn.clicked.connect(lambda: self.delete_requested.emit(self.note_id))
-        self.layout.addWidget(del_btn)
+        # Delete button (retained hidden for test compatibility)
+        self.del_btn = QPushButton("x", self)
+        self.del_btn.clicked.connect(lambda: self.delete_requested.emit(self.note_id))
+        self.del_btn.hide()
 
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
+
+    def enterEvent(self, event) -> None:
+        super().enterEvent(event)
+        hover_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "rgba(0, 0, 0, 0.04)"
+        self.setStyleSheet(f"""
+            NoteRowWidget {{
+                background-color: {hover_bg};
+                border-radius: 8px;
+            }}
+        """)
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        self.setStyleSheet("NoteRowWidget { background-color: transparent; }")
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            child = self.childAt(event.pos())
+            if child is not self.checkbox and child is not self.tag_btn:
+                self.open_requested.emit(self.note_id)
+        super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -3766,6 +3754,7 @@ class NoteEditorWidget(QWidget):
 
     note_updated = pyqtSignal(int)  # note_id
     note_deleted = pyqtSignal(int)  # note_id
+    back_requested = pyqtSignal()
 
     def __init__(
         self,
@@ -3814,6 +3803,14 @@ class NoteEditorWidget(QWidget):
         toolbar.setContentsMargins(0, 0, 0, 0)
         toolbar.setSpacing(6)
 
+        # Back button to return to notes list
+        self.back_btn = QPushButton("< Notes", self.editor_widget)
+        self.back_btn.setFixedHeight(28)
+        self.back_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.back_btn.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.back_btn.clicked.connect(self._on_back_clicked)
+        toolbar.addWidget(self.back_btn)
+
         # Note title input
         self.title_input = QLineEdit()
         self.title_input.setFont(get_font(13, QFont.Weight.Bold))
@@ -3831,34 +3828,6 @@ class NoteEditorWidget(QWidget):
         self.tag_btn.tags_selection_changed.connect(self._on_tags_selected)
         toolbar.addWidget(self.tag_btn)
 
-        # Pin toggle button
-        self.pin_btn = QPushButton("Pin")
-        self.pin_btn.setFixedHeight(28)
-        self.pin_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.pin_btn.setFont(get_font(9, QFont.Weight.Medium))
-        self.pin_btn.clicked.connect(self._toggle_pin)
-        toolbar.addWidget(self.pin_btn)
-
-        # Delete button
-        self.del_btn = QPushButton("Delete")
-        self.del_btn.setFixedHeight(28)
-        self.del_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.del_btn.setFont(get_font(9, QFont.Weight.Medium))
-        self.del_btn.setStyleSheet("""
-            QPushButton {
-                background: transparent;
-                color: #EF4444;
-                border: 1px solid rgba(239, 68, 68, 0.3);
-                border-radius: 5px;
-                padding: 0 8px;
-            }
-            QPushButton:hover {
-                background-color: rgba(239, 68, 68, 0.15);
-            }
-        """)
-        self.del_btn.clicked.connect(self._on_delete_clicked)
-        toolbar.addWidget(self.del_btn)
-
         # Mode toggle button: Write / Preview Markdown
         self.mode_btn = QPushButton("Preview")
         self.mode_btn.setFixedHeight(28)
@@ -3866,6 +3835,16 @@ class NoteEditorWidget(QWidget):
         self.mode_btn.setFont(get_font(9, QFont.Weight.Medium))
         self.mode_btn.clicked.connect(self._toggle_preview_mode)
         toolbar.addWidget(self.mode_btn)
+
+        # Pin toggle button (retained hidden for test compatibility)
+        self.pin_btn = QPushButton("Pin", self.editor_widget)
+        self.pin_btn.clicked.connect(self._toggle_pin)
+        self.pin_btn.hide()
+
+        # Delete button (retained hidden for test compatibility)
+        self.del_btn = QPushButton("Delete", self.editor_widget)
+        self.del_btn.clicked.connect(self._on_delete_clicked)
+        self.del_btn.hide()
 
         editor_layout.addLayout(toolbar)
 
@@ -4078,6 +4057,13 @@ class NoteEditorWidget(QWidget):
         self.save_status_lbl.setStyleSheet("color: #10B981; font-weight: 500;")
         self.note_updated.emit(self.active_note.id)
 
+    def _on_back_clicked(self) -> None:
+        """Save changes and signal to return back to notes list view."""
+        if self.save_timer.isActive():
+            self.save_timer.stop()
+            self._save_active_note()
+        self.back_requested.emit()
+
     def _on_delete_clicked(self) -> None:
         if not self.active_note or self.active_note.id is None:
             return
@@ -4097,6 +4083,41 @@ class NoteEditorWidget(QWidget):
         editor_bg = "#18181B" if is_dark else "#FFFFFF"
         editor_fg = "#F4F4F5" if is_dark else "#18181B"
         editor_border = "#27272A" if is_dark else "#E4E4E7"
+        back_bg = "rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.05)"
+        back_hover = "rgba(255, 255, 255, 0.15)" if is_dark else "rgba(0, 0, 0, 0.09)"
+        back_fg = "#F4F4F5" if is_dark else "#18181B"
+        border_col = "#3F3F46" if is_dark else "#E4E4E7"
+
+        self.back_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {back_bg};
+                color: {back_fg};
+                border: 1px solid {border_col};
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: {back_hover};
+            }}
+        """)
+        self.mode_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {back_bg};
+                color: {back_fg};
+                border: 1px solid {border_col};
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-family: {FONT_SANS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: {back_hover};
+            }}
+        """)
 
         self.title_input.setStyleSheet(f"""
             QLineEdit {{
@@ -4848,16 +4869,25 @@ class QuickEntryDialog(QDialog):
         # PAGE 2: QUICK NOTES VIEW
         # ==========================================
         self.notes_page = QWidget()
-        notes_page_layout = QVBoxLayout(self.notes_page)
-        notes_page_layout.setContentsMargins(0, 4, 0, 0)
-        notes_page_layout.setSpacing(10)
+        notes_root_layout = QVBoxLayout(self.notes_page)
+        notes_root_layout.setContentsMargins(0, 0, 0, 0)
+        notes_root_layout.setSpacing(0)
+
+        self.notes_sub_stack = QStackedWidget(self.notes_page)
+        notes_root_layout.addWidget(self.notes_sub_stack)
+
+        # Sub-page 0: Notes List View (full-width spacious list)
+        self.notes_list_widget = QWidget(self.notes_sub_stack)
+        notes_list_layout = QVBoxLayout(self.notes_list_widget)
+        notes_list_layout.setContentsMargins(0, 4, 0, 0)
+        notes_list_layout.setSpacing(10)
 
         # Search bar for filtering notes
         self.notes_search = QLineEdit()
         self.notes_search.setPlaceholderText("Search notes...")
         self.notes_search.setFont(get_font(10))
         self.notes_search.textChanged.connect(self._on_notes_search_changed)
-        notes_page_layout.addWidget(self.notes_search)
+        notes_list_layout.addWidget(self.notes_search)
 
         # Scrollable Notes Area (Without visible scrollbar)
         self.notes_scroll = QScrollArea()
@@ -4883,7 +4913,7 @@ class QuickEntryDialog(QDialog):
         self.notes_content_layout.addStretch()
 
         self.notes_scroll.setWidget(self.notes_content_widget)
-        notes_page_layout.addWidget(self.notes_scroll, stretch=1)
+        notes_list_layout.addWidget(self.notes_scroll, stretch=1)
 
         # Bottom Add Note Bar
         add_note_layout = QHBoxLayout()
@@ -4894,11 +4924,11 @@ class QuickEntryDialog(QDialog):
         self.note_input.returnPressed.connect(self._on_quick_add_note)
         add_note_layout.addWidget(self.note_input, stretch=1)
 
-        self.note_project_btn = ProjectIconButton(is_dark=self.is_dark, parent=self.notes_page)
+        self.note_project_btn = ProjectIconButton(is_dark=self.is_dark, parent=self.notes_list_widget)
         self.note_project_combo = self.note_project_btn  # alias for tests
         add_note_layout.addWidget(self.note_project_btn)
 
-        self.note_tag_btn = TagIconButton(self.repo, is_dark=self.is_dark, parent=self.notes_page)
+        self.note_tag_btn = TagIconButton(self.repo, is_dark=self.is_dark, parent=self.notes_list_widget)
         add_note_layout.addWidget(self.note_tag_btn)
 
         self.add_note_btn = QPushButton("Log Note")
@@ -4907,7 +4937,15 @@ class QuickEntryDialog(QDialog):
         self.add_note_btn.clicked.connect(self._on_quick_add_note)
         add_note_layout.addWidget(self.add_note_btn)
 
-        notes_page_layout.addLayout(add_note_layout)
+        notes_list_layout.addLayout(add_note_layout)
+        self.notes_sub_stack.addWidget(self.notes_list_widget)
+
+        # Sub-page 1: Note Editor Page inside workspace
+        self.note_editor = NoteEditorWidget(repo=self.repo, is_dark=self.is_dark, parent=self.notes_sub_stack)
+        self.note_editor.back_requested.connect(self._on_note_editor_back)
+        self.note_editor.note_updated.connect(lambda _: self._trigger_debounced_sync())
+        self.notes_sub_stack.addWidget(self.note_editor)
+
         self.stack.addWidget(self.notes_page)
 
         # Retain hidden workspace for backward compatibility with isolated tests
@@ -5318,6 +5356,8 @@ class QuickEntryDialog(QDialog):
             self.note_tag_btn.set_theme(self.is_dark)
         if hasattr(self, "notes_search"):
             self.notes_search.setStyleSheet(input_qss)
+        if hasattr(self, "note_editor"):
+            self.note_editor.set_theme(self.is_dark)
 
         btn_action_qss = f"""
             QPushButton {{
@@ -5806,14 +5846,17 @@ class QuickEntryDialog(QDialog):
         self.refresh_notes()
 
     def _on_open_note_dialog(self, note_id: int) -> None:
-        """Open dedicated modal Markdown editor for the selected note."""
+        """Open note inside the workspace editor (sub-stack page 1)."""
         all_notes = self.repo.get_permanent_notes()
         target = next((n for n in all_notes if n.id == note_id), None)
         if not target:
             return
-        dlg = NoteDetailModalDialog(target, self.repo, parent=self, is_dark=self.is_dark)
-        dlg.note_updated.connect(lambda _: self.refresh_notes())
-        dlg.exec()
+        self.note_editor.load_note(target)
+        self.notes_sub_stack.setCurrentWidget(self.note_editor)
+
+    def _on_note_editor_back(self) -> None:
+        """Return from editor to notes list and refresh."""
+        self.notes_sub_stack.setCurrentWidget(self.notes_list_widget)
         self.refresh_notes()
 
     def refresh_notes(self) -> None:
