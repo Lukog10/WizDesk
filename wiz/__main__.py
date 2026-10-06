@@ -222,6 +222,11 @@ class WizApplication:
             self._quick_bar_dialog.close()
         if self._settings_dialog:
             self._settings_dialog.close()
+        try:
+            from wiz.storage.models import StorageRepository
+            StorageRepository().flush_all_running_stopwatches()
+        except Exception:
+            pass
         app = QApplication.instance()
         if app:
             app.quit()

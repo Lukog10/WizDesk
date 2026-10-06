@@ -760,6 +760,10 @@ class StorageRepository:
             )
             return cur.rowcount > 0
 
+    def complete_task_stopwatch(self, task_id: int) -> bool:
+        """Flush running session into duration_seconds, clear timer_started_at, and mark task done."""
+        return self.update_task_status(task_id, "done")
+
     def update_task_duration(
         self,
         task_id: int,

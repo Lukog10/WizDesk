@@ -985,6 +985,22 @@ def format_task_time_tracking(
         return f"({date_created}, {time_created})"
 
 
+def format_duration_seconds(seconds: int, compact: bool = False) -> str:
+    """Format duration in seconds to MM:SS, H:MM:SS, or compact string e.g. 24m or 1h 15m."""
+    if seconds <= 0:
+        return "00:00" if not compact else "0m"
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+    if compact:
+        if hours > 0:
+            return f"{hours}h {minutes}m" if minutes > 0 else f"{hours}h"
+        return f"{max(1, minutes)}m"
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
 class SubtaskRowWidget(QWidget):
     """Single subtask row nested under a parent task with rename & delete support."""
 
@@ -2251,6 +2267,197 @@ class TagFilterBar(QWidget):
         """)
 
 
+class TaskStopwatchWidget(QWidget):
+    """
+    Interactive task stopwatch widget.
+    Features:
+    - Stopwatch toggle button (start / pause)
+    - Live ticking timer label (1000ms QTimer)
+    - When task is completed, shows static duration badge (e.g. 24m or 1h 15m)
+    - Persists elapsed time and session start to SQLite via repo
+    """
+
+    timer_toggled = pyqtSignal(int, bool)  # task_id, is_running
+
+    def __init__(
+        self,
+        task: TaskRecord,
+        repo: Optional[StorageRepository] = None,
+        is_dark: bool = False,
+        parent: Optional[QWidget] = None,
+    ):
+        super().__init__(parent)
+        self.task = task
+        self.task_id = task.id or 0
+        self.repo = repo
+        self.is_dark = is_dark
+        self._btn_hovered = False
+
+        self.layout = QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(4)
+
+        # Stopwatch toggle icon button
+        self.btn = QPushButton(self)
+        self.btn.setFixedSize(18, 18)
+        self.btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.btn.setStyleSheet("background: transparent; border: none; padding: 0;")
+        self.btn.clicked.connect(self._toggle_stopwatch)
+        self.btn.paintEvent = self._paint_btn
+        self.btn.enterEvent = self._on_btn_enter
+        self.btn.leaveEvent = self._on_btn_leave
+        self.layout.addWidget(self.btn)
+
+        # Elapsed time label
+        self.time_label = QLabel(self)
+        self.time_label.setFont(get_font(10, QFont.Weight.Medium))
+        self.layout.addWidget(self.time_label)
+
+        # Live ticker timer
+        self.ticker = QTimer(self)
+        self.ticker.setInterval(1000)
+        self.ticker.timeout.connect(self._on_tick)
+
+        self.refresh()
+
+    def set_theme(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.refresh()
+
+    def _paint_btn(self, event) -> None:
+        painter = QPainter(self.btn)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        is_running = self.task.is_timer_running
+        active_color = "#C2410C" if self.is_dark else "#BA3F1A"
+        normal_color = "#71717A" if self.is_dark else "#A1A1AA"
+        hover_color = "#FAFAFA" if self.is_dark else "#18181B"
+        hover_bg = "#27272A" if self.is_dark else "#EAEAEB"
+
+        if self._btn_hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(hover_bg))
+            painter.drawRoundedRect(0, 0, self.btn.width(), self.btn.height(), 4, 4)
+
+        c = active_color if is_running else (hover_color if self._btn_hovered else normal_color)
+        render_tinted_svg(painter, "stopwatch.svg", c, 2, 2, 14)
+        painter.end()
+
+    def _on_btn_enter(self, event) -> None:
+        self._btn_hovered = True
+        self.btn.update()
+
+    def _on_btn_leave(self, event) -> None:
+        self._btn_hovered = False
+        self.btn.update()
+
+    def _on_tick(self) -> None:
+        if self.task.is_timer_running:
+            elapsed = self.task.total_elapsed_seconds
+            self.time_label.setText(format_duration_seconds(elapsed, compact=False))
+
+    def refresh(self) -> None:
+        """Update visual state and ticker based on task status and timer state."""
+        is_done = self.task.status in ("done", "completed", "cancelled", "canceled")
+        is_running = self.task.is_timer_running and not is_done
+        elapsed = self.task.total_elapsed_seconds
+
+        time_fg = "#A1A1AA" if self.is_dark else "#71717A"
+        running_fg = "#C2410C" if self.is_dark else "#BA3F1A"
+
+        if is_done:
+            self.ticker.stop()
+            self.btn.setVisible(False)
+            if elapsed > 0:
+                compact_str = format_duration_seconds(elapsed, compact=True)
+                self.time_label.setText(compact_str)
+                self.time_label.setStyleSheet(f"""
+                    QLabel {{
+                        color: {time_fg};
+                        background: transparent;
+                        font-family: {FONT_MONO};
+                        font-size: 10px;
+                        font-weight: 600;
+                    }}
+                """)
+                self.time_label.setVisible(True)
+                self.setVisible(True)
+            else:
+                self.time_label.setText("")
+                self.time_label.setVisible(False)
+                self.setVisible(False)
+        else:
+            self.btn.setVisible(True)
+            self.setVisible(True)
+            if is_running:
+                if not self.ticker.isActive():
+                    self.ticker.start()
+                self.btn.setToolTip("Pause stopwatch")
+                live_str = format_duration_seconds(elapsed, compact=False)
+                self.time_label.setText(live_str)
+                self.time_label.setStyleSheet(f"""
+                    QLabel {{
+                        color: {running_fg};
+                        background: transparent;
+                        font-family: {FONT_MONO};
+                        font-size: 10px;
+                        font-weight: bold;
+                    }}
+                """)
+                self.time_label.setVisible(True)
+            else:
+                self.ticker.stop()
+                self.btn.setToolTip("Start stopwatch")
+                if elapsed > 0:
+                    paused_str = format_duration_seconds(elapsed, compact=False)
+                    self.time_label.setText(paused_str)
+                    self.time_label.setStyleSheet(f"""
+                        QLabel {{
+                            color: {time_fg};
+                            background: transparent;
+                            font-family: {FONT_MONO};
+                            font-size: 10px;
+                            font-weight: 500;
+                        }}
+                    """)
+                    self.time_label.setVisible(True)
+                else:
+                    self.time_label.setText("")
+                    self.time_label.setVisible(False)
+        self.btn.update()
+
+    def _toggle_stopwatch(self) -> None:
+        """Toggle timer between running and paused."""
+        repo = self.repo
+        if not repo:
+            p = self.parent()
+            while p is not None:
+                if hasattr(p, "repo") and p.repo:
+                    repo = p.repo
+                    break
+                p = p.parent()
+        if not repo:
+            repo = StorageRepository()
+
+        if self.task.is_timer_running:
+            repo.pause_task_stopwatch(self.task_id)
+            self.task.duration_seconds = self.task.total_elapsed_seconds
+            self.task.timer_started_at = None
+            self.refresh()
+            self.timer_toggled.emit(self.task_id, False)
+        else:
+            repo.start_task_stopwatch(self.task_id)
+            self.task.timer_started_at = datetime.now()
+            self.task.status = "in_progress"
+            self.refresh()
+            self.timer_toggled.emit(self.task_id, True)
+
+    def closeEvent(self, event) -> None:
+        if hasattr(self, "ticker") and self.ticker.isActive():
+            self.ticker.stop()
+        super().closeEvent(event)
+
+
 class TaskRowWidget(QWidget):
     """
     Parent task row featuring:
@@ -2374,6 +2581,16 @@ class TaskRowWidget(QWidget):
             }}
         """)
         status_bar_layout.addWidget(self.time_label)
+
+        # Active task stopwatch widget
+        self.stopwatch_widget = TaskStopwatchWidget(
+            task=self.task,
+            repo=self.repo,
+            is_dark=self.is_dark,
+            parent=self.status_bar_widget,
+        )
+        self.stopwatch_widget.timer_toggled.connect(self._on_stopwatch_toggled)
+        status_bar_layout.addWidget(self.stopwatch_widget)
 
         # Schedule date badge (removed per user request to streamline task rows)
         self.schedule_badge = QLabel()
@@ -2524,9 +2741,20 @@ class TaskRowWidget(QWidget):
             self.repeat_btn.set_theme(is_dark)
         if hasattr(self, "delete_btn") and hasattr(self.delete_btn, "set_theme"):
             self.delete_btn.set_theme(is_dark)
+        if hasattr(self, "stopwatch_widget") and hasattr(self.stopwatch_widget, "set_theme"):
+            self.stopwatch_widget.set_theme(is_dark)
         self._populate_status_combo()
         self._update_status_ui(self.task.status)
         self._update_badges()
+
+    def _on_stopwatch_toggled(self, task_id: int, is_running: bool) -> None:
+        """Handle stopwatch start/pause toggle."""
+        if is_running:
+            self.task.status = "in_progress"
+            self._update_status_ui("in_progress")
+            self.status_toggled.emit(self.task_id, "in_progress")
+        else:
+            self.stopwatch_widget.refresh()
 
     def _update_badges(self) -> None:
         """Update visual badges for scheduled date / overdue status and repeat mode."""
@@ -2754,10 +2982,18 @@ class TaskRowWidget(QWidget):
             new_status = "done"
             if not self.task.completed_at:
                 self.task.completed_at = datetime.now()
+            if self.task.is_timer_running:
+                delta = int((datetime.now() - self.task.timer_started_at).total_seconds())
+                self.task.duration_seconds += max(0, delta)
+                self.task.timer_started_at = None
         elif text == "Cancelled":
             new_status = "cancelled"
             if not self.task.completed_at:
                 self.task.completed_at = datetime.now()
+            if self.task.is_timer_running:
+                delta = int((datetime.now() - self.task.timer_started_at).total_seconds())
+                self.task.duration_seconds += max(0, delta)
+                self.task.timer_started_at = None
         else:
             new_status = "not_started"
             self.task.completed_at = None
@@ -2771,6 +3007,10 @@ class TaskRowWidget(QWidget):
         if checked:
             if not self.task.completed_at:
                 self.task.completed_at = datetime.now()
+            if self.task.is_timer_running:
+                delta = int((datetime.now() - self.task.timer_started_at).total_seconds())
+                self.task.duration_seconds += max(0, delta)
+                self.task.timer_started_at = None
         else:
             self.task.completed_at = None
         self.task.status = new_status
@@ -2905,6 +3145,8 @@ class TaskRowWidget(QWidget):
             }}
         """)
         self._update_badges()
+        if hasattr(self, "stopwatch_widget"):
+            self.stopwatch_widget.refresh()
 
     def start_renaming(self) -> None:
         """Enter inline task renaming mode."""
