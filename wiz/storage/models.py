@@ -27,13 +27,27 @@ class SessionRecord:
 
 
 @dataclass
+class TagRecord:
+    """Represents a user-defined category tag with an icon and accent color."""
+    id: Optional[int]
+    name: str
+    icon: str = "tag"
+    color: str = "#3B82F6"
+    created_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
 class NoteRecord:
-    """Represents a flat quick note or one-off log."""
+    """Represents a permanent or quick work note."""
     id: Optional[int]
     content: str
     project_tag: Optional[str]
     created_at: datetime
     is_completed: bool = False
+    title: str = ""
+    updated_at: Optional[datetime] = None
+    is_pinned: bool = False
+    tags: List[TagRecord] = field(default_factory=list)
 
 
 @dataclass
@@ -52,9 +66,11 @@ class SubtaskRecord:
     id: Optional[int]
     task_id: int
     title: str
-    status: str = "not_started"  # 'not_started' | 'in_progress' | 'done'
+    status: str = "not_started"
     created_at: datetime = field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
+    duration_seconds: int = 0
+    timer_started_at: Optional[datetime] = None
     logs: List[TaskLogRecord] = field(default_factory=list)
 
 
@@ -64,14 +80,30 @@ class TaskRecord:
     id: Optional[int]
     title: str
     project_tag: Optional[str]
-    status: str = "not_started"  # 'not_started' | 'in_progress' | 'done'
+    status: str = "not_started"
     created_at: datetime = field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
-    scheduled_date: Optional[str] = None       # ISO-8601 Date: YYYY-MM-DD
-    repeat_mode: str = "none"                  # 'none' | 'daily' | 'weekdays' | 'weekends'
-    last_completed_date: Optional[str] = None  # ISO-8601 Date: YYYY-MM-DD
+    scheduled_date: Optional[str] = None
+    repeat_mode: str = "none"
+    last_completed_date: Optional[str] = None
+    duration_seconds: int = 0
+    timer_started_at: Optional[datetime] = None
     subtasks: List[SubtaskRecord] = field(default_factory=list)
     task_logs: List[TaskLogRecord] = field(default_factory=list)
+    tags: List[TagRecord] = field(default_factory=list)
+
+    @property
+    def is_timer_running(self) -> bool:
+        """Returns True if the active stopwatch is currently ticking."""
+        return self.timer_started_at is not None
+
+    @property
+    def total_elapsed_seconds(self) -> int:
+        """Calculate total verified work seconds including current running session."""
+        if self.timer_started_at:
+            delta = int((datetime.now() - self.timer_started_at).total_seconds())
+            return self.duration_seconds + max(0, delta)
+        return self.duration_seconds
 
     @property
     def is_recurring(self) -> bool:
@@ -231,25 +263,253 @@ class StorageRepository:
                 for row in rows
             ]
 
-    # --- Note Operations ---
+    # Tag Operations
+
+    def create_tag(self, name: str, icon: str = "tag", color: str = "#3B82F6") -> TagRecord:
+        """Create a user-defined category tag."""
+        clean_name = name.strip()
+        clean_icon = icon.strip().lower() or "tag"
+        clean_color = color.strip() or "#3B82F6"
+        now = datetime.now()
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO tags (name, icon, color, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (clean_name, clean_icon, clean_color, now.isoformat()),
+            )
+            tag_id = cur.lastrowid or 0
+            return TagRecord(
+                id=tag_id,
+                name=clean_name,
+                icon=clean_icon,
+                color=clean_color,
+                created_at=now,
+            )
+
+    def get_all_tags(self) -> List[TagRecord]:
+        """Fetch all user tags ordered alphabetically."""
+        with self.db.cursor() as cur:
+            cur.execute("SELECT id, name, icon, color, created_at FROM tags ORDER BY name ASC")
+            rows = cur.fetchall()
+            return [
+                TagRecord(
+                    id=r["id"],
+                    name=r["name"],
+                    icon=r["icon"] or "tag",
+                    color=r["color"] or "#3B82F6",
+                    created_at=datetime.fromisoformat(r["created_at"]),
+                )
+                for r in rows
+            ]
+
+    def get_tag_by_id(self, tag_id: int) -> Optional[TagRecord]:
+        """Fetch a tag by primary ID."""
+        with self.db.cursor() as cur:
+            cur.execute("SELECT id, name, icon, color, created_at FROM tags WHERE id = ?", (tag_id,))
+            r = cur.fetchone()
+            if not r:
+                return None
+            return TagRecord(
+                id=r["id"],
+                name=r["name"],
+                icon=r["icon"] or "tag",
+                color=r["color"] or "#3B82F6",
+                created_at=datetime.fromisoformat(r["created_at"]),
+            )
+
+    def get_tag_by_name(self, name: str) -> Optional[TagRecord]:
+        """Fetch a tag by exact name (case-insensitive)."""
+        with self.db.cursor() as cur:
+            cur.execute("SELECT id, name, icon, color, created_at FROM tags WHERE LOWER(name) = LOWER(?)", (name.strip(),))
+            r = cur.fetchone()
+            if not r:
+                return None
+            return TagRecord(
+                id=r["id"],
+                name=r["name"],
+                icon=r["icon"] or "tag",
+                color=r["color"] or "#3B82F6",
+                created_at=datetime.fromisoformat(r["created_at"]),
+            )
+
+    def update_tag(self, tag_id: int, name: str, icon: str, color: str) -> bool:
+        """Update a tag's name, icon, and accent color."""
+        clean_name = name.strip()
+        clean_icon = icon.strip().lower() or "tag"
+        clean_color = color.strip() or "#3B82F6"
+        with self.db.cursor() as cur:
+            cur.execute(
+                "UPDATE tags SET name = ?, icon = ?, color = ? WHERE id = ?",
+                (clean_name, clean_icon, clean_color, tag_id),
+            )
+            return cur.rowcount > 0
+
+    def delete_tag(self, tag_id: int) -> bool:
+        """Delete a tag and cascade remove its associations from tasks and notes."""
+        with self.db.cursor() as cur:
+            cur.execute("DELETE FROM tags WHERE id = ?", (tag_id,))
+            return cur.rowcount > 0
+
+    def get_tags_for_task(self, task_id: int) -> List[TagRecord]:
+        """Fetch all tags linked to a task."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT t.id, t.name, t.icon, t.color, t.created_at
+                FROM task_tags tt
+                JOIN tags t ON tt.tag_id = t.id
+                WHERE tt.task_id = ?
+                ORDER BY t.name ASC
+                """,
+                (task_id,),
+            )
+            rows = cur.fetchall()
+            return [
+                TagRecord(
+                    id=r["id"],
+                    name=r["name"],
+                    icon=r["icon"] or "tag",
+                    color=r["color"] or "#3B82F6",
+                    created_at=datetime.fromisoformat(r["created_at"]),
+                )
+                for r in rows
+            ]
+
+    def set_task_tags(self, task_id: int, tag_ids: List[int]) -> bool:
+        """Replace all tags assigned to a task."""
+        with self.db.cursor() as cur:
+            cur.execute("DELETE FROM task_tags WHERE task_id = ?", (task_id,))
+            for tid in tag_ids:
+                cur.execute(
+                    "INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?, ?)",
+                    (task_id, tid),
+                )
+            return True
+
+    def add_task_tag(self, task_id: int, tag_id: int) -> bool:
+        """Add a single tag to a task if not already present."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                "INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?, ?)",
+                (task_id, tag_id),
+            )
+            return cur.rowcount > 0
+
+    def remove_task_tag(self, task_id: int, tag_id: int) -> bool:
+        """Remove a tag from a task."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                "DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?",
+                (task_id, tag_id),
+            )
+            return cur.rowcount > 0
+
+    def get_tags_for_note(self, note_id: int) -> List[TagRecord]:
+        """Fetch all tags linked to a note."""
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT t.id, t.name, t.icon, t.color, t.created_at
+                FROM note_tags nt
+                JOIN tags t ON nt.tag_id = t.id
+                WHERE nt.note_id = ?
+                ORDER BY t.name ASC
+                """,
+                (note_id,),
+            )
+            rows = cur.fetchall()
+            return [
+                TagRecord(
+                    id=r["id"],
+                    name=r["name"],
+                    icon=r["icon"] or "tag",
+                    color=r["color"] or "#3B82F6",
+                    created_at=datetime.fromisoformat(r["created_at"]),
+                )
+                for r in rows
+            ]
+
+    def set_note_tags(self, note_id: int, tag_ids: List[int]) -> bool:
+        """Replace all tags assigned to a note."""
+        with self.db.cursor() as cur:
+            cur.execute("DELETE FROM note_tags WHERE note_id = ?", (note_id,))
+            for tid in tag_ids:
+                cur.execute(
+                    "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
+                    (note_id, tid),
+                )
+            return True
+
+    # Note Operations
 
     def create_note(
         self,
         content: str,
         project_tag: Optional[str] = None,
         created_at: Optional[datetime] = None,
+        title: str = "",
+        tag_ids: Optional[List[int]] = None,
+        is_pinned: bool = False,
     ) -> int:
-        """Create a manual quick note."""
+        """Create a permanent or quick work note."""
         now = created_at or datetime.now()
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO notes (content, project_tag, created_at, is_completed)
-                VALUES (?, ?, ?, 0)
+                INSERT INTO notes (title, content, project_tag, created_at, updated_at, is_completed, is_pinned)
+                VALUES (?, ?, ?, ?, ?, 0, ?)
                 """,
-                (content.strip(), project_tag, now.isoformat()),
+                (title.strip(), content.strip(), project_tag, now.isoformat(), now.isoformat(), 1 if is_pinned else 0),
             )
-            return cur.lastrowid or 0
+            note_id = cur.lastrowid or 0
+            if tag_ids:
+                for tid in tag_ids:
+                    cur.execute(
+                        "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
+                        (note_id, tid),
+                    )
+            return note_id
+
+    def update_note(
+        self,
+        note_id: int,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        project_tag: Optional[str] = None,
+        is_pinned: Optional[bool] = None,
+        tag_ids: Optional[List[int]] = None,
+    ) -> bool:
+        """Update an existing note's fields and tags."""
+        now_str = datetime.now().isoformat()
+        updates = ["updated_at = ?"]
+        params: list = [now_str]
+
+        if title is not None:
+            updates.append("title = ?")
+            params.append(title.strip())
+        if content is not None:
+            updates.append("content = ?")
+            params.append(content.strip())
+        if project_tag is not None:
+            updates.append("project_tag = ?")
+            params.append(project_tag.strip() if project_tag else None)
+        if is_pinned is not None:
+            updates.append("is_pinned = ?")
+            params.append(1 if is_pinned else 0)
+
+        params.append(note_id)
+        with self.db.cursor() as cur:
+            cur.execute(f"UPDATE notes SET {', '.join(updates)} WHERE id = ?", params)
+            if tag_ids is not None:
+                cur.execute("DELETE FROM note_tags WHERE note_id = ?", (note_id,))
+                for tid in tag_ids:
+                    cur.execute(
+                        "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
+                        (note_id, tid),
+                    )
+            return cur.rowcount > 0
 
     def toggle_note_completed(self, note_id: int, is_completed: bool) -> bool:
         """Toggle the completion state of a note."""
@@ -281,7 +541,7 @@ class StorageRepository:
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, content, project_tag, created_at, is_completed
+                SELECT id, title, content, project_tag, created_at, updated_at, is_completed, is_pinned
                 FROM notes
                 WHERE substr(created_at, 1, 10) = ?
                 ORDER BY created_at ASC
@@ -296,6 +556,9 @@ class StorageRepository:
                     project_tag=row["project_tag"],
                     created_at=datetime.fromisoformat(row["created_at"]),
                     is_completed=bool(row["is_completed"]),
+                    title=row["title"] if "title" in row.keys() and row["title"] else "",
+                    updated_at=datetime.fromisoformat(row["updated_at"]) if ("updated_at" in row.keys() and row["updated_at"]) else datetime.fromisoformat(row["created_at"]),
+                    is_pinned=bool(row["is_pinned"]) if "is_pinned" in row.keys() else False,
                 )
                 for row in rows
             ]
@@ -305,10 +568,10 @@ class StorageRepository:
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, content, project_tag, created_at, is_completed
+                SELECT id, title, content, project_tag, created_at, updated_at, is_completed, is_pinned
                 FROM notes
                 WHERE is_completed = 0
-                ORDER BY created_at DESC
+                ORDER BY is_pinned DESC, updated_at DESC, created_at DESC
                 """
             )
             rows = cur.fetchall()
@@ -319,11 +582,81 @@ class StorageRepository:
                     project_tag=row["project_tag"],
                     created_at=datetime.fromisoformat(row["created_at"]),
                     is_completed=False,
+                    title=row["title"] if "title" in row.keys() and row["title"] else "",
+                    updated_at=datetime.fromisoformat(row["updated_at"]) if ("updated_at" in row.keys() and row["updated_at"]) else datetime.fromisoformat(row["created_at"]),
+                    is_pinned=bool(row["is_pinned"]) if "is_pinned" in row.keys() else False,
                 )
                 for row in rows
             ]
 
-    # --- Task & Subtask Operations ---
+    def get_notes(
+        self,
+        project_tag: Optional[str] = None,
+        tag_id: Optional[int] = None,
+        include_completed: bool = True,
+    ) -> List[NoteRecord]:
+        """Fetch notes with optional project and tag filtering."""
+        with self.db.cursor() as cur:
+            query = "SELECT * FROM notes WHERE 1=1 "
+            params: list = []
+            if project_tag:
+                query += "AND project_tag = ? "
+                params.append(project_tag)
+            if tag_id is not None:
+                query += "AND id IN (SELECT note_id FROM note_tags WHERE tag_id = ?) "
+                params.append(tag_id)
+            if not include_completed:
+                query += "AND is_completed = 0 "
+            query += "ORDER BY is_pinned DESC, updated_at DESC, created_at DESC"
+            cur.execute(query, params)
+            rows = cur.fetchall()
+
+            notes: List[NoteRecord] = []
+            if not rows:
+                return notes
+
+            note_ids = [r["id"] for r in rows]
+            placeholders = ",".join("?" for _ in note_ids)
+            cur.execute(
+                f"""
+                SELECT nt.note_id, t.id, t.name, t.icon, t.color, t.created_at
+                FROM note_tags nt
+                JOIN tags t ON nt.tag_id = t.id
+                WHERE nt.note_id IN ({placeholders})
+                ORDER BY t.name ASC
+                """,
+                note_ids,
+            )
+            tag_rows = cur.fetchall()
+            note_tags_map: Dict[int, List[TagRecord]] = {}
+            for tr in tag_rows:
+                note_tags_map.setdefault(tr["note_id"], []).append(
+                    TagRecord(
+                        id=tr["id"],
+                        name=tr["name"],
+                        icon=tr["icon"] or "tag",
+                        color=tr["color"] or "#3B82F6",
+                        created_at=datetime.fromisoformat(tr["created_at"]),
+                    )
+                )
+
+            for r in rows:
+                notes.append(
+                    NoteRecord(
+                        id=r["id"],
+                        content=r["content"],
+                        project_tag=r["project_tag"],
+                        created_at=datetime.fromisoformat(r["created_at"]),
+                        is_completed=bool(r["is_completed"]),
+                        title=r["title"] if "title" in r.keys() and r["title"] else "",
+                        updated_at=datetime.fromisoformat(r["updated_at"]) if ("updated_at" in r.keys() and r["updated_at"]) else datetime.fromisoformat(r["created_at"]),
+                        is_pinned=bool(r["is_pinned"]) if "is_pinned" in r.keys() else False,
+                        tags=note_tags_map.get(r["id"], []),
+                    )
+                )
+            return notes
+
+    # Task & Subtask Operations
 
     def create_task(
         self,
@@ -331,8 +664,9 @@ class StorageRepository:
         project_tag: Optional[str] = None,
         scheduled_date: Optional[str] = None,
         repeat_mode: str = "none",
+        tag_ids: Optional[List[int]] = None,
     ) -> int:
-        """Create a new parent task with optional scheduled date and repeat mode."""
+        """Create a new parent task with optional scheduled date, repeat mode, and tags."""
         now = datetime.now()
         mode = repeat_mode.strip().lower() if repeat_mode else "none"
         if mode not in ("none", "daily", "weekdays", "weekends"):
@@ -340,12 +674,19 @@ class StorageRepository:
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO tasks (title, project_tag, status, created_at, scheduled_date, repeat_mode)
-                VALUES (?, ?, 'not_started', ?, ?, ?)
+                INSERT INTO tasks (title, project_tag, status, created_at, scheduled_date, repeat_mode, duration_seconds, timer_started_at)
+                VALUES (?, ?, 'not_started', ?, ?, ?, 0, NULL)
                 """,
                 (title.strip(), project_tag, now.isoformat(), scheduled_date or None, mode),
             )
-            return cur.lastrowid or 0
+            task_id = cur.lastrowid or 0
+            if tag_ids:
+                for tid in tag_ids:
+                    cur.execute(
+                        "INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?, ?)",
+                        (task_id, tid),
+                    )
+            return task_id
 
     def update_task_status(self, task_id: int, status: str, completed_at: Optional[datetime] = None) -> bool:
         """Update status of a task ('not_started', 'in_progress', 'done', 'cancelled')."""
@@ -356,14 +697,26 @@ class StorageRepository:
             comp_str = datetime.now().isoformat() if is_done else None
         today_str = date.today().strftime("%Y-%m-%d") if is_done else None
         with self.db.cursor() as cur:
+            cur.execute("SELECT duration_seconds, timer_started_at FROM tasks WHERE id = ?", (task_id,))
+            row = cur.fetchone()
+            dur = row["duration_seconds"] if row and "duration_seconds" in row.keys() else 0
+            started = row["timer_started_at"] if row and "timer_started_at" in row.keys() else None
+
+            new_dur = dur
+            new_started = started
+            if is_done and started:
+                delta = int((datetime.now() - datetime.fromisoformat(started)).total_seconds())
+                new_dur = dur + max(0, delta)
+                new_started = None
+
             if is_done:
                 cur.execute(
                     """
                     UPDATE tasks
-                    SET status = ?, completed_at = ?, last_completed_date = ?
+                    SET status = ?, completed_at = ?, last_completed_date = ?, duration_seconds = ?, timer_started_at = ?
                     WHERE id = ?
                     """,
-                    (status, comp_str, today_str, task_id),
+                    (status, comp_str, today_str, new_dur, new_started, task_id),
                 )
             else:
                 cur.execute(
@@ -375,6 +728,72 @@ class StorageRepository:
                     (status, comp_str, task_id),
                 )
             return cur.rowcount > 0
+
+    def start_task_stopwatch(self, task_id: int) -> bool:
+        """Start the live stopwatch for a task, setting status to in_progress."""
+        now_iso = datetime.now().isoformat()
+        with self.db.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE tasks
+                SET status = 'in_progress', timer_started_at = ?
+                WHERE id = ?
+                """,
+                (now_iso, task_id),
+            )
+            return cur.rowcount > 0
+
+    def pause_task_stopwatch(self, task_id: int) -> bool:
+        """Pause running stopwatch and commit elapsed seconds to cumulative duration."""
+        with self.db.cursor() as cur:
+            cur.execute("SELECT duration_seconds, timer_started_at FROM tasks WHERE id = ?", (task_id,))
+            row = cur.fetchone()
+            if not row or not row["timer_started_at"]:
+                return False
+            dur = row["duration_seconds"] or 0
+            started = datetime.fromisoformat(row["timer_started_at"])
+            delta = int((datetime.now() - started).total_seconds())
+            new_dur = dur + max(0, delta)
+            cur.execute(
+                "UPDATE tasks SET duration_seconds = ?, timer_started_at = NULL WHERE id = ?",
+                (new_dur, task_id),
+            )
+            return cur.rowcount > 0
+
+    def update_task_duration(
+        self,
+        task_id: int,
+        duration_seconds: int,
+        timer_started_at: Optional[datetime] = None,
+    ) -> bool:
+        """Manually update duration_seconds and optional timer_started_at for a task."""
+        started_str = timer_started_at.isoformat() if timer_started_at else None
+        with self.db.cursor() as cur:
+            cur.execute(
+                "UPDATE tasks SET duration_seconds = ?, timer_started_at = ? WHERE id = ?",
+                (duration_seconds, started_str, task_id),
+            )
+            return cur.rowcount > 0
+
+    def flush_all_running_stopwatches(self) -> int:
+        """Commit all currently ticking tasks to database duration_seconds and set timer_started_at to NULL."""
+        with self.db.cursor() as cur:
+            cur.execute("SELECT id, duration_seconds, timer_started_at FROM tasks WHERE timer_started_at IS NOT NULL")
+            rows = cur.fetchall()
+            now = datetime.now()
+            count = 0
+            for r in rows:
+                tid = r["id"]
+                dur = r["duration_seconds"] or 0
+                started = datetime.fromisoformat(r["timer_started_at"])
+                delta = int((now - started).total_seconds())
+                new_dur = dur + max(0, delta)
+                cur.execute(
+                    "UPDATE tasks SET duration_seconds = ?, timer_started_at = NULL WHERE id = ?",
+                    (new_dur, tid),
+                )
+                count += 1
+            return count
 
     def update_task_schedule(
         self,
@@ -587,8 +1006,9 @@ class StorageRepository:
         status_filter: Optional[str] = None,
         include_completed: bool = True,
         project_tag: Optional[str] = None,
+        tag_id: Optional[int] = None,
     ) -> List[TaskRecord]:
-        """Fetch all tasks with their nested subtasks and log entries, with optional status, schedule, and project filtering."""
+        """Fetch all tasks with their nested subtasks and log entries, with optional status, schedule, project, and tag filtering."""
         with self.db.cursor() as cur:
             query = "SELECT * FROM tasks WHERE 1=1 "
             params: list = []
@@ -597,6 +1017,10 @@ class StorageRepository:
             if project_tag is not None:
                 query += "AND project_tag = ? "
                 params.append(project_tag)
+
+            if tag_id is not None:
+                query += "AND id IN (SELECT task_id FROM task_tags WHERE tag_id = ?) "
+                params.append(tag_id)
 
             filter_key = status_filter.strip().lower() if status_filter else None
 
@@ -679,6 +1103,30 @@ class StorageRepository:
             )
             log_rows = cur.fetchall()
 
+            # Batch fetch all tags for matching tasks
+            cur.execute(
+                f"""
+                SELECT tt.task_id, t.id, t.name, t.icon, t.color, t.created_at
+                FROM task_tags tt
+                JOIN tags t ON tt.tag_id = t.id
+                WHERE tt.task_id IN ({placeholders})
+                ORDER BY t.name ASC
+                """,
+                task_ids,
+            )
+            tag_rows = cur.fetchall()
+            task_tags_map: Dict[int, List[TagRecord]] = {}
+            for tr in tag_rows:
+                task_tags_map.setdefault(tr["task_id"], []).append(
+                    TagRecord(
+                        id=tr["id"],
+                        name=tr["name"],
+                        icon=tr["icon"] or "tag",
+                        color=tr["color"] or "#3B82F6",
+                        created_at=datetime.fromisoformat(tr["created_at"]),
+                    )
+                )
+
             # Group logs by task_id and subtask_id
             parent_logs_map: Dict[int, List[TaskLogRecord]] = {}
             subtask_logs_map: Dict[int, List[TaskLogRecord]] = {}
@@ -701,6 +1149,8 @@ class StorageRepository:
             for st_row in subtask_rows:
                 st_id = st_row["id"]
                 t_id = st_row["task_id"]
+                st_dur = st_row["duration_seconds"] if ("duration_seconds" in st_row.keys() and st_row["duration_seconds"]) else 0
+                st_start = datetime.fromisoformat(st_row["timer_started_at"]) if ("timer_started_at" in st_row.keys() and st_row["timer_started_at"]) else None
                 task_subtasks_map.setdefault(t_id, []).append(
                     SubtaskRecord(
                         id=st_id,
@@ -709,6 +1159,8 @@ class StorageRepository:
                         status=st_row["status"],
                         created_at=datetime.fromisoformat(st_row["created_at"]),
                         completed_at=datetime.fromisoformat(st_row["completed_at"]) if st_row["completed_at"] else None,
+                        duration_seconds=st_dur,
+                        timer_started_at=st_start,
                         logs=subtask_logs_map.get(st_id, []),
                     )
                 )
@@ -719,6 +1171,8 @@ class StorageRepository:
                 sched = t_row["scheduled_date"] if "scheduled_date" in t_row.keys() else None
                 rep = t_row["repeat_mode"] if "repeat_mode" in t_row.keys() and t_row["repeat_mode"] else "none"
                 last_c = t_row["last_completed_date"] if "last_completed_date" in t_row.keys() else None
+                dur_sec = t_row["duration_seconds"] if ("duration_seconds" in t_row.keys() and t_row["duration_seconds"]) else 0
+                tim_start = datetime.fromisoformat(t_row["timer_started_at"]) if ("timer_started_at" in t_row.keys() and t_row["timer_started_at"]) else None
                 tasks.append(
                     TaskRecord(
                         id=t_id,
@@ -730,8 +1184,11 @@ class StorageRepository:
                         scheduled_date=sched,
                         repeat_mode=rep,
                         last_completed_date=last_c,
+                        duration_seconds=dur_sec,
+                        timer_started_at=tim_start,
                         subtasks=task_subtasks_map.get(t_id, []),
                         task_logs=parent_logs_map.get(t_id, []),
+                        tags=task_tags_map.get(t_id, []),
                     )
                 )
 

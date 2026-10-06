@@ -20,67 +20,97 @@ from wiz.core.crypto import (
 
 
 SCHEMA_SQL = """
--- Auto-tracked application sessions
+/* Auto-tracked application sessions */
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     app_name TEXT NOT NULL,
     window_title TEXT,
     project_tag TEXT,
-    start_time TEXT NOT NULL,  -- ISO-8601 string
+    start_time TEXT NOT NULL,
     end_time TEXT NOT NULL
 );
 
--- Flat quick notes
+/* Permanent and quick notes */
 CREATE TABLE IF NOT EXISTS notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT DEFAULT '',
     content TEXT NOT NULL,
     project_tag TEXT,
     created_at TEXT NOT NULL,
-    is_completed INTEGER DEFAULT 0  -- 0 = open, 1 = completed
+    updated_at TEXT DEFAULT '',
+    is_completed INTEGER DEFAULT 0,
+    is_pinned INTEGER DEFAULT 0
 );
 
--- Structured parent tasks
+/* Structured parent tasks */
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     project_tag TEXT,
-    status TEXT DEFAULT 'not_started',  -- 'not_started' | 'in_progress' | 'done'
+    status TEXT DEFAULT 'not_started',
     created_at TEXT NOT NULL,
     completed_at TEXT,
-    scheduled_date TEXT DEFAULT NULL,       -- ISO-8601 Date: YYYY-MM-DD
-    repeat_mode TEXT DEFAULT 'none',        -- 'none' | 'daily' | 'weekdays' | 'weekends'
-    last_completed_date TEXT DEFAULT NULL   -- ISO-8601 Date: YYYY-MM-DD
+    scheduled_date TEXT DEFAULT NULL,
+    repeat_mode TEXT DEFAULT 'none',
+    last_completed_date TEXT DEFAULT NULL,
+    duration_seconds INTEGER DEFAULT 0,
+    timer_started_at TEXT DEFAULT NULL
 );
 
--- Subtasks belonging to a task
+/* Subtasks belonging to a task */
 CREATE TABLE IF NOT EXISTS subtasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
-    status TEXT DEFAULT 'not_started',  -- 'not_started' | 'in_progress' | 'done'
+    status TEXT DEFAULT 'not_started',
     created_at TEXT NOT NULL,
-    completed_at TEXT
+    completed_at TEXT,
+    duration_seconds INTEGER DEFAULT 0,
+    timer_started_at TEXT DEFAULT NULL
 );
 
--- Running timestamped log entries on tasks or subtasks
+/* Running timestamped log entries on tasks or subtasks */
 CREATE TABLE IF NOT EXISTS task_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    subtask_id INTEGER REFERENCES subtasks(id) ON DELETE CASCADE,  -- NULL = log on parent task
+    subtask_id INTEGER REFERENCES subtasks(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
 
--- Project keyword matching configuration
+/* User-created custom tags */
+CREATE TABLE IF NOT EXISTS tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    icon TEXT NOT NULL DEFAULT 'tag',
+    color TEXT NOT NULL DEFAULT '#3B82F6',
+    created_at TEXT NOT NULL
+);
+
+/* Task to tag relations */
+CREATE TABLE IF NOT EXISTS task_tags (
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (task_id, tag_id)
+);
+
+/* Note to tag relations */
+CREATE TABLE IF NOT EXISTS note_tags (
+    note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (note_id, tag_id)
+);
+
+/* Project keyword matching configuration */
 CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
-    keywords TEXT NOT NULL,  -- Comma-separated match hints
+    keywords TEXT NOT NULL,
     color TEXT DEFAULT '#FF6B3D',
     description TEXT DEFAULT ''
 );
 
--- Indices for rapid daily reporting, project filtering, and sync queries
+/* Indices for rapid daily reporting, project filtering, and sync queries */
 CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time);
 CREATE INDEX IF NOT EXISTS idx_sessions_project_tag ON sessions(project_tag);
 CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at);
@@ -89,6 +119,11 @@ CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
 CREATE INDEX IF NOT EXISTS idx_tasks_project_tag ON tasks(project_tag);
 CREATE INDEX IF NOT EXISTS idx_subtasks_task_id ON subtasks(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_logs_task_id ON task_logs(task_id);
+CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
+CREATE INDEX IF NOT EXISTS idx_task_tags_task_id ON task_tags(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_tags_tag_id ON task_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_note_tags_note_id ON note_tags(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_tags_tag_id ON note_tags(tag_id);
 """
 
 
@@ -258,6 +293,57 @@ class Database:
             pass
         try:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_repeat_mode ON tasks(repeat_mode)")
+        except sqlite3.OperationalError:
+            pass
+
+        # Safe migrations for task stopwatch duration extensions
+        try:
+            conn.execute("ALTER TABLE tasks ADD COLUMN duration_seconds INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE tasks ADD COLUMN timer_started_at TEXT DEFAULT NULL")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE subtasks ADD COLUMN duration_seconds INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE subtasks ADD COLUMN timer_started_at TEXT DEFAULT NULL")
+        except sqlite3.OperationalError:
+            pass
+
+        # Safe migrations for notes extensions
+        try:
+            conn.execute("ALTER TABLE notes ADD COLUMN title TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE notes ADD COLUMN updated_at TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE notes ADD COLUMN is_pinned INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+
+        # Initial default tags seeding if tags table is empty
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM tags")
+            if cur.fetchone()[0] == 0:
+                now_iso = datetime.now().isoformat()
+                default_tags = [
+                    ("Coding", "code", "#10B981", now_iso),
+                    ("Debug", "bug", "#EF4444", now_iso),
+                    ("Design", "palette", "#8B5CF6", now_iso),
+                    ("Research", "book", "#3B82F6", now_iso),
+                ]
+                cur.executemany(
+                    "INSERT INTO tags (name, icon, color, created_at) VALUES (?, ?, ?, ?)",
+                    default_tags,
+                )
         except sqlite3.OperationalError:
             pass
 

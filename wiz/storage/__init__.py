@@ -8,6 +8,7 @@ from wiz.storage.models import (
     SubtaskRecord,
     TaskLogRecord,
     ProjectRecord,
+    TagRecord,
     StorageRepository,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "SubtaskRecord",
     "TaskLogRecord",
     "ProjectRecord",
+    "TagRecord",
     "StorageRepository",
 ]
