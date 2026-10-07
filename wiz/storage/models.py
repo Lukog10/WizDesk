@@ -494,7 +494,8 @@ class StorageRepository:
             params.append(content.strip())
         if project_tag is not None:
             updates.append("project_tag = ?")
-            params.append(project_tag.strip() if project_tag else None)
+            clean_proj = project_tag.strip() if project_tag and project_tag != "None" else None
+            params.append(clean_proj)
         if is_pinned is not None:
             updates.append("is_pinned = ?")
             params.append(1 if is_pinned else 0)
@@ -526,12 +527,13 @@ class StorageRepository:
             cur.execute("DELETE FROM notes WHERE id = ?", (note_id,))
             return cur.rowcount > 0
 
-    def update_note_project(self, note_id: int, project_tag: str) -> bool:
+    def update_note_project(self, note_id: int, project_tag: Optional[str]) -> bool:
         """Update the project/section tag of a quick note."""
+        clean_proj = project_tag.strip() if project_tag and project_tag != "None" else None
         with self.db.cursor() as cur:
             cur.execute(
                 "UPDATE notes SET project_tag = ? WHERE id = ?",
-                (project_tag.strip(), note_id),
+                (clean_proj, note_id),
             )
             return cur.rowcount > 0
 
@@ -985,12 +987,13 @@ class StorageRepository:
             )
             return cur.rowcount > 0
 
-    def update_task_project(self, task_id: int, project_tag: str) -> bool:
+    def update_task_project(self, task_id: int, project_tag: Optional[str]) -> bool:
         """Update the project/section tag of a task."""
+        clean_proj = project_tag.strip() if project_tag and project_tag != "None" else None
         with self.db.cursor() as cur:
             cur.execute(
                 "UPDATE tasks SET project_tag = ? WHERE id = ?",
-                (project_tag.strip(), task_id),
+                (clean_proj, task_id),
             )
             return cur.rowcount > 0
 

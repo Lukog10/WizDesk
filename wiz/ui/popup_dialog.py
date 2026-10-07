@@ -1984,9 +1984,9 @@ class ProjectIconButton(QPushButton):
         """Compatibility accessor for code expecting a QComboBox interface."""
         return self.current_project
 
-    def setCurrentText(self, text: str) -> None:
+    def setCurrentText(self, text: Optional[str]) -> None:
         """Compatibility setter for code expecting a QComboBox interface."""
-        self.current_project = text.strip() if text else "Work"
+        self.current_project = text.strip() if text else "None"
         self.setToolTip(f"Project: {self.current_project}")
         self.update()
 
@@ -2004,7 +2004,7 @@ class ProjectIconButton(QPushButton):
         if names:
             self.all_projects = names
             self.project_colors = colors
-            if self.current_project not in names:
+            if self.current_project not in names and self.current_project != "None":
                 self.current_project = names[0]
                 self.setToolTip(f"Project: {self.current_project}")
         self.update()
@@ -2037,17 +2037,29 @@ class ProjectIconButton(QPushButton):
         c = self.hover_color if self._hovered else self.normal_color
         render_tinted_svg(painter, "folder.svg", c, 6, 6, 16)
 
-        dot_color_hex = self.project_colors.get(self.current_project, "#3B82F6")
-        painter.setPen(QColor("#18181B" if self.is_dark else "#FFFFFF"))
-        painter.setBrush(QColor(dot_color_hex))
-        painter.drawEllipse(18, 18, 7, 7)
+        if self.current_project not in ("None", "", None):
+            dot_color_hex = self.project_colors.get(self.current_project, "#3B82F6")
+            painter.setPen(QColor("#18181B" if self.is_dark else "#FFFFFF"))
+            painter.setBrush(QColor(dot_color_hex))
+            painter.drawEllipse(18, 18, 7, 7)
         painter.end()
 
     def _show_project_menu(self) -> None:
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
         action_map: Dict[Any, str] = {}
+
+        # "None" option
+        is_none = (self.current_project in ("None", "", None))
+        none_text = "None  ✓" if is_none else "None"
+        none_icon = get_status_icon("folder.svg", "#71717A", size=16)
+        act_none = menu.addAction(none_icon, none_text)
+        action_map[act_none] = "None"
+        menu.addSeparator()
+
         for name in self.all_projects:
+            if name in ("None", "", None):
+                continue
             is_active = (name == self.current_project)
             display_text = f"{name}  ✓" if is_active else name
             proj_color = self.project_colors.get(name, "#3B82F6")
@@ -2171,6 +2183,13 @@ class TagIconButton(QPushButton):
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
         all_tags = self.repo.get_all_tags()
 
+        # "None" option
+        is_none_checked = (len(self.selected_tag_ids) == 0)
+        none_text = "None  ✓" if is_none_checked else "None"
+        none_icon = get_status_icon("tags/tag.svg", "#71717A", size=16)
+        act_none = menu.addAction(none_icon, none_text)
+        menu.addSeparator()
+
         act_tag_map: Dict[Any, TagRecord] = {}
         for tag in all_tags:
             is_checked = (tag.id in self.selected_tag_ids)
@@ -2193,7 +2212,11 @@ class TagIconButton(QPushButton):
         target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
 
         chosen = menu.exec(target_pos)
-        if chosen == act_create:
+        if chosen == act_none or (act_clear and chosen == act_clear):
+            self.clear_selection()
+            self.tags_selection_changed.emit(self.selected_tag_ids)
+            self.update()
+        elif chosen == act_create:
             dlg = TagCreateDialog(self.repo, self, is_dark=self.is_dark)
             cal_pos = self.mapToGlobal(QPoint(0, 0))
             dlg.move(cal_pos.x() - 150, cal_pos.y() - 360)
@@ -2203,9 +2226,6 @@ class TagIconButton(QPushButton):
                 self._update_tooltip()
                 self.tags_selection_changed.emit(self.selected_tag_ids)
                 self.update()
-        elif act_clear and chosen == act_clear:
-            self.clear_selection()
-            self.tags_selection_changed.emit(self.selected_tag_ids)
         elif chosen in act_tag_map:
             tag = act_tag_map[chosen]
             if tag.id is not None:
@@ -2879,6 +2899,13 @@ class TaskRowWidget(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
+        # "None" option
+        is_none_checked = (len(current_tag_ids) == 0)
+        none_text = "None  ✓" if is_none_checked else "None"
+        none_icon = get_status_icon("tags/tag.svg", "#71717A", size=16)
+        act_none = menu.addAction(none_icon, none_text)
+        menu.addSeparator()
+
         act_tag_map: Dict[Any, TagRecord] = {}
         for tag in all_tags:
             is_checked = (tag.id in current_tag_ids)
@@ -2896,7 +2923,11 @@ class TaskRowWidget(QWidget):
         target_pos = QPoint(btn_pos.x(), btn_pos.y() - menu_size.height() - 4)
 
         chosen = menu.exec(target_pos)
-        if chosen == act_create:
+        if chosen == act_none:
+            self.task.tags = []
+            self.task_tags_changed.emit(self.task_id, [])
+            self._update_badges()
+        elif chosen == act_create:
             dlg = TagCreateDialog(repo, self, is_dark=self.is_dark)
             cal_pos = self.row_tag_btn.mapToGlobal(QPoint(0, 0))
             dlg.move(cal_pos.x() - 150, cal_pos.y() - 360)
@@ -3263,9 +3294,16 @@ class TaskRowWidget(QWidget):
         move_icon = get_status_icon("icons/move.svg", icon_color, 14)
         section_menu = menu.addMenu(move_icon, "Move to Section")
         section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
-        curr_proj = self.task.project_tag or "General"
+        curr_proj = self.task.project_tag or "None"
+
+        act_none = section_menu.addAction("Section: None")
+        if curr_proj in ("None", None, ""):
+            act_none.setEnabled(False)
+        act_none.triggered.connect(lambda checked: self.project_changed.emit(self.task_id, "None"))
 
         for proj in self.all_projects:
+            if proj in ("None", "", None):
+                continue
             act = section_menu.addAction(f"Section: {proj}")
             if proj == curr_proj:
                 act.setEnabled(False)
@@ -3336,12 +3374,13 @@ class NoteRowWidget(QWidget):
         self.repo = repo
 
         self.layout = QHBoxLayout(self)
-        self.layout.setContentsMargins(4, 6, 4, 6)
+        self.layout.setContentsMargins(8, 6, 8, 6)
         self.layout.setSpacing(10)
 
+        # Checkbox removed from note rows; retained hidden for backward compatibility
         self.checkbox = RoundedCheckbox(checked=note.is_completed, size=20, parent=self, is_dark=self.is_dark)
         self.checkbox.toggled.connect(self._on_toggled)
-        self.layout.addWidget(self.checkbox)
+        self.checkbox.hide()
 
         # Content column
         content_layout = QVBoxLayout()
@@ -3362,29 +3401,33 @@ class NoteRowWidget(QWidget):
         meta_layout = QHBoxLayout()
         meta_layout.setSpacing(6)
 
-        tag_text = note.project_tag or "General"
-        self.tag_btn = QPushButton(f"[{tag_text}]")
+        tag_text = note.project_tag if (note.project_tag and note.project_tag != "None") else "None"
+        self.tag_btn = QPushButton(f" {tag_text}")
+        tag_color = "#60A5FA" if self.is_dark else "#2563EB"
+        icon_color = tag_color if tag_text != "None" else "#71717A"
+        self.tag_btn.setIcon(get_status_icon("folder.svg", icon_color, 12))
+        self.tag_btn.setIconSize(QSize(12, 12))
         self.tag_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.tag_btn.setToolTip("Click to change section")
 
-        tag_color = "#60A5FA" if self.is_dark else "#2563EB"
         tag_hover_color = "#93C5FD" if self.is_dark else "#1D4ED8"
         tag_hover_bg = "rgba(59, 130, 246, 0.15)" if self.is_dark else "rgba(37, 99, 235, 0.08)"
 
         self.tag_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: {tag_color};
+                color: {tag_color if tag_text != "None" else "#71717A"};
                 border: none;
-                font-family: {FONT_MONO};
+                font-family: {FONT_SANS};
                 font-size: 11px;
-                font-weight: 600;
+                font-weight: 500;
                 padding: 1px 4px;
                 border-radius: 4px;
+                text-align: left;
             }}
             QPushButton:hover {{
                 background-color: {tag_hover_bg};
-                color: {tag_hover_color};
+                color: {tag_hover_color if tag_text != "None" else "#A1A1AA"};
             }}
         """)
         self.tag_btn.clicked.connect(self._show_section_menu)
@@ -3444,7 +3487,7 @@ class NoteRowWidget(QWidget):
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             child = self.childAt(event.pos())
-            if child is not self.checkbox and child is not self.tag_btn:
+            if child is not self.tag_btn:
                 self.open_requested.emit(self.note_id)
         super().mousePressEvent(event)
 
@@ -3475,9 +3518,16 @@ class NoteRowWidget(QWidget):
         move_icon = get_status_icon("icons/move.svg", icon_color, 14)
         section_menu = menu.addMenu(move_icon, "Move to Section")
         section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
-        curr_proj = self.note.project_tag or "General"
+        curr_proj = self.note.project_tag or "None"
+
+        act_none = section_menu.addAction("Section: None")
+        if curr_proj in ("None", None, ""):
+            act_none.setEnabled(False)
+        act_none.triggered.connect(lambda checked: self.project_changed.emit(self.note_id, "None"))
 
         for proj in self.all_projects:
+            if proj in ("None", "", None):
+                continue
             act = section_menu.addAction(f"Section: {proj}")
             if proj == curr_proj:
                 act.setEnabled(False)
@@ -3510,8 +3560,16 @@ class NoteRowWidget(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet(get_context_menu_style(self.is_dark))
 
-        curr_proj = self.note.project_tag or "General"
+        curr_proj = self.note.project_tag or "None"
+
+        act_none = menu.addAction("Section: None")
+        if curr_proj in ("None", None, ""):
+            act_none.setEnabled(False)
+        act_none.triggered.connect(lambda checked: self.project_changed.emit(self.note_id, "None"))
+
         for proj in self.all_projects:
+            if proj in ("None", "", None):
+                continue
             act = menu.addAction(f"Section: {proj}")
             if proj == curr_proj:
                 act.setEnabled(False)
@@ -3533,29 +3591,17 @@ class NoteRowWidget(QWidget):
                 )
                 self.project_changed.emit(self.note_id, clean_name)
 
-    def _update_text_style(self, is_done: bool) -> None:
-        done_color = "#71717A" if self.is_dark else "#A1A1AA"
+    def _update_text_style(self, is_done: bool = False) -> None:
         active_color = "#F4F4F5" if self.is_dark else "#18181B"
-
-        if is_done:
-            self.label.setStyleSheet(f"""
-                QLabel {{
-                    color: {done_color};
-                    text-decoration: line-through;
-                    font-family: {FONT_SANS};
-                    font-size: 13px;
-                }}
-            """)
-        else:
-            self.label.setStyleSheet(f"""
-                QLabel {{
-                    color: {active_color};
-                    text-decoration: none;
-                    font-family: {FONT_SANS};
-                    font-size: 13px;
-                    font-weight: 500;
-                }}
-            """)
+        self.label.setStyleSheet(f"""
+            QLabel {{
+                color: {active_color};
+                text-decoration: none;
+                font-family: {FONT_SANS};
+                font-size: 13px;
+                font-weight: 500;
+            }}
+        """)
 
     def _on_toggled(self, checked: bool) -> None:
         self._update_text_style(checked)
@@ -3657,10 +3703,14 @@ class NoteCardWidget(QWidget):
         bot_row.setContentsMargins(0, 0, 0, 0)
         bot_row.setSpacing(4)
 
-        if note.project_tag:
-            p_badge = QLabel(f"[{note.project_tag}]")
+        if note.project_tag and note.project_tag != "None":
+            p_color = '#38BDF8' if self.is_dark else '#0284C7'
+            p_icon_lbl = QLabel()
+            p_icon_lbl.setPixmap(get_status_icon("folder.svg", p_color, 11).pixmap(11, 11))
+            bot_row.addWidget(p_icon_lbl)
+            p_badge = QLabel(note.project_tag)
             p_badge.setFont(get_font(8, QFont.Weight.Medium))
-            p_badge.setStyleSheet(f"color: {'#38BDF8' if self.is_dark else '#0284C7'}; font-size: 9px;")
+            p_badge.setStyleSheet(f"color: {p_color}; font-size: 9px;")
             bot_row.addWidget(p_badge)
 
         for tag in getattr(note, "tags", [])[:2]:
@@ -3829,10 +3879,12 @@ class NoteEditorWidget(QWidget):
         toolbar.addWidget(self.tag_btn)
 
         # Mode toggle button: Write / Preview Markdown
-        self.mode_btn = QPushButton("Preview")
+        self.mode_btn = QPushButton(" Preview")
         self.mode_btn.setFixedHeight(28)
         self.mode_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.mode_btn.setFont(get_font(9, QFont.Weight.Medium))
+        self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", "#F4F4F5" if self.is_dark else "#18181B", 14))
+        self.mode_btn.setIconSize(QSize(14, 14))
         self.mode_btn.clicked.connect(self._toggle_preview_mode)
         toolbar.addWidget(self.mode_btn)
 
@@ -3892,17 +3944,20 @@ class NoteEditorWidget(QWidget):
 
     def _toggle_preview_mode(self) -> None:
         """Toggle between Markdown plain text editor and rich rendered preview."""
+        fg = "#F4F4F5" if self.is_dark else "#18181B"
         if self.text_edit.isVisible():
             md_content = self.text_edit.toPlainText()
             self.preview_browser.setMarkdown(md_content)
             self._update_preview_style()
             self.text_edit.hide()
             self.preview_browser.show()
-            self.mode_btn.setText("Write")
+            self.mode_btn.setText(" Write")
+            self.mode_btn.setIcon(get_status_icon("icons/rename.svg", fg, 14))
         else:
             self.preview_browser.hide()
             self.text_edit.show()
-            self.mode_btn.setText("Preview")
+            self.mode_btn.setText(" Preview")
+            self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", fg, 14))
 
     def _update_preview_style(self) -> None:
         bg = "#18181B" if self.is_dark else "#FFFFFF"
@@ -3944,8 +3999,10 @@ class NoteEditorWidget(QWidget):
         # Set project and tags
         projects = self.repo.get_all_projects()
         self.project_btn.set_projects(projects)
-        if note.project_tag:
+        if note.project_tag and note.project_tag != "None":
             self.project_btn.setCurrentText(note.project_tag)
+        else:
+            self.project_btn.setCurrentText("None")
 
         tag_ids = [t.id for t in getattr(note, "tags", []) if t.id is not None]
         self.tag_btn.set_selected_tag_ids(tag_ids)
@@ -3982,7 +4039,7 @@ class NoteEditorWidget(QWidget):
     def _on_project_selected(self, proj_name: str) -> None:
         if not self.active_note:
             return
-        self.active_note.project_tag = proj_name
+        self.active_note.project_tag = None if proj_name in ("None", "") else proj_name
         self.save_timer.start()
 
     def _on_tags_selected(self, tag_ids: List[int]) -> None:
@@ -4033,19 +4090,20 @@ class NoteEditorWidget(QWidget):
         title = self.title_input.text().strip()
         content = self.text_edit.toPlainText()
         project = self.project_btn.currentText()
+        project_val = None if project in ("None", "") else project
         tags = self.tag_btn.selected_tag_ids
 
         self.repo.update_permanent_note(
             note_id=self.active_note.id,
             title=title,
             content=content,
-            project_tag=project,
+            project_tag=project_val,
             tag_ids=tags,
             is_pinned=self.active_note.is_pinned,
         )
         self.active_note.title = title
         self.active_note.content = content
-        self.active_note.project_tag = project
+        self.active_note.project_tag = project_val
 
         # Sync to Obsidian vault
         try:
@@ -4118,6 +4176,11 @@ class NoteEditorWidget(QWidget):
                 background-color: {back_hover};
             }}
         """)
+        if hasattr(self, "text_edit") and hasattr(self, "mode_btn"):
+            if self.text_edit.isVisible():
+                self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", back_fg, 14))
+            else:
+                self.mode_btn.setIcon(get_status_icon("icons/rename.svg", back_fg, 14))
 
         self.title_input.setStyleSheet(f"""
             QLineEdit {{
