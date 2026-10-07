@@ -97,11 +97,23 @@ class MascotWindow(QWidget):
         if sys.platform == "win32":
             try:
                 import ctypes
+                from ctypes import wintypes
                 hwnd = int(self.winId())
                 if hwnd:
                     # HWND_TOPMOST (-1) is permanently enforced for the desktop companion mascot
                     # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_SHOWWINDOW (0x40)
-                    ctypes.windll.user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
+                    set_window_pos = ctypes.windll.user32.SetWindowPos
+                    set_window_pos.argtypes = [
+                        wintypes.HWND,
+                        wintypes.HWND,
+                        ctypes.c_int,
+                        ctypes.c_int,
+                        ctypes.c_int,
+                        ctypes.c_int,
+                        ctypes.c_uint,
+                    ]
+                    set_window_pos.restype = wintypes.BOOL
+                    set_window_pos(wintypes.HWND(hwnd), wintypes.HWND(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
             except Exception:
                 pass
 

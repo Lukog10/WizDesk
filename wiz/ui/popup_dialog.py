@@ -5141,28 +5141,46 @@ class QuickEntryDialog(QDialog):
         self.repaint()
 
     def _apply_always_on_top(self, always_on_top: bool) -> None:
-        """Update workspace window flags when Always On Top setting changes smoothly without closing or glitching."""
-        was_visible = self.isVisible()
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, always_on_top)
-        if was_visible:
-            self.show()
-            self.raise_()
-            self.activateWindow()
+        """Update workspace window flags smoothly without destroying the native window or flickering."""
         if sys.platform == "win32":
+            new_flags = self.windowFlags()
+            if always_on_top:
+                new_flags |= Qt.WindowType.WindowStaysOnTopHint
+            else:
+                new_flags &= ~Qt.WindowType.WindowStaysOnTopHint
+            self.overrideWindowFlags(new_flags)
             try:
                 import ctypes
+                from ctypes import wintypes
                 hwnd = int(self.winId())
                 if hwnd:
-                    # HWND_TOPMOST (-1) if always_on_top else HWND_NOTOPMOST (-2)
-                    target_z = -1 if always_on_top else -2
-                    ctypes.windll.user32.SetWindowPos(
-                        hwnd,
+                    set_window_pos = ctypes.windll.user32.SetWindowPos
+                    set_window_pos.argtypes = [
+                        wintypes.HWND,
+                        wintypes.HWND,
+                        ctypes.c_int,
+                        ctypes.c_int,
+                        ctypes.c_int,
+                        ctypes.c_int,
+                        ctypes.c_uint,
+                    ]
+                    set_window_pos.restype = wintypes.BOOL
+                    target_z = wintypes.HWND(-1 if always_on_top else -2)
+                    # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_FRAMECHANGED (0x20)
+                    set_window_pos(
+                        wintypes.HWND(hwnd),
                         target_z,
                         0, 0, 0, 0,
-                        0x0001 | 0x0002 | 0x0010 | 0x0020 | (0x0040 if was_visible else 0)
+                        0x0001 | 0x0002 | 0x0010 | 0x0020
                     )
             except Exception:
                 pass
+        else:
+            was_visible = self.isVisible()
+            self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, always_on_top)
+            if was_visible:
+                self.show()
+
         # Reinforce mascot companion visibility permanently above workspace dialog
         app_signals.ensure_mascot_visible.emit()
 
