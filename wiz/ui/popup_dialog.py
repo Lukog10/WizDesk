@@ -545,7 +545,7 @@ class CreateSectionDialog(QDialog):
         color_hdr.addWidget(color_lbl)
         color_hdr.addStretch()
 
-        self.btn_custom_color = QPushButton("+ Custom Color…")
+        self.btn_custom_color = QPushButton("Custom Color…")
         self.btn_custom_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_custom_color.setFont(get_font(9, QFont.Weight.Medium))
         self.btn_custom_color.setStyleSheet(f"""
@@ -1819,7 +1819,7 @@ class TagCreateDialog(QDialog):
         color_hdr.addWidget(color_lbl)
         color_hdr.addStretch()
 
-        self.btn_custom_color = QPushButton("+ Custom Color...")
+        self.btn_custom_color = QPushButton("Custom Color...")
         self.btn_custom_color.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_custom_color.setFont(get_font(10, QFont.Weight.Medium))
         self.btn_custom_color.setStyleSheet(f"""
@@ -2072,8 +2072,8 @@ class ProjectIconButton(QPushButton):
             action_map[act] = name
 
         menu.addSeparator()
-        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
-        act_create = menu.addAction(create_icon, "+ Create Section...")
+        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#71717A", size=16)
+        act_create = menu.addAction(create_icon, "Create Section...")
 
         menu_size = menu.sizeHint()
         btn_pos = self.mapToGlobal(QPoint(0, 0))
@@ -2203,8 +2203,8 @@ class TagIconButton(QPushButton):
             act_tag_map[act] = tag
 
         menu.addSeparator()
-        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
-        act_create = menu.addAction(create_icon, "+ Create Tag...")
+        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#71717A", size=16)
+        act_create = menu.addAction(create_icon, "Create Tag...")
         if self.selected_tag_ids:
             clear_icon = get_status_icon("icons/delete.svg", "#EF4444", size=14)
             act_clear = menu.addAction(clear_icon, "Clear Tags")
@@ -2919,8 +2919,8 @@ class TaskRowWidget(QWidget):
             act_tag_map[act] = tag
 
         menu.addSeparator()
-        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
-        act_create = menu.addAction(create_icon, "+ Create Tag...")
+        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#71717A", size=16)
+        act_create = menu.addAction(create_icon, "Create Tag...")
 
         menu_size = menu.sizeHint()
         btn_pos = self.row_tag_btn.mapToGlobal(QPoint(0, 0))
@@ -3315,8 +3315,8 @@ class TaskRowWidget(QWidget):
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.task_id, p))
 
         section_menu.addSeparator()
-        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14)
-        action_new_sec = section_menu.addAction(add_icon, "+ Create New Section...")
+        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", icon_color, 14)
+        action_new_sec = section_menu.addAction(add_icon, "Create New Section...")
 
         menu.addSeparator()
         action_delete = menu.addAction(
@@ -3542,8 +3542,8 @@ class NoteRowWidget(QWidget):
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
 
         section_menu.addSeparator()
-        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14)
-        action_new_sec = section_menu.addAction(add_icon, "+ Create New Section...")
+        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", icon_color, 14)
+        action_new_sec = section_menu.addAction(add_icon, "Create New Section...")
 
         menu.addSeparator()
         action_delete = menu.addAction(
@@ -3586,8 +3586,8 @@ class NoteRowWidget(QWidget):
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
 
         menu.addSeparator()
-        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14)
-        action_new_sec = menu.addAction(add_icon, "+ Create New Section...")
+        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#71717A", 14)
+        action_new_sec = menu.addAction(add_icon, "Create New Section...")
 
         action = menu.exec(global_pos)
         if action == action_new_sec:
@@ -3828,6 +3828,7 @@ class NoteEditorWidget(QWidget):
         self.is_dark = is_dark
         self.active_note: Optional[NoteRecord] = None
         self._is_loading: bool = False
+        self.is_preview_mode: bool = False
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(10, 8, 10, 8)
@@ -3956,7 +3957,8 @@ class NoteEditorWidget(QWidget):
     def _toggle_preview_mode(self) -> None:
         """Toggle between Markdown plain text editor and rich rendered preview."""
         fg = "#F4F4F5" if self.is_dark else "#18181B"
-        if self.text_edit.isVisible():
+        if not self.is_preview_mode:
+            self.is_preview_mode = True
             md_content = self.text_edit.toPlainText()
             self.preview_browser.setMarkdown(md_content)
             self._update_preview_style()
@@ -3965,6 +3967,7 @@ class NoteEditorWidget(QWidget):
             self.mode_btn.setText(" Write")
             self.mode_btn.setIcon(get_status_icon("icons/rename.svg", fg, 14))
         else:
+            self.is_preview_mode = False
             self.preview_browser.hide()
             self.text_edit.show()
             self.mode_btn.setText(" Preview")
@@ -4003,6 +4006,13 @@ class NoteEditorWidget(QWidget):
 
         self.empty_widget.setVisible(False)
         self.editor_widget.setVisible(True)
+
+        self.is_preview_mode = False
+        self.preview_browser.hide()
+        self.text_edit.show()
+        fg = "#F4F4F5" if self.is_dark else "#18181B"
+        self.mode_btn.setText(" Preview")
+        self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", fg, 14))
 
         self.title_input.setText(note.title or "")
         self.text_edit.setPlainText(note.content or "")
@@ -4187,11 +4197,13 @@ class NoteEditorWidget(QWidget):
                 background-color: {back_hover};
             }}
         """)
-        if hasattr(self, "text_edit") and hasattr(self, "mode_btn"):
-            if self.text_edit.isVisible():
-                self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", back_fg, 14))
-            else:
+        if hasattr(self, "mode_btn"):
+            if getattr(self, "is_preview_mode", False):
+                self.mode_btn.setText(" Write")
                 self.mode_btn.setIcon(get_status_icon("icons/rename.svg", back_fg, 14))
+            else:
+                self.mode_btn.setText(" Preview")
+                self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", back_fg, 14))
 
         self.title_input.setStyleSheet(f"""
             QLineEdit {{
