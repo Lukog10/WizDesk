@@ -40,13 +40,14 @@ from wiz.storage.backup import backup_manager
 from wiz.storage.models import StorageRepository
 from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
+from wiz.ui.toggle_switch import ToggleSwitch
 from wiz.ui.icons import get_status_icon
 from wiz.ui.pill_number_picker import DurationPillSelector, PillSpinBox
 from wiz.utils.auth import authenticate_user
 from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
 
-# Shared component alias for backwards compatibility and tests
-SettingsCheckbox = RoundedCheckbox
+# ToggleSwitch replaces legacy checkboxes across all settings panels
+SettingsCheckbox = ToggleSwitch
 
 
 class KeyDisplayDialog(QDialog):
@@ -179,7 +180,6 @@ class SettingsCategoryBar(QFrame):
     CATEGORIES = [
         ("general", "General"),
         ("hotkeys", "Hotkeys"),
-        ("projects", "Projects"),
         ("integrations", "Integrations"),
         ("security", "Security && Backup"),
     ]
@@ -329,7 +329,7 @@ class SettingsView(QWidget):
         self.title_lbl.setFont(get_font(15, QFont.Weight.Bold, display=True))
         header_layout.addWidget(self.title_lbl)
 
-        self.subtitle_lbl = QLabel("Manage your desktop preferences, keyboard shortcuts, and project workflows.", self)
+        self.subtitle_lbl = QLabel("Manage your desktop preferences, keyboard shortcuts, and integrations.", self)
         self.subtitle_lbl.setFont(get_font(9.5))
         header_layout.addWidget(self.subtitle_lbl)
 
@@ -345,15 +345,14 @@ class SettingsView(QWidget):
 
         self.page_general = self._build_general_page()
         self.page_hotkeys = self._build_hotkeys_page()
-        self.page_projects = self._build_projects_page()
         self.page_integrations = self._build_integrations_page()
         self.page_security = self._build_security_page()
+        self.proj_table = None
 
         self.stack.addWidget(self.page_general)       # index 0: general
         self.stack.addWidget(self.page_hotkeys)       # index 1: hotkeys
-        self.stack.addWidget(self.page_projects)      # index 2: projects
-        self.stack.addWidget(self.page_integrations)  # index 3: integrations
-        self.stack.addWidget(self.page_security)      # index 4: security
+        self.stack.addWidget(self.page_integrations)  # index 2: integrations
+        self.stack.addWidget(self.page_security)      # index 3: security
 
         self.main_layout.addWidget(self.stack, stretch=1)
 
@@ -469,9 +468,8 @@ class SettingsView(QWidget):
         layout.addLayout(header_box)
 
         # Row 1: Floating bob animation
-        self.float_anim_check = SettingsCheckbox(
+        self.float_anim_check = ToggleSwitch(
             checked=config.get("enable_floating_animation", True),
-            size=18,
             parent=container,
             is_dark=self.is_dark,
         )
@@ -483,9 +481,8 @@ class SettingsView(QWidget):
         )
 
         # Row 2: Always on top
-        self.always_on_top_check = SettingsCheckbox(
+        self.always_on_top_check = ToggleSwitch(
             checked=config.get("always_on_top", True),
-            size=18,
             parent=container,
             is_dark=self.is_dark,
         )
@@ -514,9 +511,8 @@ class SettingsView(QWidget):
 
         # Row 4: Launch on startup
         init_autostart = is_autostart_enabled() or config.get("auto_start_on_login", False)
-        self.autostart_check = SettingsCheckbox(
+        self.autostart_check = ToggleSwitch(
             checked=init_autostart,
-            size=18,
             parent=container,
             is_dark=self.is_dark,
         )
@@ -529,9 +525,8 @@ class SettingsView(QWidget):
         )
 
         # Row 5: Sound effects toggle
-        self.sound_check = SettingsCheckbox(
+        self.sound_check = ToggleSwitch(
             checked=config.sound_effects_enabled,
-            size=18,
             parent=container,
             is_dark=self.is_dark,
         )
@@ -740,153 +735,9 @@ class SettingsView(QWidget):
         self.hk_feedback_lbl.setStyleSheet("color: #FF6B3D;")
         QTimer.singleShot(2500, lambda: self.hk_feedback_lbl.setText(""))
 
-    # ----------------------------------------------------------------
-    # Category Page 3: Projects & Auto-Tagging
-    # ----------------------------------------------------------------
-    def _build_projects_page(self) -> QWidget:
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setStyleSheet("background: transparent; border: none;")
-
-        container = QWidget()
-        container.setStyleSheet("background: transparent;")
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 4, 8, 8)
-        layout.setSpacing(10)
-
-        header_box = QVBoxLayout()
-        header_box.setSpacing(4)
-        header_box.setContentsMargins(0, 0, 0, 6)
-
-        self.proj_heading = QLabel("Project Auto-Tagging Keywords", container)
-        self.proj_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
-        header_box.addWidget(self.proj_heading)
-
-        self.proj_subheading = QLabel(
-            "Active windows matching these keywords are automatically categorized into project sections during tracking.",
-            container,
-        )
-        self.proj_subheading.setFont(get_font(9))
-        self.proj_subheading.setWordWrap(True)
-        header_box.addWidget(self.proj_subheading)
-
-        layout.addLayout(header_box)
-
-        self.proj_table = QTableWidget(container)
-        self.proj_table.setColumnCount(2)
-        self.proj_table.setHorizontalHeaderLabels(["Project Name", "Matching Keywords (comma-separated)"])
-        self.proj_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.proj_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.proj_table.verticalHeader().setVisible(False)
-        self.proj_table.verticalHeader().setDefaultSectionSize(32)
-        self.proj_table.setFixedHeight(180)
-        self.proj_table.itemChanged.connect(self._on_table_item_changed)
-        layout.addWidget(self.proj_table)
-
-        # Action buttons below table
-        proj_btn_layout = QHBoxLayout()
-        proj_btn_layout.setContentsMargins(0, 4, 0, 0)
-        proj_btn_layout.setSpacing(8)
-
-        self.add_proj_btn = QPushButton(" Add Project", container)
-        self.add_proj_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14))
-        self.add_proj_btn.setIconSize(QSize(14, 14))
-        self.add_proj_btn.setFont(get_font(10, QFont.Weight.Bold))
-        self.add_proj_btn.setFixedHeight(30)
-        self.add_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.add_proj_btn.clicked.connect(self._on_add_project)
-        proj_btn_layout.addWidget(self.add_proj_btn)
-
-        self.del_proj_btn = QPushButton("Remove Selected", container)
-        self.del_proj_btn.setFont(get_font(10, QFont.Weight.DemiBold))
-        self.del_proj_btn.setFixedHeight(30)
-        self.del_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.del_proj_btn.clicked.connect(self._on_remove_project)
-        proj_btn_layout.addWidget(self.del_proj_btn)
-        proj_btn_layout.addStretch(1)
-
-        layout.addLayout(proj_btn_layout)
-        layout.addStretch(1)
-
-        scroll.setWidget(container)
-        return scroll
-
     def _load_projects(self) -> None:
-        """Load projects from database into table."""
-        self.proj_table.blockSignals(True)
-        projects = self.repo.get_all_projects()
-        self.proj_table.setRowCount(len(projects))
-
-        font_name = get_font(9)
-        font_kw = get_font(8, mono=True)
-
-        name_color = QColor("#D4D4D8" if self.is_dark else "#52525B")
-        kw_color = QColor("#A1A1AA" if self.is_dark else "#71717A")
-
-        for row, p in enumerate(projects):
-            name_item = QTableWidgetItem(p.name)
-            name_item.setData(Qt.ItemDataRole.UserRole, p.name)
-            name_item.setFont(font_name)
-            name_item.setForeground(name_color)
-
-            kw_item = QTableWidgetItem(", ".join(p.keywords))
-            kw_item.setFont(font_kw)
-            kw_item.setForeground(kw_color)
-
-            self.proj_table.setItem(row, 0, name_item)
-            self.proj_table.setItem(row, 1, kw_item)
-        self.proj_table.blockSignals(False)
-
-    def _on_table_item_changed(self, item: QTableWidgetItem) -> None:
-        """Handle inline editing of project names and keywords."""
-        row = item.row()
-        name_item = self.proj_table.item(row, 0)
-        kw_item = self.proj_table.item(row, 1)
-        if name_item and kw_item:
-            pname = name_item.text().strip()
-            old_name = name_item.data(Qt.ItemDataRole.UserRole)
-            kw_str = kw_item.text().strip()
-            if pname:
-                keywords = [k.strip() for k in kw_str.split(",") if k.strip()]
-                if old_name and old_name != pname:
-                    self.repo.rename_project(old_name, pname, keywords=keywords)
-                    name_item.setData(Qt.ItemDataRole.UserRole, pname)
-                else:
-                    self.repo.create_or_update_project(pname, keywords)
-                self.projects_changed.emit()
-                app_signals.projects_changed.emit()
-
-    def _on_add_project(self) -> None:
-        """Add a new project row to table and database."""
-        name, ok1 = QInputDialog.getText(self, "New Project", "Project Name:")
-        if not ok1 or not name.strip():
-            return
-        keywords, ok2 = QInputDialog.getText(self, "Keywords", "Keywords (comma-separated):")
-        if not ok2:
-            return
-
-        self.repo.create_or_update_project(
-            name.strip(),
-            [k.strip() for k in keywords.split(",") if k.strip()],
-        )
-        self._load_projects()
-        self.projects_changed.emit()
-        app_signals.projects_changed.emit()
-
-    def _on_remove_project(self) -> None:
-        """Remove selected project from table and database."""
-        row = self.proj_table.currentRow()
-        if row >= 0:
-            name_item = self.proj_table.item(row, 0)
-            if name_item:
-                proj_name = name_item.text()
-                self.repo.delete_project_by_name(proj_name)
-                self._load_projects()
-                self.projects_changed.emit()
-                app_signals.projects_changed.emit()
+        """Backwards compatibility stub."""
+        pass
 
     # ----------------------------------------------------------------
     # Category Page 4: Integrations (Obsidian)
@@ -1064,10 +915,9 @@ class SettingsView(QWidget):
             parent_layout=layout,
         )
 
-        # Row 3: Automated Backups Checkbox
-        self.auto_backup_check = SettingsCheckbox(
+        # Row 3: Automated Backups
+        self.auto_backup_check = ToggleSwitch(
             checked=config.get("auto_backup_enabled", True),
-            size=18,
             parent=container,
             is_dark=self.is_dark,
         )
@@ -1280,16 +1130,15 @@ class SettingsView(QWidget):
         cat_map = {
             "general": 0,
             "hotkeys": 1,
-            "projects": 2,
-            "integrations": 3,
-            "security": 4,
+            "integrations": 2,
+            "security": 3,
         }
         idx = cat_map.get(cat_id.lower(), 0)
         self.stack.setCurrentIndex(idx)
         self.category_bar.set_active_category(cat_id.lower())
 
     def load_settings(self) -> None:
-        """Reload configuration and projects into UI controls."""
+        """Reload configuration into UI controls."""
         self.vault_path_input.setText(config.get("obsidian_vault_path", ""))
         self.vault_logs_folder_input.setText(config.get("obsidian_logs_folder", "WizDesk Logs"))
         self.float_anim_check.setChecked(config.get("enable_floating_animation", True))
@@ -1312,7 +1161,6 @@ class SettingsView(QWidget):
             val = config.get(key_name, "")
             input_field.setText(format_display_shortcut(val))
 
-        self._load_projects()
         self._update_sync_status()
 
     def save_settings(self) -> None:
@@ -1459,8 +1307,6 @@ class SettingsView(QWidget):
         self.gen_subheading.setStyleSheet(f"color: {text_secondary};")
         self.hk_heading.setStyleSheet(f"color: {text_primary};")
         self.hk_subheading.setStyleSheet(f"color: {text_secondary};")
-        self.proj_heading.setStyleSheet(f"color: {text_primary};")
-        self.proj_subheading.setStyleSheet(f"color: {text_secondary};")
         self.obs_heading.setStyleSheet(f"color: {text_primary};")
         self.obs_subheading.setStyleSheet(f"color: {text_secondary};")
         self.sec_heading.setStyleSheet(f"color: {text_primary};")
@@ -1508,7 +1354,7 @@ class SettingsView(QWidget):
                 background: none;
             }}
         """
-        for p in [self.page_general, self.page_hotkeys, self.page_projects, self.page_integrations, self.page_security]:
+        for p in [self.page_general, self.page_hotkeys, self.page_integrations, self.page_security]:
             if isinstance(p, QScrollArea):
                 p.setStyleSheet(scrollbar_qss)
 
@@ -1604,30 +1450,11 @@ class SettingsView(QWidget):
             }}
         """
         self.browse_btn.setStyleSheet(neutral_btn_qss)
-        self.add_proj_btn.setStyleSheet(neutral_btn_qss)
-        self.add_proj_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14))
         self.reset_hk_btn.setStyleSheet(neutral_btn_qss)
         self.toggle_enc_btn.setStyleSheet(neutral_btn_qss)
         self.view_key_btn.setStyleSheet(neutral_btn_qss)
         self.create_backup_btn.setStyleSheet(neutral_btn_qss)
         self.restore_backup_btn.setStyleSheet(neutral_btn_qss)
-
-        # Danger button
-        self.del_proj_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {btn_danger_bg};
-                color: {btn_danger_text};
-                border: 1px solid {btn_danger_border};
-                border-radius: 6px;
-                padding: 5px 12px;
-                font-family: {FONT_SANS};
-                font-size: 11px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {btn_danger_hover_bg};
-            }}
-        """)
 
         # Accent Action buttons (Save Settings & Save Shortcuts)
         accent_btn_qss = f"""
@@ -1651,40 +1478,17 @@ class SettingsView(QWidget):
         self.save_btn.setStyleSheet(accent_btn_qss)
         self.save_hk_btn.setStyleSheet(accent_btn_qss)
 
-        # Projects Table
-        self.proj_table.setStyleSheet(f"""
-            QTableWidget {{
-                background-color: {inner_bg};
-                color: {text_primary};
-                border: 1px solid {input_border};
-                border-radius: 6px;
-                gridline-color: {table_grid};
-                font-family: {FONT_SANS};
-                font-size: 11px;
-                selection-background-color: {input_bg};
-                selection-color: {text_primary};
-            }}
-            QTableWidget::item {{
-                padding: 4px 8px;
-            }}
-            QTableWidget QLineEdit {{
-                background-color: {inner_bg};
-                color: {text_primary};
-                border: 1.5px solid {input_focus};
-                border-radius: 4px;
-                padding: 2px 6px;
-                margin: 1px;
-                font-family: {FONT_SANS};
-                font-size: 11px;
-            }}
-            QHeaderView::section {{
-                background-color: {table_header_bg};
-                color: {text_secondary};
-                border: none;
-                border-bottom: 1px solid {table_header_border};
-                padding: 5px 10px;
-                font-family: {FONT_SANS};
-                font-size: 10px;
-                font-weight: 600;
-            }}
-        """)
+        if self.proj_table is not None:
+            self.proj_table.setStyleSheet(f"""
+                QTableWidget {{
+                    background-color: {inner_bg};
+                    color: {text_primary};
+                    border: 1px solid {input_border};
+                    border-radius: 6px;
+                    gridline-color: {table_grid};
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    selection-background-color: {input_bg};
+                    selection-color: {text_primary};
+                }}
+            """)

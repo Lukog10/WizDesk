@@ -145,9 +145,9 @@ def test_settings_view_lifecycle_and_saving(qapp, repo: StorageRepository):
     assert view.stack.currentIndex() == 0  # General
     view.category_bar.buttons["hotkeys"].click()
     assert view.stack.currentIndex() == 1
-    view.category_bar.buttons["projects"].click()
-    assert view.stack.currentIndex() == 2
     view.category_bar.buttons["integrations"].click()
+    assert view.stack.currentIndex() == 2
+    view.category_bar.buttons["security"].click()
     assert view.stack.currentIndex() == 3
     view.category_bar.buttons["general"].click()
     assert view.stack.currentIndex() == 0
@@ -463,7 +463,7 @@ def test_quick_entry_dialog_reuse_and_settings_tabs(qapp, repo: StorageRepositor
     # Test SettingsCategoryBar dimensions and stability
     cat_bar = SettingsCategoryBar(is_dark=True)
     assert cat_bar.height() == 38
-    for cat_id in ["general", "hotkeys", "projects", "integrations"]:
+    for cat_id in ["general", "hotkeys", "integrations", "security"]:
         assert cat_id in cat_bar.buttons
         btn = cat_bar.buttons[cat_id]
         assert btn.height() == 30

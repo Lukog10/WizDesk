@@ -9,6 +9,7 @@ from wiz.ui.settings_dialog import SettingsDialog
 from wiz.ui.icons import get_app_icon, get_app_pixmap
 from wiz.ui.timeline_view import TimelineView
 from wiz.ui.project_dashboard_view import ProjectDashboardView
+from wiz.ui.toggle_switch import ToggleSwitch
 
 __all__ = [
     "MascotWidget",
@@ -19,6 +20,7 @@ __all__ = [
     "SettingsDialog",
     "TimelineView",
     "ProjectDashboardView",
+    "ToggleSwitch",
     "get_app_icon",
     "get_app_pixmap",
 ]
