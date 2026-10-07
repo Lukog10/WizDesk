@@ -76,14 +76,14 @@ class KeyDisplayDialog(QDialog):
             "Keep it stored securely. You can use it to recover your data on any computer.",
             self,
         )
-        subtitle.setFont(get_font(9))
+        subtitle.setFont(get_font(10.5))
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
 
         # Key display box
         self.key_edit = QLineEdit(self.key_str, self)
         self.key_edit.setReadOnly(True)
-        self.key_edit.setFont(QFont(FONT_MONO, 10, QFont.Weight.Bold))
+        self.key_edit.setFont(QFont(FONT_MONO, 11, QFont.Weight.Bold))
         self.key_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.key_edit.setFixedHeight(44)
         layout.addWidget(self.key_edit)
@@ -93,14 +93,14 @@ class KeyDisplayDialog(QDialog):
         btn_layout.setSpacing(10)
 
         self.copy_btn = QPushButton("Copy Key", self)
-        self.copy_btn.setFont(get_font(10, QFont.Weight.Bold))
+        self.copy_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.copy_btn.setFixedHeight(36)
         self.copy_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.copy_btn.clicked.connect(self._copy_key)
         btn_layout.addWidget(self.copy_btn)
 
         self.close_btn = QPushButton("Done", self)
-        self.close_btn.setFont(get_font(10, QFont.Weight.Medium))
+        self.close_btn.setFont(get_font(11, QFont.Weight.Medium))
         self.close_btn.setFixedHeight(36)
         self.close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.close_btn.clicked.connect(self.accept)
@@ -205,7 +205,7 @@ class SettingsCategoryBar(QFrame):
         for cat_id, cat_label in self.CATEGORIES:
             btn = QPushButton(cat_label, self)
             btn.setFixedHeight(30)
-            btn.setFont(get_font(11, QFont.Weight.DemiBold))
+            btn.setFont(get_font(12, QFont.Weight.DemiBold))
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             btn.setAutoDefault(False)
@@ -260,7 +260,7 @@ class SettingsCategoryBar(QFrame):
         for cid, btn in self.buttons.items():
             is_active = (cid == self.active_category)
             if is_active:
-                btn.setFont(get_font(11, QFont.Weight.Bold))
+                btn.setFont(get_font(12, QFont.Weight.Bold))
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: {active_bg};
@@ -269,12 +269,12 @@ class SettingsCategoryBar(QFrame):
                         border-radius: 6px;
                         padding: 0 10px;
                         font-family: {FONT_SANS};
-                        font-size: 11px;
+                        font-size: 12px;
                         font-weight: 600;
                     }}
                 """)
             else:
-                btn.setFont(get_font(11, QFont.Weight.DemiBold))
+                btn.setFont(get_font(12, QFont.Weight.DemiBold))
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: transparent;
@@ -283,7 +283,7 @@ class SettingsCategoryBar(QFrame):
                         border-radius: 6px;
                         padding: 0 10px;
                         font-family: {FONT_SANS};
-                        font-size: 11px;
+                        font-size: 12px;
                         font-weight: 500;
                     }}
                     QPushButton:hover {{
@@ -330,7 +330,7 @@ class SettingsView(QWidget):
         header_layout.addWidget(self.title_lbl)
 
         self.subtitle_lbl = QLabel("Manage your desktop preferences, keyboard shortcuts, and integrations.", self)
-        self.subtitle_lbl.setFont(get_font(9.5))
+        self.subtitle_lbl.setFont(get_font(10.5))
         header_layout.addWidget(self.subtitle_lbl)
 
         self.main_layout.addLayout(header_layout)
@@ -362,13 +362,13 @@ class SettingsView(QWidget):
         bottom_bar.setSpacing(10)
 
         self.status_pill = QLabel("All settings up to date", self)
-        self.status_pill.setFont(get_font(9, QFont.Weight.Medium))
+        self.status_pill.setFont(get_font(10.5, QFont.Weight.Medium))
         bottom_bar.addWidget(self.status_pill)
 
         bottom_bar.addStretch()
 
         self.save_btn = QPushButton("Save Settings", self)
-        self.save_btn.setFont(get_font(11, QFont.Weight.Bold))
+        self.save_btn.setFont(get_font(12, QFont.Weight.Bold))
         self.save_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.save_btn.setAutoDefault(False)
         self.save_btn.setDefault(False)
@@ -411,12 +411,12 @@ class SettingsView(QWidget):
         left_box.setContentsMargins(0, 0, 0, 0)
 
         title_lbl = QLabel(title, row_widget)
-        title_lbl.setFont(get_font(10, QFont.Weight.DemiBold))
+        title_lbl.setFont(get_font(11.5, QFont.Weight.DemiBold))
         title_lbl.setObjectName("SettingRowTitle")
         left_box.addWidget(title_lbl)
 
         desc_lbl = QLabel(description, row_widget)
-        desc_lbl.setFont(get_font(9))
+        desc_lbl.setFont(get_font(10))
         desc_lbl.setObjectName("SettingRowDesc")
         desc_lbl.setWordWrap(True)
         left_box.addWidget(desc_lbl)
@@ -457,11 +457,11 @@ class SettingsView(QWidget):
         header_box.setContentsMargins(0, 0, 0, 10)
 
         self.gen_heading = QLabel("General & Companion Behavior", container)
-        self.gen_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.gen_heading.setFont(get_font(13.5, QFont.Weight.Bold, display=True))
         header_box.addWidget(self.gen_heading)
 
         self.gen_subheading = QLabel("Configure desktop mascot animations, window tracking behavior, and app startup.", container)
-        self.gen_subheading.setFont(get_font(9))
+        self.gen_subheading.setFont(get_font(10.5))
         self.gen_subheading.setWordWrap(True)
         header_box.addWidget(self.gen_subheading)
 
@@ -551,7 +551,7 @@ class SettingsView(QWidget):
         self.sound_volume_slider.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
         self.sound_volume_label = QLabel(f"{int(config.sound_volume * 100)}%", vol_ctrl)
-        self.sound_volume_label.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.sound_volume_label.setFont(get_font(11, QFont.Weight.DemiBold))
         self.sound_volume_label.setFixedWidth(36)
         self.sound_volume_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
@@ -616,20 +616,20 @@ class SettingsView(QWidget):
         header_vbox.setSpacing(4)
 
         self.hk_heading = QLabel("Global Keyboard Shortcuts", container)
-        self.hk_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.hk_heading.setFont(get_font(13.5, QFont.Weight.Bold, display=True))
         header_vbox.addWidget(self.hk_heading)
 
         self.hk_subheading = QLabel(
             "Global hotkeys trigger actions across your operating system even when WizDesk is in the background.",
             container,
         )
-        self.hk_subheading.setFont(get_font(9))
+        self.hk_subheading.setFont(get_font(10.5))
         self.hk_subheading.setWordWrap(True)
         header_vbox.addWidget(self.hk_subheading)
         header_row.addLayout(header_vbox, stretch=1)
 
         self.hk_active_badge = QLabel("Active", container)
-        self.hk_active_badge.setFont(get_font(8, QFont.Weight.Bold))
+        self.hk_active_badge.setFont(get_font(9.5, QFont.Weight.Bold))
         self.hk_active_badge.setObjectName("ActiveBadge")
         header_row.addWidget(self.hk_active_badge, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(header_row)
@@ -644,8 +644,8 @@ class SettingsView(QWidget):
 
         for i, (key_name, label_text, default_val, help_text) in enumerate(shortcuts_meta):
             line_edit = QLineEdit(container)
-            line_edit.setFixedWidth(150)
-            line_edit.setFont(QFont(FONT_MONO, 9, QFont.Weight.Bold))
+            line_edit.setFixedWidth(160)
+            line_edit.setFont(QFont(FONT_MONO, 10, QFont.Weight.Bold))
             line_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
             curr_val = config.get(key_name, default_val)
             line_edit.setText(format_display_shortcut(curr_val))
@@ -666,14 +666,14 @@ class SettingsView(QWidget):
         btn_row.setSpacing(8)
 
         self.save_hk_btn = QPushButton("Save Shortcuts", container)
-        self.save_hk_btn.setFont(get_font(9, QFont.Weight.Bold))
+        self.save_hk_btn.setFont(get_font(10.5, QFont.Weight.Bold))
         self.save_hk_btn.setFixedHeight(30)
         self.save_hk_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.save_hk_btn.clicked.connect(self._on_save_hotkeys)
         btn_row.addWidget(self.save_hk_btn)
 
         self.reset_hk_btn = QPushButton("Reset to Defaults", container)
-        self.reset_hk_btn.setFont(get_font(9))
+        self.reset_hk_btn.setFont(get_font(10.5))
         self.reset_hk_btn.setFixedHeight(30)
         self.reset_hk_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.reset_hk_btn.clicked.connect(self._on_reset_hotkeys)
@@ -682,7 +682,7 @@ class SettingsView(QWidget):
         btn_row.addStretch(1)
 
         self.hk_feedback_lbl = QLabel("", container)
-        self.hk_feedback_lbl.setFont(get_font(8, QFont.Weight.DemiBold))
+        self.hk_feedback_lbl.setFont(get_font(9.5, QFont.Weight.DemiBold))
         btn_row.addWidget(self.hk_feedback_lbl)
 
         layout.addLayout(btn_row)
@@ -761,14 +761,14 @@ class SettingsView(QWidget):
         header_box.setContentsMargins(0, 0, 0, 10)
 
         self.obs_heading = QLabel("Obsidian Vault Integration", container)
-        self.obs_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.obs_heading.setFont(get_font(13.5, QFont.Weight.Bold, display=True))
         header_box.addWidget(self.obs_heading)
 
         self.obs_subheading = QLabel(
             "Connect your local Obsidian Vault folder to automatically sync your daily work logs, completed tasks, and notes.",
             container,
         )
-        self.obs_subheading.setFont(get_font(9))
+        self.obs_subheading.setFont(get_font(10.5))
         self.obs_subheading.setWordWrap(True)
         header_box.addWidget(self.obs_subheading)
 
@@ -787,6 +787,7 @@ class SettingsView(QWidget):
         vault_ctrl_layout.addWidget(self.vault_path_input)
 
         self.browse_btn = QPushButton("Browse", vault_ctrl)
+        self.browse_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.browse_btn.setFixedHeight(30)
         self.browse_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.browse_btn.clicked.connect(self._on_browse_vault)
@@ -814,7 +815,7 @@ class SettingsView(QWidget):
 
         # Row 3: Auto-Sync Status
         self.sync_status_badge = QLabel("Active" if config.get("obsidian_vault_path") else "Not Configured", container)
-        self.sync_status_badge.setFont(get_font(8, QFont.Weight.Bold))
+        self.sync_status_badge.setFont(get_font(9.5, QFont.Weight.Bold))
         self.sync_status_badge.setObjectName("SyncBadge")
 
         self._create_setting_row(
@@ -863,14 +864,14 @@ class SettingsView(QWidget):
         header_box.setContentsMargins(0, 0, 0, 10)
 
         self.sec_heading = QLabel("Database Security & Backups", container)
-        self.sec_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.sec_heading.setFont(get_font(13.5, QFont.Weight.Bold, display=True))
         header_box.addWidget(self.sec_heading)
 
         self.sec_subheading = QLabel(
             "Protect your tasks and logs with hardware-backed AES-256-GCM encryption at rest, and manage point-in-time database backups.",
             container,
         )
-        self.sec_subheading.setFont(get_font(9))
+        self.sec_subheading.setFont(get_font(10.5))
         self.sec_subheading.setWordWrap(True)
         header_box.addWidget(self.sec_subheading)
 
@@ -883,12 +884,12 @@ class SettingsView(QWidget):
         enc_layout.setSpacing(8)
 
         self.enc_status_badge = QLabel("Not Configured", enc_ctrl)
-        self.enc_status_badge.setFont(get_font(8, QFont.Weight.Bold))
+        self.enc_status_badge.setFont(get_font(9.5, QFont.Weight.Bold))
         self.enc_status_badge.setObjectName("SecurityBadge")
         enc_layout.addWidget(self.enc_status_badge)
 
         self.toggle_enc_btn = QPushButton("Enable Encryption", enc_ctrl)
-        self.toggle_enc_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.toggle_enc_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.toggle_enc_btn.setFixedHeight(30)
         self.toggle_enc_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.toggle_enc_btn.clicked.connect(self._on_toggle_encryption)
@@ -903,7 +904,7 @@ class SettingsView(QWidget):
 
         # Row 2: Personal Master Key
         self.view_key_btn = QPushButton("View / Export Key", container)
-        self.view_key_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.view_key_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.view_key_btn.setFixedHeight(30)
         self.view_key_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.view_key_btn.clicked.connect(self._on_view_private_key)
@@ -951,14 +952,14 @@ class SettingsView(QWidget):
         act_layout.setSpacing(8)
 
         self.create_backup_btn = QPushButton("Create Backup Now", actions_ctrl)
-        self.create_backup_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.create_backup_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.create_backup_btn.setFixedHeight(30)
         self.create_backup_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.create_backup_btn.clicked.connect(self._on_create_backup_now)
         act_layout.addWidget(self.create_backup_btn)
 
         self.restore_backup_btn = QPushButton("Restore from File...", actions_ctrl)
-        self.restore_backup_btn.setFont(get_font(10, QFont.Weight.DemiBold))
+        self.restore_backup_btn.setFont(get_font(11, QFont.Weight.DemiBold))
         self.restore_backup_btn.setFixedHeight(30)
         self.restore_backup_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.restore_backup_btn.clicked.connect(self._on_restore_backup)
@@ -1365,9 +1366,9 @@ class SettingsView(QWidget):
                 color: {text_primary};
                 border: 1px solid {input_border};
                 border-radius: 6px;
-                padding: 4px 10px;
+                padding: 5px 12px;
                 font-family: {FONT_SANS};
-                font-size: 11px;
+                font-size: 12.5px;
             }}
             QLineEdit:focus, QSpinBox:focus {{
                 background-color: {inner_bg};
@@ -1413,7 +1414,7 @@ class SettingsView(QWidget):
                 background: #FDF2E9;
             }}
         """)
-        self.sound_volume_label.setStyleSheet(f"color: {text_secondary}; font-family: {FONT_SANS}; font-size: 11px;")
+        self.sound_volume_label.setStyleSheet(f"color: {text_secondary}; font-family: {FONT_SANS}; font-size: 12px;")
         for inp in self.hotkey_inputs.values():
             inp.setStyleSheet(f"""
                 QLineEdit {{
@@ -1421,9 +1422,9 @@ class SettingsView(QWidget):
                     color: {text_primary};
                     border: 1px solid {input_border};
                     border-radius: 6px;
-                    padding: 4px 8px;
+                    padding: 5px 10px;
                     font-family: {FONT_MONO};
-                    font-size: 11px;
+                    font-size: 12px;
                     font-weight: bold;
                 }}
                 QLineEdit:focus {{
@@ -1439,9 +1440,9 @@ class SettingsView(QWidget):
                 color: {btn_neutral_text};
                 border: 1px solid {btn_neutral_border};
                 border-radius: 6px;
-                padding: 5px 12px;
+                padding: 6px 14px;
                 font-family: {FONT_SANS};
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -1463,9 +1464,9 @@ class SettingsView(QWidget):
                 color: #FFFFFF;
                 border: none;
                 border-radius: 6px;
-                padding: 6px 16px;
+                padding: 6px 18px;
                 font-family: {FONT_SANS};
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
