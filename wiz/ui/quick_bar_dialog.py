@@ -24,6 +24,7 @@ from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository
 from wiz.ui.popup_dialog import CreateSectionDialog
 from wiz.ui.arrow_combo import ArrowComboBox
+from wiz.ui.icons import get_status_icon
 from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 
 
@@ -138,13 +139,17 @@ class QuickBarPopup(QDialog):
         if not pnames:
             pnames = ["Work", "Personal"]
 
+        none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", size=14)
+        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=14)
+        self.project_combo.addItem(none_icon, "None")
+
         for p in pnames:
             self.project_combo.addItem(p)
 
         self.project_combo.insertSeparator(self.project_combo.count())
-        self.project_combo.addItem("+ Create Section...")
+        self.project_combo.addItem(add_icon, "+ Create Section...")
 
-        if current in pnames:
+        if current in pnames or current == "None":
             self.project_combo.setCurrentText(current)
         else:
             self.project_combo.setCurrentIndex(0)

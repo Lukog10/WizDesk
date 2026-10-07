@@ -40,6 +40,7 @@ from wiz.storage.backup import backup_manager
 from wiz.storage.models import StorageRepository
 from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
 from wiz.ui.checkbox import RoundedCheckbox
+from wiz.ui.icons import get_status_icon
 from wiz.ui.pill_number_picker import DurationPillSelector, PillSpinBox
 from wiz.utils.auth import authenticate_user
 from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
@@ -790,7 +791,9 @@ class SettingsView(QWidget):
         proj_btn_layout.setContentsMargins(0, 4, 0, 0)
         proj_btn_layout.setSpacing(8)
 
-        self.add_proj_btn = QPushButton("+ Add Project", container)
+        self.add_proj_btn = QPushButton(" Add Project", container)
+        self.add_proj_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14))
+        self.add_proj_btn.setIconSize(QSize(14, 14))
         self.add_proj_btn.setFont(get_font(10, QFont.Weight.Bold))
         self.add_proj_btn.setFixedHeight(30)
         self.add_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -1602,6 +1605,7 @@ class SettingsView(QWidget):
         """
         self.browse_btn.setStyleSheet(neutral_btn_qss)
         self.add_proj_btn.setStyleSheet(neutral_btn_qss)
+        self.add_proj_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14))
         self.reset_hk_btn.setStyleSheet(neutral_btn_qss)
         self.toggle_enc_btn.setStyleSheet(neutral_btn_qss)
         self.view_key_btn.setStyleSheet(neutral_btn_qss)

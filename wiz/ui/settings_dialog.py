@@ -1,7 +1,7 @@
 """Settings and preferences dialog for WizDesk with elevated card and frameless design."""
 
 from typing import Optional
-from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtCore import Qt, QPoint, QSize
 from PyQt6.QtGui import QFont, QColor, QCursor
 from PyQt6.QtWidgets import (
     QDialog,
@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.storage.models import StorageRepository
-from wiz.ui.icons import get_app_icon
+from wiz.ui.icons import get_app_icon, get_status_icon
 from wiz.ui.popup_dialog import RoundedCheckbox
 
 from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
@@ -242,7 +242,9 @@ class SettingsDialog(QDialog):
         proj_btn_layout.setContentsMargins(0, 4, 0, 0)
         proj_btn_layout.setSpacing(8)
 
-        self.add_proj_btn = QPushButton("+ Add Project")
+        self.add_proj_btn = QPushButton(" Add Project")
+        self.add_proj_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14))
+        self.add_proj_btn.setIconSize(QSize(14, 14))
         self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.add_proj_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_proj_btn.clicked.connect(self._on_add_project)
@@ -447,6 +449,7 @@ class SettingsDialog(QDialog):
         """)
 
         self.add_proj_btn.setFont(get_font(11, QFont.Weight.Bold))
+        self.add_proj_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14))
         self.add_proj_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {btn_neutral_bg};

@@ -686,8 +686,10 @@ class CreateSectionDialog(QDialog):
         cancel_btn.clicked.connect(self.reject)
         btn_layout.addWidget(cancel_btn)
 
-        submit_btn = QPushButton("Create Section")
+        submit_btn = QPushButton(" Create Section")
         submit_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        submit_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", submit_text, 14))
+        submit_btn.setIconSize(QSize(14, 14))
         submit_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {submit_bg};
@@ -1884,9 +1886,11 @@ class TagCreateDialog(QDialog):
         cancel_btn.clicked.connect(self.reject)
         btn_layout.addWidget(cancel_btn)
 
-        self.create_btn = QPushButton("Create Tag")
+        self.create_btn = QPushButton(" Create Tag")
         self.create_btn.setFont(get_font(11, QFont.Weight.Bold))
         self.create_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.create_btn.setIcon(get_status_icon("icons/add-plus-svgrepo-com.svg", "#FFFFFF", 14))
+        self.create_btn.setIconSize(QSize(14, 14))
         action_bg = "#C2410C" if self.is_dark else "#BA3F1A"
         self.create_btn.setStyleSheet(f"""
             QPushButton {{
@@ -2052,7 +2056,7 @@ class ProjectIconButton(QPushButton):
         # "None" option
         is_none = (self.current_project in ("None", "", None))
         none_text = "None  ✓" if is_none else "None"
-        none_icon = get_status_icon("folder.svg", "#71717A", size=16)
+        none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", size=16)
         act_none = menu.addAction(none_icon, none_text)
         action_map[act_none] = "None"
         menu.addSeparator()
@@ -2068,7 +2072,7 @@ class ProjectIconButton(QPushButton):
             action_map[act] = name
 
         menu.addSeparator()
-        create_icon = get_status_icon("icons/subtask.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
+        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
         act_create = menu.addAction(create_icon, "+ Create Section...")
 
         menu_size = menu.sizeHint()
@@ -2186,7 +2190,7 @@ class TagIconButton(QPushButton):
         # "None" option
         is_none_checked = (len(self.selected_tag_ids) == 0)
         none_text = "None  ✓" if is_none_checked else "None"
-        none_icon = get_status_icon("tags/tag.svg", "#71717A", size=16)
+        none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", size=16)
         act_none = menu.addAction(none_icon, none_text)
         menu.addSeparator()
 
@@ -2199,7 +2203,7 @@ class TagIconButton(QPushButton):
             act_tag_map[act] = tag
 
         menu.addSeparator()
-        create_icon = get_status_icon("tags/tag.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
+        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
         act_create = menu.addAction(create_icon, "+ Create Tag...")
         if self.selected_tag_ids:
             clear_icon = get_status_icon("icons/delete.svg", "#EF4444", size=14)
@@ -2902,7 +2906,7 @@ class TaskRowWidget(QWidget):
         # "None" option
         is_none_checked = (len(current_tag_ids) == 0)
         none_text = "None  ✓" if is_none_checked else "None"
-        none_icon = get_status_icon("tags/tag.svg", "#71717A", size=16)
+        none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", size=16)
         act_none = menu.addAction(none_icon, none_text)
         menu.addSeparator()
 
@@ -2915,7 +2919,7 @@ class TaskRowWidget(QWidget):
             act_tag_map[act] = tag
 
         menu.addSeparator()
-        create_icon = get_status_icon("tags/tag.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
+        create_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=16)
         act_create = menu.addAction(create_icon, "+ Create Tag...")
 
         menu_size = menu.sizeHint()
@@ -3296,7 +3300,8 @@ class TaskRowWidget(QWidget):
         section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
         curr_proj = self.task.project_tag or "None"
 
-        act_none = section_menu.addAction("Section: None")
+        none_icon = get_status_icon("icons/icons8-no-entry-100.png", icon_color, 14)
+        act_none = section_menu.addAction(none_icon, "Section: None")
         if curr_proj in ("None", None, ""):
             act_none.setEnabled(False)
         act_none.triggered.connect(lambda checked: self.project_changed.emit(self.task_id, "None"))
@@ -3310,7 +3315,8 @@ class TaskRowWidget(QWidget):
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.task_id, p))
 
         section_menu.addSeparator()
-        action_new_sec = section_menu.addAction("+ Create New Section...")
+        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14)
+        action_new_sec = section_menu.addAction(add_icon, "+ Create New Section...")
 
         menu.addSeparator()
         action_delete = menu.addAction(
@@ -3405,7 +3411,8 @@ class NoteRowWidget(QWidget):
         self.tag_btn = QPushButton(f" {tag_text}")
         tag_color = "#60A5FA" if self.is_dark else "#2563EB"
         icon_color = tag_color if tag_text != "None" else "#71717A"
-        self.tag_btn.setIcon(get_status_icon("folder.svg", icon_color, 12))
+        icon_name = "folder.svg" if tag_text != "None" else "icons/icons8-no-entry-100.png"
+        self.tag_btn.setIcon(get_status_icon(icon_name, icon_color, 12))
         self.tag_btn.setIconSize(QSize(12, 12))
         self.tag_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.tag_btn.setToolTip("Click to change section")
@@ -3520,7 +3527,8 @@ class NoteRowWidget(QWidget):
         section_menu.setStyleSheet(get_context_menu_style(self.is_dark))
         curr_proj = self.note.project_tag or "None"
 
-        act_none = section_menu.addAction("Section: None")
+        none_icon = get_status_icon("icons/icons8-no-entry-100.png", icon_color, 14)
+        act_none = section_menu.addAction(none_icon, "Section: None")
         if curr_proj in ("None", None, ""):
             act_none.setEnabled(False)
         act_none.triggered.connect(lambda checked: self.project_changed.emit(self.note_id, "None"))
@@ -3534,7 +3542,8 @@ class NoteRowWidget(QWidget):
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
 
         section_menu.addSeparator()
-        action_new_sec = section_menu.addAction("+ Create New Section...")
+        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14)
+        action_new_sec = section_menu.addAction(add_icon, "+ Create New Section...")
 
         menu.addSeparator()
         action_delete = menu.addAction(
@@ -3562,7 +3571,8 @@ class NoteRowWidget(QWidget):
 
         curr_proj = self.note.project_tag or "None"
 
-        act_none = menu.addAction("Section: None")
+        none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", 14)
+        act_none = menu.addAction(none_icon, "Section: None")
         if curr_proj in ("None", None, ""):
             act_none.setEnabled(False)
         act_none.triggered.connect(lambda checked: self.project_changed.emit(self.note_id, "None"))
@@ -3576,7 +3586,8 @@ class NoteRowWidget(QWidget):
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
 
         menu.addSeparator()
-        action_new_sec = menu.addAction("+ Create New Section...")
+        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", 14)
+        action_new_sec = menu.addAction(add_icon, "+ Create New Section...")
 
         action = menu.exec(global_pos)
         if action == action_new_sec:
@@ -5527,12 +5538,15 @@ class QuickEntryDialog(QDialog):
             current_sel = self.project_combo.currentText()
             self.project_combo.blockSignals(True)
             self.project_combo.clear()
+            none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", size=14)
+            add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=14)
+            self.project_combo.addItem(none_icon, "None")
             for name in names:
                 self.project_combo.addItem(name)
             self.project_combo.insertSeparator(self.project_combo.count())
-            self.project_combo.addItem("+ Create Section...")
+            self.project_combo.addItem(add_icon, "+ Create Section...")
 
-            if current_sel and current_sel in names:
+            if current_sel and (current_sel in names or current_sel == "None"):
                 self.project_combo.setCurrentText(current_sel)
             else:
                 self.project_combo.setCurrentIndex(0)
@@ -5548,10 +5562,13 @@ class QuickEntryDialog(QDialog):
                 note_sel = self.note_project_combo.currentText()
                 self.note_project_combo.blockSignals(True)
                 self.note_project_combo.clear()
+                none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", size=14)
+                add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=14)
+                self.note_project_combo.addItem(none_icon, "None")
                 for name in names:
                     self.note_project_combo.addItem(name)
                 self.note_project_combo.insertSeparator(self.note_project_combo.count())
-                self.note_project_combo.addItem("+ Create Section...")
+                self.note_project_combo.addItem(add_icon, "+ Create Section...")
 
                 if note_sel and note_sel in names:
                     self.note_project_combo.setCurrentText(note_sel)
