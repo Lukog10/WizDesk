@@ -25,10 +25,8 @@ class MascotWindow(QWidget):
         self.state_machine = state_machine
         self.setWindowIcon(get_app_icon("wiz-idle.svg"))
 
-        # Window flags: frameless, stays on top, tool window (avoids cluttering taskbar)
-        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool
-        if config.get("always_on_top", True):
-            flags |= Qt.WindowType.WindowStaysOnTopHint
+        # Window flags: frameless, stays on top permanently, tool window (avoids cluttering taskbar)
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool | Qt.WindowType.WindowStaysOnTopHint
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
@@ -101,11 +99,9 @@ class MascotWindow(QWidget):
                 import ctypes
                 hwnd = int(self.winId())
                 if hwnd:
-                    is_topmost = bool(self.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
-                    target_z = -1 if is_topmost else 0
-                    # HWND_TOPMOST (-1) or HWND_TOP (0)
+                    # HWND_TOPMOST (-1) is permanently enforced for the desktop companion mascot
                     # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_SHOWWINDOW (0x40)
-                    ctypes.windll.user32.SetWindowPos(hwnd, target_z, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
+                    ctypes.windll.user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)
             except Exception:
                 pass
 
@@ -132,26 +128,7 @@ class MascotWindow(QWidget):
             self.hide()
 
     def _apply_always_on_top(self, always_on_top: bool) -> None:
-        """Update mascot window flags when Always On Top setting changes smoothly without glitching."""
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, always_on_top)
-        if sys.platform == "win32":
-            try:
-                import ctypes
-                hwnd = int(self.winId())
-                if hwnd:
-                    # HWND_TOPMOST (-1) if always_on_top else HWND_NOTOPMOST (-2)
-                    # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_FRAMECHANGED (0x20) | SWP_SHOWWINDOW (0x40)
-                    target_z = -1 if always_on_top else -2
-                    ctypes.windll.user32.SetWindowPos(
-                        hwnd,
-                        target_z,
-                        0, 0, 0, 0,
-                        0x0001 | 0x0002 | 0x0010 | 0x0020 | 0x0040
-                    )
-            except Exception:
-                pass
-        elif self.isVisible():
-            self.show()
+        """Mascot permanently stays topmost; reinforce topmost Z-order above workspace."""
         self.ensure_on_top()
 
     # --- Mouse & Drag Handling with Multi-Click Gesture Detection ---

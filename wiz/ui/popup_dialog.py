@@ -4722,7 +4722,7 @@ class QuickEntryDialog(QDialog):
         self.resize(target_w, target_h)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         flags = Qt.WindowType.FramelessWindowHint
-        if config.get("always_on_top", False):
+        if config.get("always_on_top", True):
             flags |= Qt.WindowType.WindowStaysOnTopHint
         self.setWindowFlags(flags)
         self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
@@ -5141,27 +5141,29 @@ class QuickEntryDialog(QDialog):
         self.repaint()
 
     def _apply_always_on_top(self, always_on_top: bool) -> None:
-        """Update window flags when Always On Top setting changes smoothly without glitching."""
+        """Update workspace window flags when Always On Top setting changes smoothly without closing or glitching."""
+        was_visible = self.isVisible()
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, always_on_top)
+        if was_visible:
+            self.show()
+            self.raise_()
+            self.activateWindow()
         if sys.platform == "win32":
             try:
                 import ctypes
                 hwnd = int(self.winId())
                 if hwnd:
                     # HWND_TOPMOST (-1) if always_on_top else HWND_NOTOPMOST (-2)
-                    # SWP_NOSIZE (1) | SWP_NOMOVE (2) | SWP_NOACTIVATE (0x10) | SWP_FRAMECHANGED (0x20) | SWP_SHOWWINDOW (0x40)
                     target_z = -1 if always_on_top else -2
                     ctypes.windll.user32.SetWindowPos(
                         hwnd,
                         target_z,
                         0, 0, 0, 0,
-                        0x0001 | 0x0002 | 0x0010 | 0x0020 | 0x0040
+                        0x0001 | 0x0002 | 0x0010 | 0x0020 | (0x0040 if was_visible else 0)
                     )
             except Exception:
                 pass
-        elif self.isVisible():
-            self.show()
-        # Reinforce mascot companion visibility above workspace dialog
+        # Reinforce mascot companion visibility permanently above workspace dialog
         app_signals.ensure_mascot_visible.emit()
 
     def toggle_theme(self) -> None:
@@ -6191,6 +6193,11 @@ class QuickEntryDialog(QDialog):
     def _on_minimize_clicked(self) -> None:
         """Minimize the workspace dialog while ensuring the companion mascot remains active and visible."""
         self.showMinimized()
+        app_signals.ensure_mascot_visible.emit()
+
+    def showEvent(self, event) -> None:
+        """Reinforce mascot companion visibility whenever workspace is shown."""
+        super().showEvent(event)
         app_signals.ensure_mascot_visible.emit()
 
     def changeEvent(self, event) -> None:

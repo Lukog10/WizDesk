@@ -492,7 +492,7 @@ class SettingsView(QWidget):
         self.always_on_top_check.toggled.connect(self._on_always_on_top_toggled)
         self._create_setting_row(
             title="Always On Top",
-            description="Keep the workspace and desktop companion floating above full-screen windows and active applications.",
+            description="Keep the workspace floating above full-screen windows and active applications (mascot remains on top permanently).",
             control_widget=self.always_on_top_check,
             parent_layout=layout,
         )

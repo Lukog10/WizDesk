@@ -510,21 +510,26 @@ def test_always_on_top_dynamic_toggling_and_flags(qapp, repo: StorageRepository)
     dialog = QuickEntryDialog(sm, repository=repo)
 
     # Workspace window flags must not contain WindowStaysOnTopHint when False
+    dialog.show()
+    assert dialog.isVisible() is True
     has_stay_on_top = bool(dialog.windowFlags() & Qt.WindowType.WindowStaysOnTopHint)
     assert has_stay_on_top is False
 
-    # 2. Dynamic broadcast to True
+    # 2. Dynamic broadcast to True (dialog stays open and visible, gains flag)
     app_signals.always_on_top_changed.emit(True)
+    assert dialog.isVisible() is True
     assert bool(dialog.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is True
 
-    # 3. Dynamic broadcast to False
+    # 3. Dynamic broadcast to False (dialog stays open and visible, drops flag)
     app_signals.always_on_top_changed.emit(False)
+    assert dialog.isVisible() is True
     assert bool(dialog.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is False
 
-    # 4. Check MascotWindow dynamic updates
+    # 4. Check MascotWindow permanently stays on top regardless of always_on_top setting
     mascot = MascotWindow(sm)
+    assert bool(mascot.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is True
     app_signals.always_on_top_changed.emit(False)
-    assert bool(mascot.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is False
+    assert bool(mascot.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is True
     app_signals.always_on_top_changed.emit(True)
     assert bool(mascot.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is True
 
