@@ -4789,6 +4789,11 @@ class PermanentNotesWorkspaceWidget(QWidget):
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search notes...")
+        search_icon_col = "#71717A" if self.is_dark else "#9CA3AF"
+        self.search_action = self.search_input.addAction(
+            get_status_icon("icons/search-magnifying-glass-svgrepo-com.svg", search_icon_col, 14),
+            QLineEdit.ActionPosition.LeadingPosition,
+        )
         self.search_input.textChanged.connect(self._on_search_changed)
         left_layout.addWidget(self.search_input)
 
@@ -4861,6 +4866,11 @@ class PermanentNotesWorkspaceWidget(QWidget):
         """
         self.note_title_input.setStyleSheet(input_style)
         self.search_input.setStyleSheet(input_style)
+        if hasattr(self, "search_action"):
+            search_icon_col = "#71717A" if is_dark else "#9CA3AF"
+            self.search_action.setIcon(
+                get_status_icon("icons/search-magnifying-glass-svgrepo-com.svg", search_icon_col, 14)
+            )
 
         self.create_note_btn.setStyleSheet(f"""
             QPushButton {{
@@ -5384,6 +5394,11 @@ class QuickEntryDialog(QDialog):
         self.notes_search = QLineEdit()
         self.notes_search.setPlaceholderText("Search notes...")
         self.notes_search.setFont(get_font(10))
+        search_icon_col = "#71717A" if self.is_dark else "#9CA3AF"
+        self.notes_search_action = self.notes_search.addAction(
+            get_status_icon("icons/search-magnifying-glass-svgrepo-com.svg", search_icon_col, 14),
+            QLineEdit.ActionPosition.LeadingPosition,
+        )
         self.notes_search.textChanged.connect(self._on_notes_search_changed)
         notes_list_layout.addWidget(self.notes_search)
 
@@ -5874,6 +5889,11 @@ class QuickEntryDialog(QDialog):
             self.note_tag_btn.set_theme(self.is_dark)
         if hasattr(self, "notes_search"):
             self.notes_search.setStyleSheet(input_qss)
+            if hasattr(self, "notes_search_action"):
+                search_icon_col = "#71717A" if self.is_dark else "#9CA3AF"
+                self.notes_search_action.setIcon(
+                    get_status_icon("icons/search-magnifying-glass-svgrepo-com.svg", search_icon_col, 14)
+                )
         if hasattr(self, "note_editor"):
             self.note_editor.set_theme(self.is_dark)
         if hasattr(self, "notes_content_widget"):
