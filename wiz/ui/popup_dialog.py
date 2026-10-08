@@ -3372,6 +3372,7 @@ class NoteRowWidget(QWidget):
         parent: Optional[QWidget] = None,
         is_dark: bool = False,
         repo: Optional[StorageRepository] = None,
+        project_colors: Optional[Dict[str, str]] = None,
     ):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -3380,6 +3381,14 @@ class NoteRowWidget(QWidget):
         self.all_projects = all_projects
         self.is_dark = is_dark
         self.repo = repo
+        self.project_colors = dict(project_colors) if project_colors else {}
+        if not self.project_colors and self.repo:
+            try:
+                for p in self.repo.get_all_projects():
+                    if hasattr(p, "name") and hasattr(p, "color") and p.color:
+                        self.project_colors[p.name] = p.color
+            except Exception:
+                pass
 
         self.setStyleSheet("""
             NoteRowWidget {
@@ -3420,21 +3429,42 @@ class NoteRowWidget(QWidget):
 
         tag_text = note.project_tag if (note.project_tag and note.project_tag != "None") else "None"
         self.tag_btn = QPushButton(f" {tag_text}")
-        tag_color = "#60A5FA" if self.is_dark else "#2563EB"
-        icon_color = tag_color if tag_text != "None" else "#71717A"
-        icon_name = "folder.svg" if tag_text != "None" else "icons/icons8-no-entry-100.png"
+        if tag_text == "None":
+            tag_color = "#71717A"
+            icon_name = "icons/icons8-no-entry-100.png"
+            icon_color = "#71717A"
+            tag_hover_bg = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.05)"
+            tag_hover_color = "#A1A1AA" if self.is_dark else "#52525B"
+        else:
+            icon_name = "folder.svg"
+            sec_color = self.project_colors.get(tag_text)
+            if not sec_color and self.repo:
+                try:
+                    for p in self.repo.get_all_projects():
+                        if p.name == tag_text and p.color:
+                            sec_color = p.color
+                            self.project_colors[tag_text] = sec_color
+                            break
+                except Exception:
+                    pass
+            if not sec_color:
+                sec_color = "#FF6B3D"
+            tag_color = sec_color
+            icon_color = sec_color
+            c = QColor(sec_color)
+            r, g, b = c.red(), c.green(), c.blue()
+            tag_hover_bg = f"rgba({r}, {g}, {b}, 0.18)" if self.is_dark else f"rgba({r}, {g}, {b}, 0.10)"
+            tag_hover_color = c.lighter(125).name() if self.is_dark else c.darker(115).name()
+
         self.tag_btn.setIcon(get_status_icon(icon_name, icon_color, 12))
         self.tag_btn.setIconSize(QSize(12, 12))
         self.tag_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.tag_btn.setToolTip("Click to change section")
 
-        tag_hover_color = "#93C5FD" if self.is_dark else "#1D4ED8"
-        tag_hover_bg = "rgba(59, 130, 246, 0.15)" if self.is_dark else "rgba(37, 99, 235, 0.08)"
-
         self.tag_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
-                color: {tag_color if tag_text != "None" else "#71717A"};
+                color: {tag_color};
                 border: none;
                 font-family: {FONT_SANS};
                 font-size: 11px;
@@ -3445,7 +3475,7 @@ class NoteRowWidget(QWidget):
             }}
             QPushButton:hover {{
                 background-color: {tag_hover_bg};
-                color: {tag_hover_color if tag_text != "None" else "#A1A1AA"};
+                color: {tag_hover_color};
             }}
         """)
         self.tag_btn.clicked.connect(self._show_section_menu)
@@ -3556,7 +3586,9 @@ class NoteRowWidget(QWidget):
         for proj in self.all_projects:
             if proj in ("None", "", None):
                 continue
-            act = section_menu.addAction(f"Section: {proj}")
+            p_col = self.project_colors.get(proj, "#FF6B3D")
+            p_icon = get_status_icon("folder.svg", p_col, 14)
+            act = section_menu.addAction(p_icon, f"Section: {proj}")
             if proj == curr_proj:
                 act.setEnabled(False)
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
@@ -3600,7 +3632,9 @@ class NoteRowWidget(QWidget):
         for proj in self.all_projects:
             if proj in ("None", "", None):
                 continue
-            act = menu.addAction(f"Section: {proj}")
+            p_col = self.project_colors.get(proj, "#FF6B3D")
+            p_icon = get_status_icon("folder.svg", p_col, 14)
+            act = menu.addAction(p_icon, f"Section: {proj}")
             if proj == curr_proj:
                 act.setEnabled(False)
             act.triggered.connect(lambda checked, p=proj: self.project_changed.emit(self.note_id, p))
