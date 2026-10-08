@@ -1281,17 +1281,27 @@ class StorageRepository:
             return date_status
 
     def get_calendar_month_task_data(
-        self, year: int, month: int, category: Optional[str] = None
+        self,
+        year: int,
+        month: int,
+        category: Optional[str] = None,
+        tag_id: Optional[int] = None,
     ) -> Dict[str, Dict[str, Any]]:
-        """Return task breakdown (pending, upcoming, completed, counts) for each day of the month.
+        """Return task breakdown (pending, upcoming, completed, counts, section colors, and unfinished flag)
+        for each day of the month.
 
         Pending: uncompleted tasks with scheduled_date < today (red indicator)
-        Upcoming: uncompleted tasks with scheduled_date >= today (green indicator)
+        Upcoming: uncompleted tasks with scheduled_date >= today
         Completed: tasks marked as done or completed
+        has_unfinished: True if any task on that date is not done/completed
+        section_colors: Distinct section/project colors for tasks on that date
         """
+        projects = self.get_all_projects()
+        project_colors: Dict[str, str] = {p.name: (p.color or "#3B82F6") for p in projects}
+
         month_prefix = f"{year:04d}-{month:02d}%"
         query = """
-            SELECT scheduled_date, status, project_tag
+            SELECT id, scheduled_date, status, project_tag
             FROM tasks
             WHERE scheduled_date LIKE ?
         """
@@ -1299,6 +1309,9 @@ class StorageRepository:
         if category and category != "All":
             query += " AND (project_tag = ? OR (? = 'General' AND (project_tag IS NULL OR project_tag = '')))"
             params.extend([category, category])
+        if tag_id is not None:
+            query += " AND id IN (SELECT task_id FROM task_tags WHERE tag_id = ?)"
+            params.append(tag_id)
         query += " ORDER BY scheduled_date ASC"
 
         with self.db.cursor() as cur:
@@ -1320,14 +1333,25 @@ class StorageRepository:
                     "has_pending": False,
                     "has_upcoming": False,
                     "has_completed": False,
+                    "has_unfinished": False,
+                    "unfinished_count": 0,
+                    "section_colors": [],
                     "status": "completed",
                 }
             st = (r["status"] or "not_started").lower()
+            proj = r["project_tag"] or "General"
+            sec_color = project_colors.get(proj, "#3B82F6")
+
             result[dt]["total"] += 1
+            if sec_color not in result[dt]["section_colors"]:
+                result[dt]["section_colors"].append(sec_color)
+
             if st in ("done", "completed"):
                 result[dt]["completed"] += 1
                 result[dt]["has_completed"] = True
             elif st not in ("cancelled", "canceled"):
+                result[dt]["has_unfinished"] = True
+                result[dt]["unfinished_count"] += 1
                 if dt < today_str:
                     result[dt]["pending"] += 1
                     result[dt]["has_pending"] = True

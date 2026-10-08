@@ -379,9 +379,10 @@ def test_schedule_task_modal_dialog(qapp, repo):
     dlg.input_title.setText("Deploy Microservice")
     dlg.section_combo.setCurrentText("Work")
 
-    # Select the tag
-    if tag.id in dlg.tag_buttons:
-        dlg.tag_buttons[tag.id].click()
+    # Select the tag via tag dropdown
+    idx = dlg.tag_combo.findText("backend")
+    if idx >= 0:
+        dlg.tag_combo.setCurrentIndex(idx)
 
     created_ids = []
     dlg.task_created.connect(created_ids.append)
