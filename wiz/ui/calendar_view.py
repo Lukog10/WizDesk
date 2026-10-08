@@ -13,7 +13,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 import calendar
 
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QRect, QRectF, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QRect, QRectF, QSize, QTimer
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -966,63 +966,94 @@ class CalendarView(QWidget):
         row.schedule_changed.connect(self._on_row_schedule_changed)
         row.repeat_changed.connect(self._on_row_repeat_changed)
 
+    def _emit_task_updated_safely(self, task_id: int) -> None:
+        """Emit task signals while suppressing recursive background reloads on the workspace window."""
+        parent_dialog = self.window()
+        prev_suppress = getattr(parent_dialog, "_suppress_task_activity_sync", False)
+        if hasattr(parent_dialog, "_suppress_task_activity_sync"):
+            parent_dialog._suppress_task_activity_sync = True
+        try:
+            self.task_updated.emit(task_id)
+            app_signals.task_updated.emit(task_id)
+        finally:
+            if hasattr(parent_dialog, "_suppress_task_activity_sync"):
+                parent_dialog._suppress_task_activity_sync = prev_suppress
+
     def _on_row_task_action(self, action_type: str, task_id: int) -> None:
         """Handle task deletion or other actions requested from calendar agenda rows."""
         if action_type == "delete":
             self.repo.delete_task(task_id)
-            self.task_updated.emit(task_id)
-            app_signals.task_deleted.emit(task_id)
+            parent_dialog = self.window()
+            prev_suppress = getattr(parent_dialog, "_suppress_task_activity_sync", False)
+            if hasattr(parent_dialog, "_suppress_task_activity_sync"):
+                parent_dialog._suppress_task_activity_sync = True
+            try:
+                self.task_updated.emit(task_id)
+                app_signals.task_deleted.emit(task_id)
+            finally:
+                if hasattr(parent_dialog, "_suppress_task_activity_sync"):
+                    parent_dialog._suppress_task_activity_sync = prev_suppress
             self._refresh_month_grid()
             self._refresh_agenda()
             self._populate_sections()
 
     def _on_row_status_changed(self, task_id: int, new_status: str) -> None:
+        """Handle status change from task row in calendar view without combobox popup flicker."""
         self.repo.update_task_status(task_id, new_status)
-        self.task_updated.emit(task_id)
-        app_signals.task_updated.emit(task_id)
+        parent_dialog = self.window()
+        if hasattr(parent_dialog, "state_machine") and parent_dialog.state_machine:
+            if new_status in ("done", "completed", "cancelled", "canceled"):
+                parent_dialog.state_machine.trigger_complete(duration_ms=3500)
+            elif new_status in ("in_progress", "pending", "ongoing"):
+                parent_dialog.state_machine.trigger_working()
+            else:
+                parent_dialog.state_machine.revert_to_baseline()
+
+        self._emit_task_updated_safely(task_id)
         self._refresh_month_grid()
-        self._refresh_agenda()
+
+        # In preset views (upcoming/overdue), completed/cancelled tasks should leave the view.
+        # Defer via singleShot so the QComboBox popup closes cleanly before widgets are rebuilt.
+        if self.active_preset in ("upcoming", "overdue"):
+            QTimer.singleShot(120, self._refresh_agenda)
+        # Note: In day view, the TaskRowWidget already updated its own visual state in place,
+        # so destroying and recreating all rows is avoided entirely, eliminating any flicker.
 
     def _on_row_task_renamed(self, task_id: int, new_title: str) -> None:
         self.repo.update_task_title(task_id, new_title)
-        self.task_updated.emit(task_id)
-        app_signals.task_updated.emit(task_id)
+        self._emit_task_updated_safely(task_id)
 
     def _on_row_project_changed(self, task_id: int, new_project: str) -> None:
         self.repo.update_task_project(task_id, new_project)
-        self.task_updated.emit(task_id)
-        app_signals.task_updated.emit(task_id)
+        self._emit_task_updated_safely(task_id)
 
     def _on_row_subtask_added(self, task_id: int, title: str) -> None:
         self.repo.create_subtask(task_id, title)
-        self.task_updated.emit(task_id)
-        app_signals.task_updated.emit(task_id)
+        self._emit_task_updated_safely(task_id)
         self._refresh_agenda()
 
     def _on_row_subtask_status_changed(self, subtask_id: int, new_status: str) -> None:
         self.repo.update_subtask_status(subtask_id, new_status)
-        app_signals.task_updated.emit(0)
+        self._emit_task_updated_safely(0)
 
     def _on_row_subtask_deleted(self, subtask_id: int) -> None:
         self.repo.delete_subtask(subtask_id)
-        app_signals.task_updated.emit(0)
+        self._emit_task_updated_safely(0)
         self._refresh_agenda()
 
     def _on_row_subtask_renamed(self, subtask_id: int, new_title: str) -> None:
         self.repo.update_subtask_title(subtask_id, new_title)
-        app_signals.task_updated.emit(0)
+        self._emit_task_updated_safely(0)
 
     def _on_row_schedule_changed(self, task_id: int, new_date_str: str) -> None:
         self.repo.update_task_schedule(task_id, new_date_str if new_date_str else None)
-        self.task_updated.emit(task_id)
-        app_signals.task_updated.emit(task_id)
+        self._emit_task_updated_safely(task_id)
         self._refresh_month_grid()
         self._refresh_agenda()
 
     def _on_row_repeat_changed(self, task_id: int, new_repeat: str) -> None:
         self.repo.update_task_repeat(task_id, new_repeat)
-        self.task_updated.emit(task_id)
-        app_signals.task_updated.emit(task_id)
+        self._emit_task_updated_safely(task_id)
 
     def _on_submit_task(self) -> None:
         """Submit a new task pre-assigned to the selected date."""

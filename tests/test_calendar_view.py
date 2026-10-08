@@ -257,3 +257,41 @@ def test_calendar_view_delete_task(qapp, repo):
     assert task_id in deleted_signal_ids
 
     cal_view.close()
+
+
+def test_calendar_view_status_changed_no_flicker(qapp, repo):
+    """Test changing task status in CalendarView updates database and row without destroying widgets or flickering."""
+    today = date.today()
+    task_id = repo.create_task(
+        "Calendar Status Task",
+        project_tag="Work",
+        scheduled_date=today.strftime("%Y-%m-%d"),
+    )
+    assert task_id is not None
+
+    cal_view = CalendarView(repo, is_dark=True)
+    qapp.processEvents()
+
+    assert cal_view.task_list_layout.count() == 1
+    row = cal_view.task_list_layout.itemAt(0).widget()
+    assert row is not None
+
+    # Initial state
+    assert not row.checkbox.isChecked()
+
+    # Change status via row handler
+    cal_view._on_row_status_changed(task_id, "done")
+    qapp.processEvents()
+
+    # Verify task updated in repo
+    tasks = repo.get_task_hierarchy(target_date=today)
+    matching = next((t for t in tasks if t.id == task_id), None)
+    assert matching is not None
+    assert matching.status == "done"
+
+    # In day view, the row is preserved (not recreated)
+    assert cal_view.task_list_layout.count() == 1
+    same_row = cal_view.task_list_layout.itemAt(0).widget()
+    assert same_row is row
+
+    cal_view.close()

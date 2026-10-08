@@ -5726,9 +5726,13 @@ class QuickEntryDialog(QDialog):
 
     def _on_calendar_task_activity(self, task_id: int) -> None:
         """Handle task activity originating from Calendar view."""
-        self.refresh_tasks()
-        if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
-            self.project_dashboard_view.load_data()
+        self._suppress_task_activity_sync = True
+        try:
+            self.refresh_tasks()
+            if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
+                self.project_dashboard_view.load_data()
+        finally:
+            self._suppress_task_activity_sync = False
 
     def _on_background_session_polled(self, app_name: str, window_title: str, project_tag: str) -> None:
         """Handle background activity tracker polling to update active views in real-time."""
