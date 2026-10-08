@@ -107,7 +107,7 @@ def test_calendar_view_quick_presets_and_agenda(qapp, repo):
     cal_view.btn_today_preset.click()
     assert cal_view.active_preset is None
     assert cal_view.selected_date == today
-    assert not cal_view.add_bar_container.isHidden()
+    assert cal_view.add_bar_container.isHidden()
 
 
 def test_calendar_view_inline_task_scheduling(qapp, repo):
