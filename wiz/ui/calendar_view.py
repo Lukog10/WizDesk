@@ -4,23 +4,25 @@ Redesigned modern full-month calendar matching existing WizDesk design standards
 1. Month Grid View (Page 0):
    - One spacious, full-width/height card holding the month calendar.
    - Header Bar with previous/next month navigation, current Month & Year, 'Today' jump button,
-     Category filter dropdown, Tag filter dropdown, and prominent '+ Schedule' action button.
+     Category filter dropdown (with section icon), Tag filter dropdown (with tag icon), and '+ Schedule' action button.
    - Weekday headers matching existing calendar: Mo, Tu, We, Th, Fr, Sa, Su.
-   - Current date (Today) highlighted with WizDesk's accent color pill (#C2410C / #BA3F1A).
-   - Top-right corner of tile marked in RED for any date that has unfinished tasks.
+   - Current date (Today) highlighted with FULL ACCENT COLOR tile fill (#C2410C / #BA3F1A) like the reference design.
+   - Top-right corner of tile marked with a CROSS ICON (✕) in red for pending/unfinished tasks,
+     and a TICK ICON (✓) in green when all tasks for that date are finished.
    - Task dots rendered in their respective section / project colors (including upcoming tasks).
    - Single-clicking any date smoothly navigates to the Date Detail follow-up page.
 2. Date Detail View (Page 1):
-   - Header with '← Back to Calendar' button, date headline, task count badge,
+   - Header with Back Arrow ICON 'Back to Calendar' button, date headline, task count badge,
      category filter dropdown, tag filter dropdown, and '+ Schedule' button.
    - Interactive task list with full TaskRowWidget features (completion toggle, edit,
      section picker, tags, stopwatch, subtasks, delete, context menu).
    - Bottom-pinned task scheduling add bar.
 3. Schedule Task Modal Dialog:
    - Dedicated clean popup matching WizDesk's Create Section and Tag dialogs.
-   - Dropdown for section (+ Create Section option).
-   - Dropdown for tag (+ Create Tag option).
-   - Scheduled date with quick presets and calendar date picker.
+   - Dropdown for section with section/folder icon (+ Create Section option).
+   - Dropdown for tag with tag icon (+ Create Tag option).
+   - Scheduled date with quick presets (Today, Tomorrow, +7 Days) and calendar button opening
+     the existing CalendarPopupDialog matching WizDesk design colors.
 """
 
 from datetime import datetime, date, timedelta
@@ -36,6 +38,7 @@ from PyQt6.QtGui import (
     QMouseEvent,
     QPaintEvent,
     QKeyEvent,
+    QIcon,
 )
 from PyQt6.QtWidgets import (
     QWidget,
@@ -50,7 +53,6 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QStackedWidget,
     QDialog,
-    QDateEdit,
 )
 
 from wiz.core.config import config
@@ -63,8 +65,8 @@ from wiz.ui.arrow_combo import ArrowComboBox
 
 class MonthCalendarGridWidget(QWidget):
     """Custom-rendered monthly calendar grid with spacious day tiles, hover effects,
-    accent-colored current date, red top-right badge for unfinished tasks,
-    and task dots rendered in their project/section colors."""
+    full accent color fill for current date, cross icon (✕) for unfinished tasks,
+    tick icon (✓) for finished tasks, and task dots in project/section colors."""
 
     date_selected = pyqtSignal(date)
 
@@ -231,46 +233,37 @@ class MonthCalendarGridWidget(QWidget):
                 elif has_completed:
                     section_colors = ["#3B82F6"]
 
-            # Draw day tile surface
+            # Draw day tile surface: USE FULL ACCENT COLOR FOR CURRENT DATE LIKE THE IMAGE
             if is_current_month:
-                if is_selected:
-                    bg_color = selected_bg_color
-                    border_color = selected_border_color
-                    border_width = 1.5
+                if is_today:
+                    # Full accent color fill for current date!
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    painter.setBrush(accent_color)
+                    painter.drawRoundedRect(tile_rect, 7.0, 7.0)
+                elif is_selected:
+                    painter.setPen(selected_border_color)
+                    painter.setBrush(selected_bg_color)
+                    painter.drawRoundedRect(tile_rect, 7.0, 7.0)
                 elif is_hovered:
-                    bg_color = QColor(255, 255, 255, 14 if self.is_dark else 10)
-                    border_color = QColor(255, 255, 255, 40 if self.is_dark else 35)
-                    border_width = 1.0
-                elif is_today:
-                    bg_color = QColor(255, 255, 255, 8 if self.is_dark else 6)
-                    border_color = accent_color
-                    border_width = 1.5
+                    painter.setPen(QColor(255, 255, 255, 40 if self.is_dark else 35))
+                    painter.setBrush(QColor(255, 255, 255, 14 if self.is_dark else 10))
+                    painter.drawRoundedRect(tile_rect, 7.0, 7.0)
                 else:
-                    bg_color = QColor(255, 255, 255, 4 if self.is_dark else 4)
-                    border_color = QColor(255, 255, 255, 10 if self.is_dark else 12)
-                    border_width = 1.0
+                    painter.setPen(QColor(255, 255, 255, 10 if self.is_dark else 12))
+                    painter.setBrush(QColor(255, 255, 255, 4 if self.is_dark else 4))
+                    painter.drawRoundedRect(tile_rect, 7.0, 7.0)
             else:
-                bg_color = QColor(255, 255, 255, 2 if self.is_dark else 2)
-                border_color = QColor(255, 255, 255, 4 if self.is_dark else 5)
-                border_width = 1.0
+                painter.setPen(QColor(255, 255, 255, 4 if self.is_dark else 5))
+                painter.setBrush(QColor(255, 255, 255, 2 if self.is_dark else 2))
+                painter.drawRoundedRect(tile_rect, 7.0, 7.0)
 
-            painter.setPen(QColor(border_color))
-            painter.setBrush(bg_color)
-            painter.drawRoundedRect(tile_rect, 7.0, 7.0)
-
-            # Draw day number (Current date uses our accent color pill!)
+            # Draw day number
+            num_rect = QRectF(tile_rect.x() + 8.0, tile_rect.y() + 6.0, 24.0, 24.0)
             if is_today and is_current_month:
-                pill_size = 24.0
-                pill_rect = QRectF(tile_rect.x() + 8.0, tile_rect.y() + 6.0, pill_size, pill_size)
-                painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(accent_color)
-                painter.drawRoundedRect(pill_rect, 6.0, 6.0)
-
                 painter.setFont(get_font(10, QFont.Weight.Bold))
                 painter.setPen(QColor("#FFFFFF"))
-                painter.drawText(pill_rect, int(Qt.AlignmentFlag.AlignCenter), str(d.day))
+                painter.drawText(num_rect, int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), str(d.day))
             else:
-                num_rect = QRectF(tile_rect.x() + 8.0, tile_rect.y() + 6.0, 24.0, 24.0)
                 painter.setFont(get_font(10, QFont.Weight.Bold if is_selected else QFont.Weight.Medium))
                 if is_selected:
                     painter.setPen(QColor("#FAFAFA" if self.is_dark else "#18181B"))
@@ -280,34 +273,39 @@ class MonthCalendarGridWidget(QWidget):
                     painter.setPen(dim_text_color)
                 painter.drawText(num_rect, int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), str(d.day))
 
-            # Draw RED on top right if date has ANY unfinished task!
+            # Draw CROSS ICON (✕) for unfinished tasks, TICK ICON (✓) for all finished tasks
             if has_unfinished and is_current_month and total_tasks > 0:
-                badge_w = 18.0
+                badge_w = 26.0 if total_tasks > 1 else 18.0
                 badge_h = 16.0
                 badge_rect = QRectF(tile_rect.right() - badge_w - 6.0, tile_rect.y() + 6.0, badge_w, badge_h)
 
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(QColor("#EF4444"))  # Vibrant Red
+                # If on today tile (accent orange), use high-contrast dark red pill
+                badge_color = QColor("#991B1B") if is_today else QColor("#EF4444")
+                painter.setBrush(badge_color)
                 painter.drawRoundedRect(badge_rect, 4.0, 4.0)
 
                 painter.setFont(get_font(8, QFont.Weight.Bold))
                 painter.setPen(QColor("#FFFFFF"))
-                painter.drawText(badge_rect, int(Qt.AlignmentFlag.AlignCenter), str(total_tasks))
+                badge_text = f"✕ {total_tasks}" if total_tasks > 1 else "✕"
+                painter.drawText(badge_rect, int(Qt.AlignmentFlag.AlignCenter), badge_text)
             elif total_tasks > 0 and not has_unfinished and is_current_month:
-                # All tasks completed
+                # All tasks completed -> TICK ICON (✓)
                 badge_w = 18.0
                 badge_h = 16.0
                 badge_rect = QRectF(tile_rect.right() - badge_w - 6.0, tile_rect.y() + 6.0, badge_w, badge_h)
 
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(QColor(16, 185, 129, 45))
+                badge_color = QColor(255, 255, 255, 220) if is_today else QColor(16, 185, 129, 45)
+                tick_color = accent_color if is_today else QColor("#10B981")
+                painter.setBrush(badge_color)
                 painter.drawRoundedRect(badge_rect, 4.0, 4.0)
 
-                painter.setFont(get_font(8, QFont.Weight.Bold))
-                painter.setPen(QColor("#10B981"))
+                painter.setFont(get_font(9, QFont.Weight.Bold))
+                painter.setPen(tick_color)
                 painter.drawText(badge_rect, int(Qt.AlignmentFlag.AlignCenter), "✓")
 
-            # Draw task dots using SECTION COLORS (including for upcoming tasks)
+            # Draw task dots using SECTION COLORS (including upcoming tasks)
             if section_colors and is_current_month:
                 dots = section_colors[:4]
                 dot_radius = 3.0
@@ -316,9 +314,13 @@ class MonthCalendarGridWidget(QWidget):
                 start_x = tile_rect.center().x() - (total_w / 2.0)
                 dot_y = tile_rect.bottom() - 10.0
 
-                painter.setPen(Qt.PenStyle.NoPen)
                 for k, col_hex in enumerate(dots):
                     cx = start_x + k * (dot_radius * 2.0 + dot_gap) + dot_radius
+                    if is_today:
+                        # On accent fill, add subtle border to dots so they pop
+                        painter.setPen(QColor("#FFFFFF"))
+                    else:
+                        painter.setPen(Qt.PenStyle.NoPen)
                     painter.setBrush(QColor(col_hex))
                     painter.drawEllipse(QRectF(cx - dot_radius, dot_y - dot_radius, dot_radius * 2.0, dot_radius * 2.0))
 
@@ -331,8 +333,8 @@ class MonthCalendarGridWidget(QWidget):
 
 
 class ScheduleTaskModalDialog(QDialog):
-    """Clean modal dialog for scheduling tasks with section dropdown, tag dropdown,
-    and date choices matching WizDesk design standards."""
+    """Clean modal dialog for scheduling tasks with section dropdown (with folder icon),
+    tag dropdown (with tag icon), and calendar date button matching existing WizDesk design colors."""
 
     task_created = pyqtSignal(int)
 
@@ -449,7 +451,7 @@ class ScheduleTaskModalDialog(QDialog):
         self.input_title.returnPressed.connect(self._on_submit)
         card_layout.addWidget(self.input_title)
 
-        # 3. Section / Project Combo
+        # 3. Section / Project Combo with Folder Icon
         sec_lbl = QLabel("SECTION")
         sec_lbl.setFont(get_font(8, QFont.Weight.Bold))
         sec_lbl.setStyleSheet(f"color: {label_color}; letter-spacing: 0.5px; background: transparent; border: none;")
@@ -458,12 +460,13 @@ class ScheduleTaskModalDialog(QDialog):
         self.section_combo = ArrowComboBox(self.card, is_dark=self.is_dark)
         self.section_combo.setFixedHeight(34)
         self.section_combo.setFont(get_font(10))
+        self.section_combo.setIconSize(QSize(15, 15))
         self.section_combo.set_theme(self.is_dark)
         self.section_combo.currentIndexChanged.connect(self._on_section_changed)
         self._populate_sections()
         card_layout.addWidget(self.section_combo)
 
-        # 4. Tag Selector (Dropdown per user request)
+        # 4. Tag Selector Dropdown with Tag Icon
         tag_lbl = QLabel("TAG")
         tag_lbl.setFont(get_font(8, QFont.Weight.Bold))
         tag_lbl.setStyleSheet(f"color: {label_color}; letter-spacing: 0.5px; background: transparent; border: none;")
@@ -472,12 +475,13 @@ class ScheduleTaskModalDialog(QDialog):
         self.tag_combo = ArrowComboBox(self.card, is_dark=self.is_dark)
         self.tag_combo.setFixedHeight(34)
         self.tag_combo.setFont(get_font(10))
+        self.tag_combo.setIconSize(QSize(15, 15))
         self.tag_combo.set_theme(self.is_dark)
         self.tag_combo.currentIndexChanged.connect(self._on_tag_combo_changed)
         self._populate_tags_combo()
         card_layout.addWidget(self.tag_combo)
 
-        # 5. Scheduled Date Selector
+        # 5. Scheduled Date Selector matching existing design colors
         date_lbl = QLabel("SCHEDULE DATE")
         date_lbl.setFont(get_font(8, QFont.Weight.Bold))
         date_lbl.setStyleSheet(f"color: {label_color}; letter-spacing: 0.5px; background: transparent; border: none;")
@@ -486,12 +490,12 @@ class ScheduleTaskModalDialog(QDialog):
         date_row = QHBoxLayout()
         date_row.setSpacing(8)
 
-        # Quick preset buttons: Today, Tomorrow, Next Week
+        # Quick preset buttons: Today, Tomorrow, +7 Days
         self.btn_date_today = QPushButton("Today")
         self.btn_date_tomorrow = QPushButton("Tomorrow")
         self.btn_date_nextweek = QPushButton("+7 Days")
         for btn in (self.btn_date_today, self.btn_date_tomorrow, self.btn_date_nextweek):
-            btn.setFixedHeight(28)
+            btn.setFixedHeight(30)
             btn.setFont(get_font(9, QFont.Weight.Medium))
             btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn.setStyleSheet(f"""
@@ -515,25 +519,32 @@ class ScheduleTaskModalDialog(QDialog):
         date_row.addWidget(self.btn_date_tomorrow)
         date_row.addWidget(self.btn_date_nextweek)
 
-        # Date input / editor
-        self.date_edit = QDateEdit()
-        self.date_edit.setCalendarPopup(True)
-        self.date_edit.setDate(QDate(self.selected_date.year, self.selected_date.month, self.selected_date.day))
-        self.date_edit.setFixedHeight(28)
-        self.date_edit.setFont(get_font(9))
-        self.date_edit.setStyleSheet(f"""
-            QDateEdit {{
+        # Calendar Date Picker button opening existing CalendarPopupDialog
+        self.date_btn = QPushButton()
+        self.date_btn.setFixedHeight(30)
+        self.date_btn.setFont(get_font(9, QFont.Weight.Medium))
+        self.date_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        cal_icon = get_status_icon("schedule.svg", "#A1A1AA" if self.is_dark else "#71717A", size=14)
+        self.date_btn.setIcon(cal_icon)
+        self.date_btn.setIconSize(QSize(14, 14))
+        self.date_btn.setStyleSheet(f"""
+            QPushButton {{
                 background-color: {input_bg};
                 color: {input_text};
                 border: 1px solid {input_border};
                 border-radius: 6px;
-                padding: 0 6px;
+                padding: 0 10px;
+                text-align: left;
+            }}
+            QPushButton:hover {{
+                border-color: {input_focus_border};
             }}
         """)
-        self.date_edit.dateChanged.connect(lambda qd: self._set_date(date(qd.year(), qd.month(), qd.day())))
-        date_row.addWidget(self.date_edit, stretch=1)
-        card_layout.addLayout(date_row)
+        self.date_btn.clicked.connect(self._open_calendar_popup)
+        self._update_date_button_text()
+        date_row.addWidget(self.date_btn, stretch=1)
 
+        card_layout.addLayout(date_row)
         card_layout.addStretch()
 
         # 6. Action buttons
@@ -581,13 +592,23 @@ class ScheduleTaskModalDialog(QDialog):
 
         card_layout.addLayout(btn_row)
 
+    def _update_date_button_text(self) -> None:
+        self.date_btn.setText(self.selected_date.strftime("%B %d, %Y"))
+
+    def _open_calendar_popup(self) -> None:
+        from wiz.ui.popup_dialog import CalendarPopupDialog
+        dlg = CalendarPopupDialog(self.selected_date, parent=self, is_dark=self.is_dark)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._set_date(dlg.selected_date)
+
     def _set_date(self, target_date: date) -> None:
         self.selected_date = target_date
-        self.date_edit.blockSignals(True)
-        self.date_edit.setDate(QDate(target_date.year, target_date.month, target_date.day))
-        self.date_edit.blockSignals(False)
+        self._update_date_button_text()
 
     def _populate_sections(self) -> None:
+        icon_color = "#A1A1AA" if self.is_dark else "#71717A"
+        folder_icon = get_status_icon("folder.svg", icon_color, size=14)
+
         projects = self.repo.get_all_projects()
         names = [p.name for p in projects]
         if not names:
@@ -596,7 +617,7 @@ class ScheduleTaskModalDialog(QDialog):
         self.section_combo.blockSignals(True)
         self.section_combo.clear()
         for name in names:
-            self.section_combo.addItem(name)
+            self.section_combo.addItem(folder_icon, name)
         self.section_combo.addItem("+ Create Section...")
         self.section_combo.blockSignals(False)
 
@@ -615,12 +636,15 @@ class ScheduleTaskModalDialog(QDialog):
                 self.section_combo.setCurrentIndex(0)
 
     def _populate_tags_combo(self) -> None:
+        icon_color = "#A1A1AA" if self.is_dark else "#71717A"
+        tag_icon = get_status_icon("tag.svg", icon_color, size=14)
+
         all_tags = self.repo.get_all_tags()
         self.tag_combo.blockSignals(True)
         self.tag_combo.clear()
         self.tag_combo.addItem("No Tag", userData=None)
         for t in all_tags:
-            self.tag_combo.addItem(t.name, userData=t.id)
+            self.tag_combo.addItem(tag_icon, t.name, userData=t.id)
         self.tag_combo.addItem("+ Create Tag...", userData="create")
         self.tag_combo.blockSignals(False)
 
@@ -753,10 +777,10 @@ class CategoryFilterButton(QPushButton):
 class CalendarView(QWidget):
     """Redesigned Calendar and Scheduling View for WizDesk.
     Features:
-    1. Spacious Full-Month Calendar View with month navigation, Category & Tag filter dropdowns,
+    1. Spacious Full-Month Calendar View with month navigation, Category & Tag filter dropdowns (with icons),
        and '+ Schedule' modal button.
-    2. Date Detail View: smooth in-workspace follow-up page opened when clicking a date.
-    3. '+ Schedule' modal dialog with section dropdown, tag dropdown, and date options.
+    2. Date Detail View: smooth in-workspace follow-up page opened when clicking a date, with back icon.
+    3. '+ Schedule' modal dialog with section dropdown (folder icon), tag dropdown (tag icon), and existing calendar popup.
     """
 
     task_created = pyqtSignal(int)
@@ -810,8 +834,6 @@ class CalendarView(QWidget):
         self.btn_overdue_preset.clicked.connect(self._on_select_overdue_preset)
 
         # Sub-Stack Widget for smooth page switching
-        # Index 0: Month Grid Page (One Huge Block of Calendar)
-        # Index 1: Date Detail Page (Follow-up Page like Notes)
         self.sub_stack = QStackedWidget(self)
         self.main_layout.addWidget(self.sub_stack)
 
@@ -860,18 +882,20 @@ class CalendarView(QWidget):
 
         top_bar.addStretch()
 
-        # Category Filter Dropdown
+        # Category Filter Dropdown with Folder Icon
         self.category_combo = ArrowComboBox(self.calendar_card, is_dark=self.is_dark)
         self.category_combo.setFixedHeight(30)
-        self.category_combo.setMinimumWidth(125)
+        self.category_combo.setMinimumWidth(130)
+        self.category_combo.setIconSize(QSize(14, 14))
         self.category_combo.setFont(get_font(9))
         self.category_combo.currentIndexChanged.connect(self._on_category_combo_changed)
         top_bar.addWidget(self.category_combo)
 
-        # Tag Filter Dropdown
+        # Tag Filter Dropdown with Tag Icon
         self.tag_filter_combo = ArrowComboBox(self.calendar_card, is_dark=self.is_dark)
         self.tag_filter_combo.setFixedHeight(30)
-        self.tag_filter_combo.setMinimumWidth(115)
+        self.tag_filter_combo.setMinimumWidth(120)
+        self.tag_filter_combo.setIconSize(QSize(14, 14))
         self.tag_filter_combo.setFont(get_font(9))
         self.tag_filter_combo.currentIndexChanged.connect(self._on_tag_filter_combo_changed)
         top_bar.addWidget(self.tag_filter_combo)
@@ -903,14 +927,15 @@ class CalendarView(QWidget):
         agenda_layout.setContentsMargins(16, 14, 16, 14)
         agenda_layout.setSpacing(10)
 
-        # Header: [ ← Back to Calendar ] [ Date Title ] [ Count Badge ] ... [ Category ] [ Tag ] [ + Schedule ]
+        # Header: [ Back Icon Button ] [ Date Title ] [ Count Badge ] ... [ Category ] [ Tag ] [ + Schedule ]
         agenda_top_bar = QHBoxLayout()
         agenda_top_bar.setContentsMargins(0, 0, 0, 0)
         agenda_top_bar.setSpacing(8)
 
-        self.btn_back_to_cal = QPushButton("← Back to Calendar")
+        self.btn_back_to_cal = QPushButton("Back to Calendar")
         self.btn_back_to_cal.setFixedHeight(30)
         self.btn_back_to_cal.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.btn_back_to_cal.setIconSize(QSize(15, 15))
         self.btn_back_to_cal.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_back_to_cal.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.btn_back_to_cal.clicked.connect(self._on_back_to_calendar)
@@ -929,14 +954,16 @@ class CalendarView(QWidget):
 
         self.detail_category_combo = ArrowComboBox(self.agenda_card, is_dark=self.is_dark)
         self.detail_category_combo.setFixedHeight(30)
-        self.detail_category_combo.setMinimumWidth(125)
+        self.detail_category_combo.setMinimumWidth(130)
+        self.detail_category_combo.setIconSize(QSize(14, 14))
         self.detail_category_combo.setFont(get_font(9))
         self.detail_category_combo.currentIndexChanged.connect(self._on_detail_category_combo_changed)
         agenda_top_bar.addWidget(self.detail_category_combo)
 
         self.detail_tag_filter_combo = ArrowComboBox(self.agenda_card, is_dark=self.is_dark)
         self.detail_tag_filter_combo.setFixedHeight(30)
-        self.detail_tag_filter_combo.setMinimumWidth(115)
+        self.detail_tag_filter_combo.setMinimumWidth(120)
+        self.detail_tag_filter_combo.setIconSize(QSize(14, 14))
         self.detail_tag_filter_combo.setFont(get_font(9))
         self.detail_tag_filter_combo.currentIndexChanged.connect(self._on_detail_tag_filter_combo_changed)
         agenda_top_bar.addWidget(self.detail_tag_filter_combo)
@@ -990,7 +1017,8 @@ class CalendarView(QWidget):
 
         self.section_combo = ArrowComboBox(self.add_bar_container, is_dark=self.is_dark)
         self.section_combo.setFixedHeight(34)
-        self.section_combo.setFixedWidth(130)
+        self.section_combo.setFixedWidth(135)
+        self.section_combo.setIconSize(QSize(14, 14))
         self.section_combo.setFont(get_font(10))
         add_bar_layout.addWidget(self.section_combo)
 
@@ -1080,7 +1108,22 @@ class CalendarView(QWidget):
             }}
         """
         self.btn_jump_today.setStyleSheet(jump_btn_qss)
-        self.btn_back_to_cal.setStyleSheet(jump_btn_qss)
+
+        # Back button with back arrow icon
+        back_icon = get_status_icon("arrow_back_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg", text_primary, size=16)
+        self.btn_back_to_cal.setIcon(back_icon)
+        self.btn_back_to_cal.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {btn_nav_bg};
+                color: {text_primary};
+                border: 1px solid {card_border};
+                border-radius: 6px;
+                padding: 0 10px;
+            }}
+            QPushButton:hover {{
+                background-color: {btn_nav_hover};
+            }}
+        """)
 
         action_btn_qss = f"""
             QPushButton {{
@@ -1165,7 +1208,10 @@ class CalendarView(QWidget):
         self._refresh_agenda()
 
     def _populate_sections(self) -> None:
-        """Populate project section combobox."""
+        """Populate project section combobox with folder icons."""
+        icon_color = "#A1A1AA" if self.is_dark else "#71717A"
+        folder_icon = get_status_icon("folder.svg", icon_color, size=14)
+
         projects = self.repo.get_all_projects()
         names = [p.name for p in projects]
         if not names:
@@ -1175,7 +1221,7 @@ class CalendarView(QWidget):
         self.section_combo.blockSignals(True)
         self.section_combo.clear()
         for name in names:
-            self.section_combo.addItem(name)
+            self.section_combo.addItem(folder_icon, name)
         if cur and cur in names:
             self.section_combo.setCurrentText(cur)
         elif names:
@@ -1183,32 +1229,39 @@ class CalendarView(QWidget):
         self.section_combo.blockSignals(False)
 
     def _populate_categories(self) -> None:
-        """Populate category filter dropdowns."""
+        """Populate category filter dropdowns with folder icons."""
+        icon_color = "#A1A1AA" if self.is_dark else "#71717A"
+        folder_icon = get_status_icon("folder.svg", icon_color, size=14)
+
         projects = self.repo.get_all_projects()
-        names = ["All Categories"] + [p.name for p in projects]
+        names = [p.name for p in projects]
 
         for combo in (self.category_combo, self.detail_category_combo):
             cur = combo.currentText()
             combo.blockSignals(True)
             combo.clear()
+            combo.addItem(folder_icon, "All Categories")
             for name in names:
-                combo.addItem(name)
-            if cur and cur in names:
+                combo.addItem(folder_icon, name)
+            if cur and cur in (["All Categories"] + names):
                 combo.setCurrentText(cur)
             else:
                 combo.setCurrentIndex(0)
             combo.blockSignals(False)
 
     def _populate_tag_filters(self) -> None:
-        """Populate tag filter dropdowns."""
+        """Populate tag filter dropdowns with tag icons."""
+        icon_color = "#A1A1AA" if self.is_dark else "#71717A"
+        tag_icon = get_status_icon("tag.svg", icon_color, size=14)
+
         all_tags = self.repo.get_all_tags()
         for combo in (self.tag_filter_combo, self.detail_tag_filter_combo):
             cur_data = combo.currentData()
             combo.blockSignals(True)
             combo.clear()
-            combo.addItem("All Tags", userData=None)
+            combo.addItem(tag_icon, "All Tags", userData=None)
             for t in all_tags:
-                combo.addItem(t.name, userData=t.id)
+                combo.addItem(tag_icon, t.name, userData=t.id)
             if cur_data is not None:
                 idx = combo.findData(cur_data)
                 if idx >= 0:
