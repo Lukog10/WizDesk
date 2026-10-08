@@ -14,7 +14,7 @@ Implements the exact layout hierarchy:
 import sys
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QDate, QTimer, QSize, QEvent
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -23,6 +23,7 @@ from PyQt6.QtGui import (
     QKeyEvent,
     QCursor,
     QTextCharFormat,
+    QTextCursor,
     QGuiApplication,
 )
 from PyQt6.QtWidgets import (
@@ -3373,11 +3374,20 @@ class NoteRowWidget(QWidget):
         repo: Optional[StorageRepository] = None,
     ):
         super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.note = note
         self.note_id = note.id or 0
         self.all_projects = all_projects
         self.is_dark = is_dark
         self.repo = repo
+
+        self.setStyleSheet("""
+            NoteRowWidget {
+                background-color: transparent;
+                border: 1px solid transparent;
+                border-radius: 6px;
+            }
+        """)
 
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(8, 6, 8, 6)
@@ -3400,6 +3410,7 @@ class NoteRowWidget(QWidget):
         else:
             self.label = QLabel(display_title)
         self.label.setFont(get_font(10))
+        self.label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._update_text_style(note.is_completed)
         content_layout.addWidget(self.label)
 
@@ -3456,6 +3467,7 @@ class NoteRowWidget(QWidget):
                 font-size: 11px;
             }}
         """)
+        self.time_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         meta_layout.addWidget(self.time_lbl)
         self.time_lbl.hide()
         meta_layout.addStretch()
@@ -3479,17 +3491,25 @@ class NoteRowWidget(QWidget):
 
     def enterEvent(self, event) -> None:
         super().enterEvent(event)
-        hover_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "rgba(0, 0, 0, 0.04)"
+        hover_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "rgba(0, 0, 0, 0.03)"
+        hover_border = "rgba(255, 255, 255, 0.10)" if self.is_dark else "rgba(0, 0, 0, 0.08)"
         self.setStyleSheet(f"""
             NoteRowWidget {{
                 background-color: {hover_bg};
-                border-radius: 8px;
+                border: 1px solid {hover_border};
+                border-radius: 6px;
             }}
         """)
 
     def leaveEvent(self, event) -> None:
         super().leaveEvent(event)
-        self.setStyleSheet("NoteRowWidget { background-color: transparent; }")
+        self.setStyleSheet("""
+            NoteRowWidget {
+                background-color: transparent;
+                border: 1px solid transparent;
+                border-radius: 6px;
+            }
+        """)
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -3643,6 +3663,7 @@ class NoteCardWidget(QWidget):
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.note = note
         self.note_id = note.id or 0
         self.is_selected = is_selected
@@ -3917,6 +3938,7 @@ class NoteEditorWidget(QWidget):
         self.text_edit.setFont(get_font(10))
         self.text_edit.setPlaceholderText("Start writing your note in Markdown... Use # Headers, - Lists, bold, and code")
         self.text_edit.textChanged.connect(self._on_content_changed)
+        self.text_edit.installEventFilter(self)
         editor_layout.addWidget(self.text_edit, stretch=1)
 
         # Markdown rich preview browser
@@ -3924,6 +3946,104 @@ class NoteEditorWidget(QWidget):
         self.preview_browser.setOpenExternalLinks(True)
         self.preview_browser.hide()
         editor_layout.addWidget(self.preview_browser, stretch=1)
+
+        # Markdown utility tools toolbar (Text styles, Headings, Lists, Quotes, Code, Insert)
+        self.md_toolbar = QFrame(self.editor_widget)
+        self.md_toolbar.setObjectName("MarkdownToolbar")
+        self.md_toolbar.setFixedHeight(34)
+        md_tb_layout = QHBoxLayout(self.md_toolbar)
+        md_tb_layout.setContentsMargins(6, 2, 6, 2)
+        md_tb_layout.setSpacing(3)
+
+        def _make_tool_btn(label: str, action_key: str, tooltip: str, min_w: int = 24) -> QPushButton:
+            btn = QPushButton(label, self.md_toolbar)
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setToolTip(tooltip)
+            btn.setMinimumWidth(min_w)
+            btn.setFixedHeight(24)
+            btn.clicked.connect(lambda: self._apply_markdown(action_key))
+            return btn
+
+        def _make_sep() -> QFrame:
+            sep = QFrame(self.md_toolbar)
+            sep.setFrameShape(QFrame.Shape.VLine)
+            sep.setFixedWidth(1)
+            sep.setFixedHeight(16)
+            sep.setObjectName("ToolbarSep")
+            return sep
+
+        # Text styles
+        self.btn_bold = _make_tool_btn("B", "bold", "Bold (Ctrl+B)", 26)
+        self.btn_bold.setFont(get_font(10, QFont.Weight.Bold))
+        md_tb_layout.addWidget(self.btn_bold)
+
+        self.btn_italic = _make_tool_btn("I", "italic", "Italic (Ctrl+I)", 24)
+        self.btn_italic.setFont(QFont("Georgia" if sys.platform == "win32" else FONT_SANS, 10, QFont.Weight.Normal, italic=True))
+        md_tb_layout.addWidget(self.btn_italic)
+
+        self.btn_strike = _make_tool_btn("S", "strikethrough", "Strikethrough (Ctrl+Shift+X)", 24)
+        f_strike = get_font(10)
+        f_strike.setStrikeOut(True)
+        self.btn_strike.setFont(f_strike)
+        md_tb_layout.addWidget(self.btn_strike)
+
+        md_tb_layout.addWidget(_make_sep())
+
+        # Headings
+        self.btn_h1 = _make_tool_btn("H1", "h1", "Heading 1 (#)", 28)
+        self.btn_h1.setFont(get_font(9.5, QFont.Weight.Bold))
+        md_tb_layout.addWidget(self.btn_h1)
+
+        self.btn_h2 = _make_tool_btn("H2", "h2", "Heading 2 (##)", 28)
+        self.btn_h2.setFont(get_font(9.5, QFont.Weight.Bold))
+        md_tb_layout.addWidget(self.btn_h2)
+
+        self.btn_h3 = _make_tool_btn("H3", "h3", "Heading 3 (###)", 28)
+        self.btn_h3.setFont(get_font(9.5, QFont.Weight.Bold))
+        md_tb_layout.addWidget(self.btn_h3)
+
+        md_tb_layout.addWidget(_make_sep())
+
+        # Lists & Tasks
+        self.btn_bullet = _make_tool_btn("• List", "bullet_list", "Bulleted List (-)", 46)
+        md_tb_layout.addWidget(self.btn_bullet)
+
+        self.btn_num = _make_tool_btn("1. List", "num_list", "Numbered List (1.)", 46)
+        md_tb_layout.addWidget(self.btn_num)
+
+        self.btn_task = _make_tool_btn("☑ Task", "task_list", "Task / Checklist (- [ ])", 52)
+        md_tb_layout.addWidget(self.btn_task)
+
+        md_tb_layout.addWidget(_make_sep())
+
+        # Quotes & Code
+        self.btn_quote = _make_tool_btn("” Quote", "quote", "Blockquote (>)", 50)
+        md_tb_layout.addWidget(self.btn_quote)
+
+        self.btn_code = _make_tool_btn("` ` Code", "code_inline", "Inline Code (Ctrl+Shift+C)", 52)
+        self.btn_code.setFont(QFont(FONT_MONO, 9, QFont.Weight.Medium))
+        md_tb_layout.addWidget(self.btn_code)
+
+        self.btn_block = _make_tool_btn("``` Block", "code_block", "Code Block", 56)
+        self.btn_block.setFont(QFont(FONT_MONO, 9, QFont.Weight.Medium))
+        md_tb_layout.addWidget(self.btn_block)
+
+        md_tb_layout.addWidget(_make_sep())
+
+        # Insert
+        self.btn_link = _make_tool_btn("🔗 Link", "link", "Insert Link (Ctrl+K)", 50)
+        md_tb_layout.addWidget(self.btn_link)
+
+        self.btn_line = _make_tool_btn("— Line", "divider", "Horizontal Rule (---)", 48)
+        md_tb_layout.addWidget(self.btn_line)
+
+        self.btn_table = _make_tool_btn("▦ Table", "table", "Insert Table", 52)
+        md_tb_layout.addWidget(self.btn_table)
+
+        md_tb_layout.addStretch()
+
+        editor_layout.addWidget(self.md_toolbar)
 
         # Bottom info bar: Save status and Word count
         bot_bar = QHBoxLayout()
@@ -3963,6 +4083,8 @@ class NoteEditorWidget(QWidget):
             self.preview_browser.setMarkdown(md_content)
             self._update_preview_style()
             self.text_edit.hide()
+            if hasattr(self, "md_toolbar"):
+                self.md_toolbar.hide()
             self.preview_browser.show()
             self.mode_btn.setText(" Write")
             self.mode_btn.setIcon(get_status_icon("icons/rename.svg", fg, 14))
@@ -3970,6 +4092,8 @@ class NoteEditorWidget(QWidget):
             self.is_preview_mode = False
             self.preview_browser.hide()
             self.text_edit.show()
+            if hasattr(self, "md_toolbar"):
+                self.md_toolbar.show()
             self.mode_btn.setText(" Preview")
             self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", fg, 14))
 
@@ -4136,6 +4260,223 @@ class NoteEditorWidget(QWidget):
         self.save_status_lbl.setStyleSheet("color: #10B981; font-weight: 500;")
         self.note_updated.emit(self.active_note.id)
 
+    def eventFilter(self, obj, event):
+        if obj is self.text_edit and event.type() == QEvent.Type.KeyPress:
+            mods = event.modifiers()
+            key = event.key()
+            if mods == Qt.KeyboardModifier.ControlModifier:
+                if key == Qt.Key.Key_B:
+                    self._apply_markdown("bold")
+                    return True
+                elif key == Qt.Key.Key_I:
+                    self._apply_markdown("italic")
+                    return True
+                elif key == Qt.Key.Key_K:
+                    self._apply_markdown("link")
+                    return True
+            elif mods == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier):
+                if key == Qt.Key.Key_X:
+                    self._apply_markdown("strikethrough")
+                    return True
+                elif key == Qt.Key.Key_C:
+                    self._apply_markdown("code_inline")
+                    return True
+        return super().eventFilter(obj, event)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """Handle formatting keyboard shortcuts when text editor is active."""
+        if hasattr(self, "text_edit") and self.text_edit.hasFocus():
+            mods = event.modifiers()
+            key = event.key()
+            if mods == Qt.KeyboardModifier.ControlModifier:
+                if key == Qt.Key.Key_B:
+                    self._apply_markdown("bold")
+                    return
+                elif key == Qt.Key.Key_I:
+                    self._apply_markdown("italic")
+                    return
+                elif key == Qt.Key.Key_K:
+                    self._apply_markdown("link")
+                    return
+            elif mods == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier):
+                if key == Qt.Key.Key_X:
+                    self._apply_markdown("strikethrough")
+                    return
+                elif key == Qt.Key.Key_C:
+                    self._apply_markdown("code_inline")
+                    return
+        super().keyPressEvent(event)
+
+    def _apply_markdown(self, action_type: str) -> None:
+        """Apply markdown syntax to current text selection or cursor position."""
+        cursor = self.text_edit.textCursor()
+        has_sel = cursor.hasSelection()
+        selected_text = cursor.selectedText()
+
+        if action_type == "bold":
+            if has_sel:
+                if selected_text.startswith("**") and selected_text.endswith("**") and len(selected_text) >= 4:
+                    cursor.insertText(selected_text[2:-2])
+                else:
+                    cursor.insertText(f"**{selected_text}**")
+            else:
+                cursor.insertText("**bold text**")
+                pos = cursor.position()
+                cursor.setPosition(pos - 11)
+                cursor.setPosition(pos - 2, QTextCursor.MoveMode.KeepAnchor)
+                self.text_edit.setTextCursor(cursor)
+                self.text_edit.setFocus()
+                return
+
+        elif action_type == "italic":
+            is_italic_wrapped = (
+                selected_text.startswith("*")
+                and selected_text.endswith("*")
+                and len(selected_text) >= 2
+                and (not selected_text.startswith("**") or selected_text.startswith("***"))
+                and (not selected_text.endswith("**") or selected_text.endswith("***"))
+            )
+            if has_sel:
+                if is_italic_wrapped:
+                    cursor.insertText(selected_text[1:-1])
+                else:
+                    cursor.insertText(f"*{selected_text}*")
+            else:
+                cursor.insertText("*italic text*")
+                pos = cursor.position()
+                cursor.setPosition(pos - 12)
+                cursor.setPosition(pos - 1, QTextCursor.MoveMode.KeepAnchor)
+                self.text_edit.setTextCursor(cursor)
+                self.text_edit.setFocus()
+                return
+
+        elif action_type == "strikethrough":
+            if has_sel:
+                if selected_text.startswith("~~") and selected_text.endswith("~~") and len(selected_text) >= 4:
+                    cursor.insertText(selected_text[2:-2])
+                else:
+                    cursor.insertText(f"~~{selected_text}~~")
+            else:
+                cursor.insertText("~~strikethrough~~")
+                pos = cursor.position()
+                cursor.setPosition(pos - 15)
+                cursor.setPosition(pos - 2, QTextCursor.MoveMode.KeepAnchor)
+                self.text_edit.setTextCursor(cursor)
+                self.text_edit.setFocus()
+                return
+
+        elif action_type in ("h1", "h2", "h3"):
+            prefix_map = {"h1": "# ", "h2": "## ", "h3": "### "}
+            prefix = prefix_map[action_type]
+            cursor.beginEditBlock()
+            cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
+            line_cursor = QTextCursor(cursor)
+            line_cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
+            line_text = line_cursor.selectedText()
+            for p in ["### ", "## ", "# "]:
+                if line_text.startswith(p):
+                    line_text = line_text[len(p):]
+                    break
+            line_cursor.insertText(prefix + line_text)
+            cursor.endEditBlock()
+            self.text_edit.setFocus()
+            return
+
+        elif action_type in ("bullet_list", "num_list", "task_list", "quote"):
+            prefix_map = {
+                "bullet_list": "- ",
+                "num_list": "1. ",
+                "task_list": "- [ ] ",
+                "quote": "> ",
+            }
+            prefix = prefix_map[action_type]
+            cursor.beginEditBlock()
+            if has_sel:
+                start = cursor.selectionStart()
+                end = cursor.selectionEnd()
+                cursor.setPosition(start)
+                cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
+                cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
+                cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
+                selected_block = cursor.selectedText()
+                lines = selected_block.replace("\u2029", "\n").split("\n")
+                new_lines = [f"{prefix}{line}" if not line.startswith(prefix) else line[len(prefix):] for line in lines]
+                cursor.insertText("\n".join(new_lines))
+            else:
+                cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
+                line_cursor = QTextCursor(cursor)
+                line_cursor.movePosition(QTextCursor.MoveOperation.EndOfLine, QTextCursor.MoveMode.KeepAnchor)
+                line_text = line_cursor.selectedText()
+                if line_text.startswith(prefix):
+                    line_cursor.insertText(line_text[len(prefix):])
+                else:
+                    line_cursor.insertText(prefix + line_text)
+            cursor.endEditBlock()
+            self.text_edit.setFocus()
+            return
+
+        elif action_type == "code_inline":
+            if has_sel:
+                if selected_text.startswith("`") and selected_text.endswith("`") and len(selected_text) >= 2:
+                    cursor.insertText(selected_text[1:-1])
+                else:
+                    cursor.insertText(f"`{selected_text}`")
+            else:
+                cursor.insertText("`code`")
+                pos = cursor.position()
+                cursor.setPosition(pos - 5)
+                cursor.setPosition(pos - 1, QTextCursor.MoveMode.KeepAnchor)
+                self.text_edit.setTextCursor(cursor)
+                self.text_edit.setFocus()
+                return
+
+        elif action_type == "code_block":
+            cursor.beginEditBlock()
+            if has_sel:
+                cursor.insertText(f"```\n{selected_text}\n```\n")
+            else:
+                cursor.insertText("```\n// code\n```\n")
+            cursor.endEditBlock()
+            self.text_edit.setFocus()
+            return
+
+        elif action_type == "link":
+            if has_sel:
+                cursor.insertText(f"[{selected_text}](https://)")
+            else:
+                cursor.insertText("[link text](https://example.com)")
+                pos = cursor.position()
+                cursor.setPosition(pos - 32)
+                cursor.setPosition(pos - 21, QTextCursor.MoveMode.KeepAnchor)
+                self.text_edit.setTextCursor(cursor)
+                self.text_edit.setFocus()
+                return
+
+        elif action_type == "divider":
+            cursor.beginEditBlock()
+            cursor.movePosition(QTextCursor.MoveOperation.EndOfLine)
+            cursor.insertText("\n\n---\n\n")
+            cursor.endEditBlock()
+            self.text_edit.setFocus()
+            return
+
+        elif action_type == "table":
+            table_tpl = (
+                "\n| Header 1 | Header 2 | Header 3 |\n"
+                "| :------- | :------: | -------: |\n"
+                "| Cell 1   | Cell 2   | Cell 3   |\n"
+                "| Cell 4   | Cell 5   | Cell 6   |\n\n"
+            )
+            cursor.beginEditBlock()
+            cursor.movePosition(QTextCursor.MoveOperation.EndOfLine)
+            cursor.insertText(table_tpl)
+            cursor.endEditBlock()
+            self.text_edit.setFocus()
+            return
+
+        self.text_edit.setTextCursor(cursor)
+        self.text_edit.setFocus()
+
     def _on_back_clicked(self) -> None:
         """Save changes and signal to return back to notes list view."""
         if self.save_timer.isActive():
@@ -4204,6 +4545,43 @@ class NoteEditorWidget(QWidget):
             else:
                 self.mode_btn.setText(" Preview")
                 self.mode_btn.setIcon(get_status_icon("icons/preview-svgrepo-com.svg", back_fg, 14))
+
+        if hasattr(self, "md_toolbar"):
+            tb_bg = "rgba(255, 255, 255, 0.03)" if is_dark else "rgba(0, 0, 0, 0.02)"
+            tb_border = "#27272A" if is_dark else "#E4E4E7"
+            tb_btn_color = "#A1A1AA" if is_dark else "#71717A"
+            tb_btn_hover_bg = "rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.05)"
+            tb_btn_hover_color = "#FFFFFF" if is_dark else "#18181B"
+            sep_color = "rgba(255, 255, 255, 0.10)" if is_dark else "rgba(0, 0, 0, 0.08)"
+
+            self.md_toolbar.setStyleSheet(f"""
+                QFrame#MarkdownToolbar {{
+                    background-color: {tb_bg};
+                    border: 1px solid {tb_border};
+                    border-radius: 6px;
+                }}
+                QPushButton {{
+                    background: transparent;
+                    color: {tb_btn_color};
+                    border: 1px solid transparent;
+                    border-radius: 4px;
+                    padding: 2px 4px;
+                    font-family: {FONT_SANS};
+                    font-size: 11px;
+                    font-weight: 600;
+                }}
+                QPushButton:hover {{
+                    background-color: {tb_btn_hover_bg};
+                    color: {tb_btn_hover_color};
+                    border-color: {tb_border};
+                }}
+                QPushButton:pressed {{
+                    background-color: rgba(186, 63, 26, 0.2);
+                    color: #BA3F1A;
+                }}
+            """)
+            for sep in self.md_toolbar.findChildren(QFrame, "ToolbarSep"):
+                sep.setStyleSheet(f"background-color: {sep_color}; border: none;")
 
         self.title_input.setStyleSheet(f"""
             QLineEdit {{
@@ -5464,6 +5842,10 @@ class QuickEntryDialog(QDialog):
             self.notes_search.setStyleSheet(input_qss)
         if hasattr(self, "note_editor"):
             self.note_editor.set_theme(self.is_dark)
+        if hasattr(self, "notes_content_widget"):
+            div_col = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.06)"
+            for div in self.notes_content_widget.findChildren(QFrame, "NoteDivider"):
+                div.setStyleSheet(f"background-color: {div_col}; border: none;")
 
         btn_action_qss = f"""
             QPushButton {{
@@ -6018,7 +6400,7 @@ class QuickEntryDialog(QDialog):
             self.notes_content_layout.addStretch()
             return
 
-        for note in notes:
+        for i, note in enumerate(notes):
             row = NoteRowWidget(
                 note=note,
                 all_projects=all_projects,
@@ -6031,6 +6413,14 @@ class QuickEntryDialog(QDialog):
             row.project_changed.connect(self._on_note_project_changed)
             row.open_requested.connect(self._on_open_note_dialog)
             self.notes_content_layout.addWidget(row)
+
+            if i < len(notes) - 1:
+                divider_color = "rgba(255, 255, 255, 0.08)" if self.is_dark else "rgba(0, 0, 0, 0.06)"
+                divider = QFrame(self.notes_content_widget)
+                divider.setFixedHeight(1)
+                divider.setObjectName("NoteDivider")
+                divider.setStyleSheet(f"background-color: {divider_color}; border: none;")
+                self.notes_content_layout.addWidget(divider)
 
         self.notes_content_layout.addStretch()
 

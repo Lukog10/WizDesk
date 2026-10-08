@@ -291,7 +291,7 @@ def test_permanent_notes_workspace_widget(qapp, repo: StorageRepository):
 
 
 def test_note_row_widget_open_and_badges(qapp, repo: StorageRepository):
-    """Verify NoteRowWidget renders Open button, tags, and emits open_requested signal."""
+    """Verify NoteRowWidget opens on single click and has hover/clean design without delete/open buttons."""
     tag = repo.get_tag_by_name("coding")
     assert tag is not None
     note_id = repo.create_permanent_note(
@@ -303,20 +303,60 @@ def test_note_row_widget_open_and_badges(qapp, repo: StorageRepository):
     note = repo.get_permanent_notes()[0]
     row = NoteRowWidget(note=note, all_projects=["Work"], parent=None, is_dark=True, repo=repo)
 
-    assert hasattr(row, "open_btn")
-    assert row.open_btn.text() == "Open"
+    # Verify open and delete buttons and checkbox are removed/hidden per requirement
+    assert row.open_btn.isHidden() is True
+    assert row.del_btn.isHidden() is True
+    assert row.checkbox.isHidden() is True
 
     opened_ids = []
     row.open_requested.connect(opened_ids.append)
 
-    # Click Open button
-    row.open_btn.click()
+    row.resize(400, 50)
+    row.show()
+    # Single click on row opens note
+    QTest.mouseClick(row, Qt.MouseButton.LeftButton)
     assert opened_ids == [note_id]
 
-    # Double click on row
-    opened_ids.clear()
-    QTest.mouseDClick(row, Qt.MouseButton.LeftButton)
-    assert opened_ids == [note_id]
+
+def test_note_editor_markdown_toolbar_and_shortcuts(qapp, repo: StorageRepository):
+    """Verify NoteEditorWidget markdown formatting toolbar actions and keyboard shortcuts."""
+    note_id = repo.create_permanent_note(
+        title="Formatted Note",
+        content="Sample text here",
+        project_tag="Work",
+    )
+    note = repo.get_permanent_notes()[0]
+    editor = NoteEditorWidget(repo=repo, is_dark=True)
+    editor.load_note(note)
+
+    # Test bold toolbar button
+    editor.text_edit.selectAll()
+    editor._apply_markdown("bold")
+    assert "**Sample text here**" in editor.text_edit.toPlainText()
+
+    # Test italic toolbar button
+    editor.text_edit.selectAll()
+    editor._apply_markdown("italic")
+    assert "***Sample text here***" in editor.text_edit.toPlainText()
+
+    # Test header
+    editor.text_edit.clear()
+    editor.text_edit.setPlainText("Main Title")
+    editor._apply_markdown("h1")
+    assert "# Main Title" in editor.text_edit.toPlainText()
+
+    # Test bullet list
+    editor.text_edit.clear()
+    editor.text_edit.setPlainText("First Item")
+    editor._apply_markdown("bullet_list")
+    assert "- First Item" in editor.text_edit.toPlainText()
+
+    # Test code block
+    editor.text_edit.clear()
+    editor.text_edit.setPlainText("x = 42")
+    editor.text_edit.selectAll()
+    editor._apply_markdown("code_block")
+    assert "```\nx = 42\n```" in editor.text_edit.toPlainText()
 
 
 def test_note_detail_modal_dialog_markdown_preview(qapp, repo: StorageRepository):
