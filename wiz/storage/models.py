@@ -1280,6 +1280,71 @@ class StorageRepository:
                         date_status[dt] = "active"
             return date_status
 
+    def get_calendar_month_task_data(
+        self, year: int, month: int, category: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        """Return task breakdown (pending, upcoming, completed, counts) for each day of the month.
+
+        Pending: uncompleted tasks with scheduled_date < today (red indicator)
+        Upcoming: uncompleted tasks with scheduled_date >= today (green indicator)
+        Completed: tasks marked as done or completed
+        """
+        month_prefix = f"{year:04d}-{month:02d}%"
+        query = """
+            SELECT scheduled_date, status, project_tag
+            FROM tasks
+            WHERE scheduled_date LIKE ?
+        """
+        params: List[Any] = [month_prefix]
+        if category and category != "All":
+            query += " AND (project_tag = ? OR (? = 'General' AND (project_tag IS NULL OR project_tag = '')))"
+            params.extend([category, category])
+        query += " ORDER BY scheduled_date ASC"
+
+        with self.db.cursor() as cur:
+            cur.execute(query, tuple(params))
+            rows = cur.fetchall()
+
+        today_str = date.today().strftime("%Y-%m-%d")
+        result: Dict[str, Dict[str, Any]] = {}
+        for r in rows:
+            dt = r["scheduled_date"]
+            if not dt:
+                continue
+            if dt not in result:
+                result[dt] = {
+                    "total": 0,
+                    "pending": 0,
+                    "upcoming": 0,
+                    "completed": 0,
+                    "has_pending": False,
+                    "has_upcoming": False,
+                    "has_completed": False,
+                    "status": "completed",
+                }
+            st = (r["status"] or "not_started").lower()
+            result[dt]["total"] += 1
+            if st in ("done", "completed"):
+                result[dt]["completed"] += 1
+                result[dt]["has_completed"] = True
+            elif st not in ("cancelled", "canceled"):
+                if dt < today_str:
+                    result[dt]["pending"] += 1
+                    result[dt]["has_pending"] = True
+                else:
+                    result[dt]["upcoming"] += 1
+                    result[dt]["has_upcoming"] = True
+
+        for dt, info in result.items():
+            if info["has_pending"]:
+                info["status"] = "pending"
+            elif info["has_upcoming"]:
+                info["status"] = "upcoming"
+            else:
+                info["status"] = "completed"
+
+        return result
+
     # --- Project Keyword Mapping Operations ---
 
     def create_or_update_project(

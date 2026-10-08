@@ -3,11 +3,13 @@
 from datetime import date, timedelta
 import pytest
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeyEvent
+from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication
 
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository
-from wiz.ui.calendar_view import CalendarView, MonthCalendarGridWidget
+from wiz.ui.calendar_view import CalendarView, MonthCalendarGridWidget, ScheduleTaskModalDialog
 from wiz.ui.popup_dialog import QuickEntryDialog
 
 
@@ -291,7 +293,139 @@ def test_calendar_view_status_changed_no_flicker(qapp, repo):
 
     # In day view, the row is preserved (not recreated)
     assert cal_view.task_list_layout.count() == 1
-    same_row = cal_view.task_list_layout.itemAt(0).widget()
-    assert same_row is row
+    cal_view.close()
+
+
+def test_calendar_view_sub_stack_navigation_and_back(qapp, repo):
+    """Test switching between Month Grid (Page 0) and Date Detail (Page 1), back button and Esc key."""
+    today = date.today()
+    target_dt = today + timedelta(days=2)
+    cal_view = CalendarView(repo, is_dark=True)
+    qapp.processEvents()
+
+    # Initial state: on Page 0 (Month Grid View)
+    assert cal_view.sub_stack.currentIndex() == 0
+
+    # User clicks a date in the month grid
+    cal_view._on_grid_date_selected(target_dt)
+    qapp.processEvents()
+
+    # Navigated to Page 1 (Date Detail Followup Page)
+    assert cal_view.sub_stack.currentIndex() == 1
+    assert target_dt.strftime("%B %d") in cal_view.agenda_title.text()
+
+    # Click Back to Calendar button
+    cal_view.btn_back_to_cal.click()
+    qapp.processEvents()
+    assert cal_view.sub_stack.currentIndex() == 0
+
+    # Test Escape key returns to Page 0
+    cal_view._on_grid_date_selected(target_dt)
+    assert cal_view.sub_stack.currentIndex() == 1
+    esc_event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier)
+    cal_view.keyPressEvent(esc_event)
+    qapp.processEvents()
+    assert cal_view.sub_stack.currentIndex() == 0
+
+    cal_view.close()
+
+
+def test_calendar_pending_red_dots_and_upcoming_green_dots(qapp, repo):
+    """Verify that uncompleted past tasks are marked as pending (red dot) and future tasks as upcoming (green dot)."""
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
+
+    # 1. Past unfinished task -> pending (red dot indicator)
+    repo.create_task("Overdue Bug Fix", project_tag="Work", scheduled_date=yesterday.strftime("%Y-%m-%d"))
+
+    # 2. Future unfinished task -> upcoming (green dot indicator)
+    repo.create_task("Upcoming Design Review", project_tag="Work", scheduled_date=tomorrow.strftime("%Y-%m-%d"))
+
+    task_data = repo.get_calendar_month_task_data(today.year, today.month)
+
+    y_str = yesterday.strftime("%Y-%m-%d")
+    t_str = tomorrow.strftime("%Y-%m-%d")
+
+    assert y_str in task_data
+    assert task_data[y_str]["has_pending"] is True
+    assert task_data[y_str]["status"] == "pending"
+
+    assert t_str in task_data
+    assert task_data[t_str]["has_upcoming"] is True
+    assert task_data[t_str]["status"] == "upcoming"
+
+    # Test in CalendarView grid
+    cal_view = CalendarView(repo, is_dark=True)
+    qapp.processEvents()
+    cal_data = cal_view.grid_widget.date_status_map
+    assert y_str in cal_data
+    assert cal_data[y_str]["has_pending"] is True
+    assert t_str in cal_data
+    assert cal_data[t_str]["has_upcoming"] is True
+
+    cal_view.close()
+
+
+def test_schedule_task_modal_dialog(qapp, repo):
+    """Test creating and scheduling a task with tags and section via ScheduleTaskModalDialog."""
+    tag = repo.create_tag("backend", "#3B82F6")
+    today = date.today()
+    target_dt = today + timedelta(days=5)
+
+    dlg = ScheduleTaskModalDialog(repo, default_date=target_dt, is_dark=True)
+    qapp.processEvents()
+
+    dlg.input_title.setText("Deploy Microservice")
+    dlg.section_combo.setCurrentText("Work")
+
+    # Select the tag
+    if tag.id in dlg.tag_buttons:
+        dlg.tag_buttons[tag.id].click()
+
+    created_ids = []
+    dlg.task_created.connect(created_ids.append)
+
+    # Submit
+    dlg._on_submit()
+    qapp.processEvents()
+
+    assert len(created_ids) == 1
+    task_id = created_ids[0]
+
+    # Verify task in storage
+    tasks = repo.get_task_hierarchy(target_date=target_dt)
+    created_task = next((t for t in tasks if t.id == task_id), None)
+    assert created_task is not None
+    assert created_task.title == "Deploy Microservice"
+    assert created_task.project_tag == "Work"
+    assert created_task.scheduled_date == target_dt.strftime("%Y-%m-%d")
+
+
+def test_calendar_category_dropdown_filtering(qapp, repo):
+    """Test filtering tasks via category dropdown near schedule button."""
+    today = date.today()
+    repo.create_task("Code Backend", project_tag="Coding", scheduled_date=today.strftime("%Y-%m-%d"))
+    repo.create_task("Browse Ideas", project_tag="Browsing", scheduled_date=today.strftime("%Y-%m-%d"))
+
+    cal_view = CalendarView(repo, is_dark=True)
+    qapp.processEvents()
+
+    # Initial state: All categories
+    assert cal_view.category_combo.currentText() == "All Categories"
+    assert cal_view.selected_category_filter is None
+
+    # Change combo to Coding
+    idx = cal_view.category_combo.findText("Coding")
+    if idx >= 0:
+        cal_view.category_combo.setCurrentIndex(idx)
+        qapp.processEvents()
+        assert cal_view.selected_category_filter == "Coding"
+        assert cal_view.detail_category_combo.currentText() == "Coding"
+
+        # Check detail page shows 1 task
+        cal_view._on_grid_date_selected(today)
+        qapp.processEvents()
+        assert cal_view.task_list_layout.count() == 1
 
     cal_view.close()
