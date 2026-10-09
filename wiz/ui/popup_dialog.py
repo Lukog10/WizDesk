@@ -3063,12 +3063,23 @@ class TaskRowWidget(QWidget):
             self.repeat_changed.emit(self.task_id, mode)
             self._update_badges()
 
+    def _on_stopwatch_toggled(self, task_id: int, is_running: bool) -> None:
+        """Synchronize task row status and dropdown when stopwatch button is toggled."""
+        if is_running:
+            self.task.status = "in_progress"
+            self._update_status_ui("in_progress")
+            self.status_toggled.emit(self.task_id, "in_progress")
+        else:
+            self._update_status_ui("in_progress")
+
     def _on_status_combo_changed(self, index: int) -> None:
         """Handle status selection change from the dropdown."""
         text = self.status_combo.currentText()
         if text in ("In progress", "In Progress"):
             new_status = "in_progress"
             self.task.completed_at = None
+            if not self.task.is_timer_running:
+                self.task.timer_started_at = datetime.now()
         elif text == "Completed":
             new_status = "done"
             if not self.task.completed_at:
@@ -3088,9 +3099,15 @@ class TaskRowWidget(QWidget):
         else:
             new_status = "not_started"
             self.task.completed_at = None
+            if self.task.is_timer_running:
+                delta = int((datetime.now() - self.task.timer_started_at).total_seconds())
+                self.task.duration_seconds += max(0, delta)
+                self.task.timer_started_at = None
 
         self.task.status = new_status
         self._update_status_ui(new_status)
+        if hasattr(self, "stopwatch_widget"):
+            self.stopwatch_widget.refresh()
         self.status_toggled.emit(self.task_id, new_status)
 
     def _on_checkbox_toggled(self, checked: bool) -> None:
@@ -3104,8 +3121,14 @@ class TaskRowWidget(QWidget):
                 self.task.timer_started_at = None
         else:
             self.task.completed_at = None
+            if self.task.is_timer_running:
+                delta = int((datetime.now() - self.task.timer_started_at).total_seconds())
+                self.task.duration_seconds += max(0, delta)
+                self.task.timer_started_at = None
         self.task.status = new_status
         self._update_status_ui(new_status)
+        if hasattr(self, "stopwatch_widget"):
+            self.stopwatch_widget.refresh()
         self.status_toggled.emit(self.task_id, new_status)
 
     def _update_status_ui(self, status: str) -> None:
@@ -3544,7 +3567,9 @@ class NoteRowWidget(QWidget):
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             child = self.childAt(event.pos())
-            if child is not self.tag_btn:
+            is_tag_btn = (child is self.tag_btn) or (child is not None and self.tag_btn.isAncestorOf(child))
+            is_tag_badge = isinstance(child, TagBadgeWidget) or (child is not None and isinstance(child.parent(), TagBadgeWidget))
+            if not is_tag_btn and not is_tag_badge:
                 self.open_requested.emit(self.note_id)
         super().mousePressEvent(event)
 
@@ -3921,10 +3946,12 @@ class NoteEditorWidget(QWidget):
         toolbar.setSpacing(6)
 
         # Back button to return to notes list
-        self.back_btn = QPushButton("< Notes", self.editor_widget)
-        self.back_btn.setFixedHeight(28)
+        self.back_btn = QPushButton(self.editor_widget)
+        self.back_btn.setFixedSize(28, 28)
+        self.back_btn.setIconSize(QSize(16, 16))
         self.back_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.back_btn.setFont(get_font(9, QFont.Weight.DemiBold))
+        self.back_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.back_btn.setToolTip("Back to notes")
         self.back_btn.clicked.connect(self._on_back_clicked)
         toolbar.addWidget(self.back_btn)
 
@@ -4542,21 +4569,21 @@ class NoteEditorWidget(QWidget):
         back_fg = "#F4F4F5" if is_dark else "#18181B"
         border_col = "#3F3F46" if is_dark else "#E4E4E7"
 
-        self.back_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {back_bg};
-                color: {back_fg};
-                border: 1px solid {border_col};
-                border-radius: 6px;
-                padding: 4px 10px;
-                font-family: {FONT_SANS};
-                font-size: 11px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {back_hover};
-            }}
-        """)
+        if hasattr(self, "back_btn"):
+            self.back_btn.setIcon(
+                get_status_icon("icons/arrow_back_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg", back_fg, 16)
+            )
+            self.back_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {back_bg};
+                    border: 1px solid {border_col};
+                    border-radius: 6px;
+                    padding: 0;
+                }}
+                QPushButton:hover {{
+                    background-color: {back_hover};
+                }}
+            """)
         self.mode_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {back_bg};
@@ -5456,6 +5483,7 @@ class QuickEntryDialog(QDialog):
         # Sub-page 1: Note Editor Page inside workspace
         self.note_editor = NoteEditorWidget(repo=self.repo, is_dark=self.is_dark, parent=self.notes_sub_stack)
         self.note_editor.back_requested.connect(self._on_note_editor_back)
+        self.note_editor.note_deleted.connect(lambda _: self._on_note_editor_back())
         self.note_editor.note_updated.connect(lambda _: self._trigger_debounced_sync())
         self.notes_sub_stack.addWidget(self.note_editor)
 
@@ -5965,6 +5993,8 @@ class QuickEntryDialog(QDialog):
             self.stack.setCurrentWidget(self.calendar_view)
             self.calendar_view.load_data()
         elif mode == "notes":
+            if hasattr(self, "notes_sub_stack") and hasattr(self, "notes_list_widget"):
+                self.notes_sub_stack.setCurrentWidget(self.notes_list_widget)
             self.stack.setCurrentWidget(self.notes_page)
             self.refresh_notes()
         elif mode == "activity" and hasattr(self, "timeline_view"):

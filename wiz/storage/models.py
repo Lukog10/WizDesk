@@ -740,12 +740,19 @@ class StorageRepository:
 
     def update_task_status(self, task_id: int, status: str, completed_at: Optional[datetime] = None) -> bool:
         """Update status of a task ('not_started', 'in_progress', 'done', 'cancelled')."""
-        is_done = status in ("done", "completed", "cancelled", "canceled")
-        if completed_at is not None:
-            comp_str = completed_at.isoformat()
-        else:
-            comp_str = datetime.now().isoformat() if is_done else None
-        today_str = date.today().strftime("%Y-%m-%d") if is_done else None
+        is_done = status in ("done", "completed")
+        is_cancelled = status in ("cancelled", "canceled")
+        is_in_progress = status in ("in_progress", "pending", "ongoing")
+
+        now = datetime.now()
+        comp_str = None
+        today_str = None
+        if is_done or is_cancelled:
+            comp_dt = completed_at if completed_at is not None else now
+            comp_str = comp_dt.isoformat()
+            if is_done:
+                today_str = date.today().strftime("%Y-%m-%d")
+
         with self.db.cursor() as cur:
             cur.execute("SELECT duration_seconds, timer_started_at FROM tasks WHERE id = ?", (task_id,))
             row = cur.fetchone()
@@ -754,56 +761,53 @@ class StorageRepository:
 
             new_dur = dur
             new_started = started
-            if is_done and started:
-                delta = int((datetime.now() - datetime.fromisoformat(started)).total_seconds())
-                new_dur = dur + max(0, delta)
-                new_started = None
 
-            if is_done:
-                cur.execute(
-                    """
-                    UPDATE tasks
-                    SET status = ?, completed_at = ?, last_completed_date = ?, duration_seconds = ?, timer_started_at = ?
-                    WHERE id = ?
-                    """,
-                    (status, comp_str, today_str, new_dur, new_started, task_id),
-                )
+            if is_in_progress:
+                # If stopwatch is not running, start it
+                if not started:
+                    new_started = now.isoformat()
+                # Re-opening completed work: clear completed timestamps
+                comp_str = None
+                today_str = None
             else:
-                cur.execute(
-                    """
-                    UPDATE tasks
-                    SET status = ?, completed_at = ?
-                    WHERE id = ?
-                    """,
-                    (status, comp_str, task_id),
-                )
+                # Any other status: if timer was ticking, flush elapsed seconds
+                if started:
+                    try:
+                        st_dt = datetime.fromisoformat(started)
+                        delta = int((now - st_dt).total_seconds())
+                        new_dur = dur + max(0, delta)
+                    except Exception:
+                        pass
+                    new_started = None
+
+            cur.execute(
+                """
+                UPDATE tasks
+                SET status = ?, completed_at = ?, last_completed_date = ?, duration_seconds = ?, timer_started_at = ?
+                WHERE id = ?
+                """,
+                (status, comp_str, today_str, new_dur, new_started, task_id),
+            )
             return cur.rowcount > 0
 
     def start_task_stopwatch(self, task_id: int) -> bool:
         """Start the live stopwatch for a task, setting status to in_progress."""
-        now_iso = datetime.now().isoformat()
-        with self.db.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE tasks
-                SET status = 'in_progress', timer_started_at = ?
-                WHERE id = ?
-                """,
-                (now_iso, task_id),
-            )
-            return cur.rowcount > 0
+        return self.update_task_status(task_id, "in_progress")
 
     def pause_task_stopwatch(self, task_id: int) -> bool:
-        """Pause running stopwatch and commit elapsed seconds to cumulative duration."""
+        """Pause running stopwatch, commit elapsed seconds to cumulative duration, keep status in_progress."""
         with self.db.cursor() as cur:
             cur.execute("SELECT duration_seconds, timer_started_at FROM tasks WHERE id = ?", (task_id,))
             row = cur.fetchone()
             if not row or not row["timer_started_at"]:
                 return False
             dur = row["duration_seconds"] or 0
-            started = datetime.fromisoformat(row["timer_started_at"])
-            delta = int((datetime.now() - started).total_seconds())
-            new_dur = dur + max(0, delta)
+            try:
+                started = datetime.fromisoformat(row["timer_started_at"])
+                delta = int((datetime.now() - started).total_seconds())
+                new_dur = dur + max(0, delta)
+            except Exception:
+                new_dur = dur
             cur.execute(
                 "UPDATE tasks SET duration_seconds = ?, timer_started_at = NULL WHERE id = ?",
                 (new_dur, task_id),
@@ -839,14 +843,83 @@ class StorageRepository:
             for r in rows:
                 tid = r["id"]
                 dur = r["duration_seconds"] or 0
-                started = datetime.fromisoformat(r["timer_started_at"])
-                delta = int((now - started).total_seconds())
-                new_dur = dur + max(0, delta)
-                cur.execute(
-                    "UPDATE tasks SET duration_seconds = ?, timer_started_at = NULL WHERE id = ?",
-                    (new_dur, tid),
-                )
-                count += 1
+                try:
+                    started = datetime.fromisoformat(r["timer_started_at"])
+                    delta = int((now - started).total_seconds())
+                    new_dur = dur + max(0, delta)
+                    cur.execute(
+                        "UPDATE tasks SET duration_seconds = ?, timer_started_at = NULL WHERE id = ?",
+                        (new_dur, tid),
+                    )
+                    count += 1
+                except Exception:
+                    cur.execute("UPDATE tasks SET timer_started_at = NULL WHERE id = ?", (tid,))
+            return count
+
+    def periodic_stopwatch_heartbeat(self) -> int:
+        """Periodic safety heartbeat: flush elapsed seconds into duration_seconds and roll forward timer_started_at."""
+        with self.db.cursor() as cur:
+            cur.execute("SELECT id, duration_seconds, timer_started_at FROM tasks WHERE timer_started_at IS NOT NULL")
+            rows = cur.fetchall()
+            now = datetime.now()
+            count = 0
+            for r in rows:
+                tid = r["id"]
+                dur = r["duration_seconds"] or 0
+                try:
+                    started = datetime.fromisoformat(r["timer_started_at"])
+                    delta = int((now - started).total_seconds())
+                    if delta > 0:
+                        new_dur = dur + delta
+                        cur.execute(
+                            "UPDATE tasks SET duration_seconds = ?, timer_started_at = ? WHERE id = ?",
+                            (new_dur, now.isoformat(), tid),
+                        )
+                        count += 1
+                except Exception:
+                    pass
+            return count
+
+    def recover_dangling_stopwatches(self) -> int:
+        """
+        Startup recovery sweep: inspect tasks with dangling timer_started_at from ungraceful shutdown.
+        Caps elapsed delta using the latest recorded window session timestamp to avoid overnight/shutdown false drift.
+        """
+        with self.db.cursor() as cur:
+            cur.execute("SELECT id, duration_seconds, timer_started_at FROM tasks WHERE timer_started_at IS NOT NULL")
+            rows = cur.fetchall()
+            if not rows:
+                return 0
+
+            cur.execute("SELECT end_time FROM sessions ORDER BY end_time DESC LIMIT 1")
+            sess_row = cur.fetchone()
+            latest_session_dt = None
+            if sess_row and sess_row["end_time"]:
+                try:
+                    latest_session_dt = datetime.fromisoformat(sess_row["end_time"])
+                except Exception:
+                    pass
+
+            count = 0
+            now = datetime.now()
+            for r in rows:
+                tid = r["id"]
+                dur = r["duration_seconds"] or 0
+                try:
+                    started = datetime.fromisoformat(r["timer_started_at"])
+                    if latest_session_dt and latest_session_dt >= started:
+                        delta = int((latest_session_dt - started).total_seconds())
+                    else:
+                        delta = min(300, max(0, int((now - started).total_seconds())))
+
+                    new_dur = dur + max(0, delta)
+                    cur.execute(
+                        "UPDATE tasks SET status = 'in_progress', duration_seconds = ?, timer_started_at = NULL WHERE id = ?",
+                        (new_dur, tid),
+                    )
+                    count += 1
+                except Exception:
+                    cur.execute("UPDATE tasks SET timer_started_at = NULL WHERE id = ?", (tid,))
             return count
 
     def update_task_schedule(
@@ -1054,6 +1127,13 @@ class StorageRepository:
                 (task_id, subtask_id, content.strip(), now.isoformat()),
             )
             return cur.lastrowid or 0
+    def get_task_by_id(self, task_id: int) -> Optional[TaskRecord]:
+        """Retrieve a single task record by ID, including subtasks, logs, and tags."""
+        tasks = self.get_task_hierarchy(include_completed=True)
+        for t in tasks:
+            if t.id == task_id:
+                return t
+        return None
 
     def get_task_hierarchy(
         self,

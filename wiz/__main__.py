@@ -6,7 +6,7 @@ from typing import Optional
 from datetime import date
 
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 
 from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 
@@ -97,6 +97,18 @@ class WizApplication:
         self.tray_icon.show()
         self.tracker.start()
         self.hotkey_listener.start()
+
+        # Startup crash and sleep recovery sweep for any dangling task stopwatches
+        try:
+            self.repo.recover_dangling_stopwatches()
+        except Exception as e:
+            print(f"[WizDesk] Stopwatch recovery notice: {e}")
+
+        # 60-second periodic stopwatch heartbeat timer for crash and shutdown safety
+        self.stopwatch_heartbeat_timer = QTimer()
+        self.stopwatch_heartbeat_timer.setInterval(60000)
+        self.stopwatch_heartbeat_timer.timeout.connect(self._on_stopwatch_heartbeat)
+        self.stopwatch_heartbeat_timer.start()
 
         # If Obsidian vault path is empty on first run, offer a gentle notification
         if not config.obsidian_vault_path or not config.obsidian_vault_path.exists():
@@ -199,9 +211,18 @@ class WizApplication:
             self.state_machine.trigger_working()
         self.sync_engine.sync_date(date.today(), emit_signal=False)
 
+    def _on_stopwatch_heartbeat(self) -> None:
+        """Periodic safety tick to ensure running tasks have duration committed to DB."""
+        try:
+            self.repo.periodic_stopwatch_heartbeat()
+        except Exception:
+            pass
+
     def shutdown(self) -> None:
         """Gracefully stop background threads and flush pending data."""
         print("[WizDesk] Shutting down background services...")
+        if hasattr(self, "stopwatch_heartbeat_timer") and self.stopwatch_heartbeat_timer.isActive():
+            self.stopwatch_heartbeat_timer.stop()
         self.tracker.stop()
         self.hotkey_listener.stop()
         self.sync_engine.sync_date(date.today(), emit_signal=False)
