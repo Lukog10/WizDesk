@@ -6224,6 +6224,8 @@ class QuickEntryDialog(QDialog):
 
     def _on_calendar_task_activity(self, task_id: int) -> None:
         """Handle task activity originating from Calendar view."""
+        if QApplication.activeModalWidget() is not None:
+            return
         self._suppress_task_activity_sync = True
         try:
             self.refresh_tasks()
@@ -6234,6 +6236,8 @@ class QuickEntryDialog(QDialog):
 
     def _on_background_session_polled(self, app_name: str, window_title: str, project_tag: str) -> None:
         """Handle background activity tracker polling to update active views in real-time."""
+        if QApplication.activeModalWidget() is not None:
+            return
         if self.isVisible():
             if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
                 self.project_dashboard_view.load_data()
@@ -6243,6 +6247,8 @@ class QuickEntryDialog(QDialog):
     def _on_background_task_activity(self, task_id: int) -> None:
         """Refresh dashboard, calendar, or task views when tasks change."""
         if getattr(self, "_suppress_task_activity_sync", False):
+            return
+        if QApplication.activeModalWidget() is not None:
             return
         if self.isVisible():
             if hasattr(self, "calendar_view") and self.current_view_mode == "calendar":

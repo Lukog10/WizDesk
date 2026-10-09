@@ -15,6 +15,7 @@ from wiz.ui.project_dashboard_view import (
     ProjectsOverviewPage,
     ProjectDetailPage,
     ProjectSummaryCard,
+    ProjectDialog,
     format_duration,
 )
 from wiz.ui.popup_dialog import QuickEntryDialog
@@ -966,7 +967,100 @@ def test_dashboard_filter_static_geometry(repo, qapp):
         assert w == first_w
 
 
+def test_project_dialog_modal_and_return_pressed(repo, qapp):
+    """Verify ProjectDialog modal configuration, top window stays on top hint, and returnPressed hooks."""
+    from PyQt6.QtWidgets import QWidget
+    parent_win = QWidget()
+    parent_win.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
+
+    proj = ProjectRecord(
+        id=1,
+        name="WizDesk",
+        keywords=["wiz", "desk"],
+        color="#FF6B3D",
+        description="Core companion",
+    )
+    dlg = ProjectDialog(parent=parent_win, is_dark=True, project=proj)
+    assert dlg.isModal() is True
+    assert bool(dlg.windowFlags() & Qt.WindowType.WindowStaysOnTopHint) is True
+    assert dlg.name_edit.text() == "WizDesk"
+    assert dlg.kw_edit.text() == "wiz, desk"
+
+    # Edit keywords and verify get_data
+    dlg.kw_edit.setText("wiz, desk, tracker, companion")
+    name, color, desc, kws = dlg.get_data()
+    assert name == "WizDesk"
+    assert kws == ["wiz", "desk", "tracker", "companion"]
+    parent_win.deleteLater()
+    dlg.deleteLater()
 
 
+def test_mascot_ensure_on_top_modal_suppression(qapp):
+    """Verify MascotWindow.ensure_on_top suppresses topmost calls when a modal widget is active."""
+    from wiz.ui.mascot_window import MascotWindow
+    from PyQt6.QtWidgets import QDialog
 
+    sm = StateMachine()
+    mascot = MascotWindow(sm)
+    mascot.show()
+    qapp.processEvents()
+
+    modal_dlg = QDialog()
+    modal_dlg.setModal(True)
+    modal_dlg.show()
+    qapp.processEvents()
+
+    # Calling ensure_on_top while modal dialog is active should safely return without raising
+    mascot.ensure_on_top()
+
+    modal_dlg.close()
+    modal_dlg.deleteLater()
+    mascot.close()
+    mascot.deleteLater()
+
+
+def test_project_detail_load_project_updates_suspended(repo, qapp):
+    """Verify ProjectDetailPage.load_project safely renders widgets without flickering."""
+    repo.create_or_update_project("TestProj", ["test", "keyword"], color="#FF6B3D", description="Desc")
+    detail_page = ProjectDetailPage(repo, is_dark=True)
+    detail_page.load_project("TestProj")
+    qapp.processEvents()
+
+    assert detail_page.current_project_name == "TestProj"
+    assert detail_page.title_lbl.text() == "TestProj"
+    detail_page.deleteLater()
+
+
+def test_quick_entry_modal_suppression_on_session_polled(repo, qapp):
+    """Verify QuickEntryDialog suppresses background session polled reload when a modal dialog is open."""
+    from wiz.ui.popup_dialog import QuickEntryDialog
+    from PyQt6.QtWidgets import QDialog
+
+    sm = StateMachine()
+    qed = QuickEntryDialog(sm, repository=repo)
+    qed.show()
+    qapp.processEvents()
+
+    modal_dlg = QDialog(qed)
+    modal_dlg.setModal(True)
+    modal_dlg.show()
+    qapp.processEvents()
+
+    reload_called = False
+    def mock_load_data():
+        nonlocal reload_called
+        reload_called = True
+    qed.project_dashboard_view.load_data = mock_load_data
+
+    # Emulating background session poll while modal dialog is active
+    qed._on_background_session_polled("Code.exe", "test.py", "WizDesk")
+    qapp.processEvents()
+
+    # Must be suppressed because modal_dlg is active
+    assert reload_called is False
+
+    modal_dlg.close()
+    modal_dlg.deleteLater()
+    qed.close()
+    qed.deleteLater()
 

@@ -4,7 +4,7 @@ import sys
 from typing import Optional
 from PyQt6.QtCore import Qt, QPoint, QTimer
 from PyQt6.QtGui import QMouseEvent, QGuiApplication, QCursor
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication
 
 from wiz.core.config import config
 from wiz.core.state_machine import MascotState, StateMachine
@@ -92,6 +92,8 @@ class MascotWindow(QWidget):
     def ensure_on_top(self) -> None:
         """Reinforce companion window topmost Z-order above active applications without stealing focus."""
         if not self.isVisible() or self.isMinimized():
+            return
+        if QApplication.activeModalWidget() is not None:
             return
         self.raise_()
         if sys.platform == "win32":

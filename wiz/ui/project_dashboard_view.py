@@ -93,7 +93,8 @@ class ProjectDialog(QDialog):
         is_dark: bool = True,
         project: Optional[ProjectRecord] = None,
     ):
-        super().__init__(parent)
+        top_window = parent.window() if parent else None
+        super().__init__(top_window)
         self.is_dark = is_dark
         self.project = project
         if project and project.color:
@@ -115,7 +116,11 @@ class ProjectDialog(QDialog):
         title = "Edit Project" if project else "New Project"
         self.setWindowTitle(title)
         self.setFixedSize(430, 460)
-        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowCloseButtonHint)
+        flags = Qt.WindowType.Dialog | Qt.WindowType.WindowCloseButtonHint
+        if top_window and bool(top_window.windowFlags() & Qt.WindowType.WindowStaysOnTopHint):
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
+        self.setModal(True)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 18, 20, 18)
@@ -202,6 +207,10 @@ class ProjectDialog(QDialog):
         self.save_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.save_btn.clicked.connect(self._on_save)
         btn_layout.addWidget(self.save_btn)
+
+        self.name_edit.returnPressed.connect(self._on_save)
+        self.desc_edit.returnPressed.connect(self._on_save)
+        self.kw_edit.returnPressed.connect(self._on_save)
 
         layout.addLayout(btn_layout)
         self._apply_dialog_theme()
@@ -1294,40 +1303,44 @@ class ProjectDetailPage(QWidget):
 
     def load_project(self, project_name: str) -> None:
         """Load and display comprehensive details for the specified project."""
-        self.current_project_name = project_name
-        detail = self.repo.get_project_detail(project_name, timeframe=self.active_timeframe)
-        proj: ProjectRecord = detail.get("project")
+        self.setUpdatesEnabled(False)
+        try:
+            self.current_project_name = project_name
+            detail = self.repo.get_project_detail(project_name, timeframe=self.active_timeframe)
+            proj: ProjectRecord = detail.get("project")
 
-        # Update Header
-        self.title_lbl.setText(project_name)
-        color = proj.color if proj else "#FF6B3D"
-        self.color_dot.setStyleSheet(f"background-color: {color}; border-radius: 6px;")
+            # Update Header
+            self.title_lbl.setText(project_name)
+            color = proj.color if proj else "#FF6B3D"
+            self.color_dot.setStyleSheet(f"background-color: {color}; border-radius: 6px;")
 
-        # Disable delete for Untagged
-        is_untagged = (project_name.lower() == "untagged")
-        self.btn_delete.setEnabled(not is_untagged)
-        self.btn_edit.setEnabled(not is_untagged)
+            # Disable delete for Untagged
+            is_untagged = (project_name.lower() == "untagged")
+            self.btn_delete.setEnabled(not is_untagged)
+            self.btn_edit.setEnabled(not is_untagged)
 
-        # Update Summary Badges
-        mins = detail.get("tracked_minutes", 0.0)
-        self.lbl_metric_time.setText(f"Tracked: {format_duration(mins)}")
+            # Update Summary Badges
+            mins = detail.get("tracked_minutes", 0.0)
+            self.lbl_metric_time.setText(f"Tracked: {format_duration(mins)}")
 
-        completed_tasks = detail.get("completed_tasks", 0)
-        open_tasks = detail.get("open_tasks", 0)
-        self.lbl_metric_tasks.setText(f"Tasks: {completed_tasks} done ({open_tasks} open)")
+            completed_tasks = detail.get("completed_tasks", 0)
+            open_tasks = detail.get("open_tasks", 0)
+            self.lbl_metric_tasks.setText(f"Tasks: {completed_tasks} done ({open_tasks} open)")
 
-        sess_count = detail.get("total_sessions", 0)
-        self.lbl_metric_sessions.setText(f"Sessions: {sess_count}")
+            sess_count = detail.get("total_sessions", 0)
+            self.lbl_metric_sessions.setText(f"Sessions: {sess_count}")
 
-        # Render Tasks
-        self._render_tasks(detail.get("tasks", []))
+            # Render Tasks
+            self._render_tasks(detail.get("tasks", []))
 
-        # Render App Breakdown
-        self._render_apps(detail.get("apps_breakdown", []))
+            # Render App Breakdown
+            self._render_apps(detail.get("apps_breakdown", []))
 
-        # Render Keywords
-        kws = proj.keywords if proj else []
-        self._render_keywords(kws, proj.description if proj else "")
+            # Render Keywords
+            kws = proj.keywords if proj else []
+            self._render_keywords(kws, proj.description if proj else "")
+        finally:
+            self.setUpdatesEnabled(True)
 
     def _render_tasks(self, tasks: List[TaskRecord]) -> None:
         while self.tasks_content_layout.count() > 0:
@@ -1488,7 +1501,7 @@ class ProjectDetailPage(QWidget):
         target = next((p for p in projects if p.name == self.current_project_name), None)
         if not target:
             return
-        dlg = ProjectDialog(self, is_dark=self.is_dark, project=target)
+        dlg = ProjectDialog(self.window() if self.window() else self, is_dark=self.is_dark, project=target)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             name, color, desc, kws = dlg.get_data()
             if name != target.name:
@@ -1498,8 +1511,6 @@ class ProjectDetailPage(QWidget):
             self.current_project_name = name
             self.load_project(name)
             self.project_updated.emit()
-            from wiz.core.signals import app_signals
-            app_signals.projects_changed.emit()
 
     def _on_delete_project(self) -> None:
         reply = QMessageBox.question(
@@ -1511,8 +1522,6 @@ class ProjectDetailPage(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             self.repo.delete_project_by_name(self.current_project_name)
             self.project_updated.emit()
-            from wiz.core.signals import app_signals
-            app_signals.projects_changed.emit()
             self.back_clicked.emit()
 
     def set_theme(self, is_dark: bool) -> None:
@@ -1788,7 +1797,7 @@ class ProjectDashboardView(QWidget):
         app_signals.projects_changed.emit()
 
     def _create_new_project(self) -> None:
-        dlg = ProjectDialog(self, is_dark=self.is_dark)
+        dlg = ProjectDialog(self.window() if self.window() else self, is_dark=self.is_dark)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             name, color, desc, kws = dlg.get_data()
             self.repo.create_or_update_project(name, kws, color=color, description=desc)
@@ -1800,7 +1809,8 @@ class ProjectDashboardView(QWidget):
     def load_data(self) -> None:
         """Refresh dashboard view data."""
         if self.stack.currentWidget() == self.detail_page:
-            self.detail_page.load_project(self.detail_page.current_project_name)
+            if self.detail_page.current_project_name:
+                self.detail_page.load_project(self.detail_page.current_project_name)
         else:
             self.overview_page.refresh()
 
