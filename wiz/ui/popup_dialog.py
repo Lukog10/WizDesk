@@ -5274,54 +5274,57 @@ class QuickEntryDialog(QDialog):
         self.inner_layout.setSpacing(10)
 
         # Contextual Header inside inner card: Row 1 = Title, Row 2 = Date Navigator
-        self.date_header_container = QWidget()
-        date_header_layout = QVBoxLayout(self.date_header_container)
-        date_header_layout.setContentsMargins(0, 0, 0, 4)
-        date_header_layout.setSpacing(6)
+        self.card_header_widget = QWidget()
+        card_header_layout = QVBoxLayout(self.card_header_widget)
+        card_header_layout.setContentsMargins(0, 0, 0, 4)
+        card_header_layout.setSpacing(6)
 
-        # Dynamic Page Title inside card top-left
+        # Dynamic Page Title inside card top-left (visible across all views)
         self.page_title_lbl = QLabel("Tasks & To-Dos")
         self.page_title_lbl.setFont(get_font(15, QFont.Weight.Bold, display=True))
         self.page_title_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        date_header_layout.addWidget(self.page_title_lbl)
+        card_header_layout.addWidget(self.page_title_lbl)
 
-        # Date Navigation row inside left corner below title
-        self.date_nav_container = QWidget()
-        date_nav_layout = QHBoxLayout(self.date_nav_container)
-        date_nav_layout.setContentsMargins(0, 0, 0, 0)
-        date_nav_layout.setSpacing(8)
+        # Contextual Date Header inside inner card (visible in tasks, notes, activity)
+        self.date_header_container = QWidget()
+        date_header_layout = QHBoxLayout(self.date_header_container)
+        date_header_layout.setContentsMargins(0, 0, 0, 0)
+        date_header_layout.setSpacing(8)
 
+        # Retained hidden for backwards compatibility with tests and signals
         self.prev_day_btn = QPushButton("‹")
         self.prev_day_btn.setFixedSize(28, 28)
         self.prev_day_btn.setToolTip("Previous Day")
         self.prev_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.prev_day_btn.clicked.connect(self._on_prev_day)
-        date_nav_layout.addWidget(self.prev_day_btn)
+        self.prev_day_btn.hide()
 
+        # Date Button (Clickable pill opening full calendar)
         self.date_btn = QPushButton()
         self.date_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.date_btn.setToolTip("Click to open calendar")
         self.date_btn.clicked.connect(self._open_calendar)
-        date_nav_layout.addWidget(self.date_btn)
+        date_header_layout.addWidget(self.date_btn)
 
+        # Retained hidden for backwards compatibility with tests and signals
         self.next_day_btn = QPushButton("›")
         self.next_day_btn.setFixedSize(28, 28)
         self.next_day_btn.setToolTip("Next Day")
         self.next_day_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.next_day_btn.clicked.connect(self._on_next_day)
-        date_nav_layout.addWidget(self.next_day_btn)
+        self.next_day_btn.hide()
 
         self.today_pill_btn = QPushButton("Today")
         self.today_pill_btn.setFixedHeight(24)
         self.today_pill_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.today_pill_btn.clicked.connect(self._on_today_clicked)
         self.today_pill_btn.setVisible(False)
-        date_nav_layout.addWidget(self.today_pill_btn)
+        date_header_layout.addWidget(self.today_pill_btn)
 
-        date_nav_layout.addStretch()
-        date_header_layout.addWidget(self.date_nav_container)
+        date_header_layout.addStretch()
+        card_header_layout.addWidget(self.date_header_container)
 
-        self.inner_layout.addWidget(self.date_header_container)
+        self.inner_layout.addWidget(self.card_header_widget)
 
         # Initialize date display
         self._update_date_display()
@@ -5813,11 +5816,12 @@ class QuickEntryDialog(QDialog):
         self.prev_day_btn.setStyleSheet(day_nav_qss)
         self.next_day_btn.setStyleSheet(day_nav_qss)
 
+        date_pill_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "rgba(0, 0, 0, 0.04)"
         self.date_btn.setStyleSheet(f"""
             QPushButton {{
-                background: transparent;
+                background-color: {date_pill_bg};
                 color: {date_btn_color};
-                border: none;
+                border: 1px solid {day_btn_border};
                 font-family: {FONT_SANS};
                 font-size: 13px;
                 font-weight: 600;
@@ -5826,6 +5830,7 @@ class QuickEntryDialog(QDialog):
             }}
             QPushButton:hover {{
                 background-color: {day_btn_hover_bg};
+                border-color: {input_focus_border};
             }}
         """)
 
@@ -5988,14 +5993,15 @@ class QuickEntryDialog(QDialog):
             "settings": "Settings & Preferences",
             "help": "Help & Documentation",
         }
+        if hasattr(self, "card_header_widget"):
+            self.card_header_widget.show()
+
         if hasattr(self, "page_title_lbl"):
             self.page_title_lbl.setText(titles.get(mode, "WizDesk"))
+            self.page_title_lbl.show()
 
         if hasattr(self, "date_header_container"):
-            self.date_header_container.setVisible(mode not in ("projects", "settings", "help", "calendar"))
-
-        if hasattr(self, "date_nav_container"):
-            self.date_nav_container.setVisible(mode in ("tasks", "notes", "activity"))
+            self.date_header_container.setVisible(mode in ("tasks", "notes", "activity"))
 
         if mode == "tasks":
             self.stack.setCurrentWidget(self.tasks_page)

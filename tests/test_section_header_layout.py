@@ -37,14 +37,14 @@ def dialog(qapp, repo):
 
 
 def test_section_header_hierarchy(dialog):
-    """Verify page_title_lbl and date_header_container reside inside inner_card at index 0."""
-    assert dialog.date_header_container.parent() == dialog.inner_card
-    assert dialog.inner_layout.indexOf(dialog.date_header_container) == 0
+    """Verify card_header_widget is inside inner_card at index 0 holding title and date container."""
+    assert dialog.card_header_widget.parent() == dialog.inner_card
+    assert dialog.inner_layout.indexOf(dialog.card_header_widget) == 0
     assert dialog.inner_layout.indexOf(dialog.stack) == 1
 
-    # Verify page_title_lbl is inside date_header_container
-    assert dialog.page_title_lbl.parent() == dialog.date_header_container
-    assert dialog.date_nav_container.parent() == dialog.date_header_container
+    # Verify page_title_lbl and date_header_container are inside card_header_widget
+    assert dialog.page_title_lbl.parent() == dialog.card_header_widget
+    assert dialog.date_header_container.parent() == dialog.card_header_widget
 
 
 def test_window_controls_dimensions_and_placement(dialog):
@@ -59,61 +59,63 @@ def test_window_controls_dimensions_and_placement(dialog):
     assert dialog.close_btn.parent() != dialog.inner_card
 
 
-def test_day_navigation_chevrons(dialog):
-    """Verify chevron navigation buttons use ‹ and › symbols and 28x28 px size."""
-    assert dialog.prev_day_btn.text() == "‹"
-    assert dialog.next_day_btn.text() == "›"
-    assert dialog.prev_day_btn.width() == 28
-    assert dialog.prev_day_btn.height() == 28
-    assert dialog.next_day_btn.width() == 28
-    assert dialog.next_day_btn.height() == 28
+def test_date_button_pill_and_hidden_chevrons(dialog):
+    """Verify chevron navigation buttons are hidden and date_btn is visible as a clickable pill."""
+    assert dialog.prev_day_btn.isHidden() is True
+    assert dialog.next_day_btn.isHidden() is True
+    assert dialog.date_btn.isVisible() is True
+    assert dialog.date_btn.text() != ""
 
 
 def test_header_visibility_matrix(dialog):
-    """Verify date_header_container and page_title_lbl across all modes."""
+    """Verify page_title_lbl is visible across ALL modes, and date_header_container toggles appropriately."""
     # 1. Tasks mode (default)
     assert dialog.current_view_mode == "tasks"
     assert dialog.page_title_lbl.text() == "Tasks & To-Dos"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is True
-    assert dialog.date_nav_container.isVisible() is True
 
     # 2. Notes mode
     dialog._set_view_mode("notes")
     assert dialog.page_title_lbl.text() == "Quick Notes"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is True
-    assert dialog.date_nav_container.isVisible() is True
 
     # 3. Activity mode
     dialog._set_view_mode("activity")
     assert dialog.page_title_lbl.text() == "Activity Timeline"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is True
-    assert dialog.date_nav_container.isVisible() is True
 
-    # 4. Projects mode
+    # 4. Projects mode (Dashboard)
     dialog._set_view_mode("projects")
     assert dialog.page_title_lbl.text() == "Projects Dashboard"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is False
 
     # 5. Settings mode
     dialog._set_view_mode("settings")
     assert dialog.page_title_lbl.text() == "Settings & Preferences"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is False
 
     # 6. Help mode
     dialog._set_view_mode("help")
     assert dialog.page_title_lbl.text() == "Help & Documentation"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is False
 
     # 7. Calendar mode
     dialog._set_view_mode("calendar")
     assert dialog.page_title_lbl.text() == "Calendar & Schedule"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is False
 
     # Return to Tasks
     dialog._set_view_mode("tasks")
     assert dialog.page_title_lbl.text() == "Tasks & To-Dos"
+    assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is True
-    assert dialog.date_nav_container.isVisible() is True
 
 
 def test_filter_pills_intact(dialog):

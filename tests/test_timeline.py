@@ -286,9 +286,9 @@ def test_date_header_container_inside_card_position(qapp, repo: StorageRepositor
     dialog = QuickEntryDialog(sm, repository=repo)
     dialog.show()
 
-    # Verify date_header_container is in inner_card layout
-    assert dialog.date_header_container.parent() == dialog.inner_card
-    assert dialog.inner_layout.indexOf(dialog.date_header_container) == 0
+    # Verify card_header_widget and date_header_container are inside inner_card
+    assert dialog.inner_card.isAncestorOf(dialog.date_header_container)
+    assert dialog.inner_layout.indexOf(dialog.card_header_widget) == 0
     assert dialog.inner_layout.indexOf(dialog.stack) == 1
 
     # Date header is visible in tasks, notes, activity
