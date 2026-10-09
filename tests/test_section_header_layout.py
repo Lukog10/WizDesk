@@ -45,6 +45,7 @@ def test_section_header_hierarchy(dialog):
     # Verify page_title_lbl and date_header_container are inside card_header_widget
     assert dialog.page_title_lbl.parent() == dialog.card_header_widget
     assert dialog.date_header_container.parent() == dialog.card_header_widget
+    assert dialog.card_header_widget.layout().spacing() == 6
 
 
 def test_window_controls_dimensions_and_placement(dialog):

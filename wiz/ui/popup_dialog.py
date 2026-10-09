@@ -5287,8 +5287,8 @@ class QuickEntryDialog(QDialog):
         # Contextual Header inside inner card: Row 1 = Title, Row 2 = Date Subtitle
         self.card_header_widget = QWidget()
         card_header_layout = QVBoxLayout(self.card_header_widget)
-        card_header_layout.setContentsMargins(0, 0, 0, 2)
-        card_header_layout.setSpacing(2)
+        card_header_layout.setContentsMargins(0, 0, 0, 4)
+        card_header_layout.setSpacing(6)
 
         # Dynamic Page Title inside card top-left (visible across all views)
         self.page_title_lbl = QLabel("Tasks & To-Dos")
@@ -5326,7 +5326,7 @@ class QuickEntryDialog(QDialog):
         self.next_day_btn.hide()
 
         self.today_pill_btn = QPushButton("Today")
-        self.today_pill_btn.setFixedHeight(20)
+        self.today_pill_btn.setFixedHeight(18)
         self.today_pill_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.today_pill_btn.clicked.connect(self._on_today_clicked)
         self.today_pill_btn.setVisible(False)
@@ -5835,7 +5835,7 @@ class QuickEntryDialog(QDialog):
                 color: {subtitle_color};
                 border: none;
                 font-family: {FONT_SANS};
-                font-size: 13px;
+                font-size: 11px;
                 font-weight: 500;
                 padding: 0px;
                 text-align: left;
@@ -5846,7 +5846,7 @@ class QuickEntryDialog(QDialog):
             }}
         """)
 
-        self.today_pill_btn.setFont(get_font(11, QFont.Weight.Bold))
+        self.today_pill_btn.setFont(get_font(10, QFont.Weight.Bold))
         today_bg = "rgba(249, 115, 22, 0.15)" if self.is_dark else "rgba(234, 88, 12, 0.12)"
         today_color = "#FB923C" if self.is_dark else "#C2410C"
         today_hover_bg = "rgba(249, 115, 22, 0.25)" if self.is_dark else "rgba(234, 88, 12, 0.2)"
@@ -5857,9 +5857,9 @@ class QuickEntryDialog(QDialog):
                 border: none;
                 border-radius: 4px;
                 font-family: {FONT_SANS};
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 600;
-                padding: 1px 7px;
+                padding: 1px 6px;
             }}
             QPushButton:hover {{
                 background-color: {today_hover_bg};
