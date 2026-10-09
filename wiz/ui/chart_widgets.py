@@ -1083,7 +1083,7 @@ class ProjectComparisonChartWidget(QFrame):
             item = self.legend_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         for idx, s in enumerate(series[:4]):
@@ -1642,7 +1642,7 @@ class ProjectTrackingWidget(QFrame):
             item = self.targets_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         display_projects = projects
@@ -1925,7 +1925,7 @@ class AppUsageAnalyticsWidget(QFrame):
             item = self.targets_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         display_projects = projects
@@ -1969,7 +1969,7 @@ class AppUsageAnalyticsWidget(QFrame):
             item = self.donut_list_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         if not apps:
@@ -2025,7 +2025,7 @@ class AppUsageAnalyticsWidget(QFrame):
             item = self.bar_page_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         if not apps:

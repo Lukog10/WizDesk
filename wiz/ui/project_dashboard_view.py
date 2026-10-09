@@ -244,6 +244,7 @@ class ProjectDialog(QDialog):
         if not name:
             QMessageBox.warning(self, "Invalid Name", "Project name cannot be empty.")
             return
+        self.hide()
         self.accept()
 
     def get_data(self) -> Tuple[str, str, str, List[str]]:
@@ -757,86 +758,90 @@ class ProjectsOverviewPage(QWidget):
 
     def refresh(self) -> None:
         """Fetch updated project metrics and re-render charts, stats, and project targets."""
-        while self.cards_layout.count() > 0:
-            item = self.cards_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.setParent(None)
-                widget.deleteLater()
+        self.setUpdatesEnabled(False)
+        try:
+            while self.cards_layout.count() > 0:
+                item = self.cards_layout.takeAt(0)
+                widget = item.widget()
+                if widget:
+                    widget.hide()
+                    widget.deleteLater()
 
-        # 1. Fetch high-level analytics
-        analytics = self.repo.get_dashboard_analytics(timeframe=self.active_timeframe)
+            # 1. Fetch high-level analytics
+            analytics = self.repo.get_dashboard_analytics(timeframe=self.active_timeframe)
 
-        tot_mins = analytics.get("total_tracked_minutes", 0.0)
-        tot_hrs = analytics.get("total_tracked_hours", 0.0)
-        chg_pct = analytics.get("change_percentage", 0.0)
-        chg_str = f"+{chg_pct}%" if chg_pct > 0 else (f"{chg_pct}%" if chg_pct < 0 else "")
+            tot_mins = analytics.get("total_tracked_minutes", 0.0)
+            tot_hrs = analytics.get("total_tracked_hours", 0.0)
+            chg_pct = analytics.get("change_percentage", 0.0)
+            chg_str = f"+{chg_pct}%" if chg_pct > 0 else (f"{chg_pct}%" if chg_pct < 0 else "")
 
-        # Compute bucket totals for hero sparkline
-        num_buckets = len(analytics.get("chart_bucket_labels", []))
-        sparkline_totals = [0.0] * num_buckets
-        for s in analytics.get("chart_project_series", []):
-            for b_i, val in enumerate(s.get("hours", [])):
-                if b_i < num_buckets:
-                    sparkline_totals[b_i] += val
+            # Compute bucket totals for hero sparkline
+            num_buckets = len(analytics.get("chart_bucket_labels", []))
+            sparkline_totals = [0.0] * num_buckets
+            for s in analytics.get("chart_project_series", []):
+                for b_i, val in enumerate(s.get("hours", [])):
+                    if b_i < num_buckets:
+                        sparkline_totals[b_i] += val
 
-        self.kpi_hero.set_sparkline_data(sparkline_totals)
-        self.kpi_hero.update_data(f"{tot_hrs}h", chg_str, subtitle="vs prev period")
+            self.kpi_hero.set_sparkline_data(sparkline_totals)
+            self.kpi_hero.update_data(f"{tot_hrs}h", chg_str, subtitle="vs prev period")
 
-        active_cnt = analytics.get("active_projects_count", 0)
-        self.kpi_projects.update_data(str(active_cnt), "", subtitle=f"{active_cnt} active this period")
+            active_cnt = analytics.get("active_projects_count", 0)
+            self.kpi_projects.update_data(str(active_cnt), "", subtitle=f"{active_cnt} active this period")
 
-        top_app = analytics.get("top_app")
-        if top_app:
-            pct_share = top_app.get("percentage", 0)
-            self.kpi_top_app.update_data(
-                clean_app_name(top_app["app_name"]),
-                f"{top_app.get('hours', 0.0)}h",
-                subtitle=f"{pct_share}% of time",
+            top_app = analytics.get("top_app")
+            if top_app:
+                pct_share = top_app.get("percentage", 0)
+                self.kpi_top_app.update_data(
+                    clean_app_name(top_app["app_name"]),
+                    f"{top_app.get('hours', 0.0)}h",
+                    subtitle=f"{pct_share}% of time",
+                )
+            else:
+                self.kpi_top_app.update_data("None", "", subtitle="No app activity")
+
+            completed_tasks = analytics.get("completed_tasks_count", 0)
+            open_tasks = analytics.get("open_tasks_count", 0)
+            tot_tasks = completed_tasks + open_tasks
+            task_pct_int = round(completed_tasks / tot_tasks * 100) if tot_tasks > 0 else 0
+            task_pct_str = f"{task_pct_int}%" if tot_tasks > 0 else ""
+            self.kpi_tasks.update_data(
+                f"{completed_tasks} / {tot_tasks}",
+                task_pct_str,
+                subtitle=f"{task_pct_int}% completed" if tot_tasks > 0 else "No tasks scheduled",
+                progress_pct=task_pct_int if tot_tasks > 0 else None,
             )
-        else:
-            self.kpi_top_app.update_data("None", "", subtitle="No app activity")
 
-        completed_tasks = analytics.get("completed_tasks_count", 0)
-        open_tasks = analytics.get("open_tasks_count", 0)
-        tot_tasks = completed_tasks + open_tasks
-        task_pct_int = round(completed_tasks / tot_tasks * 100) if tot_tasks > 0 else 0
-        task_pct_str = f"{task_pct_int}%" if tot_tasks > 0 else ""
-        self.kpi_tasks.update_data(
-            f"{completed_tasks} / {tot_tasks}",
-            task_pct_str,
-            subtitle=f"{task_pct_int}% completed" if tot_tasks > 0 else "No tasks scheduled",
-            progress_pct=task_pct_int if tot_tasks > 0 else None,
-        )
+            # Update legacy labels
+            self.lbl_metric_projects.setText(f"Projects: {active_cnt}")
+            self.lbl_metric_time.setText(f"Tracked: {format_duration(tot_mins)}")
+            self.lbl_metric_tasks.setText(f"Tasks: {completed_tasks} / {tot_tasks}")
 
-        # Update legacy labels
-        self.lbl_metric_projects.setText(f"Projects: {active_cnt}")
-        self.lbl_metric_time.setText(f"Tracked: {format_duration(tot_mins)}")
-        self.lbl_metric_tasks.setText(f"Tasks: {completed_tasks} / {tot_tasks}")
+            # 2. Update Visual Charts with submetrics
+            self.chart_widget.set_data(
+                analytics.get("chart_project_series", []),
+                analytics.get("chart_bucket_labels", []),
+                total_hours=tot_hrs,
+                change_pct=chg_pct,
+            )
+            self.apps_widget.set_data(
+                analytics.get("apps_breakdown", []),
+                tot_hrs,
+            )
 
-        # 2. Update Visual Charts with submetrics
-        self.chart_widget.set_data(
-            analytics.get("chart_project_series", []),
-            analytics.get("chart_bucket_labels", []),
-            total_hours=tot_hrs,
-            change_pct=chg_pct,
-        )
-        self.apps_widget.set_data(
-            analytics.get("apps_breakdown", []),
-            tot_hrs,
-        )
+            # 3. Fetch project overview metrics for project target progress tracks
+            metrics_list = self.repo.get_projects_overview_metrics(timeframe=self.active_timeframe)
+            self.lbl_directory_count.setText(f"{len(metrics_list)} Projects")
+            self.apps_widget.set_project_targets(metrics_list, tot_hrs)
+            self.projects_widget.set_project_targets(metrics_list, tot_hrs)
 
-        # 3. Fetch project overview metrics for project target progress tracks
-        metrics_list = self.repo.get_projects_overview_metrics(timeframe=self.active_timeframe)
-        self.lbl_directory_count.setText(f"{len(metrics_list)} Projects")
-        self.apps_widget.set_project_targets(metrics_list, tot_hrs)
-        self.projects_widget.set_project_targets(metrics_list, tot_hrs)
-
-        # Populate legacy cards container
-        for data in metrics_list:
-            card = ProjectSummaryCard(data, is_dark=self.is_dark)
-            card.clicked.connect(self.project_selected.emit)
-            self.cards_layout.addWidget(card)
+            # Populate legacy cards container
+            for data in metrics_list:
+                card = ProjectSummaryCard(data, is_dark=self.is_dark)
+                card.clicked.connect(self.project_selected.emit)
+                self.cards_layout.addWidget(card)
+        finally:
+            self.setUpdatesEnabled(True)
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
@@ -1303,6 +1308,9 @@ class ProjectDetailPage(QWidget):
 
     def load_project(self, project_name: str) -> None:
         """Load and display comprehensive details for the specified project."""
+        top_win = self.window()
+        if top_win:
+            top_win.setUpdatesEnabled(False)
         self.setUpdatesEnabled(False)
         try:
             self.current_project_name = project_name
@@ -1341,13 +1349,15 @@ class ProjectDetailPage(QWidget):
             self._render_keywords(kws, proj.description if proj else "")
         finally:
             self.setUpdatesEnabled(True)
+            if top_win:
+                top_win.setUpdatesEnabled(True)
 
     def _render_tasks(self, tasks: List[TaskRecord]) -> None:
         while self.tasks_content_layout.count() > 0:
             item = self.tasks_content_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         if not tasks:
@@ -1408,7 +1418,7 @@ class ProjectDetailPage(QWidget):
             item = self.apps_content_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         if not apps:
@@ -1453,7 +1463,7 @@ class ProjectDetailPage(QWidget):
             item = self.kw_content_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
 
         card = QFrame()
@@ -1501,16 +1511,24 @@ class ProjectDetailPage(QWidget):
         target = next((p for p in projects if p.name == self.current_project_name), None)
         if not target:
             return
-        dlg = ProjectDialog(self.window() if self.window() else self, is_dark=self.is_dark, project=target)
+        top_win = self.window()
+        dlg = ProjectDialog(top_win if top_win else self, is_dark=self.is_dark, project=target)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             name, color, desc, kws = dlg.get_data()
-            if name != target.name:
-                self.repo.rename_project(target.name, name, color=color, keywords=kws, description=desc)
-            else:
-                self.repo.create_or_update_project(name, kws, color=color, description=desc)
-            self.current_project_name = name
-            self.load_project(name)
-            self.project_updated.emit()
+            dlg.deleteLater()
+            if top_win:
+                top_win.setUpdatesEnabled(False)
+            try:
+                if name != target.name:
+                    self.repo.rename_project(target.name, name, color=color, keywords=kws, description=desc)
+                else:
+                    self.repo.create_or_update_project(name, kws, color=color, description=desc)
+                self.current_project_name = name
+                self.load_project(name)
+                self.project_updated.emit()
+            finally:
+                if top_win:
+                    top_win.setUpdatesEnabled(True)
 
     def _on_delete_project(self) -> None:
         reply = QMessageBox.question(
@@ -1520,9 +1538,16 @@ class ProjectDetailPage(QWidget):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if reply == QMessageBox.StandardButton.Yes:
-            self.repo.delete_project_by_name(self.current_project_name)
-            self.project_updated.emit()
-            self.back_clicked.emit()
+            top_win = self.window()
+            if top_win:
+                top_win.setUpdatesEnabled(False)
+            try:
+                self.repo.delete_project_by_name(self.current_project_name)
+                self.project_updated.emit()
+                self.back_clicked.emit()
+            finally:
+                if top_win:
+                    top_win.setUpdatesEnabled(True)
 
     def set_theme(self, is_dark: bool) -> None:
         self.is_dark = is_dark
@@ -1791,20 +1816,29 @@ class ProjectDashboardView(QWidget):
         self.stack.setCurrentWidget(self.overview_page)
 
     def _on_project_updated(self) -> None:
-        self.overview_page.refresh()
+        if self.stack.currentWidget() == self.overview_page:
+            self.overview_page.refresh()
         self.project_changed.emit()
         from wiz.core.signals import app_signals
         app_signals.projects_changed.emit()
 
     def _create_new_project(self) -> None:
-        dlg = ProjectDialog(self.window() if self.window() else self, is_dark=self.is_dark)
+        top_win = self.window()
+        dlg = ProjectDialog(top_win if top_win else self, is_dark=self.is_dark)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             name, color, desc, kws = dlg.get_data()
-            self.repo.create_or_update_project(name, kws, color=color, description=desc)
-            self.overview_page.refresh()
-            self.project_changed.emit()
-            from wiz.core.signals import app_signals
-            app_signals.projects_changed.emit()
+            dlg.deleteLater()
+            if top_win:
+                top_win.setUpdatesEnabled(False)
+            try:
+                self.repo.create_or_update_project(name, kws, color=color, description=desc)
+                self.overview_page.refresh()
+                self.project_changed.emit()
+                from wiz.core.signals import app_signals
+                app_signals.projects_changed.emit()
+            finally:
+                if top_win:
+                    top_win.setUpdatesEnabled(True)
 
     def load_data(self) -> None:
         """Refresh dashboard view data."""

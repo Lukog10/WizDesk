@@ -6260,15 +6260,18 @@ class QuickEntryDialog(QDialog):
 
     def _on_projects_changed_sync(self) -> None:
         """Handle real-time project synchronization across all views."""
+        if QApplication.activeModalWidget() is not None:
+            return
         self._populate_projects()
-        if hasattr(self, "refresh_tasks"):
+        if self.current_view_mode == "tasks" and hasattr(self, "refresh_tasks"):
             self.refresh_tasks()
-        if hasattr(self, "refresh_notes"):
+        elif self.current_view_mode == "notes" and hasattr(self, "refresh_notes"):
             self.refresh_notes()
-        if hasattr(self, "project_dashboard_view"):
-            self.project_dashboard_view.load_data()
-        if hasattr(self, "timeline_view"):
+        elif self.current_view_mode == "activity" and hasattr(self, "timeline_view"):
             self.timeline_view.load_date(self.selected_date.strftime("%Y-%m-%d"))
+        elif self.current_view_mode == "projects" and hasattr(self, "project_dashboard_view"):
+            if self.project_dashboard_view.stack.currentWidget() == self.project_dashboard_view.overview_page:
+                self.project_dashboard_view.overview_page.refresh()
 
     def _open_calendar(self) -> None:
         """Open popup calendar picker."""
@@ -6385,7 +6388,7 @@ class QuickEntryDialog(QDialog):
             item = self.content_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
-                widget.setParent(None)
+                widget.hide()
                 widget.deleteLater()
 
         active_filter = self.filter_bar.current_filter
@@ -6485,7 +6488,7 @@ class QuickEntryDialog(QDialog):
             item = self.notes_content_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
-                widget.setParent(None)
+                widget.hide()
                 widget.deleteLater()
 
         notes = self.repo.get_permanent_notes()
