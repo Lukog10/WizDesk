@@ -228,12 +228,14 @@ def test_quick_entry_dialog_widescreen_and_sidebar_integration(qapp, repo: Stora
     assert dialog.current_view_mode == "notes"
     assert dialog.page_title_lbl.text() == "Quick Notes"
     assert dialog.stack.currentWidget() == dialog.notes_page
+    assert dialog.date_header_container.isHidden()
 
     # Switch to Activity Timeline via sidebar pill
     dialog.sidebar.pills["activity"].click()
     assert dialog.current_view_mode == "activity"
     assert dialog.page_title_lbl.text() == "Activity Timeline"
     assert dialog.stack.currentWidget() == dialog.timeline_view
+    assert not dialog.date_header_container.isHidden()
 
     # Switch to Projects Dashboard via sidebar pill
     dialog.sidebar.pills["projects"].click()

@@ -60,11 +60,12 @@ def test_window_controls_dimensions_and_placement(dialog):
 
 
 def test_date_button_pill_and_hidden_chevrons(dialog):
-    """Verify chevron navigation buttons are hidden and date_btn is visible as a clickable pill."""
+    """Verify chevron navigation buttons are hidden and date_btn displays formatted date subtitle."""
+    from wiz.ui.popup_dialog import format_header_date
     assert dialog.prev_day_btn.isHidden() is True
     assert dialog.next_day_btn.isHidden() is True
     assert dialog.date_btn.isVisible() is True
-    assert dialog.date_btn.text() != ""
+    assert dialog.date_btn.text() == format_header_date(dialog.selected_date)
 
 
 def test_header_visibility_matrix(dialog):
@@ -75,11 +76,11 @@ def test_header_visibility_matrix(dialog):
     assert dialog.page_title_lbl.isVisible() is True
     assert dialog.date_header_container.isVisible() is True
 
-    # 2. Notes mode
+    # 2. Notes mode (all notes displayed, date header is hidden)
     dialog._set_view_mode("notes")
     assert dialog.page_title_lbl.text() == "Quick Notes"
     assert dialog.page_title_lbl.isVisible() is True
-    assert dialog.date_header_container.isVisible() is True
+    assert dialog.date_header_container.isVisible() is False
 
     # 3. Activity mode
     dialog._set_view_mode("activity")

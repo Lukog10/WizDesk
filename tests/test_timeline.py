@@ -291,11 +291,11 @@ def test_date_header_container_inside_card_position(qapp, repo: StorageRepositor
     assert dialog.inner_layout.indexOf(dialog.card_header_widget) == 0
     assert dialog.inner_layout.indexOf(dialog.stack) == 1
 
-    # Date header is visible in tasks, notes, activity
+    # Date header is visible in tasks and activity, hidden in notes
     assert dialog.date_header_container.isVisible() is True
 
     dialog.notes_mode_btn.click()
-    assert dialog.date_header_container.isVisible() is True
+    assert dialog.date_header_container.isVisible() is False
 
     dialog.activity_mode_btn.click()
     assert dialog.date_header_container.isVisible() is True

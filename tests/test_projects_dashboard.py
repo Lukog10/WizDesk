@@ -312,10 +312,10 @@ def test_quick_entry_dialog_projects_mode(qapp, repo: StorageRepository):
     assert dialog.current_view_mode == "activity"
     assert not dialog.date_header_container.isHidden()
 
-    # Switch to Quick Notes
+    # Switch to Quick Notes (all notes displayed, date header is hidden)
     dialog.notes_mode_btn.click()
     assert dialog.current_view_mode == "notes"
-    assert not dialog.date_header_container.isHidden()
+    assert dialog.date_header_container.isHidden()
 
 
 def test_get_dashboard_analytics_aggregation(repo: StorageRepository):

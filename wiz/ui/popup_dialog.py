@@ -107,6 +107,17 @@ def get_context_menu_style(is_dark: bool = False) -> str:
 
 
 
+def format_header_date(d: date) -> str:
+    """Format date matching reference design: e.g. 'Monday, 05th May, 2025'."""
+    day = d.day
+    if 11 <= (day % 100) <= 13:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+    day_str = f"{day:02d}{suffix}"
+    return f"{d.strftime('%A')}, {day_str} {d.strftime('%B, %Y')}"
+
+
 CALENDAR_MONTHS = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -5273,19 +5284,19 @@ class QuickEntryDialog(QDialog):
         self.inner_layout.setContentsMargins(14, 10, 14, 10)
         self.inner_layout.setSpacing(10)
 
-        # Contextual Header inside inner card: Row 1 = Title, Row 2 = Date Navigator
+        # Contextual Header inside inner card: Row 1 = Title, Row 2 = Date Subtitle
         self.card_header_widget = QWidget()
         card_header_layout = QVBoxLayout(self.card_header_widget)
-        card_header_layout.setContentsMargins(0, 0, 0, 4)
-        card_header_layout.setSpacing(6)
+        card_header_layout.setContentsMargins(0, 0, 0, 2)
+        card_header_layout.setSpacing(2)
 
         # Dynamic Page Title inside card top-left (visible across all views)
         self.page_title_lbl = QLabel("Tasks & To-Dos")
-        self.page_title_lbl.setFont(get_font(15, QFont.Weight.Bold, display=True))
+        self.page_title_lbl.setFont(get_font(16, QFont.Weight.Bold, display=True))
         self.page_title_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         card_header_layout.addWidget(self.page_title_lbl)
 
-        # Contextual Date Header inside inner card (visible in tasks, notes, activity)
+        # Contextual Date Header inside inner card (visible in tasks and activity)
         self.date_header_container = QWidget()
         date_header_layout = QHBoxLayout(self.date_header_container)
         date_header_layout.setContentsMargins(0, 0, 0, 0)
@@ -5299,10 +5310,10 @@ class QuickEntryDialog(QDialog):
         self.prev_day_btn.clicked.connect(self._on_prev_day)
         self.prev_day_btn.hide()
 
-        # Date Button (Clickable pill opening full calendar)
+        # Date Button (Clickable text subtitle without border or background box)
         self.date_btn = QPushButton()
         self.date_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.date_btn.setToolTip("Click to open calendar")
+        self.date_btn.setToolTip("Click to pick date")
         self.date_btn.clicked.connect(self._open_calendar)
         date_header_layout.addWidget(self.date_btn)
 
@@ -5315,7 +5326,7 @@ class QuickEntryDialog(QDialog):
         self.next_day_btn.hide()
 
         self.today_pill_btn = QPushButton("Today")
-        self.today_pill_btn.setFixedHeight(24)
+        self.today_pill_btn.setFixedHeight(20)
         self.today_pill_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.today_pill_btn.clicked.connect(self._on_today_clicked)
         self.today_pill_btn.setVisible(False)
@@ -5816,38 +5827,42 @@ class QuickEntryDialog(QDialog):
         self.prev_day_btn.setStyleSheet(day_nav_qss)
         self.next_day_btn.setStyleSheet(day_nav_qss)
 
-        date_pill_bg = "rgba(255, 255, 255, 0.05)" if self.is_dark else "rgba(0, 0, 0, 0.04)"
+        subtitle_color = "#9CA3AF" if self.is_dark else "#6B7280"
+        subtitle_hover_color = "#F4F4F5" if self.is_dark else "#18181B"
         self.date_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {date_pill_bg};
-                color: {date_btn_color};
-                border: 1px solid {day_btn_border};
+                background: transparent;
+                color: {subtitle_color};
+                border: none;
                 font-family: {FONT_SANS};
                 font-size: 13px;
-                font-weight: 600;
-                padding: 4px 10px;
-                border-radius: 6px;
+                font-weight: 500;
+                padding: 0px;
+                text-align: left;
             }}
             QPushButton:hover {{
-                background-color: {day_btn_hover_bg};
-                border-color: {input_focus_border};
+                color: {subtitle_hover_color};
+                background: transparent;
             }}
         """)
 
         self.today_pill_btn.setFont(get_font(11, QFont.Weight.Bold))
+        today_bg = "rgba(249, 115, 22, 0.15)" if self.is_dark else "rgba(234, 88, 12, 0.12)"
+        today_color = "#FB923C" if self.is_dark else "#C2410C"
+        today_hover_bg = "rgba(249, 115, 22, 0.25)" if self.is_dark else "rgba(234, 88, 12, 0.2)"
         self.today_pill_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {today_pill_bg};
-                color: {today_pill_color};
+                background-color: {today_bg};
+                color: {today_color};
                 border: none;
-                border-radius: 6px;
+                border-radius: 4px;
                 font-family: {FONT_SANS};
                 font-size: 11px;
                 font-weight: 600;
-                padding: 0 8px;
+                padding: 1px 7px;
             }}
             QPushButton:hover {{
-                background-color: {today_pill_hover};
+                background-color: {today_hover_bg};
             }}
         """)
 
@@ -6001,7 +6016,7 @@ class QuickEntryDialog(QDialog):
             self.page_title_lbl.show()
 
         if hasattr(self, "date_header_container"):
-            self.date_header_container.setVisible(mode in ("tasks", "notes", "activity"))
+            self.date_header_container.setVisible(mode in ("tasks", "activity"))
 
         if mode == "tasks":
             self.stack.setCurrentWidget(self.tasks_page)
@@ -6171,7 +6186,7 @@ class QuickEntryDialog(QDialog):
 
     def _update_date_display(self) -> None:
         """Update date button label and 'Today' shortcut indicator."""
-        date_str = self.selected_date.strftime("%B %d, %A")
+        date_str = format_header_date(self.selected_date)
         self.date_btn.setText(date_str)
         is_today = (self.selected_date == date.today())
         self.today_pill_btn.setVisible(not is_today)
