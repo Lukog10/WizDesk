@@ -183,11 +183,17 @@ class MonthCalendarGridWidget(QWidget):
             tile_rect = cell_rect.adjusted(3.0, 3.0, -3.0, -3.0)
 
             is_current_month = (d.month == self.current_month)
-            if is_current_month:
-                self._cell_rects[d] = cell_rect
+            if not is_current_month:
+                col += 1
+                if col == 7:
+                    col = 0
+                    row += 1
+                continue
+
+            self._cell_rects[d] = cell_rect
 
             is_today = (d == today_dt)
-            is_hovered = (d == self._hovered_date and is_current_month)
+            is_hovered = (d == self._hovered_date)
             d_str = d.strftime("%Y-%m-%d")
 
             # Extract task statistics for date
@@ -234,33 +240,28 @@ class MonthCalendarGridWidget(QWidget):
             # Draw day tile surface:
             # - ONLY today gets full accent color fill.
             # - Chosen/selected effect is removed per user request.
-            if is_current_month:
-                if is_today:
-                    painter.setPen(Qt.PenStyle.NoPen)
-                    painter.setBrush(accent_color)
-                    painter.drawRoundedRect(tile_rect, 7.0, 7.0)
-                elif is_hovered:
-                    painter.setPen(QColor(255, 255, 255, 40 if self.is_dark else 35))
-                    painter.setBrush(QColor(255, 255, 255, 14 if self.is_dark else 10))
-                    painter.drawRoundedRect(tile_rect, 7.0, 7.0)
-                else:
-                    painter.setPen(QColor(255, 255, 255, 10 if self.is_dark else 12))
-                    painter.setBrush(QColor(255, 255, 255, 4 if self.is_dark else 4))
-                    painter.drawRoundedRect(tile_rect, 7.0, 7.0)
+            if is_today:
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(accent_color)
+                painter.drawRoundedRect(tile_rect, 7.0, 7.0)
+            elif is_hovered:
+                painter.setPen(QColor(255, 255, 255, 40 if self.is_dark else 35))
+                painter.setBrush(QColor(255, 255, 255, 14 if self.is_dark else 10))
+                painter.drawRoundedRect(tile_rect, 7.0, 7.0)
             else:
-                painter.setPen(QColor(255, 255, 255, 4 if self.is_dark else 5))
-                painter.setBrush(QColor(255, 255, 255, 2 if self.is_dark else 2))
+                painter.setPen(QColor(255, 255, 255, 10 if self.is_dark else 12))
+                painter.setBrush(QColor(255, 255, 255, 4 if self.is_dark else 4))
                 painter.drawRoundedRect(tile_rect, 7.0, 7.0)
 
             # Draw day number (clean, no chosen effect)
             num_rect = QRectF(tile_rect.x() + 8.0, tile_rect.y() + 6.0, 24.0, 24.0)
-            if is_today and is_current_month:
+            if is_today:
                 painter.setFont(get_font(10, QFont.Weight.Bold))
                 painter.setPen(QColor("#FFFFFF"))
                 painter.drawText(num_rect, int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), str(d.day))
             else:
                 painter.setFont(get_font(10, QFont.Weight.Medium))
-                painter.setPen(day_text_color if is_current_month else dim_text_color)
+                painter.setPen(day_text_color)
                 painter.drawText(num_rect, int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), str(d.day))
 
             # Draw finish / unfinish icons using requested SVGs:
@@ -386,7 +387,7 @@ class ScheduleTaskModalDialog(QDialog):
         header.setContentsMargins(0, 0, 0, 0)
 
         title_lbl = QLabel("Schedule Task")
-        title_lbl.setFont(get_font(13, QFont.Weight.Bold))
+        title_lbl.setFont(get_font(12, QFont.Weight.DemiBold, display=True))
         title_lbl.setStyleSheet(f"color: {title_color}; background: transparent; border: none;")
         header.addWidget(title_lbl)
 
@@ -861,7 +862,7 @@ class CalendarView(QWidget):
         top_bar.addWidget(self.prev_month_btn)
 
         self.month_label = QLabel()
-        self.month_label.setFont(get_font(13, QFont.Weight.Bold))
+        self.month_label.setFont(get_font(12, QFont.Weight.DemiBold, display=True))
         self.month_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         top_bar.addWidget(self.month_label)
 
@@ -938,7 +939,7 @@ class CalendarView(QWidget):
         agenda_top_bar.addWidget(self.btn_back_to_cal)
 
         self.agenda_title = QLabel()
-        self.agenda_title.setFont(get_font(13, QFont.Weight.Bold))
+        self.agenda_title.setFont(get_font(12, QFont.Weight.DemiBold, display=True))
         agenda_top_bar.addWidget(self.agenda_title)
 
         # Task count badge hidden per user request ("remove task number mention")

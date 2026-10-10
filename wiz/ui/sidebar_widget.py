@@ -329,7 +329,7 @@ class SideNavBar(QWidget):
         brand_c_layout.addWidget(self.logo_lbl, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.brand_title = QLabel("WizDesk")
-        self.brand_title.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.brand_title.setFont(get_font(11, QFont.Weight.DemiBold, display=True))
         brand_c_layout.addWidget(self.brand_title, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self.brand_layout.addWidget(self.brand_container, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -352,7 +352,7 @@ class SideNavBar(QWidget):
 
         # 2. Section Header: Workspace
         self.workspace_lbl = QLabel("WORKSPACE")
-        self.workspace_lbl.setFont(get_font(8, QFont.Weight.Bold, display=True))
+        self.workspace_lbl.setFont(get_font(8, QFont.Weight.DemiBold, display=True))
         self.workspace_lbl.setStyleSheet("padding-left: 8px; margin-bottom: 2px;")
         self.main_layout.addWidget(self.workspace_lbl)
 

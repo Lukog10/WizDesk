@@ -124,6 +124,26 @@ CALENDAR_MONTHS = [
 ]
 
 
+class MonthOnlyCalendarWidget(QCalendarWidget):
+    """QCalendarWidget that hides dates outside the current displayed month."""
+
+    def __init__(self, is_dark: bool = True, parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        self.is_dark = is_dark
+
+    def set_dark(self, is_dark: bool) -> None:
+        self.is_dark = is_dark
+        self.update()
+
+    def paintCell(self, painter: QPainter, rect: QRect, cell_date: QDate) -> None:
+        if cell_date.month() != self.monthShown():
+            # Completely suppress rendering of dates from previous/next months
+            bg = QColor("#18181B" if self.is_dark else "#FFFFFF")
+            painter.fillRect(rect, bg)
+            return
+        super().paintCell(painter, rect, cell_date)
+
+
 class CalendarPopupDialog(QDialog):
     """
     Clean, minimalist popup calendar for WizDesk date navigation.
@@ -295,7 +315,7 @@ class CalendarPopupDialog(QDialog):
 
         card_layout.addLayout(nav_layout)
 
-        self.calendar = QCalendarWidget()
+        self.calendar = MonthOnlyCalendarWidget(is_dark=self.is_dark)
         if self.min_date:
             self.calendar.setMinimumDate(QDate(self.min_date.year, self.min_date.month, self.min_date.day))
         self.calendar.setNavigationBarVisible(False)
@@ -405,6 +425,10 @@ class CalendarPopupDialog(QDialog):
             self.calendar.setCurrentPage(cur_y, cur_m + 1)
 
     def _on_date_selected(self, qdate: QDate) -> None:
+        if qdate.month() != self.calendar.monthShown():
+            prev = QDate(self.selected_date.year, self.selected_date.month, self.selected_date.day)
+            self.calendar.setSelectedDate(prev)
+            return
         sel = date(qdate.year(), qdate.month(), qdate.day())
         if self.min_date and sel < self.min_date:
             return
@@ -2039,6 +2063,44 @@ class ProjectIconButton(QPushButton):
         self.setToolTip(f"Project: {self.current_project}")
         self.update()
 
+    def count(self) -> int:
+        """Compatibility accessor returning number of selectable options."""
+        return len(self.all_projects) + 1
+
+    def itemIcon(self, index: int) -> QIcon:
+        """Compatibility accessor returning icon for given index."""
+        if index == 0:
+            return get_status_icon("icons8-no-entry-100.png", "#71717A", size=16)
+        if 1 <= index <= len(self.all_projects):
+            name = self.all_projects[index - 1]
+            color = self.project_colors.get(name, "#3B82F6")
+            return get_status_icon("folder.svg", color, size=16)
+        return QIcon()
+
+    def itemText(self, index: int) -> str:
+        """Compatibility accessor returning label for given index."""
+        if index == 0:
+            return "None"
+        if 1 <= index <= len(self.all_projects):
+            return self.all_projects[index - 1]
+        return ""
+
+    def findText(self, text: str) -> int:
+        """Compatibility accessor returning index of given text."""
+        if text == "None":
+            return 0
+        if text in self.all_projects:
+            return self.all_projects.index(text) + 1
+        return -1
+
+    def setCurrentIndex(self, index: int) -> None:
+        """Compatibility setter selecting item at given index."""
+        if index == 0:
+            self.current_project = "None"
+        elif 1 <= index <= len(self.all_projects):
+            self.current_project = self.all_projects[index - 1]
+        self.update()
+
     def set_projects(self, projects: List[Any]) -> None:
         """Update available project choices and their colors."""
         names: List[str] = []
@@ -2166,6 +2228,56 @@ class TagIconButton(QPushButton):
         self.selected_tag_ids = list(tag_ids)
         self._update_tooltip()
         self.update()
+
+    def count(self) -> int:
+        """Compatibility accessor returning count of tags plus None option."""
+        return len(self.repo.get_all_tags()) + 1
+
+    def itemIcon(self, index: int) -> QIcon:
+        """Compatibility accessor returning icon for given tag index."""
+        if index == 0:
+            return get_status_icon("icons8-no-entry-100.png", "#71717A", size=16)
+        all_tags = self.repo.get_all_tags()
+        if 1 <= index <= len(all_tags):
+            tag = all_tags[index - 1]
+            icon_name = tag.icon or "tag"
+            tag_asset = f"tags/{icon_name}.svg"
+            if not config.get_asset_path(tag_asset).exists():
+                tag_asset = "tag.svg"
+            return get_status_icon(tag_asset, tag.color or "#3B82F6", size=16)
+        return QIcon()
+
+    def itemText(self, index: int) -> str:
+        """Compatibility accessor returning name for given tag index."""
+        if index == 0:
+            return "No Tag"
+        all_tags = self.repo.get_all_tags()
+        if 1 <= index <= len(all_tags):
+            return all_tags[index - 1].name
+        return ""
+
+    def findData(self, data: Any) -> int:
+        """Compatibility accessor returning index matching tag id."""
+        all_tags = self.repo.get_all_tags()
+        for idx, tag in enumerate(all_tags, start=1):
+            if tag.id == data:
+                return idx
+        return -1
+
+    def setCurrentIndex(self, index: int) -> None:
+        """Compatibility setter selecting tag by index."""
+        if index == 0:
+            self.clear_selection()
+        else:
+            all_tags = self.repo.get_all_tags()
+            if 1 <= index <= len(all_tags):
+                self.set_selected_tag_ids([all_tags[index - 1].id])
+
+    def currentData(self) -> Optional[int]:
+        """Compatibility accessor returning active tag id."""
+        if self.selected_tag_ids:
+            return self.selected_tag_ids[0]
+        return None
 
     def _update_tooltip(self) -> None:
         if not self.selected_tag_ids:
@@ -5334,7 +5446,7 @@ class QuickEntryDialog(QDialog):
 
         # Dynamic Page Title inside card top-left (visible across all views)
         self.page_title_lbl = QLabel("Tasks & To-Dos")
-        self.page_title_lbl.setFont(get_font(16, QFont.Weight.Bold, display=True))
+        self.page_title_lbl.setFont(get_font(14, QFont.Weight.DemiBold, display=True))
         self.page_title_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         card_header_layout.addWidget(self.page_title_lbl)
 

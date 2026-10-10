@@ -326,7 +326,7 @@ class SettingsView(QWidget):
         header_layout.setSpacing(4)
 
         self.title_lbl = QLabel("Settings", self)
-        self.title_lbl.setFont(get_font(15, QFont.Weight.Bold, display=True))
+        self.title_lbl.setFont(get_font(13, QFont.Weight.DemiBold, display=True))
         header_layout.addWidget(self.title_lbl)
 
         self.subtitle_lbl = QLabel("Manage your desktop preferences, keyboard shortcuts, and integrations.", self)
@@ -457,7 +457,7 @@ class SettingsView(QWidget):
         header_box.setContentsMargins(0, 0, 0, 10)
 
         self.gen_heading = QLabel("General & Companion Behavior", container)
-        self.gen_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.gen_heading.setFont(get_font(11, QFont.Weight.DemiBold, display=True))
         header_box.addWidget(self.gen_heading)
 
         self.gen_subheading = QLabel("Configure desktop mascot animations, window tracking behavior, and app startup.", container)
@@ -616,7 +616,7 @@ class SettingsView(QWidget):
         header_vbox.setSpacing(4)
 
         self.hk_heading = QLabel("Global Keyboard Shortcuts", container)
-        self.hk_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.hk_heading.setFont(get_font(11, QFont.Weight.DemiBold, display=True))
         header_vbox.addWidget(self.hk_heading)
 
         self.hk_subheading = QLabel(
@@ -761,7 +761,7 @@ class SettingsView(QWidget):
         header_box.setContentsMargins(0, 0, 0, 10)
 
         self.obs_heading = QLabel("Obsidian Vault Integration", container)
-        self.obs_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.obs_heading.setFont(get_font(11, QFont.Weight.DemiBold, display=True))
         header_box.addWidget(self.obs_heading)
 
         self.obs_subheading = QLabel(
@@ -864,7 +864,7 @@ class SettingsView(QWidget):
         header_box.setContentsMargins(0, 0, 0, 10)
 
         self.sec_heading = QLabel("Database Security & Backups", container)
-        self.sec_heading.setFont(get_font(12, QFont.Weight.Bold, display=True))
+        self.sec_heading.setFont(get_font(11, QFont.Weight.DemiBold, display=True))
         header_box.addWidget(self.sec_heading)
 
         self.sec_subheading = QLabel(
