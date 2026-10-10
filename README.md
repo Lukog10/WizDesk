@@ -22,7 +22,7 @@
 [![Storage](https://img.shields.io/badge/Database-SQLite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Integration](https://img.shields.io/badge/Sync-Obsidian%20Vault-7C3AED?style=for-the-badge&logo=obsidian&logoColor=white)](https://obsidian.md/)
 [![License](https://img.shields.io/badge/License-GPL%20v3-F59E0B?style=for-the-badge)](LICENSE)
-[![Test Suite](https://img.shields.io/badge/Tests-143%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
+[![Test Suite](https://img.shields.io/badge/Tests-239%20Passed-10B981?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
 
 <br />
 
@@ -81,6 +81,8 @@ WizDesk provides a unified productivity ecosystem built from five tightly integr
 Press `Ctrl+Shift+W` anytime to summon the central 920x680 PyQt6 workspace hub:
 - **Tasks and To-Dos Hub**:
   - Hierarchical parent tasks with collapsible subtask trees.
+  - Live stopwatch timer with start, pause, and cumulative duration tracking per task and subtask.
+  - Multi-colored custom Tags system with instant tag filtering.
   - Automatic parent progress calculation based on completed subtasks.
   - Segmented status tabs: Task, In Progress, Completed, and Cancelled.
   - Inline title editing, priority badges (Low, Medium, High, Urgent), scheduled dates, and recurring frequencies.
@@ -91,14 +93,14 @@ Press `Ctrl+Shift+W` anytime to summon the central 920x680 PyQt6 workspace hub:
   - Custom project keyword bindings, badge colors, and rename mappings.
 - **Calendar Schedule**:
   - Day and week schedule views visualizing past and planned tasks.
-  - Historical navigation with month and year picker dropdowns.
+  - Focused current-month calendar grid with clean date navigation.
   - Overdue task alerts and scheduled item indicators.
 - **Activity Timeline**:
   - Detailed chronological list of window tracking sessions.
   - Session duration badges, category chips, and application process summaries.
-- **Quick Notes Scratchpad**:
+- **Quick and Permanent Notes Scratchpad**:
   - Instant capture for reference notes, ideas, and scratchpad snippets.
-  - Project binding and full-text search indexing across all saved notes.
+  - Pinned notes support, note titles, tag categorization, and full-text search indexing.
 
 ### 4. Obsidian Markdown Vault Sync
 - **Local Vault Integration**: Point WizDesk to your local Obsidian vault root in Settings.
@@ -153,11 +155,11 @@ graph TD
     end
 
     subgraph Workspaces [Productivity Features & Interactive Workspaces]
-        VIEW_TASKS[Tasks & To-Dos Hub<br><i>Sections, Subtasks & Rules</i>]
+        VIEW_TASKS[Tasks & To-Dos Hub<br><i>Subtasks, Stopwatch & Tags</i>]
         VIEW_DASH[Projects Dashboard<br><i>KPIs, Donut & Bar Charts</i>]
         VIEW_TIMELINE[Activity Timeline<br><i>Day Timeline & App Sessions</i>]
         VIEW_CAL[Calendar Schedule<br><i>Month Grid & Agenda Presets</i>]
-        VIEW_NOTES[Quick Work Notes<br><i>Timestamped Scratchpad</i>]
+        VIEW_NOTES[Quick & Permanent Notes<br><i>Pinned Notes, Search & Tags</i>]
     end
 
     subgraph Tracking_Pipeline [Autonomous Tracking & Companion Engines]
@@ -168,12 +170,12 @@ graph TD
     end
 
     subgraph Storage_Pipeline [Local Storage, Cryptography & Sync Boundaries]
-        REPO[(Storage Repository Layer<br><i>SQLite CRUD & Aggregations</i>)]
-        GATE[OS Credential Gate<br><i>Windows DPAPI Integration</i>]
+        REPO[(Storage Repository Layer<br><i>SQLite CRUD, Tags & Stopwatch</i>)]
+        GATE[OS Credential Gate<br><i>Windows CredUI & DPAPI</i>]
         CRYPTO[AES-256 Crypto Manager<br><i>GCM Cipher & Key Derivation</i>]
         SQLITE[(Encrypted SQLite Engine<br><i>In-Memory + Sealed File</i>)]
         BACKUP[Database Backup Engine<br><i>Encrypted Database Snapshots</i>]
-        OBSIDIAN[Obsidian Vault Sync<br><i>Daily Work Log Markdown</i>]
+        OBSIDIAN[Obsidian Vault Bridge<br><i>Plain Markdown Daily Logs & Notes</i>]
         VAULT[(Local Obsidian Vault)]
     end
 
@@ -337,27 +339,38 @@ WizDesk/
 │   ├── CODEBASE_ARCHITECTURE.md     # In-depth architectural specification and contracts
 │   ├── wizdesk-banner.html          # Interactive standalone banner application
 │   └── wizdesk-interactive-map.html # Interactive Archify system and feature map
-├── tests/                           # Complete automated pytest suite (143 tests)
+├── tests/                           # Complete automated pytest suite (239 tests)
 │   ├── conftest.py                  # Pytest fixtures and environment setup
-│   ├── test_auth.py                 # Windows DPAPI and credential gate tests
+│   ├── test_auth.py                 # Windows DPAPI and CredUI credential gate tests
+│   ├── test_autostart.py            # Windows Run registry key autostart tests
 │   ├── test_backup.py               # Automated backup and restoration tests
-│   ├── test_calendar_view.py        # Calendar agenda and schedule tests
+│   ├── test_calendar_view.py        # Calendar agenda, current month focus and schedule tests
 │   ├── test_crypto.py               # AES-256-GCM encryption tests
 │   ├── test_dialogs.py              # UI, modal, and task widget tests
 │   ├── test_hotkey.py               # Global hotkey listener tests
 │   ├── test_mascot_core.py          # State machine and idle engine tests
+│   ├── test_notes.py                # Scratchpad and pinned notes tests
 │   ├── test_obsidian_sync.py        # Markdown parser and vault sync tests
 │   ├── test_pill_number_picker.py   # UI control component tests
 │   ├── test_project_rename.py       # Project renaming and keyword update tests
 │   ├── test_projects_dashboard.py   # Projects dashboard and analytics tests
 │   ├── test_sanitizer.py            # Window title sanitization tests
+│   ├── test_section_header_layout.py # Section header layout and spacing tests
 │   ├── test_sidebar_and_shell.py    # Sidebar, Settings, and Help & FAQ tests
 │   ├── test_sound.py                # Audio and sound synthesizer tests
+│   ├── test_stopwatch.py            # Live stopwatch timer logic tests
+│   ├── test_stopwatch_sync.py       # Stopwatch persistence and task syncing tests
 │   ├── test_storage.py              # SQLite storage repository tests
-│   └── test_timeline.py             # Activity timeline and metric tests
+│   ├── test_tags.py                 # Custom tags and badge filtering tests
+│   ├── test_timeline.py             # Activity timeline and metric tests
+│   ├── test_toggle_switch.py        # Smooth toggle switch animation tests
+│   ├── test_tracker.py              # Window tracker and polling tests
+│   └── test_workspace_all_features.py # End-to-end workspace integration tests
 ├── wiz/                             # Core Python application package
 │   ├── core/                        # Configuration, signals, sound, state machine
+│   │   ├── autostart.py             # Windows registry autostart manager
 │   │   ├── config.py                # Application configuration constants and defaults
+│   │   ├── crypto.py                # Windows DPAPI and AES-256 encryption utilities
 │   │   ├── idle_detector.py         # Win32 GetLastInputInfo idle detection
 │   │   ├── signals.py               # Centralized PyQt6 signal bus
 │   │   ├── sound.py                 # Procedural audio cue synthesizer
@@ -372,15 +385,18 @@ WizDesk/
 │   ├── tracker/                     # Passive window activity poller (5s interval)
 │   │   └── window_tracker.py        # Window title inspection and sanitization
 │   ├── ui/                          # PyQt6 widgets, dialogs, calendar, and shell
-│   │   ├── calendar_view.py         # Calendar schedule and day/week agenda
+│   │   ├── calendar_view.py         # Calendar schedule and current month agenda
 │   │   ├── help_faq_view.py         # Help & Platform Documentation canvas
 │   │   ├── mascot_widget.py         # Mascot canvas with eye-tracking pupil math
-│   │   ├── notes_view.py            # Quick work notes scratchpad
+│   │   ├── notes_view.py            # Quick work notes and pinned notes scratchpad
 │   │   ├── popup_dialog.py          # QuickEntryDialog 920x680 workspace shell
-│   │   ├── projects_dashboard_view.py # Projects tracking dashboard
+│   │   ├── project_dashboard_view.py # Projects tracking dashboard
+│   │   ├── quick_bar_dialog.py      # Quick note shortcut bar dialog
+│   │   ├── settings_dialog.py       # Independent settings dialog
 │   │   ├── settings_view.py         # Settings dialog and categories
 │   │   ├── sidebar_widget.py        # Side navigation bar
 │   │   ├── timeline_view.py         # Activity log timeline
+│   │   ├── toggle_switch.py         # Animated iOS-style toggle switch
 │   │   └── tray_icon.py             # System tray service
 │   ├── utils/                       # Utility modules
 │   │   └── hotkey.py                # Global hotkey listeners

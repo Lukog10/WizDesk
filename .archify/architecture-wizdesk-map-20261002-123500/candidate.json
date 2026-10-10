@@ -9,7 +9,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/Lukog10/WizDesk",
-      "revision": "c2e6a469270d41b11a2d764b877251005a02c34f",
+      "revision": "1134516f3837ef4028f481e5f71baa57e736ab1f",
       "link_mode": "local-only"
     }
   },
@@ -133,8 +133,8 @@
       "id": "tasks-hub",
       "type": "frontend",
       "label": "Tasks & To-Dos Hub",
-      "sublabel": "Sections, Colors & Rules",
-      "tag": "24 Preset Swatches & Rules",
+      "sublabel": "Subtasks, Stopwatch & Tags",
+      "tag": "Live Timers & Hierarchy",
       "pos": [
         40,
         290
@@ -224,9 +224,9 @@
     {
       "id": "notes-hub",
       "type": "frontend",
-      "label": "Quick Work Notes",
-      "sublabel": "Timestamped Scratchpad",
-      "tag": "Daily Project Notes Log",
+      "label": "Quick & Pinned Notes",
+      "sublabel": "Pinned Notes, Search & Tags",
+      "tag": "Permanent & Scratchpad Notes",
       "pos": [
         980,
         290
@@ -340,8 +340,8 @@
       "id": "obsidian-sync",
       "type": "external",
       "label": "Obsidian Vault Sync",
-      "sublabel": "Daily Work Log Markdown",
-      "tag": "Debounced Auto-Sync",
+      "sublabel": "Daily Log & Permanent Notes",
+      "tag": "Plain Markdown Bridge",
       "pos": [
         40,
         630
@@ -354,7 +354,7 @@
         {
           "path": "wiz/sync/obsidian.py",
           "line": 11,
-          "end_line": 135,
+          "end_line": 185,
           "label": "ObsidianSync"
         }
       ]
@@ -363,8 +363,8 @@
       "id": "storage-repo",
       "type": "database",
       "label": "Storage Repository",
-      "sublabel": "SQLite CRUD & Aggregations",
-      "tag": "In-Memory Cached Models",
+      "sublabel": "SQLite CRUD, Tags & Stopwatch",
+      "tag": "Unified Data Layer",
       "pos": [
         510,
         630
@@ -386,8 +386,8 @@
       "id": "os-auth",
       "type": "security",
       "label": "OS Credential Gate",
-      "sublabel": "CredUI / Polkit Prompt",
-      "tag": "Windows Hello Auth",
+      "sublabel": "Decryption & Key Auth Gate",
+      "tag": "CredUI / LogonUser Gate",
       "pos": [
         745,
         630
