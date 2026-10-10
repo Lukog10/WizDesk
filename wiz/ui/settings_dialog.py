@@ -175,12 +175,14 @@ class SettingsDialog(QDialog):
 
         self.dark_mode_check = SettingsCheckbox(checked=(config.theme == "dark"), size=18, parent=self.card, is_dark=self.is_dark)
         self.dark_mode_check.toggled.connect(self._on_dark_mode_toggled)
+        self.dark_mode_check.hide()
         pref_row_1.addWidget(self.dark_mode_check)
 
         self.dark_mode_lbl = QLabel("Dark mode")
         self.dark_mode_lbl.setFont(get_font(9, QFont.Weight.Medium))
         self.dark_mode_lbl.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.dark_mode_lbl.mousePressEvent = lambda e: self.dark_mode_check.setChecked(not self.dark_mode_check.isChecked())
+        self.dark_mode_lbl.hide()
         pref_row_1.addWidget(self.dark_mode_lbl)
 
         pref_box.addLayout(pref_row_1)

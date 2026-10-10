@@ -68,7 +68,7 @@ class Config:
             "sound_effects_enabled": True,
             "sound_volume": 0.65,
             "sleep_inactivity_sec": 60.0,
-            "theme": "light",
+            "theme": "dark",
             "sidebar_collapsed": False,
             "encryption_enabled": False,
             "auto_backup_enabled": True,
@@ -164,8 +164,8 @@ class Config:
 
     @property
     def theme(self) -> str:
-        """Return current application theme ('light' or 'dark')."""
-        return str(self.get("theme", "light")).lower()
+        """Return current application theme ('light' or 'dark'). Defaults to 'dark'."""
+        return str(self.get("theme", "dark")).lower()
 
     def set_theme(self, theme_name: str) -> None:
         """Set and persist the application theme ('light' or 'dark')."""

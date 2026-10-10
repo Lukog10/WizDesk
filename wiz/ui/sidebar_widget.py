@@ -421,6 +421,8 @@ class SideNavBar(QWidget):
         self.theme_btn.setDefault(False)
         self.theme_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.theme_btn.clicked.connect(self.theme_toggle_requested.emit)
+        # Light mode is temporarily removed from user-facing UI until optimized for a future release
+        self.theme_btn.hide()
         self.theme_row.addWidget(self.theme_btn)
 
         self.main_layout.addLayout(self.theme_row)
@@ -459,6 +461,7 @@ class SideNavBar(QWidget):
             theme_symbol = "☀" if self.is_dark else "☾"
             self.theme_btn.setText(theme_symbol)
             self.theme_btn.setToolTip("Switch to Light Mode" if self.is_dark else "Switch to Dark Mode")
+            self.theme_btn.hide()
         else:
             self.setFixedWidth(190)
             self.main_layout.setContentsMargins(10, 14, 10, 14)
@@ -473,6 +476,7 @@ class SideNavBar(QWidget):
             theme_symbol = "☀" if self.is_dark else "☾"
             self.theme_btn.setText(f"{theme_symbol}  {theme_text}")
             self.theme_btn.setToolTip("")
+            self.theme_btn.hide()
 
         self.brand_layout.invalidate()
 
@@ -542,6 +546,7 @@ class SideNavBar(QWidget):
             self.theme_btn.setFixedSize(170, 30)
             self.theme_btn.setText(f"{theme_symbol}  {theme_text}")
             self.theme_btn.setToolTip("")
+        self.theme_btn.hide()
 
         self.theme_btn.setStyleSheet(f"""
             QPushButton {{
