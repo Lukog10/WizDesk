@@ -152,3 +152,34 @@ def test_obsidian_sync_note_active_regardless_of_db_encryption(repo_with_data, t
     assert success is True
     assert (vault_dir / "WizNotes").exists()
 
+
+def test_obsidian_sync_note_yaml_escaping(repo_with_data, tmp_path, monkeypatch):
+    """Test that special characters, quotes, and newlines in note titles and tags are escaped in YAML frontmatter."""
+    vault_dir = tmp_path / "VaultEscape"
+    vault_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cfg = Config(config_file=tmp_path / "test_cfg_esc.json")
+    test_cfg.set("obsidian_vault_path", str(vault_dir))
+    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
+
+    note_id = repo_with_data.create_note(
+        content="Testing YAML frontmatter resilience.",
+        title='Quote "In" Title\nAnd Newline',
+        project_tag='Project "Special"',
+    )
+    notes = [n for n in repo_with_data.get_notes() if n.id == note_id]
+    assert len(notes) == 1
+    note = notes[0]
+
+    sync_engine = ObsidianSync(repo_with_data)
+    success, _ = sync_engine.sync_note(note)
+    assert success is True
+
+    # Find the created file in WizNotes
+    files = list((vault_dir / "WizNotes").glob("*.md"))
+    assert len(files) == 1
+    content = files[0].read_text(encoding="utf-8")
+
+    assert 'title: "Quote \\"In\\" Title And Newline"' in content
+    assert 'project: "Project \\"Special\\""' in content
+

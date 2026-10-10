@@ -142,13 +142,15 @@ class ObsidianSync:
 
         tag_names = [t.name for t in note.tags] if getattr(note, "tags", None) else []
         yaml_fence = "-" * 3
+        safe_title = (note.title or "Untitled").replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", "")
+        safe_project = (note.project_tag or "").replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", "")
         frontmatter = [
             yaml_fence,
-            f"title: \"{note.title}\"",
-            f"project: \"{note.project_tag or ''}\"",
+            f'title: "{safe_title}"',
+            f'project: "{safe_project}"',
             f"tags: {tag_names}",
-            f"created: \"{note.created_at.isoformat()}\"",
-            f"updated: \"{(note.updated_at or note.created_at).isoformat()}\"",
+            f'created: "{note.created_at.isoformat()}"',
+            f'updated: "{(note.updated_at or note.created_at).isoformat()}"',
             yaml_fence,
             "",
             f"# {note.title or 'Untitled Note'}",

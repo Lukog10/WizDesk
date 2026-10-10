@@ -1,5 +1,6 @@
 """Main application entry point for WizDesk desktop companion."""
 
+import os
 import sys
 import ctypes
 from typing import Optional
@@ -26,7 +27,15 @@ from wiz.tracker.window_tracker import WindowTracker
 from wiz.sync.obsidian import ObsidianSync
 from wiz.utils.hotkey import GlobalHotkeyListener
 
-SINGLE_INSTANCE_SERVER_NAME = "lukog_wizdesk_single_instance_pipe"
+
+def get_single_instance_server_name() -> str:
+    """Derive user-isolated named pipe identifier to prevent cross-session collision or DoS on shared Windows hosts."""
+    user = os.environ.get("USERNAME") or os.environ.get("USER") or "default"
+    safe_user = "".join(c for c in user.lower() if c.isalnum() or c == "_") or "user"
+    return f"lukog_wizdesk_pipe_{safe_user}"
+
+
+SINGLE_INSTANCE_SERVER_NAME = get_single_instance_server_name()
 
 
 def set_windows_app_id() -> None:

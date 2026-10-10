@@ -142,9 +142,11 @@ def _prompt_windows_credentials(
         try:
             # Security verification: Verify user matches currently logged in Windows user
             current_user = os.environ.get("USERNAME", "")
-            if current_user and user.strip().lower() != current_user.strip().lower():
-                print(f"[Auth] Security error: User '{user}' does not match active login '{current_user}'. Failing closed.")
-                return False
+            if current_user:
+                clean_user = user.split("\\")[-1].split("@")[0].strip().lower()
+                if clean_user != current_user.strip().lower():
+                    print(f"[Auth] Security error: User '{user}' does not match active login '{current_user}'. Failing closed.")
+                    return False
 
             token = win32security.LogonUser(
                 user,

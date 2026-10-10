@@ -55,6 +55,53 @@ def test_authenticate_user_success(monkeypatch):
         mock_free.assert_called_once()
 
 
+def test_authenticate_user_domain_and_upn_success(monkeypatch):
+    """Test that domain\\user and user@domain formats properly normalize to the active username."""
+    monkeypatch.setenv("USERNAME", "TestUser")
+    mock_credui = MagicMock()
+
+    def mock_prompt(pUiInfo, dwAuthError, pulAuthPackage, pvInAuthBuffer, ulInAuthBufferSize, ppvOutAuthBuffer, pulOutAuthBufferSize, pfSave, dwFlags):
+        ppvOutAuthBuffer._obj.value = 0x12345678
+        pulOutAuthBufferSize._obj.value = 128
+        return ERROR_SUCCESS
+
+    mock_credui.CredUIPromptForWindowsCredentialsW.side_effect = mock_prompt
+
+    # Test with DOMAIN\user
+    def mock_unpack_domain(flags, in_buf, in_len, user, user_len, dom, dom_len, pwd, pwd_len):
+        user.value = r"CORPDOMAIN\TestUser"
+        dom.value = "CORPDOMAIN"
+        pwd.value = "SecretPass123"
+        return True
+
+    mock_credui.CredUnPackAuthenticationBufferW.side_effect = mock_unpack_domain
+    mock_token = MagicMock()
+    mock_logon = MagicMock(return_value=mock_token)
+
+    with patch("ctypes.windll.credui", mock_credui), \
+         patch("ctypes.windll.ole32.CoTaskMemFree"), \
+         patch("win32security.LogonUser", mock_logon):
+
+        result = _prompt_windows_credentials()
+        assert result is True
+
+    # Test with user@domain.local
+    def mock_unpack_upn(flags, in_buf, in_len, user, user_len, dom, dom_len, pwd, pwd_len):
+        user.value = "TestUser@corp.local"
+        dom.value = ""
+        pwd.value = "SecretPass123"
+        return True
+
+    mock_credui.CredUnPackAuthenticationBufferW.side_effect = mock_unpack_upn
+
+    with patch("ctypes.windll.credui", mock_credui), \
+         patch("ctypes.windll.ole32.CoTaskMemFree"), \
+         patch("win32security.LogonUser", mock_logon):
+
+        result = _prompt_windows_credentials()
+        assert result is True
+
+
 def test_authenticate_user_mismatched_identity(monkeypatch):
     """Test that credentials belonging to another user on the machine fail closed."""
     monkeypatch.setenv("USERNAME", "ActiveUser")
@@ -170,6 +217,56 @@ def test_settings_view_private_key_auth_granted(qapp, tmp_path):
         view._on_view_private_key()
         mock_auth.assert_called_once()
         mock_dialog_exec.assert_called_once()
+
+    view.close()
+
+
+def test_settings_view_disable_encryption_auth_denied(qapp, tmp_path):
+    """Test that disabling database encryption requires OS credential authentication and blocks if denied."""
+    from PyQt6.QtWidgets import QMessageBox
+    from wiz.storage.db import Database
+    from wiz.storage.models import StorageRepository
+    from wiz.ui.settings_view import SettingsView
+
+    db = Database(tmp_path / "test_disable_gate.db")
+    db.enable_encryption()
+    assert db.is_encrypted is True
+    repo = StorageRepository(db)
+    view = SettingsView(repository=repo, is_dark=True)
+
+    with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes), \
+         patch("wiz.ui.settings_view.authenticate_user", return_value=False) as mock_auth, \
+         patch.object(db, "disable_encryption") as mock_disable:
+
+        view._on_toggle_encryption()
+        mock_auth.assert_called_once()
+        mock_disable.assert_not_called()
+        assert "Decryption cancelled or authentication failed" in view.status_pill.text()
+        assert db.is_encrypted is True
+
+    view.close()
+
+
+def test_settings_view_disable_encryption_auth_granted(qapp, tmp_path):
+    """Test that disabling database encryption succeeds when OS credential authentication is verified."""
+    from PyQt6.QtWidgets import QMessageBox
+    from wiz.storage.db import Database
+    from wiz.storage.models import StorageRepository
+    from wiz.ui.settings_view import SettingsView
+
+    db = Database(tmp_path / "test_disable_ok.db")
+    db.enable_encryption()
+    assert db.is_encrypted is True
+    repo = StorageRepository(db)
+    view = SettingsView(repository=repo, is_dark=True)
+
+    with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes), \
+         patch("wiz.ui.settings_view.authenticate_user", return_value=True) as mock_auth:
+
+        view._on_toggle_encryption()
+        mock_auth.assert_called_once()
+        assert "Database decrypted to standard format" in view.status_pill.text()
+        assert db.is_encrypted is False
 
     view.close()
 

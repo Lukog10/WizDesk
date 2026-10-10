@@ -1,6 +1,7 @@
 """Automated and on-demand database backup management for WizDesk."""
 
 import os
+import sys
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -81,6 +82,11 @@ class BackupManager:
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp_path, out_path)
+            if sys.platform != "win32":
+                try:
+                    os.chmod(out_path, 0o600)
+                except OSError:
+                    pass
         finally:
             if tmp_path.exists():
                 try:

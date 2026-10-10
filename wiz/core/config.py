@@ -119,12 +119,22 @@ class Config:
                 print(f"[Config] Warning: Failed to load config from {self.config_file}: {e}")
 
     def save(self) -> None:
-        """Persist current configuration to JSON file."""
+        """Persist current configuration to JSON file atomically."""
+        tmp_file = self.config_file.with_suffix(self.config_file.suffix + ".tmp")
         try:
-            with open(self.config_file, "w", encoding="utf-8") as f:
+            self.config_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(self._data, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_file, self.config_file)
         except Exception as e:
             print(f"[Config] Error: Failed to save config to {self.config_file}: {e}")
+            if tmp_file.exists():
+                try:
+                    tmp_file.unlink()
+                except OSError:
+                    pass
 
     def get(self, key: str, default: Any = None) -> Any:
         """Retrieve a configuration value."""

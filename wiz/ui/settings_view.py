@@ -1012,18 +1012,44 @@ class SettingsView(QWidget):
                 "The database will be stored as standard plaintext SQLite on disk.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
-            if reply == QMessageBox.StandardButton.Yes:
-                ok, msg = self.repo.db.disable_encryption()
-                if ok:
-                    self._refresh_encryption_ui()
-                    self.status_pill.setText("Database decrypted to standard format")
-                    self.status_pill.setStyleSheet(
-                        f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
-                    )
-                    QTimer.singleShot(
-                        2500,
-                        lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
-                    )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+            parent_hwnd = None
+            win = self.window()
+            if win and hasattr(win, "winId"):
+                try:
+                    parent_hwnd = int(win.winId())
+                except Exception:
+                    parent_hwnd = None
+
+            authenticated = authenticate_user(
+                parent_hwnd=parent_hwnd,
+                title="WizDesk Security",
+                message="Please enter your Windows credentials to decrypt your database.",
+            )
+            if not authenticated:
+                self.status_pill.setText("Decryption cancelled or authentication failed")
+                self.status_pill.setStyleSheet(
+                    f"color: #EF4444; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+                )
+                QTimer.singleShot(
+                    3000,
+                    lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+                )
+                return
+
+            ok, msg = self.repo.db.disable_encryption()
+            if ok:
+                self._refresh_encryption_ui()
+                self.status_pill.setText("Database decrypted to standard format")
+                self.status_pill.setStyleSheet(
+                    f"color: #10B981; font-weight: 600; font-family: {FONT_SANS}; font-size: 12px;"
+                )
+                QTimer.singleShot(
+                    2500,
+                    lambda: self.status_pill.setText("All settings up to date") or self._refresh_status_pill_style(),
+                )
 
     def _on_view_private_key(self) -> None:
         """Open the personal private key export modal after OS authentication."""
