@@ -3,8 +3,9 @@ Compact, floating quick-bar popups for rapid task and note entry.
 Triggered via Left Double-Click (Quick Task Bar) and Left Triple-Click (Quick Note Bar) on the Wiz Mascot.
 """
 
+from datetime import date
 from typing import Optional
-from PyQt6.QtCore import Qt, QRect
+from PyQt6.QtCore import Qt, QRect, QSize
 from PyQt6.QtGui import QFont, QColor, QCursor, QGuiApplication, QKeyEvent
 from PyQt6.QtWidgets import (
     QDialog,
@@ -22,7 +23,7 @@ from wiz.core.config import config
 from wiz.core.signals import app_signals
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository
-from wiz.ui.popup_dialog import CreateSectionDialog
+from wiz.ui.popup_dialog import CreateSectionDialog, TagCreateDialog
 from wiz.ui.arrow_combo import ArrowComboBox
 from wiz.ui.icons import get_status_icon
 from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
@@ -52,7 +53,7 @@ class QuickBarPopup(QDialog):
             | Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setFixedSize(500, 106)
+        self.setFixedSize(650, 106)
 
         # Outer layout
         self.outer_layout = QVBoxLayout(self)
@@ -97,7 +98,7 @@ class QuickBarPopup(QDialog):
 
         self.card_layout.addLayout(hdr_layout)
 
-        # Input Row: LineEdit + Project Selector + Submit Button
+        # Input Row: LineEdit + Project Selector + Tag Selector + Submit Button
         input_row = QHBoxLayout()
         input_row.setContentsMargins(0, 0, 0, 0)
         input_row.setSpacing(8)
@@ -109,8 +110,16 @@ class QuickBarPopup(QDialog):
         self.project_combo = ArrowComboBox(self, is_dark=self.is_dark)
         self.project_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.project_combo.setFixedWidth(135)
+        self.project_combo.setIconSize(QSize(15, 15))
         self.project_combo.currentTextChanged.connect(self._on_project_changed)
         input_row.addWidget(self.project_combo)
+
+        self.tag_combo = ArrowComboBox(self, is_dark=self.is_dark)
+        self.tag_combo.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.tag_combo.setFixedWidth(130)
+        self.tag_combo.setIconSize(QSize(15, 15))
+        self.tag_combo.currentIndexChanged.connect(self._on_tag_changed)
+        input_row.addWidget(self.tag_combo)
 
         self.submit_btn = QPushButton("Add")
         self.submit_btn.setFont(get_font(12, QFont.Weight.Bold))
@@ -127,6 +136,7 @@ class QuickBarPopup(QDialog):
         # Apply initial theme
         self.apply_theme(config.theme)
         self._populate_projects()
+        self._populate_tags()
 
     def _populate_projects(self) -> None:
         """Populate project combo with database projects and section creator."""
@@ -135,20 +145,20 @@ class QuickBarPopup(QDialog):
         self.project_combo.clear()
 
         projects = self.repo.get_all_projects()
-        pnames = [p.name for p in projects]
-        if not pnames:
-            pnames = ["Work", "Personal"]
+        none_icon = get_status_icon("icons8-no-entry-100.png", "#71717A", size=14)
+        add_icon = get_status_icon("add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=12)
 
-        none_icon = get_status_icon("icons/icons8-no-entry-100.png", "#71717A", size=14)
-        add_icon = get_status_icon("icons/add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=14)
-        self.project_combo.addItem(none_icon, "None")
+        self.project_combo.addItem(none_icon, "None", userData=None)
 
-        for p in pnames:
-            self.project_combo.addItem(p)
+        for p in projects:
+            p_color = p.color or "#FF6B3D"
+            p_icon = get_status_icon("folder.svg", p_color, size=14)
+            self.project_combo.addItem(p_icon, p.name, userData=p.name)
 
         self.project_combo.insertSeparator(self.project_combo.count())
-        self.project_combo.addItem(add_icon, "+ Create Section...")
+        self.project_combo.addItem(add_icon, "Create Section...", userData="create")
 
+        pnames = [p.name for p in projects]
         if current in pnames or current == "None":
             self.project_combo.setCurrentText(current)
         else:
@@ -156,9 +166,45 @@ class QuickBarPopup(QDialog):
 
         self.project_combo.blockSignals(False)
 
+    def _populate_tags(self) -> None:
+        """Populate tag combo with database tags and tag creator."""
+        self.tag_combo.blockSignals(True)
+        current_data = self.tag_combo.currentData()
+        self.tag_combo.clear()
+
+        all_tags = self.repo.get_all_tags()
+        tag_muted = "#71717A"
+        no_tag_icon = get_status_icon("tag.svg", tag_muted, size=14)
+        add_icon = get_status_icon("add-plus-svgrepo-com.svg", "#C2410C" if self.is_dark else "#BA3F1A", size=12)
+
+        self.tag_combo.addItem(no_tag_icon, "No Tag", userData=None)
+
+        for t in all_tags:
+            icon_name = t.icon or "tag"
+            color_hex = t.color or "#3B82F6"
+            tag_asset = f"tags/{icon_name}.svg"
+            if not config.get_asset_path(tag_asset).exists():
+                tag_asset = "tag.svg"
+            t_icon = get_status_icon(tag_asset, color_hex, size=14)
+            self.tag_combo.addItem(t_icon, t.name, userData=t.id)
+
+        self.tag_combo.insertSeparator(self.tag_combo.count())
+        self.tag_combo.addItem(add_icon, "Create Tag...", userData="create")
+
+        if current_data is not None and current_data != "create":
+            idx = self.tag_combo.findData(current_data)
+            if idx >= 0:
+                self.tag_combo.setCurrentIndex(idx)
+            else:
+                self.tag_combo.setCurrentIndex(0)
+        else:
+            self.tag_combo.setCurrentIndex(0)
+
+        self.tag_combo.blockSignals(False)
+
     def _on_project_changed(self, text: str) -> None:
         """Handle selection change or new section creation in combo box."""
-        if text == "+ Create Section...":
+        if text in ("+ Create Section...", "Create Section..."):
             dlg = CreateSectionDialog(is_dark=self.is_dark, parent=self)
             if dlg.exec() == QDialog.DialogCode.Accepted:
                 new_sec = dlg.section_name
@@ -173,14 +219,29 @@ class QuickBarPopup(QDialog):
                     self.project_combo.setCurrentText(new_sec)
                     self._last_selected_project = new_sec
             else:
-                self.project_combo.setCurrentText(self._last_selected_project)
+                self.project_combo.setCurrentText(self._last_selected_project or "None")
         elif text:
             self._last_selected_project = text
+
+    def _on_tag_changed(self, idx: int) -> None:
+        """Handle selection change or new tag creation in combo box."""
+        data = self.tag_combo.currentData()
+        if data == "create":
+            dlg = TagCreateDialog(self.repo, is_dark=self.is_dark, parent=self)
+            if dlg.exec() == QDialog.DialogCode.Accepted:
+                new_tag = dlg.result_name
+                self._populate_tags()
+                found_idx = self.tag_combo.findText(new_tag)
+                if found_idx >= 0:
+                    self.tag_combo.setCurrentIndex(found_idx)
+            else:
+                self.tag_combo.setCurrentIndex(0)
 
     def show_mode(self, mode: str = "task", mascot_rect: Optional[QRect] = None) -> None:
         """Configure mode ('task' or 'note'), reposition near mascot, and focus input."""
         self.mode = mode
         self._populate_projects()
+        self._populate_tags()
 
         if mode == "note":
             self.mode_badge.setText("Quick Work Note")
@@ -238,15 +299,19 @@ class QuickBarPopup(QDialog):
             return
 
         proj = self.project_combo.currentText()
-        if proj == "+ Create Section..." or not proj:
-            proj = "Work"
+        if proj in ("None", "+ Create Section...", "Create Section...", ""):
+            proj = None
+
+        tag_id = self.tag_combo.currentData()
+        tag_ids = [tag_id] if isinstance(tag_id, int) else None
 
         if self.mode == "note":
-            note_id = self.repo.create_note(text, project_tag=proj)
+            note_id = self.repo.create_note(text, project_tag=proj, tag_ids=tag_ids)
             self.state_machine.trigger_notify(duration_ms=3500)
             app_signals.note_created.emit(note_id)
         else:
-            task_id = self.repo.create_task(text, project_tag=proj)
+            today_str = date.today().strftime("%Y-%m-%d")
+            task_id = self.repo.create_task(text, project_tag=proj, scheduled_date=today_str, tag_ids=tag_ids)
             self.state_machine.trigger_notify(duration_ms=3500)
             app_signals.task_created.emit(task_id)
 
@@ -318,9 +383,8 @@ class QuickBarPopup(QDialog):
             }}
         """)
 
-        # 4. Project ComboBox
-        self.project_combo.set_theme(self.is_dark)
-        self.project_combo.setStyleSheet(f"""
+        # 4. Project and Tag ComboBoxes
+        combo_qss = f"""
             QComboBox {{
                 background-color: {dropdown_bg};
                 color: {text_primary};
@@ -350,7 +414,12 @@ class QuickBarPopup(QDialog):
                 font-family: {FONT_SANS};
                 font-size: 12px;
             }}
-        """)
+        """
+        self.project_combo.set_theme(self.is_dark)
+        self.project_combo.setStyleSheet(combo_qss)
+        if hasattr(self, "tag_combo"):
+            self.tag_combo.set_theme(self.is_dark)
+            self.tag_combo.setStyleSheet(combo_qss)
 
         # 5. Submit Action Button
         self.submit_btn.setFont(get_font(12, QFont.Weight.Bold))

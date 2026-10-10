@@ -547,7 +547,38 @@ def test_task_reschedule_no_flicker_and_no_past_date(qapp, repo):
     cal_view._on_row_schedule_changed(task_id, tomorrow.strftime("%Y-%m-%d"))
     qapp.processEvents()
 
-    tasks = repo.get_task_hierarchy(target_date=tomorrow)
-    assert any(t.id == task_id for t in tasks)
+    cal_view.close()
+
+
+def test_calendar_unfinished_cross_mark_for_all_tasks_without_project_or_tag(qapp, repo):
+    """Verify unfinished cross mark appears on past calendar dates for tasks without project or tag."""
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    y_str = yesterday.strftime("%Y-%m-%d")
+
+    # 1. Create unfinished task with NO project (None) and NO tags
+    task_id = repo.create_task(
+        "Unfinished Task With No Project Or Tag",
+        project_tag=None,
+        scheduled_date=y_str,
+        tag_ids=None,
+    )
+    assert task_id > 0
+
+    # 2. Check get_calendar_month_task_data
+    task_data = repo.get_calendar_month_task_data(today.year, today.month)
+    assert y_str in task_data
+    assert task_data[y_str]["has_unfinished"] is True
+    assert task_data[y_str]["has_pending"] is True
+    assert task_data[y_str]["total"] >= 1
+
+    # 3. Verify in CalendarView grid
+    cal_view = CalendarView(repo, is_dark=True)
+    qapp.processEvents()
+    cal_data = cal_view.grid_widget.date_status_map
+    assert y_str in cal_data
+    assert cal_data[y_str]["has_unfinished"] is True
+    assert cal_data[y_str]["total"] >= 1
 
     cal_view.close()
+

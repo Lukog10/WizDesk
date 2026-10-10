@@ -500,24 +500,49 @@ def test_quick_bar_popup_and_multi_click_gestures(qapp, repo):
     assert "Task" in popup.mode_badge.text()
     assert popup.submit_btn.text() == "Add"
 
-    # Add task via quick bar
+    # Verify project combo has icons for None and projects
+    assert popup.project_combo.count() >= 2
+    assert not popup.project_combo.itemIcon(0).isNull()
+    for i in range(1, popup.project_combo.count() - 1):
+        if popup.project_combo.itemText(i):
+            assert not popup.project_combo.itemIcon(i).isNull()
+
+    # Verify tag combo has icons
+    assert popup.tag_combo.count() >= 2
+    assert not popup.tag_combo.itemIcon(0).isNull()
+
+    # Create tag and test selecting it
+    urgent_tag = repo.create_tag("urgent", color="#EF4444")
+    urgent_tag_id = urgent_tag.id
+    popup._populate_tags()
+    tag_idx = popup.tag_combo.findData(urgent_tag_id)
+    assert tag_idx >= 0
+    assert not popup.tag_combo.itemIcon(tag_idx).isNull()
+    popup.tag_combo.setCurrentIndex(tag_idx)
+
+    # Add task via quick bar with urgent tag
     popup.input_field.setText("Quick Bar Created Task")
     popup._on_submit()
 
     tasks = repo.get_task_hierarchy(target_date=date.today())
-    assert any(t.title == "Quick Bar Created Task" for t in tasks)
+    created_task = next((t for t in tasks if t.title == "Quick Bar Created Task"), None)
+    assert created_task is not None
+    assert any(tag.id == urgent_tag_id for tag in created_task.tags)
 
-    # 2. Test Note Mode
+    # 2. Test Note Mode with Tag
     popup.show_mode("note", mascot_rect=mascot_rect)
     assert popup.mode == "note"
     assert "Note" in popup.mode_badge.text()
     assert popup.submit_btn.text() == "Log Note"
 
+    popup.tag_combo.setCurrentIndex(tag_idx)
     popup.input_field.setText("Quick Bar Logged Work Note")
     popup._on_submit()
 
     notes = repo.get_notes_for_date(date.today())
-    assert any(n.content == "Quick Bar Logged Work Note" for n in notes)
+    created_note = next((n for n in notes if n.content == "Quick Bar Logged Work Note"), None)
+    assert created_note is not None
+    assert any(tag.id == urgent_tag_id for tag in created_note.tags)
 
     # 3. Test Theme Switching
     popup.apply_theme("dark")

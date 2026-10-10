@@ -597,6 +597,8 @@ class ScheduleTaskModalDialog(QDialog):
         projects = self.repo.get_all_projects()
         self.section_combo.blockSignals(True)
         self.section_combo.clear()
+        none_icon = get_status_icon("icons8-no-entry-100.png", "#71717A", size=14)
+        self.section_combo.addItem(none_icon, "None")
         if not projects:
             p_icon = get_status_icon("folder.svg", "#FF6B3D", size=14)
             self.section_combo.addItem(p_icon, "Work")
@@ -662,8 +664,8 @@ class ScheduleTaskModalDialog(QDialog):
             return
 
         proj = self.section_combo.currentText()
-        if proj == "+ Create Section..." or not proj:
-            proj = "Work"
+        if proj in ("+ Create Section...", "Create Section...", "None", ""):
+            proj = None
 
         if self.selected_date < date.today():
             self.selected_date = date.today()

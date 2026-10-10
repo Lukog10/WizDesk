@@ -551,6 +551,34 @@ class StorageRepository:
                 (day_str,),
             )
             rows = cur.fetchall()
+            if not rows:
+                return []
+
+            note_ids = [r["id"] for r in rows]
+            placeholders = ",".join("?" for _ in note_ids)
+            cur.execute(
+                f"""
+                SELECT nt.note_id, t.id, t.name, t.icon, t.color, t.created_at
+                FROM note_tags nt
+                JOIN tags t ON nt.tag_id = t.id
+                WHERE nt.note_id IN ({placeholders})
+                ORDER BY t.name ASC
+                """,
+                note_ids,
+            )
+            tag_rows = cur.fetchall()
+            note_tags_map: Dict[int, List[TagRecord]] = {}
+            for tr in tag_rows:
+                note_tags_map.setdefault(tr["note_id"], []).append(
+                    TagRecord(
+                        id=tr["id"],
+                        name=tr["name"],
+                        icon=tr["icon"] or "tag",
+                        color=tr["color"] or "#3B82F6",
+                        created_at=datetime.fromisoformat(tr["created_at"]),
+                    )
+                )
+
             return [
                 NoteRecord(
                     id=row["id"],
@@ -561,6 +589,7 @@ class StorageRepository:
                     title=row["title"] if "title" in row.keys() and row["title"] else "",
                     updated_at=datetime.fromisoformat(row["updated_at"]) if ("updated_at" in row.keys() and row["updated_at"]) else datetime.fromisoformat(row["created_at"]),
                     is_pinned=bool(row["is_pinned"]) if "is_pinned" in row.keys() else False,
+                    tags=note_tags_map.get(row["id"], []),
                 )
                 for row in rows
             ]
@@ -1339,17 +1368,17 @@ class StorageRepository:
         with self.db.cursor() as cur:
             cur.execute(
                 """
-                SELECT scheduled_date, status
+                SELECT COALESCE(scheduled_date, substr(created_at, 1, 10)) AS task_date, status
                 FROM tasks
-                WHERE scheduled_date LIKE ?
-                ORDER BY scheduled_date ASC
+                WHERE COALESCE(scheduled_date, substr(created_at, 1, 10)) LIKE ?
+                ORDER BY task_date ASC
                 """,
                 (month_prefix,),
             )
             rows = cur.fetchall()
             date_status: Dict[str, str] = {}
             for r in rows:
-                dt = r["scheduled_date"]
+                dt = r["task_date"]
                 if not dt:
                     continue
                 st = (r["status"] or "not_started").lower()
@@ -1381,18 +1410,18 @@ class StorageRepository:
 
         month_prefix = f"{year:04d}-{month:02d}%"
         query = """
-            SELECT id, scheduled_date, status, project_tag
+            SELECT id, COALESCE(scheduled_date, substr(created_at, 1, 10)) AS task_date, status, project_tag
             FROM tasks
-            WHERE scheduled_date LIKE ?
+            WHERE COALESCE(scheduled_date, substr(created_at, 1, 10)) LIKE ?
         """
         params: List[Any] = [month_prefix]
         if category and category != "All":
-            query += " AND (project_tag = ? OR (? = 'General' AND (project_tag IS NULL OR project_tag = '')))"
+            query += " AND (project_tag = ? OR (? = 'General' AND (project_tag IS NULL OR project_tag = '' OR project_tag = 'None')))"
             params.extend([category, category])
         if tag_id is not None:
             query += " AND id IN (SELECT task_id FROM task_tags WHERE tag_id = ?)"
             params.append(tag_id)
-        query += " ORDER BY scheduled_date ASC"
+        query += " ORDER BY task_date ASC"
 
         with self.db.cursor() as cur:
             cur.execute(query, tuple(params))
@@ -1401,7 +1430,7 @@ class StorageRepository:
         today_str = date.today().strftime("%Y-%m-%d")
         result: Dict[str, Dict[str, Any]] = {}
         for r in rows:
-            dt = r["scheduled_date"]
+            dt = r["task_date"]
             if not dt:
                 continue
             if dt not in result:
@@ -1419,8 +1448,9 @@ class StorageRepository:
                     "status": "completed",
                 }
             st = (r["status"] or "not_started").lower()
-            proj = r["project_tag"] or "General"
-            sec_color = project_colors.get(proj, "#3B82F6")
+            raw_proj = r["project_tag"]
+            proj = "General" if (not raw_proj or raw_proj == "None") else raw_proj
+            sec_color = project_colors.get(proj, "#71717A")
 
             result[dt]["total"] += 1
             if sec_color not in result[dt]["section_colors"]:
