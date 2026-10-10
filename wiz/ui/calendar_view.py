@@ -270,7 +270,7 @@ class MonthCalendarGridWidget(QWidget):
             icon_x = tile_rect.right() - icon_size - 6.0
             icon_y = tile_rect.y() + 6.0
 
-            if has_unfinished and is_current_month and total_tasks > 0:
+            if d < today_dt and has_unfinished and is_current_month and total_tasks > 0:
                 cancel_color = "#FFFFFF" if is_today else "#EF4444"
                 render_tinted_svg(
                     painter,
@@ -333,7 +333,8 @@ class ScheduleTaskModalDialog(QDialog):
         super().__init__(parent)
         self.repo = repo
         self.is_dark = is_dark
-        self.selected_date = default_date or date.today()
+        today = date.today()
+        self.selected_date = max(default_date or today, today)
         self.selected_tag_ids: List[int] = []
         self.tag_buttons: Dict[int, Any] = {}
 
@@ -582,11 +583,13 @@ class ScheduleTaskModalDialog(QDialog):
 
     def _open_calendar_popup(self) -> None:
         from wiz.ui.popup_dialog import CalendarPopupDialog
-        dlg = CalendarPopupDialog(self.selected_date, parent=self, is_dark=self.is_dark)
+        dlg = CalendarPopupDialog(self.selected_date, parent=self, is_dark=self.is_dark, min_date=date.today())
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self._set_date(dlg.selected_date)
 
     def _set_date(self, target_date: date) -> None:
+        if target_date < date.today():
+            target_date = date.today()
         self.selected_date = target_date
         self._update_date_button_text()
 
@@ -662,6 +665,8 @@ class ScheduleTaskModalDialog(QDialog):
         if proj == "+ Create Section..." or not proj:
             proj = "Work"
 
+        if self.selected_date < date.today():
+            self.selected_date = date.today()
         sched_str = self.selected_date.strftime("%Y-%m-%d")
 
         tag_id = self.tag_combo.currentData()
@@ -839,9 +844,10 @@ class CalendarView(QWidget):
         cal_card_layout.setSpacing(12)
 
         # Top Header Bar:
-        # Left: [ ‹ ] Month Year [ › ] [ Today ]
+        # Left: [ ‹ ] Month Year [ › ]
         # Right: [ Category Dropdown ] [ + Schedule ]
         top_bar = QHBoxLayout()
+        self.top_bar_layout = top_bar
         top_bar.setContentsMargins(0, 0, 0, 0)
         top_bar.setSpacing(8)
 
@@ -864,13 +870,13 @@ class CalendarView(QWidget):
         self.next_month_btn.clicked.connect(self._on_next_month)
         top_bar.addWidget(self.next_month_btn)
 
-        self.btn_jump_today = QPushButton("Today")
+        self.btn_jump_today = QPushButton("Today", self.calendar_card)
         self.btn_jump_today.setFixedHeight(28)
         self.btn_jump_today.setFont(get_font(9, QFont.Weight.DemiBold))
         self.btn_jump_today.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_jump_today.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.btn_jump_today.clicked.connect(self._on_select_today_preset)
-        top_bar.addWidget(self.btn_jump_today)
+        self.btn_jump_today.hide()
 
         top_bar.addStretch()
 
@@ -1260,9 +1266,10 @@ class CalendarView(QWidget):
 
     def _on_open_schedule_dialog(self) -> None:
         """Open dedicated Schedule Task Modal Dialog."""
+        target_date = max(self.selected_date, date.today())
         dlg = ScheduleTaskModalDialog(
             repo=self.repo,
-            default_date=self.selected_date,
+            default_date=target_date,
             is_dark=self.is_dark,
             parent=self,
         )
@@ -1349,66 +1356,70 @@ class CalendarView(QWidget):
 
     def _refresh_agenda(self) -> None:
         """Render the scheduled tasks according to the active date, preset, and category filter."""
-        while self.task_list_layout.count() > 0:
-            item = self.task_list_layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.setParent(None)
-                w.deleteLater()
+        self.task_list_container.setUpdatesEnabled(False)
+        try:
+            while self.task_list_layout.count() > 0:
+                item = self.task_list_layout.takeAt(0)
+                w = item.widget()
+                if w is not None:
+                    w.hide()
+                    w.deleteLater()
 
-        if self.active_preset == "upcoming":
-            self.agenda_title.setText("Upcoming Scheduled Tasks (Next 7 Days)")
-            tasks = self.repo.get_task_hierarchy(status_filter="upcoming")
-            empty_text = "No upcoming tasks scheduled for the next 7 days."
-        elif self.active_preset == "overdue":
-            self.agenda_title.setText("Overdue Tasks")
-            tasks = self.repo.get_task_hierarchy(status_filter="unfinished")
-            empty_text = "No overdue tasks! You're completely caught up."
-        else:
-            is_today = (self.selected_date == date.today())
-            if is_today:
-                date_str = f"Today, {self.selected_date.strftime('%B %d')}"
+            if self.active_preset == "upcoming":
+                self.agenda_title.setText("Upcoming Scheduled Tasks (Next 7 Days)")
+                tasks = self.repo.get_task_hierarchy(status_filter="upcoming")
+                empty_text = "No upcoming tasks scheduled for the next 7 days."
+            elif self.active_preset == "overdue":
+                self.agenda_title.setText("Overdue Tasks")
+                tasks = self.repo.get_task_hierarchy(status_filter="unfinished")
+                empty_text = "No overdue tasks! You're completely caught up."
             else:
-                date_str = self.selected_date.strftime("%B %d, %A")
-            self.agenda_title.setText(date_str)
-            tasks = self.repo.get_task_hierarchy(target_date=self.selected_date, status_filter="task")
-            empty_text = f"No tasks scheduled for {self.selected_date.strftime('%B %d')}."
+                is_today = (self.selected_date == date.today())
+                if is_today:
+                    date_str = f"Today, {self.selected_date.strftime('%B %d')}"
+                else:
+                    date_str = self.selected_date.strftime("%B %d, %A")
+                self.agenda_title.setText(date_str)
+                tasks = self.repo.get_task_hierarchy(target_date=self.selected_date, status_filter="task")
+                empty_text = f"No tasks scheduled for {self.selected_date.strftime('%B %d')}."
 
-        counts_by_project: Dict[str, int] = {}
-        for t in tasks:
-            tag = t.project_tag or "General"
-            counts_by_project[tag] = counts_by_project.get(tag, 0) + 1
+            counts_by_project: Dict[str, int] = {}
+            for t in tasks:
+                tag = t.project_tag or "General"
+                counts_by_project[tag] = counts_by_project.get(tag, 0) + 1
 
-        self._refresh_categories(counts_by_project, len(tasks))
+            self._refresh_categories(counts_by_project, len(tasks))
 
-        display_tasks = tasks
-        if self.selected_category_filter:
-            display_tasks = [t for t in display_tasks if (t.project_tag or "General") == self.selected_category_filter]
-
-        count_str = f"{len(display_tasks)} task" if len(display_tasks) == 1 else f"{len(display_tasks)} tasks"
-        self.task_count_badge.setText(count_str)
-
-        if not display_tasks:
+            display_tasks = tasks
             if self.selected_category_filter:
-                self.empty_label.setText(f"No tasks in '{self.selected_category_filter}'.")
+                display_tasks = [t for t in display_tasks if (t.project_tag or "General") == self.selected_category_filter]
+
+            count_str = f"{len(display_tasks)} task" if len(display_tasks) == 1 else f"{len(display_tasks)} tasks"
+            self.task_count_badge.setText(count_str)
+
+            if not display_tasks:
+                if self.selected_category_filter:
+                    self.empty_label.setText(f"No tasks in '{self.selected_category_filter}'.")
+                else:
+                    self.empty_label.setText(empty_text)
+                self.empty_label.show()
+                self.scroll_area.hide()
             else:
-                self.empty_label.setText(empty_text)
-            self.empty_label.show()
-            self.scroll_area.hide()
-        else:
-            self.empty_label.hide()
-            self.scroll_area.show()
+                self.empty_label.hide()
+                self.scroll_area.show()
 
-            from wiz.ui.popup_dialog import TaskRowWidget
+                from wiz.ui.popup_dialog import TaskRowWidget
 
-            projects = [p.name for p in self.repo.get_all_projects()]
-            if not projects:
-                projects = ["Work", "Personal Projects"]
+                projects = [p.name for p in self.repo.get_all_projects()]
+                if not projects:
+                    projects = ["Work", "Personal Projects"]
 
-            for task in display_tasks:
-                row = TaskRowWidget(task=task, all_projects=projects, is_dark=self.is_dark, parent=self.task_list_container)
-                self._connect_task_row(row)
-                self.task_list_layout.addWidget(row)
+                for task in display_tasks:
+                    row = TaskRowWidget(task=task, all_projects=projects, is_dark=self.is_dark, parent=self.task_list_container)
+                    self._connect_task_row(row)
+                    self.task_list_layout.addWidget(row)
+        finally:
+            self.task_list_container.setUpdatesEnabled(True)
 
     def _connect_task_row(self, row) -> None:
         """Bind TaskRowWidget signals to storage updates and local refresh."""
@@ -1498,8 +1509,12 @@ class CalendarView(QWidget):
     def _on_row_schedule_changed(self, task_id: int, new_date_str: str) -> None:
         self.repo.update_task_schedule(task_id, new_date_str if new_date_str else None)
         self._emit_task_updated_safely(task_id)
-        self._refresh_month_grid()
-        self._refresh_agenda()
+        self.setUpdatesEnabled(False)
+        try:
+            self._refresh_month_grid()
+            self._refresh_agenda()
+        finally:
+            self.setUpdatesEnabled(True)
 
     def _on_row_repeat_changed(self, task_id: int, new_repeat: str) -> None:
         self.repo.update_task_repeat(task_id, new_repeat)
@@ -1512,7 +1527,8 @@ class CalendarView(QWidget):
             return
 
         proj = self.section_combo.currentText() or "Work"
-        sched_date = self.selected_date.strftime("%Y-%m-%d")
+        target_date = max(self.selected_date, date.today())
+        sched_date = target_date.strftime("%Y-%m-%d")
 
         task_id = self.repo.create_task(
             title=title,

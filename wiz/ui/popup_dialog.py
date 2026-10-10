@@ -131,13 +131,22 @@ class CalendarPopupDialog(QDialog):
     Supports dynamic Light and Dark themes.
     """
 
-    def __init__(self, current_date: date, parent: Optional[QWidget] = None, is_dark: Optional[bool] = None):
+    def __init__(
+        self,
+        current_date: date,
+        parent: Optional[QWidget] = None,
+        is_dark: Optional[bool] = None,
+        min_date: Optional[date] = None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Select Date - WizDesk")
         self.setWindowFlags(Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setFixedWidth(310)
 
+        self.min_date = min_date
+        if self.min_date and current_date < self.min_date:
+            current_date = self.min_date
         self.selected_date = current_date
         self.is_dark = is_dark if is_dark is not None else (config.theme == "dark")
 
@@ -287,6 +296,8 @@ class CalendarPopupDialog(QDialog):
         card_layout.addLayout(nav_layout)
 
         self.calendar = QCalendarWidget()
+        if self.min_date:
+            self.calendar.setMinimumDate(QDate(self.min_date.year, self.min_date.month, self.min_date.day))
         self.calendar.setNavigationBarVisible(False)
         self.calendar.setVerticalHeaderFormat(QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader)
         self.calendar.setHorizontalHeaderFormat(QCalendarWidget.HorizontalHeaderFormat.ShortDayNames)
@@ -368,11 +379,18 @@ class CalendarPopupDialog(QDialog):
         """Update calendar view when month or year dropdown changes."""
         m = self.month_combo.currentIndex() + 1
         y = int(self.year_combo.currentText() or str(self.selected_date.year))
+        if self.min_date:
+            if y < self.min_date.year or (y == self.min_date.year and m < self.min_date.month):
+                y = self.min_date.year
+                m = self.min_date.month
         self.calendar.setCurrentPage(y, m)
 
     def _on_prev_month(self) -> None:
         cur_y = self.calendar.yearShown()
         cur_m = self.calendar.monthShown()
+        if self.min_date:
+            if cur_y < self.min_date.year or (cur_y == self.min_date.year and cur_m <= self.min_date.month):
+                return
         if cur_m == 1:
             self.calendar.setCurrentPage(cur_y - 1, 12)
         else:
@@ -387,12 +405,27 @@ class CalendarPopupDialog(QDialog):
             self.calendar.setCurrentPage(cur_y, cur_m + 1)
 
     def _on_date_selected(self, qdate: QDate) -> None:
-        self.selected_date = date(qdate.year(), qdate.month(), qdate.day())
+        sel = date(qdate.year(), qdate.month(), qdate.day())
+        if self.min_date and sel < self.min_date:
+            return
+        self.selected_date = sel
         self.accept()
 
     def _on_today_clicked(self) -> None:
-        self.selected_date = date.today()
+        today = date.today()
+        if self.min_date and today < self.min_date:
+            self.selected_date = self.min_date
+        else:
+            self.selected_date = today
         self.accept()
+
+    def accept(self) -> None:
+        self.hide()
+        super().accept()
+
+    def reject(self) -> None:
+        self.hide()
+        super().reject()
 
 
 class CreateSectionDialog(QDialog):
@@ -3027,11 +3060,20 @@ class TaskRowWidget(QWidget):
                     init_dt = date.fromisoformat(self.task.scheduled_date)
                 except Exception:
                     pass
-            dlg = CalendarPopupDialog(init_dt, self, is_dark=self.is_dark)
+            if init_dt < today:
+                init_dt = today
+            dlg = CalendarPopupDialog(init_dt, self, is_dark=self.is_dark, min_date=today)
             cal_pos = self.schedule_btn.mapToGlobal(QPoint(0, 0))
-            dlg.move(cal_pos.x() - 100, cal_pos.y() - 360)
+            dlg_x = cal_pos.x() - 100
+            dlg_y = cal_pos.y() - 360
+            screen = QApplication.primaryScreen()
+            if screen:
+                geo = screen.availableGeometry()
+                dlg_x = max(geo.left() + 10, min(dlg_x, geo.right() - 320))
+                dlg_y = max(geo.top() + 10, min(dlg_y, geo.bottom() - 380))
+            dlg.move(dlg_x, dlg_y)
             if dlg.exec() == QDialog.DialogCode.Accepted:
-                new_date = dlg.selected_date.strftime("%Y-%m-%d")
+                new_date = max(dlg.selected_date, today).strftime("%Y-%m-%d")
                 self.task.scheduled_date = new_date
                 self.schedule_changed.emit(self.task_id, new_date)
                 self._update_badges()
@@ -6226,13 +6268,14 @@ class QuickEntryDialog(QDialog):
         """Handle task activity originating from Calendar view."""
         if QApplication.activeModalWidget() is not None:
             return
+        prev = getattr(self, "_suppress_task_activity_sync", False)
         self._suppress_task_activity_sync = True
         try:
             self.refresh_tasks()
             if hasattr(self, "project_dashboard_view") and self.current_view_mode == "projects":
                 self.project_dashboard_view.load_data()
         finally:
-            self._suppress_task_activity_sync = False
+            self._suppress_task_activity_sync = prev
 
     def _on_background_session_polled(self, app_name: str, window_title: str, project_tag: str) -> None:
         """Handle background activity tracker polling to update active views in real-time."""
@@ -6342,11 +6385,18 @@ class QuickEntryDialog(QDialog):
         elif action == act_next_week:
             self._pending_task_schedule = next_week.strftime("%Y-%m-%d")
         elif action == act_pick:
-            dlg = CalendarPopupDialog(today, self, is_dark=self.is_dark)
+            dlg = CalendarPopupDialog(today, self, is_dark=self.is_dark, min_date=today)
             cal_pos = self.add_schedule_btn.mapToGlobal(QPoint(0, 0))
-            dlg.move(cal_pos.x() - 100, cal_pos.y() - 360)
+            dlg_x = cal_pos.x() - 100
+            dlg_y = cal_pos.y() - 360
+            screen = QApplication.primaryScreen()
+            if screen:
+                geo = screen.availableGeometry()
+                dlg_x = max(geo.left() + 10, min(dlg_x, geo.right() - 320))
+                dlg_y = max(geo.top() + 10, min(dlg_y, geo.bottom() - 380))
+            dlg.move(dlg_x, dlg_y)
             if dlg.exec() == QDialog.DialogCode.Accepted:
-                self._pending_task_schedule = dlg.selected_date.strftime("%Y-%m-%d")
+                self._pending_task_schedule = max(dlg.selected_date, today).strftime("%Y-%m-%d")
         elif act_clear and action == act_clear:
             self._pending_task_schedule = None
 

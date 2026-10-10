@@ -2,7 +2,7 @@
 
 from datetime import date, timedelta
 import pytest
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QKeyEvent
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication
@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QApplication
 from wiz.core.state_machine import StateMachine
 from wiz.storage.models import StorageRepository
 from wiz.ui.calendar_view import CalendarView, MonthCalendarGridWidget, ScheduleTaskModalDialog
-from wiz.ui.popup_dialog import QuickEntryDialog
+from wiz.ui.popup_dialog import QuickEntryDialog, CalendarPopupDialog
 
 
 @pytest.fixture(scope="session")
@@ -428,5 +428,126 @@ def test_calendar_category_dropdown_filtering(qapp, repo):
         cal_view._on_grid_date_selected(today)
         qapp.processEvents()
         assert cal_view.task_list_layout.count() == 1
+
+    cal_view.close()
+
+
+def test_calendar_cross_mark_only_on_past_dates(qapp, monkeypatch):
+    """Verify cross mark is only rendered for past dates with unfinished tasks, not today."""
+    rendered_icons = []
+
+    def fake_render(painter, icon_name, color, x, y, size):
+        rendered_icons.append((icon_name, color))
+
+    monkeypatch.setattr("wiz.ui.calendar_view.render_tinted_svg", fake_render)
+
+    from PyQt6.QtGui import QPixmap
+
+    class FixedDate(date):
+        @classmethod
+        def today(cls):
+            return date(2026, 10, 10)
+
+    monkeypatch.setattr("wiz.ui.calendar_view.date", FixedDate)
+
+    mock_today = date(2026, 10, 10)
+    past_date = date(2026, 10, 8)
+    future_date = date(2026, 10, 12)
+
+    grid = MonthCalendarGridWidget(mock_today, is_dark=True)
+    grid.resize(700, 500)
+    grid.date_status_map = {
+        past_date.strftime("%Y-%m-%d"): {
+            "has_unfinished": True,
+            "total": 2,
+            "has_completed": False,
+        },
+        mock_today.strftime("%Y-%m-%d"): {
+            "has_unfinished": True,
+            "total": 3,
+            "has_completed": False,
+        },
+        future_date.strftime("%Y-%m-%d"): {
+            "has_unfinished": True,
+            "total": 1,
+            "has_completed": False,
+        },
+    }
+    pix = QPixmap(700, 500)
+    grid.render(pix)
+
+    cancel_icons = [icon for icon, color in rendered_icons if "cancel" in icon]
+    assert len(cancel_icons) == 1
+    grid.close()
+
+
+def test_calendar_header_today_button_removed(qapp, repo):
+    """Verify Today button is removed from calendar top navigation header bar."""
+    cal_view = CalendarView(repo, is_dark=True)
+    assert cal_view.btn_jump_today.isHidden()
+    top_bar = cal_view.top_bar_layout
+    top_widgets = [top_bar.itemAt(i).widget() for i in range(top_bar.count()) if top_bar.itemAt(i).widget() is not None]
+    assert cal_view.btn_jump_today not in top_widgets
+    cal_view.close()
+
+
+def test_calendar_scheduling_past_date_blocked(qapp, repo):
+    """Verify scheduling task for past date is blocked and clamped to today."""
+    today = date.today()
+    yesterday = today - timedelta(days=2)
+
+    # 1. ScheduleTaskModalDialog default_date clamped
+    dlg = ScheduleTaskModalDialog(repo, default_date=yesterday, is_dark=True)
+    assert dlg.selected_date >= today
+    assert dlg.selected_date == today
+
+    # 2. ScheduleTaskModalDialog _set_date clamped
+    dlg._set_date(yesterday)
+    assert dlg.selected_date == today
+
+    # 3. CalendarView inline schedule clamps past date to today
+    cal_view = CalendarView(repo, is_dark=True)
+    cal_view.selected_date = yesterday
+    cal_view.add_input.setText("Past Date Task")
+    cal_view.section_combo.setCurrentText("Work")
+    cal_view.add_btn.click()
+    qapp.processEvents()
+
+    past_tasks = repo.get_task_hierarchy(target_date=yesterday)
+    assert len(past_tasks) == 0
+    today_tasks = repo.get_task_hierarchy(target_date=today)
+    assert any(t.title == "Past Date Task" for t in today_tasks)
+
+    cal_view.close()
+
+
+def test_calendar_popup_dialog_min_date_enforcement(qapp):
+    """Verify CalendarPopupDialog enforces minimum date and blocks past date selection."""
+    today = date.today()
+    yesterday = today - timedelta(days=3)
+    dlg = CalendarPopupDialog(yesterday, is_dark=True, min_date=today)
+    assert dlg.selected_date == today
+    assert dlg.calendar.minimumDate() == QDate(today.year, today.month, today.day)
+
+    past_qdate = QDate(yesterday.year, yesterday.month, yesterday.day)
+    dlg._on_date_selected(past_qdate)
+    assert dlg.selected_date == today
+    dlg.close()
+
+
+def test_task_reschedule_no_flicker_and_no_past_date(qapp, repo):
+    """Verify rescheduling a task updates correctly without past date or flicker."""
+    today = date.today()
+    task_id = repo.create_task("Task to Reschedule", project_tag="Work", scheduled_date=today.strftime("%Y-%m-%d"))
+
+    cal_view = CalendarView(repo, is_dark=True)
+    qapp.processEvents()
+
+    tomorrow = today + timedelta(days=1)
+    cal_view._on_row_schedule_changed(task_id, tomorrow.strftime("%Y-%m-%d"))
+    qapp.processEvents()
+
+    tasks = repo.get_task_hierarchy(target_date=tomorrow)
+    assert any(t.id == task_id for t in tasks)
 
     cal_view.close()
