@@ -1,5 +1,6 @@
 """Operating System credential authentication utilities for WizDesk."""
 
+import os
 import sys
 from typing import Optional
 
@@ -139,6 +140,12 @@ def _prompt_windows_credentials(
         password = password_buf.value
 
         try:
+            # Security verification: Verify user matches currently logged in Windows user
+            current_user = os.environ.get("USERNAME", "")
+            if current_user and user.strip().lower() != current_user.strip().lower():
+                print(f"[Auth] Security error: User '{user}' does not match active login '{current_user}'. Failing closed.")
+                return False
+
             token = win32security.LogonUser(
                 user,
                 domain if domain else None,
@@ -153,6 +160,11 @@ def _prompt_windows_credentials(
             return False
 
     finally:
+        # Zeroize sensitive plaintext password buffer in memory before releasing
+        try:
+            ctypes.memset(ctypes.byref(password_buf), 0, ctypes.sizeof(password_buf))
+        except Exception:
+            pass
         if out_auth_buffer.value:
             ole32.CoTaskMemFree(out_auth_buffer)
 

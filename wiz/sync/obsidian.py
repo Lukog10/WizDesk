@@ -135,6 +135,13 @@ class ObsidianSync:
 
     def sync_note(self, note: "NoteRecord", emit_signal: bool = False) -> Tuple[bool, str]:
         """Write or overwrite a permanent Note in the Obsidian Vault under WizNotes folder."""
+        # Security: Prevent unintended plaintext export if database encryption is active
+        if config.get("encryption_enabled", False) and not config.get("allow_plaintext_obsidian_sync", False):
+            msg = "Obsidian sync blocked: Database encryption is active. Enable allow_plaintext_obsidian_sync in settings to permit plaintext export."
+            if emit_signal:
+                app_signals.sync_finished.emit(False, msg)
+            return False, msg
+
         vault_path = config.obsidian_vault_path
         if not vault_path or not vault_path.exists():
             return False, "Obsidian vault path not configured or directory does not exist."

@@ -24,6 +24,7 @@ def test_authenticate_user_cancelled(monkeypatch):
 
 def test_authenticate_user_success(monkeypatch):
     """Test successful credential prompt and token verification."""
+    monkeypatch.setenv("USERNAME", "TestUser")
     mock_credui = MagicMock()
 
     def mock_prompt(pUiInfo, dwAuthError, pulAuthPackage, pvInAuthBuffer, ulInAuthBufferSize, ppvOutAuthBuffer, pulOutAuthBufferSize, pfSave, dwFlags):
@@ -54,8 +55,40 @@ def test_authenticate_user_success(monkeypatch):
         mock_free.assert_called_once()
 
 
+def test_authenticate_user_mismatched_identity(monkeypatch):
+    """Test that credentials belonging to another user on the machine fail closed."""
+    monkeypatch.setenv("USERNAME", "ActiveUser")
+    mock_credui = MagicMock()
+
+    def mock_prompt(pUiInfo, dwAuthError, pulAuthPackage, pvInAuthBuffer, ulInAuthBufferSize, ppvOutAuthBuffer, pulOutAuthBufferSize, pfSave, dwFlags):
+        ppvOutAuthBuffer._obj.value = 0x12345678
+        pulOutAuthBufferSize._obj.value = 128
+        return ERROR_SUCCESS
+
+    mock_credui.CredUIPromptForWindowsCredentialsW.side_effect = mock_prompt
+
+    def mock_unpack(flags, in_buf, in_len, user, user_len, dom, dom_len, pwd, pwd_len):
+        user.value = "AttackerUser"
+        dom.value = ""
+        pwd.value = "AttackerPass123"
+        return True
+
+    mock_credui.CredUnPackAuthenticationBufferW.side_effect = mock_unpack
+    mock_logon = MagicMock()
+
+    with patch("ctypes.windll.credui", mock_credui), \
+         patch("ctypes.windll.ole32.CoTaskMemFree") as mock_free, \
+         patch("win32security.LogonUser", mock_logon):
+
+        result = _prompt_windows_credentials()
+        assert result is False
+        mock_logon.assert_not_called()
+        mock_free.assert_called_once()
+
+
 def test_authenticate_user_invalid_logon(monkeypatch):
     """Test that invalid password during LogonUser returns False."""
+    monkeypatch.setenv("USERNAME", "TestUser")
     mock_credui = MagicMock()
 
     def mock_prompt(pUiInfo, dwAuthError, pulAuthPackage, pvInAuthBuffer, ulInAuthBufferSize, ppvOutAuthBuffer, pulOutAuthBufferSize, pfSave, dwFlags):

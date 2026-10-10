@@ -12,6 +12,9 @@ PASSWORD_MANAGER_APPS = {
     "enpass.exe",
     "nordpass.exe",
     "authy.exe",
+    "protonpass.exe",
+    "proton-pass.exe",
+    "roboform.exe",
 }
 
 SENSITIVE_TITLE_KEYWORDS = (
@@ -32,6 +35,11 @@ SENSITIVE_TITLE_KEYWORDS = (
     "authenticator",
     "one-time password",
     "otp",
+    "seed phrase",
+    "recovery phrase",
+    "private key",
+    "passphrase",
+    "secret key",
 )
 
 SYSTEM_EXCLUDED_PROCESSES = {

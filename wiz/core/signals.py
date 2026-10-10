@@ -41,5 +41,19 @@ class AppSignals(QObject):
     sync_finished = pyqtSignal(bool, str)
 
 
+class _AppSignalsProxy:
+    """Resilient proxy for AppSignals that transparently recovers if Qt deletes the underlying C++ QObject."""
+
+    def __init__(self):
+        self._instance = AppSignals()
+
+    def __getattr__(self, name):
+        try:
+            self._instance.objectName()
+        except RuntimeError:
+            self._instance = AppSignals()
+        return getattr(self._instance, name)
+
+
 # Global singleton instance
-app_signals = AppSignals()
+app_signals = _AppSignalsProxy()

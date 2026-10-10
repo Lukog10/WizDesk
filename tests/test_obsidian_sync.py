@@ -152,3 +152,50 @@ def test_obsidian_sync_path_traversal_sanitized(repo_with_data, tmp_path, monkey
     assert (vault_dir / "WizDesk Logs" / "2026-08-31.md").exists()
     assert not (tmp_path / "escaped_dir").exists()
 
+
+def test_obsidian_sync_note_blocked_when_encryption_enabled(repo_with_data, tmp_path, monkeypatch):
+    """Test that sync_note blocks plaintext note file creation when DB encryption is active without opt-in."""
+    vault_dir = tmp_path / "VaultNoteSecure"
+    vault_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cfg = Config(config_file=tmp_path / "test_cfg_note_sec.json")
+    test_cfg.set("obsidian_vault_path", str(vault_dir))
+    test_cfg.set("encryption_enabled", True)
+    test_cfg.set("allow_plaintext_obsidian_sync", False)
+
+    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
+
+    notes = repo_with_data.get_notes_for_date(date(2026, 8, 31))
+    assert len(notes) > 0
+    note = notes[0]
+
+    sync_engine = ObsidianSync(repo_with_data)
+    success, msg = sync_engine.sync_note(note)
+
+    assert success is False
+    assert "Database encryption is active" in msg
+    assert not (vault_dir / "WizNotes").exists()
+
+
+def test_obsidian_sync_note_allowed_with_opt_in(repo_with_data, tmp_path, monkeypatch):
+    """Test that sync_note proceeds when DB encryption is active and user explicitly opts in."""
+    vault_dir = tmp_path / "VaultNoteOptIn"
+    vault_dir.mkdir(parents=True, exist_ok=True)
+
+    test_cfg = Config(config_file=tmp_path / "test_cfg_note_opt.json")
+    test_cfg.set("obsidian_vault_path", str(vault_dir))
+    test_cfg.set("encryption_enabled", True)
+    test_cfg.set("allow_plaintext_obsidian_sync", True)
+
+    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
+
+    notes = repo_with_data.get_notes_for_date(date(2026, 8, 31))
+    assert len(notes) > 0
+    note = notes[0]
+
+    sync_engine = ObsidianSync(repo_with_data)
+    success, msg = sync_engine.sync_note(note)
+
+    assert success is True
+    assert (vault_dir / "WizNotes").exists()
+

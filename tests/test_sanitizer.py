@@ -34,6 +34,8 @@ def test_sanitize_sensitive_title_keywords():
         ("Enter Master Password to Unlock", "app.exe"),
         ("Two-Factor Authentication (2FA) Code", "browser.exe"),
         ("Payment - Credit Card Checkout", "chrome.exe"),
+        ("MetaMask - Secret Recovery Phrase Backup", "chrome.exe"),
+        ("Wallet - View Private Key", "wallet.exe"),
     ]
     for title, app in cases:
         redacted = sanitize_window_title(title, app_name=app)

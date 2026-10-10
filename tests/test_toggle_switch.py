@@ -11,9 +11,6 @@ from PyQt6.QtCore import QRect
 from wiz.ui.toggle_switch import ToggleSwitch
 
 
-@pytest.fixture(scope="module")
-def qapp():
-    return QApplication.instance() or QApplication([])
 
 
 def test_toggle_switch_initial_states(qapp):

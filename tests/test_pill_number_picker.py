@@ -9,9 +9,6 @@ from PyQt6.QtCore import Qt
 from wiz.ui.pill_number_picker import NumberPill, DurationPillSelector, PillSpinBox
 
 
-@pytest.fixture(scope="module")
-def qapp():
-    return QApplication.instance() or QApplication([])
 
 
 def test_number_pill_basic(qapp):

@@ -29,9 +29,10 @@ def get_launch_command() -> str:
     if pythonw_candidate.exists():
         python_exe = pythonw_candidate
 
+    root_repr = repr(str(project_root))
     return (
         f'"{python_exe}" -c '
-        f'"import sys, runpy; sys.path.insert(0, r\'{project_root}\'); runpy.run_module(\'wiz\', run_name=\'__main__\')"'
+        f'"import sys, runpy; sys.path.insert(0, {root_repr}); runpy.run_module(\'wiz\', run_name=\'__main__\')"'
     )
 
 

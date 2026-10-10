@@ -109,6 +109,14 @@ class KeyDisplayDialog(QDialog):
         self.copy_btn.setText("Copied to Clipboard!")
         QTimer.singleShot(2000, lambda: self.copy_btn.setText("Copy Key"))
 
+        # Security hardening: auto-clear sensitive master key from clipboard after 45 seconds
+        def _clear_clipboard() -> None:
+            cb = QGuiApplication.clipboard()
+            if cb and cb.text() == self.key_str:
+                cb.clear()
+
+        QTimer.singleShot(45000, _clear_clipboard)
+
     def _apply_styling(self) -> None:
         bg = "#18181B" if self.is_dark else "#FFFFFF"
         text = "#F4F4F5" if self.is_dark else "#18181B"
