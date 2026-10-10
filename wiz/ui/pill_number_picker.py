@@ -5,10 +5,9 @@ bold numbers, secondary unit labels, and seamless mouse wheel / arrow navigation
 """
 
 from typing import Optional
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import (
     QFont,
-    QColor,
     QCursor,
     QWheelEvent,
     QKeyEvent,

@@ -6,9 +6,9 @@ Styled to match the Untitled UI design with clean category tabs and two-column s
 """
 
 from pathlib import Path
-from typing import Optional, Dict, Any, List
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize
-from PyQt6.QtGui import QFont, QColor, QCursor, QGuiApplication
+from typing import Optional, Dict
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtGui import QFont, QCursor, QGuiApplication
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -16,14 +16,9 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QSpinBox,
     QSlider,
     QFileDialog,
-    QTableWidget,
-    QTableWidgetItem,
-    QHeaderView,
     QFrame,
-    QInputDialog,
     QScrollArea,
     QStackedWidget,
     QSizePolicy,
@@ -38,10 +33,8 @@ from wiz.core.signals import app_signals
 from wiz.core.sound import sound_manager
 from wiz.storage.backup import backup_manager
 from wiz.storage.models import StorageRepository
-from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, FONT_MONO, get_font
-from wiz.ui.checkbox import RoundedCheckbox
+from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
 from wiz.ui.toggle_switch import ToggleSwitch
-from wiz.ui.icons import get_status_icon
 from wiz.ui.pill_number_picker import DurationPillSelector, PillSpinBox
 from wiz.utils.auth import authenticate_user
 from wiz.utils.hotkey import normalize_hotkey_str, format_display_shortcut
@@ -381,11 +374,7 @@ class SettingsView(QWidget):
         self.apply_theme()
         self.load_settings()
 
-    def _create_card_container(self) -> QFrame:
-        """Create an elevated panel card for containing a setting category."""
-        card = QFrame(self)
-        card.setObjectName("SettingsCard")
-        return card
+
 
     def _create_setting_row(
         self,

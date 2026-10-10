@@ -1,6 +1,5 @@
 """Data sanitization and privacy redaction utilities for WizDesk."""
 
-import os
 from typing import Optional
 
 PASSWORD_MANAGER_APPS = {

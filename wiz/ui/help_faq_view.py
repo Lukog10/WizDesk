@@ -5,7 +5,7 @@ the editorial Platform Documentation guide matching Riddle UI.
 Zero-telemetry and zero-emoji compliance.
 """
 
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict, List
 from PyQt6.QtCore import Qt, pyqtSignal, QUrl
 from PyQt6.QtGui import QFont, QCursor, QDesktopServices
 from PyQt6.QtWidgets import (
@@ -17,10 +17,9 @@ from PyQt6.QtWidgets import (
     QFrame,
     QScrollArea,
     QStackedWidget,
-    QButtonGroup,
 )
 
-from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.fonts import FONT_SANS, get_font
 
 
 class FaqItemWidget(QFrame):

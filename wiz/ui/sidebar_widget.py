@@ -26,7 +26,7 @@ from PyQt6.QtWidgets import (
 )
 
 from wiz.ui.icons import get_app_pixmap, render_tinted_svg, get_status_icon
-from wiz.ui.fonts import FONT_SANS, FONT_DISPLAY, get_font
+from wiz.ui.fonts import FONT_SANS, get_font
 
 
 class NavPillButton(QPushButton):

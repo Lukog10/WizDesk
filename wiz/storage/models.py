@@ -1678,36 +1678,76 @@ class StorageRepository:
         for all configured projects within the specified timeframe.
         """
         projects = self.get_all_projects(force_refresh=True)
+        if not projects:
+            return []
+
         start_bound = self._get_timeframe_bounds(timeframe)
         start_iso = start_bound.isoformat() if start_bound else None
 
+        proj_names = [p.name for p in projects]
+        placeholders = ",".join("?" for _ in proj_names)
+
         results = []
         with self.db.cursor() as cur:
-            for proj in projects:
-                # 1. Sessions & Top Apps
-                if start_iso:
-                    cur.execute(
-                        """
-                        SELECT app_name, start_time, end_time
-                        FROM sessions
-                        WHERE project_tag = ? AND start_time >= ?
-                        """,
-                        (proj.name, start_iso),
-                    )
-                else:
-                    cur.execute(
-                        """
-                        SELECT app_name, start_time, end_time
-                        FROM sessions
-                        WHERE project_tag = ?
-                        """,
-                        (proj.name,),
-                    )
-                sess_rows = cur.fetchall()
+            # 1. Batch fetch sessions for all projects in a single query
+            if start_iso:
+                cur.execute(
+                    f"""
+                    SELECT project_tag, app_name, start_time, end_time
+                    FROM sessions
+                    WHERE project_tag IN ({placeholders}) AND start_time >= ?
+                    """,
+                    proj_names + [start_iso],
+                )
+            else:
+                cur.execute(
+                    f"""
+                    SELECT project_tag, app_name, start_time, end_time
+                    FROM sessions
+                    WHERE project_tag IN ({placeholders})
+                    """,
+                    proj_names,
+                )
+            sess_rows = cur.fetchall()
 
+            proj_sessions: Dict[str, list] = {p.name: [] for p in projects}
+            for r in sess_rows:
+                tag = r["project_tag"]
+                if tag in proj_sessions:
+                    proj_sessions[tag].append(r)
+
+            # 2. Batch fetch tasks for all projects in a single query
+            if start_iso:
+                cur.execute(
+                    f"""
+                    SELECT project_tag, id, status
+                    FROM tasks
+                    WHERE project_tag IN ({placeholders}) AND (created_at >= ? OR (completed_at IS NOT NULL AND completed_at >= ?))
+                    """,
+                    proj_names + [start_iso, start_iso],
+                )
+            else:
+                cur.execute(
+                    f"""
+                    SELECT project_tag, id, status
+                    FROM tasks
+                    WHERE project_tag IN ({placeholders})
+                    """,
+                    proj_names,
+                )
+            task_rows = cur.fetchall()
+
+            proj_tasks: Dict[str, list] = {p.name: [] for p in projects}
+            for t in task_rows:
+                tag = t["project_tag"]
+                if tag in proj_tasks:
+                    proj_tasks[tag].append(t)
+
+            for proj in projects:
+                p_sess = proj_sessions.get(proj.name, [])
                 total_minutes = 0.0
                 app_durations: Dict[str, float] = {}
-                for r in sess_rows:
+                for r in p_sess:
                     try:
                         st = datetime.fromisoformat(r["start_time"])
                         et = datetime.fromisoformat(r["end_time"])
@@ -1721,28 +1761,9 @@ class StorageRepository:
                 sorted_apps = sorted(app_durations.items(), key=lambda x: x[1], reverse=True)
                 top_apps = [(app, round(mins, 1)) for app, mins in sorted_apps[:3]]
 
-                # 2. Tasks & Completion
-                if start_iso:
-                    cur.execute(
-                        """
-                        SELECT id, status
-                        FROM tasks
-                        WHERE project_tag = ? AND (created_at >= ? OR (completed_at IS NOT NULL AND completed_at >= ?))
-                        """,
-                        (proj.name, start_iso, start_iso),
-                    )
-                else:
-                    cur.execute(
-                        """
-                        SELECT id, status
-                        FROM tasks
-                        WHERE project_tag = ?
-                        """,
-                        (proj.name,),
-                    )
-                task_rows = cur.fetchall()
-                total_tasks = len(task_rows)
-                completed_tasks = sum(1 for t in task_rows if t["status"] in ("done", "completed"))
+                p_task_rows = proj_tasks.get(proj.name, [])
+                total_tasks = len(p_task_rows)
+                completed_tasks = sum(1 for t in p_task_rows if t["status"] in ("done", "completed"))
                 completion_rate = (completed_tasks / total_tasks) if total_tasks > 0 else 0.0
 
                 results.append({

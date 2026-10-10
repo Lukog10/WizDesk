@@ -10,7 +10,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QSpinBox,
     QFileDialog,
     QTableWidget,
     QTableWidgetItem,
@@ -25,7 +24,7 @@ from wiz.storage.models import StorageRepository
 from wiz.ui.icons import get_app_icon, get_status_icon
 from wiz.ui.popup_dialog import RoundedCheckbox
 
-from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.fonts import FONT_SANS, get_font
 from wiz.ui.pill_number_picker import DurationPillSelector
 
 # Backwards-compatible alias for RoundedCheckbox

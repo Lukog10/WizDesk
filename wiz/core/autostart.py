@@ -6,8 +6,6 @@ HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run
 
 import sys
 from pathlib import Path
-from typing import Optional
-
 REG_KEY_PATH = r"Software\Microsoft\Windows\CurrentVersion\Run"
 APP_NAME = "WizDesk"
 

@@ -1,7 +1,6 @@
 """Application icon and SVG asset helper utilities for WizDesk."""
 
 import re
-from pathlib import Path
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QImage
 from PyQt6.QtCore import Qt, QByteArray
 from PyQt6.QtSvg import QSvgRenderer

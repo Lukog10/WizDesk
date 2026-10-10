@@ -50,8 +50,7 @@ from PyQt6.QtWidgets import (
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
-from wiz.core.state_machine import StateMachine
-from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord, TagRecord, ProjectRecord
+from wiz.storage.models import StorageRepository, TaskRecord, SubtaskRecord, NoteRecord, TagRecord
 from wiz.ui.icons import get_app_icon, get_status_icon, render_tinted_svg
 from wiz.sync.obsidian import sync_today_logs, sync_permanent_note
 from wiz.ui.timeline_view import TimelineView
@@ -854,17 +853,7 @@ class CreateSectionDialog(QDialog):
             return dlg.section_name, dlg.selected_color, dlg.description, dlg.keywords, True
         return "", "", "", [], False
 
-    @classmethod
-    def get_section_name(cls, parent: Optional[QWidget] = None) -> tuple[str, bool]:
-        """Show custom modal dialog and return (section_name, accepted)."""
-        name, color, desc, kws, ok = cls.get_section_details(parent)
-        return name, ok
 
-    @classmethod
-    def get_section_data(cls, parent: Optional[QWidget] = None) -> tuple[str, str, bool]:
-        """Show custom modal dialog and return (section_name, color, accepted)."""
-        name, color, desc, kws, ok = cls.get_section_details(parent)
-        return name, color, ok
 
     def paintEvent(self, event) -> None:
         painter = QPainter(self)
@@ -6295,43 +6284,7 @@ class QuickEntryDialog(QDialog):
         self.refresh_tasks()
         self._trigger_debounced_sync()
 
-    def _on_project_combo_changed(self, index: int) -> None:
-        """Handle selection of '+ Create Section...' in task project combo."""
-        text = self.project_combo.currentText()
-        if text == "+ Create Section...":
-            name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
-            if ok and name.strip():
-                clean_name = name.strip()
-                self.repo.create_or_update_project(
-                    clean_name,
-                    kws or [clean_name.lower()],
-                    color=color,
-                    description=desc,
-                )
-                self._populate_projects()
-                self.project_combo.setCurrentText(clean_name)
-            else:
-                if self.project_combo.count() > 0:
-                    self.project_combo.setCurrentIndex(0)
 
-    def _on_note_project_combo_changed(self, index: int) -> None:
-        """Handle selection of '+ Create Section...' in note project combo."""
-        text = self.note_project_combo.currentText()
-        if text == "+ Create Section...":
-            name, color, desc, kws, ok = CreateSectionDialog.get_section_details(self)
-            if ok and name.strip():
-                clean_name = name.strip()
-                self.repo.create_or_update_project(
-                    clean_name,
-                    kws or [clean_name.lower()],
-                    color=color,
-                    description=desc,
-                )
-                self._populate_projects()
-                self.note_project_combo.setCurrentText(clean_name)
-            else:
-                if self.note_project_combo.count() > 0:
-                    self.note_project_combo.setCurrentIndex(0)
 
     def _on_filter_changed(self, filter_name: str) -> None:
         """Called when a segmented filter pill is clicked."""

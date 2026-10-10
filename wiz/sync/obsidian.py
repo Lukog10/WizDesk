@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
-from wiz.storage.models import StorageRepository, NoteRecord
+from wiz.storage.models import StorageRepository
 
 
 class ObsidianSync:

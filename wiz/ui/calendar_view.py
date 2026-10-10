@@ -26,11 +26,11 @@ Redesigned modern full-month calendar matching existing WizDesk design standards
      the existing CalendarPopupDialog matching WizDesk design colors.
 """
 
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 from typing import Optional, List, Dict, Any
 import calendar
 
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QRect, QRectF, QSize, QTimer, QDate
+from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QSize, QTimer
 from PyQt6.QtGui import (
     QFont,
     QColor,
@@ -39,7 +39,6 @@ from PyQt6.QtGui import (
     QMouseEvent,
     QPaintEvent,
     QKeyEvent,
-    QIcon,
 )
 from PyQt6.QtWidgets import (
     QWidget,
@@ -50,7 +49,6 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QFrame,
-    QComboBox,
     QSizePolicy,
     QStackedWidget,
     QDialog,
@@ -58,9 +56,9 @@ from PyQt6.QtWidgets import (
 
 from wiz.core.config import config
 from wiz.core.signals import app_signals
-from wiz.storage.models import StorageRepository, TaskRecord
+from wiz.storage.models import StorageRepository
 from wiz.ui.icons import get_app_icon, get_status_icon, render_tinted_svg
-from wiz.ui.fonts import FONT_SANS, FONT_MONO, get_font
+from wiz.ui.fonts import FONT_SANS, get_font
 from wiz.ui.arrow_combo import ArrowComboBox
 
 
@@ -1302,11 +1300,7 @@ class CalendarView(QWidget):
         self._refresh_month_grid()
         self._refresh_agenda()
 
-    def _on_tag_filter_combo_changed(self, idx: int) -> None:
-        pass
 
-    def _on_detail_tag_filter_combo_changed(self, idx: int) -> None:
-        pass
 
     def _on_select_today_preset(self) -> None:
         """Jump to today in grid and select today."""

@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Optional, Callable
 from PyQt6.QtCore import QObject, QTimer, pyqtSignal
 
-from wiz.core.config import config
 from wiz.core.idle_detector import get_system_idle_seconds
 from wiz.core.signals import app_signals
 from wiz.core.sound import sound_manager

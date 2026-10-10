@@ -7,7 +7,7 @@ from PyQt6.QtGui import QMouseEvent, QGuiApplication, QCursor
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication
 
 from wiz.core.config import config
-from wiz.core.state_machine import MascotState, StateMachine
+from wiz.core.state_machine import StateMachine
 from wiz.core.signals import app_signals
 from wiz.core.sound import sound_manager
 from wiz.ui.mascot_widget import MascotWidget
