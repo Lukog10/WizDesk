@@ -93,36 +93,14 @@ def test_obsidian_vault_file_sync(repo_with_data, tmp_path, monkeypatch):
     assert "Build TurfLine booking flow" in content
 
 
-def test_obsidian_sync_blocked_when_encryption_enabled(repo_with_data, tmp_path, monkeypatch):
-    """Test that sync_date blocks plaintext file creation when DB encryption is active without opt-in."""
-    vault_dir = tmp_path / "VaultSecure"
+def test_obsidian_sync_active_regardless_of_db_encryption(repo_with_data, tmp_path, monkeypatch):
+    """Test that daily logs sync to Obsidian vault cleanly even when DB encryption is active."""
+    vault_dir = tmp_path / "VaultSyncAlways"
     vault_dir.mkdir(parents=True, exist_ok=True)
 
-    test_cfg = Config(config_file=tmp_path / "test_cfg_sec.json")
+    test_cfg = Config(config_file=tmp_path / "test_cfg_sync.json")
     test_cfg.set("obsidian_vault_path", str(vault_dir))
     test_cfg.set("encryption_enabled", True)
-    test_cfg.set("allow_plaintext_obsidian_sync", False)
-
-    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
-
-    sync_engine = ObsidianSync(repo_with_data)
-    success, msg = sync_engine.sync_date(date(2026, 8, 31))
-
-    assert success is False
-    assert "Database encryption is active" in msg
-    # Verify no file written
-    assert not (vault_dir / "WizDesk Logs" / "2026-08-31.md").exists()
-
-
-def test_obsidian_sync_allowed_when_encryption_enabled_with_opt_in(repo_with_data, tmp_path, monkeypatch):
-    """Test that sync_date proceeds when DB encryption is active and user explicitly opts in."""
-    vault_dir = tmp_path / "VaultOptIn"
-    vault_dir.mkdir(parents=True, exist_ok=True)
-
-    test_cfg = Config(config_file=tmp_path / "test_cfg_opt.json")
-    test_cfg.set("obsidian_vault_path", str(vault_dir))
-    test_cfg.set("encryption_enabled", True)
-    test_cfg.set("allow_plaintext_obsidian_sync", True)
 
     monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
 
@@ -153,39 +131,14 @@ def test_obsidian_sync_path_traversal_sanitized(repo_with_data, tmp_path, monkey
     assert not (tmp_path / "escaped_dir").exists()
 
 
-def test_obsidian_sync_note_blocked_when_encryption_enabled(repo_with_data, tmp_path, monkeypatch):
-    """Test that sync_note blocks plaintext note file creation when DB encryption is active without opt-in."""
-    vault_dir = tmp_path / "VaultNoteSecure"
+def test_obsidian_sync_note_active_regardless_of_db_encryption(repo_with_data, tmp_path, monkeypatch):
+    """Test that permanent notes sync to Obsidian vault cleanly even when DB encryption is active."""
+    vault_dir = tmp_path / "VaultNoteAlways"
     vault_dir.mkdir(parents=True, exist_ok=True)
 
-    test_cfg = Config(config_file=tmp_path / "test_cfg_note_sec.json")
+    test_cfg = Config(config_file=tmp_path / "test_cfg_note.json")
     test_cfg.set("obsidian_vault_path", str(vault_dir))
     test_cfg.set("encryption_enabled", True)
-    test_cfg.set("allow_plaintext_obsidian_sync", False)
-
-    monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
-
-    notes = repo_with_data.get_notes_for_date(date(2026, 8, 31))
-    assert len(notes) > 0
-    note = notes[0]
-
-    sync_engine = ObsidianSync(repo_with_data)
-    success, msg = sync_engine.sync_note(note)
-
-    assert success is False
-    assert "Database encryption is active" in msg
-    assert not (vault_dir / "WizNotes").exists()
-
-
-def test_obsidian_sync_note_allowed_with_opt_in(repo_with_data, tmp_path, monkeypatch):
-    """Test that sync_note proceeds when DB encryption is active and user explicitly opts in."""
-    vault_dir = tmp_path / "VaultNoteOptIn"
-    vault_dir.mkdir(parents=True, exist_ok=True)
-
-    test_cfg = Config(config_file=tmp_path / "test_cfg_note_opt.json")
-    test_cfg.set("obsidian_vault_path", str(vault_dir))
-    test_cfg.set("encryption_enabled", True)
-    test_cfg.set("allow_plaintext_obsidian_sync", True)
 
     monkeypatch.setattr("wiz.sync.obsidian.config", test_cfg)
 

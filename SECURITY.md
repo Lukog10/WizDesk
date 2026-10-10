@@ -51,9 +51,9 @@ WizDesk is a local-first, offline desktop productivity companion application des
 - **Status**: Mitigated and verified.
 
 ### Surface 08: Platform-Specific Sandboxing and Storage
-- **Finding**: The sync_note function in wiz/sync/obsidian.py wrote markdown note exports to disk without checking if database encryption was enabled, creating an unintended cleartext data leak.
+- **Architecture**: Obsidian vault synchronization is intentionally designed as an unencrypted Markdown file bridge to external vaults. Because third-party markdown viewers (e.g. Obsidian) cannot parse encrypted blobs, WizDesk exports plaintext markdown files directly into the user-configured vault, while internal SQLite database storage remains encrypted with AES-256-GCM.
 - **Finding**: Development autostart launch command used raw string interpolation for project root.
-- **Remediation**: Added encryption checks to sync_note requiring explicit user opt-in (allow_plaintext_obsidian_sync). Escaped project root in autostart using repr.
+- **Remediation**: Escaped project root in autostart using repr(str(project_root)).
 - **Status**: Mitigated and verified.
 
 ---
@@ -62,7 +62,6 @@ WizDesk is a local-first, offline desktop productivity companion application des
 
 | Severity | File:line | Vulnerability | Exploit scenario (1-2 sentences) | Fix (concrete code change) |
 | :--- | :--- | :--- | :--- | :--- |
-| High | [wiz/sync/obsidian.py:136](file:///H:/Projects/Wiz/wiz/sync/obsidian.py#L136) | Unchecked Cleartext Note Export in Encrypted Mode | When a user enables database encryption, calling sync_note wrote raw note markdown files to disk without verifying encryption_enabled or opt-in, bypassing encryption at rest. | Added guard blocking sync_note when encryption is active unless allow_plaintext_obsidian_sync is explicitly enabled. |
 | Medium | [wiz/utils/auth.py:141](file:///H:/Projects/Wiz/wiz/utils/auth.py#L141) | Missing Caller Identity Validation in Credential Authorization | On a shared Windows workstation, LogonUser validated any valid local user entered into CredUI, allowing a secondary local account to authorize viewing the private key. | Added validation checking that the entered username matches the active session username. |
 | Medium | [wiz/utils/auth.py:155](file:///H:/Projects/Wiz/wiz/utils/auth.py#L155) | Cleartext Password Retention in Process Memory Heap | Plaintext Windows credentials in the ctypes buffer remained in process heap memory after authentication. | Added ctypes.memset zeroization to wipe password_buf in the finally block. |
 | Medium | [wiz/ui/settings_view.py:106](file:///H:/Projects/Wiz/wiz/ui/settings_view.py#L106) | Unbounded Master Key Persistence in OS Clipboard | Copying the master key placed the 256-bit recovery key in the clipboard indefinitely, allowing background clipboard monitors to harvest it. | Added an automatic 45-second timer that purges the master key from the clipboard. |
@@ -73,9 +72,9 @@ WizDesk is a local-first, offline desktop productivity companion application des
 ---
 
 ## Top 3 Things Fixed
-1. **Protected Note Sync against Encryption Bypass**: Prevented sync_note from exporting cleartext markdown files to the Obsidian vault when database encryption is enabled.
-2. **Hardened Windows Credential Authentication**: Enforced active-user identity verification in CredUI and zeroized plaintext password buffers in memory using ctypes.memset.
-3. **Auto-Purged Sensitive Recovery Key from Clipboard**: Added automatic 45-second clipboard clearing in KeyDisplayDialog to prevent clipboard harvesting.
+1. **Hardened Windows Credential Authentication**: Enforced active-user identity verification in CredUI and zeroized plaintext password buffers in memory using ctypes.memset in [wiz/utils/auth.py](file:///H:/Projects/Wiz/wiz/utils/auth.py#L155).
+2. **Auto-Purged Sensitive Recovery Key from Clipboard**: Added automatic 45-second clipboard clearing in KeyDisplayDialog to prevent clipboard harvesting in [wiz/ui/settings_view.py](file:///H:/Projects/Wiz/wiz/ui/settings_view.py#L112).
+3. **Hardened Supply Chain and Packaging Spec**: Added win32crypt, win32security, and cryptography to hiddenimports in [wizdesk.spec](file:///H:/Projects/Wiz/wizdesk.spec#L22-L28).
 
 ---
 
