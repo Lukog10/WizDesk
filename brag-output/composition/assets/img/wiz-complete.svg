@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <defs>
+    <linearGradient id="wizGlow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF2D78"/>
+      <stop offset="100%" stop-color="#FFA22D"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="100" cy="222" rx="42" ry="8" fill="#FF6B3D" opacity="0.15"/>
+  <path d="M55,100
+           A45,45 0 1,1 145,100
+           L145,195
+           A11.25,15 0 0,1 122.5,195
+           A11.25,15 0 0,1 100,195
+           A11.25,15 0 0,1 77.5,195
+           A11.25,15 0 0,1 55,195
+           Z"
+        fill="#111111" stroke="url(#wizGlow)" stroke-width="7" stroke-linejoin="round"/>
+  <circle cx="82" cy="128" r="6" fill="#FFFFFF"/>
+  <circle cx="118" cy="128" r="6" fill="#FFFFFF"/>
+  <!-- celebration sparkles -->
+  <path d="M40,70 L43,78 L51,81 L43,84 L40,92 L37,84 L29,81 L37,78 Z" fill="url(#wizGlow)"/>
+  <path d="M162,60 L164,66 L170,68 L164,70 L162,76 L160,70 L154,68 L160,66 Z" fill="url(#wizGlow)"/>
+</svg>

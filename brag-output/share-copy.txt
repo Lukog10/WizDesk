@@ -1,0 +1,30 @@
+# WizDesk v1.2.0 Launch Video Copy
+
+## Short Post (X / Twitter)
+You code for 3-4 hours straight. Where did the hours go? What got finished? What was left behind?
+
+Meet WizDesk: the autonomous, local-first companion that quietly tracks your active work windows, stopwatch timers, and project focus with zero telemetry.
+
+- Autonomous 5s window tracking
+- AES-256-GCM database encryption + Windows Hello auth
+- Native Plaintext Obsidian markdown sync
+- Standalone Windows x64 executable
+
+Download free & open-source: https://github.com/Lukog10/WizDesk
+
+---
+
+## Long Post (LinkedIn / Community / Product Hunt)
+Every developer knows the feeling: you sit down at 9 AM, hit flow state for four hours, and by lunchtime you have completely lost track of what you actually completed and what got left behind.
+
+We built WizDesk to solve that without adding more friction.
+
+WizDesk is a lightweight, privacy-focused desktop companion that lives in your workspace:
+1. Autonomous Activity Tracking: Samples your focused window every 5 seconds. No manual start or stop buttons needed.
+2. Full Workspace Access: Live stopwatch task timers, subtasks, and instant project distribution donut analytics.
+3. 100% Local-First & Zero Telemetry: Your data never leaves your device. Protected by AES-256-GCM encryption and Windows Hello credential gating.
+4. Obsidian Vault Bridge: Seamlessly syncs your daily work summaries directly to plaintext Markdown notes in your personal Obsidian vault.
+
+WizDesk v1.2.0 is packaged as a standalone portable Windows executable and is 100% free and open-source on GitHub.
+
+Check out the release: https://github.com/Lukog10/WizDesk

@@ -1,0 +1,1240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>WizDesk Launch Motion Graphic</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Space Grotesk';
+        src: url('assets/fonts/SpaceGrotesk-Variable.ttf') format('truetype');
+        font-weight: 300 700;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Plus Jakarta Sans';
+        src: url('assets/fonts/PlusJakartaSans-Variable.ttf') format('truetype');
+        font-weight: 400 800;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'JetBrains Mono';
+        src: url('assets/fonts/JetBrainsMono-Variable.ttf') format('truetype');
+        font-weight: 400 700;
+        font-display: swap;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #090C10;
+        color: #FFFFFF;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 30%, #111827 0%, #090C10 70%, #05070A 100%);
+      }
+
+      /* Ambient Light Glows */
+      .glow-spot {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+        pointer-events: none;
+        opacity: 0.18;
+      }
+      #glow-blue {
+        width: 700px;
+        height: 700px;
+        background: #3B82F6;
+        top: -150px;
+        left: 20%;
+      }
+      #glow-purple {
+        width: 600px;
+        height: 600px;
+        background: #8B5CF6;
+        bottom: -100px;
+        right: 20%;
+      }
+
+      /* Subtle Grid Backdrop */
+      .grid-lines {
+        position: absolute;
+        inset: 0;
+        background-image: 
+          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+      }
+
+      /* Common Typography */
+      .headline-container {
+        position: absolute;
+        top: 90px;
+        width: 100%;
+        text-align: center;
+        z-index: 50;
+      }
+      .scene-headline {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 54px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #FFFFFF;
+        line-height: 1.15;
+        margin-bottom: 12px;
+      }
+      .scene-subtitle {
+        font-size: 22px;
+        font-weight: 500;
+        color: #94A3B8;
+        letter-spacing: -0.01em;
+      }
+
+      /* Shared Glassmorphism Cards */
+      .glass-card {
+        background: rgba(18, 24, 38, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 16px;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(16px);
+      }
+
+      /* Simulated Cursor */
+      #sim-cursor {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+      }
+      #sim-cursor svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+      }
+
+      /* ================= SCENE 1 ================= */
+      #scene-1 {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      #flow-window-mock {
+        position: absolute;
+        top: 240px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 960px;
+        height: 350px;
+        padding: 24px 32px;
+        display: flex;
+        flex-direction: column;
+      }
+      .window-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        margin-bottom: 24px;
+      }
+      .window-dots {
+        display: flex;
+        gap: 8px;
+      }
+      .window-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .dot-red { background: #EF4444; }
+      .dot-yellow { background: #F59E0B; }
+      .dot-green { background: #10B981; }
+      .window-title {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: #94A3B8;
+      }
+      .flow-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #60A5FA;
+      }
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #3B82F6;
+      }
+      .code-stream {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        line-height: 1.8;
+        color: #CBD5E1;
+      }
+      .code-stream .kw { color: #A5B4FC; }
+      .code-stream .fn { color: #7DD3FC; }
+      .code-stream .str { color: #6EE7B7; }
+      .code-stream .cm { color: #94A3B8; }
+
+      /* Question Cards in Scene 1 */
+      .questions-stack {
+        position: absolute;
+        top: 630px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 24px;
+        z-index: 60;
+      }
+      .question-card {
+        padding: 20px 28px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 380px;
+        border-radius: 14px;
+      }
+      .q-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .q-icon-1 { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+      .q-icon-2 { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+      .q-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: #FFFFFF;
+        letter-spacing: -0.01em;
+      }
+
+      /* ================= SCENE 2 ================= */
+      #scene-2 {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      #spotlight-radial {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 650px;
+        height: 650px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, rgba(139, 92, 246, 0.08) 50%, transparent 70%);
+        pointer-events: none;
+      }
+      #mascot-stage {
+        position: absolute;
+        top: 52%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 220px;
+        height: 260px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #mascot-svg-wrapper {
+        width: 180px;
+        height: 220px;
+        transform-origin: center bottom;
+      }
+      #mascot-svg-wrapper svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* ================= SCENE 3 ================= */
+      #scene-3 {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      /* Docked Mascot in top right */
+      #docked-mascot-container {
+        position: absolute;
+        top: 40px;
+        right: 60px;
+        width: 80px;
+        height: 96px;
+        z-index: 100;
+      }
+      #docked-pulse-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        border: 2px solid #10B981;
+        opacity: 0;
+      }
+      /* Floating Quick Bar Island */
+      #floating-island {
+        position: absolute;
+        top: 44px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 24px;
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        z-index: 100;
+        cursor: pointer;
+      }
+      .island-brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+        color: #FFFFFF;
+      }
+      .island-badge-status {
+        padding: 3px 10px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #34D399;
+      }
+      .island-sanitized-tag {
+        font-size: 12px;
+        color: #94A3B8;
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        padding-left: 12px;
+      }
+
+      /* Desktop App Switcher Carousel */
+      #desktop-switcher-canvas {
+        position: absolute;
+        top: 260px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1100px;
+        height: 520px;
+      }
+      .app-window-card {
+        position: absolute;
+        inset: 0;
+        padding: 24px 32px;
+        opacity: 0;
+        transform: scale(0.96);
+      }
+      .app-tag-indicator {
+        position: absolute;
+        bottom: 24px;
+        right: 32px;
+        padding: 6px 14px;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #60A5FA;
+      }
+
+      /* ================= SCENE 4 ================= */
+      #scene-4 {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      #workspace-shell {
+        position: absolute;
+        top: 230px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1040px;
+        height: 580px;
+        display: grid;
+        grid-template-columns: 580px 1fr;
+        gap: 24px;
+        padding: 28px;
+      }
+      .panel-section-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #FFFFFF;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .tasks-list-box {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .task-card-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .task-left-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .custom-checkbox {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: 2px solid #64748B;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .custom-checkbox.checked {
+        background: #10B981;
+        border-color: #10B981;
+      }
+      .task-title-text {
+        font-size: 15px;
+        font-weight: 600;
+        color: #F1F5F9;
+      }
+      .task-tags-row {
+        display: flex;
+        gap: 6px;
+      }
+      .tag-chip {
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .chip-blue { background: rgba(59, 130, 246, 0.2); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
+      .chip-amber { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+      /* Stopwatch Widget */
+      .stopwatch-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: #FBBF24;
+      }
+      .stopwatch-play-btn {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        background: #F59E0B;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+      }
+
+      /* Analytics Donut */
+      .analytics-card-box {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .donut-svg-canvas {
+        width: 170px;
+        height: 170px;
+        transform: rotate(-90deg);
+      }
+      .donut-bg-ring {
+        stroke: rgba(255, 255, 255, 0.06);
+        stroke-width: 22;
+        fill: none;
+      }
+      .donut-seg-1 {
+        stroke: #3B82F6;
+        stroke-width: 22;
+        fill: none;
+        stroke-dasharray: 440;
+        stroke-dashoffset: 440;
+      }
+      .donut-seg-2 {
+        stroke: #8B5CF6;
+        stroke-width: 22;
+        fill: none;
+        stroke-dasharray: 440;
+        stroke-dashoffset: 440;
+      }
+      .donut-seg-3 {
+        stroke: #10B981;
+        stroke-width: 22;
+        fill: none;
+        stroke-dasharray: 440;
+        stroke-dashoffset: 440;
+      }
+      .donut-legend {
+        margin-top: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+      .legend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+      }
+      .legend-dot-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #CBD5E1;
+      }
+      .legend-val {
+        font-weight: 700;
+        color: #FFFFFF;
+      }
+
+      /* ================= SCENE 5 ================= */
+      #scene-5 {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      .security-split-container {
+        position: absolute;
+        top: 250px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1040px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+      }
+      .sec-card {
+        padding: 32px;
+        min-height: 440px;
+        display: flex;
+        flex-direction: column;
+      }
+      .sec-card-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+      .sec-icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+      }
+      .shield-icon { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60A5FA; }
+      .obsidian-icon { background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #A78BFA; }
+      .sec-card-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #FFFFFF;
+      }
+      .sec-card-subtitle {
+        font-size: 13px;
+        color: #94A3B8;
+      }
+      .feature-bullet-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 12px;
+      }
+      .bullet-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: #E2E8F0;
+      }
+      .bullet-check {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.15);
+        color: #10B981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .markdown-code-preview {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 16px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        line-height: 1.7;
+        color: #94A3B8;
+        margin-top: 14px;
+      }
+      .markdown-code-preview .md-head { color: #818CF8; font-weight: 700; }
+      .markdown-code-preview .md-check { color: #34D399; }
+
+      /* ================= SCENE 6 ================= */
+      #scene-6 {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      #celebration-center-stage {
+        position: absolute;
+        top: 48%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        z-index: 100;
+      }
+      #celebration-mascot-box {
+        width: 170px;
+        height: 200px;
+        margin-bottom: 24px;
+        position: relative;
+      }
+      #celebration-mascot-box svg {
+        width: 100%;
+        height: 100%;
+      }
+      /* Confetti Canvas */
+      #confetti-canvas-wrapper {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .confetti-piece {
+        position: absolute;
+        width: 12px;
+        height: 18px;
+        border-radius: 3px;
+        opacity: 0;
+      }
+      .hero-logo-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .hero-logo-img {
+        width: 68px;
+        height: 68px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+      }
+      .hero-title-text {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 64px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        color: #FFFFFF;
+      }
+      .hero-tagline-text {
+        font-size: 24px;
+        font-weight: 500;
+        color: #94A3B8;
+        margin-bottom: 24px;
+        letter-spacing: -0.01em;
+      }
+      .cta-pills-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .cta-pill-download {
+        padding: 12px 28px;
+        background: linear-gradient(135deg, #2563EB, #1D4ED8);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 30px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #FFFFFF;
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+      }
+      .cta-pill-github {
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 30px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        font-weight: 600;
+        color: #E2E8F0;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="28.5"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Audio Elements with deterministic start and durations matching media lengths -->
+      <audio id="bgm" data-start="0" data-duration="28.5" data-track-index="1" data-volume="1" src="assets/music/bgm.mp3"></audio>
+      <audio id="sfx-click" data-start="2.8" data-duration="0.06" data-track-index="2" data-volume="0.5" src="assets/sfx/click.ogg"></audio>
+      <audio id="sfx-pop" data-start="4.8" data-duration="0.11" data-track-index="2" data-volume="0.6" src="assets/sfx/pop.ogg"></audio>
+      <audio id="sfx-whoosh" data-start="14.5" data-duration="0.62" data-track-index="2" data-volume="0.5" src="assets/sfx/whoosh.ogg"></audio>
+      <audio id="sfx-chime" data-start="24.8" data-duration="0.30" data-track-index="2" data-volume="0.7" src="assets/sfx/chime.ogg"></audio>
+
+      <div class="glow-spot" id="glow-blue"></div>
+      <div class="glow-spot" id="glow-purple"></div>
+      <div class="grid-lines"></div>
+
+      <!-- Animated Simulated Cursor -->
+      <div id="sim-cursor">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 2L20 12L12 14L8 22L4 2Z" fill="#FFFFFF" stroke="#000000" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <!-- ================= SCENE 1 ================= -->
+      <div id="scene-1" class="clip" data-start="0" data-duration="4.5" data-track-index="0">
+        <div class="headline-container">
+          <h1 class="scene-headline">You code for 3-4 hours straight.</h1>
+          <p class="scene-subtitle">Where did the hours go? What got finished? What got left behind?</p>
+        </div>
+
+        <div class="glass-card" id="flow-window-mock" data-layout-allow-overlap>
+          <div class="window-header">
+            <div class="window-dots">
+              <div class="window-dot dot-red"></div>
+              <div class="window-dot dot-yellow"></div>
+              <div class="window-dot dot-green"></div>
+            </div>
+            <div class="window-title">main.py - WizDesk - Visual Studio Code</div>
+            <div class="flow-badge">
+              <div class="pulse-dot"></div>
+              <span>3h 42m continuous flow</span>
+            </div>
+          </div>
+          <div class="code-stream">
+            <p><span class="kw">class</span> <span class="fn">TaskScheduler</span>:</p>
+            <p>&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, repo: StorageRepository):</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;self.repo = repo</p>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;self.active_timer = <span class="fn">StopwatchTimer</span>()</p>
+            <p><br><span class="cm"># Active window tracker polling every 5.0 seconds...</span></p>
+          </div>
+        </div>
+
+        <div class="questions-stack" data-layout-allow-overlap>
+          <div class="glass-card question-card" id="q-card-1" data-layout-allow-overlap>
+            <div class="q-icon q-icon-1">?</div>
+            <div class="q-text">What did I actually finish?</div>
+          </div>
+          <div class="glass-card question-card" id="q-card-2" data-layout-allow-overlap>
+            <div class="q-icon q-icon-2">!</div>
+            <div class="q-text">What is still left unfinished?</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 2 ================= -->
+      <div id="scene-2" class="clip" data-start="4.5" data-duration="4.5" data-track-index="0">
+        <div id="spotlight-radial"></div>
+        <div class="headline-container">
+          <h1 class="scene-headline">Meet Wiz.</h1>
+          <p class="scene-subtitle">Your autonomous desktop companion.</p>
+        </div>
+
+        <div id="mascot-stage">
+          <div id="mascot-svg-wrapper">
+            <svg id="mascot-vector-scene2" viewBox="0 0 200 240">
+              <ellipse id="mascot-shadow" cx="100" cy="222" rx="38" ry="7" fill="#000000" opacity="0.12"/>
+              <path id="mascot-body" d="M55,100 A45,45 0 1,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 A11.25,15 0 0,1 77.5,195 A11.25,15 0 0,1 55,195 Z" fill="#F7F3EA" stroke="#111111" stroke-width="6" stroke-linejoin="round"/>
+              <circle id="pupil-left" cx="82" cy="128" r="7" fill="#111111"/>
+              <circle id="pupil-right" cx="118" cy="128" r="7" fill="#111111"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 3 ================= -->
+      <div id="scene-3" class="clip" data-start="9.0" data-duration="5.5" data-track-index="0">
+        <div class="headline-container">
+          <h1 class="scene-headline">Quietly tracking your active windows.</h1>
+          <p class="scene-subtitle">No start/stop timers. Zero manual logging.</p>
+        </div>
+
+        <!-- Docked Mascot -->
+        <div id="docked-mascot-container">
+          <div id="docked-pulse-ring"></div>
+          <svg viewBox="0 0 200 240" width="80" height="96">
+            <ellipse cx="100" cy="222" rx="38" ry="7" fill="#000000" opacity="0.15"/>
+            <path d="M55,100 A45,45 0 1,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 A11.25,15 0 0,1 77.5,195 A11.25,15 0 0,1 55,195 Z" fill="#F7F3EA" stroke="#111111" stroke-width="6" stroke-linejoin="round"/>
+            <circle cx="82" cy="128" r="7" fill="#111111"/>
+            <circle cx="118" cy="128" r="7" fill="#111111"/>
+          </svg>
+        </div>
+
+        <!-- Floating Quick Bar Island -->
+        <div class="glass-card" id="floating-island">
+          <div class="island-brand">
+            <div class="pulse-dot" style="background: #10B981;"></div>
+            <span>WizDesk</span>
+          </div>
+          <div class="island-badge-status" id="island-app-text">Active: VS Code (2h 15m)</div>
+          <div class="island-sanitized-tag">Sensitive titles auto-sanitized</div>
+        </div>
+
+        <!-- Desktop Window Switcher -->
+        <div id="desktop-switcher-canvas">
+          <!-- Window 1: VS Code -->
+          <div class="glass-card app-window-card" id="app-card-vscode">
+            <div class="window-header">
+              <div class="window-dots"><div class="window-dot dot-red"></div><div class="window-dot dot-yellow"></div><div class="window-dot dot-green"></div></div>
+              <div class="window-title">VS Code • /wiz/tracker/window_tracker.py</div>
+              <div class="flow-badge">Tracking Active</div>
+            </div>
+            <div class="code-stream" style="font-size: 15px;">
+              <p><span class="kw">def</span> <span class="fn">poll_active_window</span>():</p>
+              <p>&nbsp;&nbsp;title = win32gui.<span class="fn">GetWindowText</span>(hwnd)</p>
+              <p>&nbsp;&nbsp;clean_title = sanitize_title(title) <span class="cm"># Banking &amp; Tokens Stripped</span></p>
+              <p>&nbsp;&nbsp;repo.record_session(clean_title, duration=5.0)</p>
+            </div>
+            <div class="app-tag-indicator">Project: WizDesk Engine</div>
+          </div>
+
+          <!-- Window 2: Chrome -->
+          <div class="glass-card app-window-card" id="app-card-chrome">
+            <div class="window-header">
+              <div class="window-dots"><div class="window-dot dot-red"></div><div class="window-dot dot-yellow"></div><div class="window-dot dot-green"></div></div>
+              <div class="window-title">Google Chrome • GitHub - Lukog10/WizDesk: Release v1.2.0</div>
+              <div class="flow-badge">Tracking Active</div>
+            </div>
+            <div class="code-stream" style="font-size: 15px; color: #94A3B8;">
+              <p><span class="kw">Release Notes</span>: WizDesk Standalone Executable v1.2.0</p>
+              <p>&bull; Live Stopwatch Task Timers</p>
+              <p>&bull; AES-256-GCM Local Database Encryption</p>
+              <p>&bull; Plaintext Obsidian Markdown Sync</p>
+            </div>
+            <div class="app-tag-indicator" style="color: #34D399; border-color: rgba(16, 185, 129, 0.3);">Project: Release &amp; Docs</div>
+          </div>
+
+          <!-- Window 3: Terminal -->
+          <div class="glass-card app-window-card" id="app-card-terminal">
+            <div class="window-header">
+              <div class="window-dots"><div class="window-dot dot-red"></div><div class="window-dot dot-yellow"></div><div class="window-dot dot-green"></div></div>
+              <div class="window-title">Windows Terminal • powershell.exe</div>
+              <div class="flow-badge">Tracking Active</div>
+            </div>
+            <div class="code-stream" style="font-size: 15px; color: #38BDF8;">
+              <p>PS H:\Projects\Wiz&gt; .venv\Scripts\pytest -q</p>
+              <p>........................................................................ [100%]</p>
+              <p style="color: #34D399; font-weight: 700;">239 passed in 24.84s</p>
+            </div>
+            <div class="app-tag-indicator" style="color: #A78BFA; border-color: rgba(139, 92, 246, 0.3);">Project: Test Verification</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 4 ================= -->
+      <div id="scene-4" class="clip" data-start="14.5" data-duration="5.5" data-track-index="0">
+        <div class="headline-container">
+          <h1 class="scene-headline">Instant access to your full workspace.</h1>
+          <p class="scene-subtitle">Tasks, live stopwatch timers, and project analytics.</p>
+        </div>
+
+        <div class="glass-card" id="workspace-shell">
+          <!-- Left Column: Tasks & Stopwatch -->
+          <div class="workspace-col-left">
+            <div class="panel-section-title">
+              <span>Today's Tasks &amp; Timers</span>
+              <span style="font-size: 13px; color: #94A3B8; font-weight: 500;">Oct 11, 2026</span>
+            </div>
+
+            <div class="tasks-list-box">
+              <!-- Task 1 (Active Stopwatch) -->
+              <div class="task-card-item" id="task-card-1" style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.05);">
+                <div class="task-left-meta">
+                  <div class="custom-checkbox"></div>
+                  <div>
+                    <div class="task-title-text">Ship motion graphic launch video</div>
+                    <div class="task-tags-row" style="margin-top: 4px;">
+                      <span class="tag-chip chip-blue">Work</span>
+                      <span class="tag-chip chip-amber">Release</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="stopwatch-box" id="stopwatch-timer-display">
+                  <div class="stopwatch-play-btn">&#9654;</div>
+                  <span id="stopwatch-digits">00:42:15</span>
+                </div>
+              </div>
+
+              <!-- Task 2 (Subtasks) -->
+              <div class="task-card-item" id="task-card-2">
+                <div class="task-left-meta">
+                  <div class="custom-checkbox checked">&#10003;</div>
+                  <div>
+                    <div class="task-title-text" style="color: #94A3B8; text-decoration: line-through;">Harden AES-256 decryption gate</div>
+                    <div class="task-tags-row" style="margin-top: 4px;">
+                      <span class="tag-chip chip-blue">Security</span>
+                    </div>
+                  </div>
+                </div>
+                <span style="font-size: 12px; color: #94A3B8;">Completed (1h 10m)</span>
+              </div>
+
+              <!-- Task 3 -->
+              <div class="task-card-item" id="task-card-3">
+                <div class="task-left-meta">
+                  <div class="custom-checkbox checked">&#10003;</div>
+                  <div>
+                    <div class="task-title-text" style="color: #94A3B8; text-decoration: line-through;">Package v1.2.0 Windows binary</div>
+                    <div class="task-tags-row" style="margin-top: 4px;">
+                      <span class="tag-chip chip-amber">Release</span>
+                    </div>
+                  </div>
+                </div>
+                <span style="font-size: 12px; color: #94A3B8;">Completed (45m)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Projects Analytics -->
+          <div class="analytics-card-box">
+            <div class="panel-section-title" style="margin-bottom: 8px;">
+              <span>Project Distribution</span>
+            </div>
+            <svg class="donut-svg-canvas" viewBox="0 0 170 170">
+              <circle class="donut-bg-ring" cx="85" cy="85" r="65"/>
+              <circle class="donut-seg-1" id="seg-blue" cx="85" cy="85" r="65"/>
+              <circle class="donut-seg-2" id="seg-purple" cx="85" cy="85" r="65"/>
+              <circle class="donut-seg-3" id="seg-green" cx="85" cy="85" r="65"/>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-row">
+                <div class="legend-dot-name"><span class="pulse-dot" style="background: #3B82F6;"></span><span>WizDesk App</span></div>
+                <span class="legend-val">65% (4h 12m)</span>
+              </div>
+              <div class="legend-row">
+                <div class="legend-dot-name"><span class="pulse-dot" style="background: #8B5CF6;"></span><span>Documentation</span></div>
+                <span class="legend-val">25% (1h 35m)</span>
+              </div>
+              <div class="legend-row">
+                <div class="legend-dot-name"><span class="pulse-dot" style="background: #10B981;"></span><span>Code Review</span></div>
+                <span class="legend-val">10% (40m)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 5 ================= -->
+      <div id="scene-5" class="clip" data-start="20.0" data-duration="4.5" data-track-index="0">
+        <div class="headline-container">
+          <h1 class="scene-headline">100% Local-First &amp; Zero Telemetry.</h1>
+          <p class="scene-subtitle">AES-256 protected. Auto-synced to your Obsidian vault.</p>
+        </div>
+
+        <div class="security-split-container">
+          <!-- Card Left: Security -->
+          <div class="glass-card sec-card" id="card-sec-crypto">
+            <div class="sec-card-header">
+              <div class="sec-icon-circle shield-icon">&#128274;</div>
+              <div>
+                <div class="sec-card-title">Encrypted Storage</div>
+                <div class="sec-card-subtitle">AES-256-GCM + Windows DPAPI</div>
+              </div>
+            </div>
+            <div class="feature-bullet-list">
+              <div class="bullet-row">
+                <div class="bullet-check">&#10003;</div>
+                <span>Zero outbound network telemetry</span>
+              </div>
+              <div class="bullet-row">
+                <div class="bullet-check">&#10003;</div>
+                <span>Windows CredUI &amp; Windows Hello authentication gate</span>
+              </div>
+              <div class="bullet-row">
+                <div class="bullet-check">&#10003;</div>
+                <span>User-isolated single-instance mutex architecture</span>
+              </div>
+              <div class="bullet-row">
+                <div class="bullet-check">&#10003;</div>
+                <span>Automated rotating local snapshot backups (.wbak)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Right: Obsidian Sync -->
+          <div class="glass-card sec-card" id="card-sec-obsidian">
+            <div class="sec-card-header">
+              <div class="sec-icon-circle obsidian-icon">&#9670;</div>
+              <div>
+                <div class="sec-card-title">Obsidian Vault Bridge</div>
+                <div class="sec-card-subtitle">Native Plaintext Markdown Sync</div>
+              </div>
+            </div>
+            <div class="markdown-code-preview">
+              <p><span class="md-head"># 2026-10-11 Daily Work Log</span></p>
+              <p>tags: [work, release, dev]</p>
+              <p><br><span class="md-head">## Completed Tasks</span></p>
+              <p><span class="md-check">[x]</span> Launch release v1.2.0</p>
+              <p><span class="md-check">[x]</span> Harden OS credential gate</p>
+              <p><br><span class="md-head">## Window Sessions</span></p>
+              <p>&bull; VS Code: 3h 42m (WizDesk)</p>
+              <p>&bull; Terminal: 45m (Testing)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCENE 6 ================= -->
+      <div id="scene-6" class="clip" data-start="24.5" data-duration="4.0" data-track-index="0">
+        <div id="confetti-canvas-wrapper"></div>
+
+        <div id="celebration-center-stage">
+          <div id="celebration-mascot-box">
+            <svg viewBox="0 0 200 240">
+              <defs>
+                <linearGradient id="wizCelebrationGlow" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#3B82F6"/>
+                  <stop offset="100%" stop-color="#10B981"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="100" cy="222" rx="42" ry="8" fill="#10B981" opacity="0.2"/>
+              <path d="M55,100 A45,45 0 1,1 145,100 L145,195 A11.25,15 0 0,1 122.5,195 A11.25,15 0 0,1 100,195 A11.25,15 0 0,1 77.5,195 A11.25,15 0 0,1 55,195 Z" fill="#111827" stroke="url(#wizCelebrationGlow)" stroke-width="7" stroke-linejoin="round"/>
+              <circle cx="82" cy="128" r="6" fill="#FFFFFF"/>
+              <circle cx="118" cy="128" r="6" fill="#FFFFFF"/>
+              <path d="M40,70 L43,78 L51,81 L43,84 L40,92 L37,84 L29,81 L37,78 Z" fill="url(#wizCelebrationGlow)"/>
+              <path d="M162,60 L164,66 L170,68 L164,70 L162,76 L160,70 L154,68 L160,66 Z" fill="url(#wizCelebrationGlow)"/>
+            </svg>
+          </div>
+
+          <div class="hero-logo-row">
+            <img class="hero-logo-img" src="assets/img/WizDesk Logo v1.jpeg" alt="WizDesk Logo"/>
+            <h1 class="hero-title-text">WizDesk</h1>
+          </div>
+          <p class="hero-tagline-text">Focus in flow. Wiz remembers the rest.</p>
+
+          <div class="cta-pills-row">
+            <div class="cta-pill-download">Download v1.2.0 Standalone Windows</div>
+            <div class="cta-pill-github">github.com/Lukog10/WizDesk</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Seeded PRNG for deterministic rendering
+      function mulberry32(seed) {
+        let a = seed;
+        return function() {
+          let t = a += 0x6D2B79F5;
+          t = Math.imul(t ^ t >>> 15, t | 1);
+          t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+      }
+      const rand = mulberry32(1337);
+
+      // Generate Confetti particles in Scene 6
+      const confettiWrapper = document.getElementById('confetti-canvas-wrapper');
+      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#38BDF8'];
+      const confettiElements = [];
+
+      for (let i = 0; i < 60; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.backgroundColor = colors[i % colors.length];
+        el.style.left = (rand() * 100) + 'vw';
+        el.style.top = '-20px';
+        confettiWrapper.appendChild(el);
+        confettiElements.push(el);
+      }
+
+      // GSAP Master Timeline
+      const tl = gsap.timeline({ paused: true });
+
+      // Initial baseline setups
+      tl.set('#sim-cursor', { xPercent: -50, yPercent: -50 }, 0.0);
+      tl.set('#bgm', { volume: 0.75 }, 0.0);
+
+      // ================= TIMELINE CHOREOGRAPHY =================
+
+      // Scene 1: 0.0s -> 4.5s
+      tl.to('#scene-1', { opacity: 1, duration: 0.4 }, 0.0);
+      tl.fromTo('#flow-window-mock', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power2.out' }, 0.2);
+      // Staggered Question Cards
+      tl.fromTo('#q-card-1', { y: 30, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)' }, 2.0);
+      tl.fromTo('#q-card-2', { y: 30, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)' }, 2.8);
+      tl.to('#scene-1', { opacity: 0, scale: 0.98, duration: 0.5, ease: 'power2.in' }, 4.1);
+
+      // Scene 2: 4.5s -> 9.0s (Meet Wiz)
+      tl.to('#scene-2', { opacity: 1, duration: 0.4 }, 4.5);
+      tl.fromTo('#spotlight-radial', { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.8 }, 4.6);
+      tl.fromTo('#mascot-stage', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.7, ease: 'elastic.out(1, 0.75)' }, 4.7);
+      
+      // Cursor enters and interacts
+      tl.to('#sim-cursor', { opacity: 1, duration: 0.2 }, 5.5);
+      tl.fromTo('#sim-cursor', { x: 1200, y: 700 }, { x: 960, y: 550, duration: 1.0, ease: 'power2.out' }, 5.5);
+      
+      // Pupils track cursor
+      tl.to('#pupil-left, #pupil-right', { x: 5, y: -2, duration: 0.6 }, 5.7);
+      tl.to('#sim-cursor', { x: 910, y: 510, duration: 0.6, ease: 'power1.inOut' }, 6.6);
+      tl.to('#pupil-left, #pupil-right', { x: -4, y: -4, duration: 0.5 }, 6.7);
+      
+      // Boop interaction
+      tl.to('#sim-cursor', { scale: 0.85, duration: 0.15, yoyo: true, repeat: 1 }, 7.3);
+      tl.to('#mascot-svg-wrapper', { rotate: -6, scaleX: 1.08, scaleY: 0.94, duration: 0.2, yoyo: true, repeat: 1, ease: 'power2.out' }, 7.35);
+      tl.to('#pupil-left, #pupil-right', { x: 0, y: 0, duration: 0.3 }, 7.7);
+      tl.to('#sim-cursor', { opacity: 0, duration: 0.3 }, 8.2);
+      tl.to('#scene-2', { opacity: 0, duration: 0.5 }, 8.6);
+
+      // Scene 3: 9.0s -> 14.5s (Autonomous Tracking)
+      tl.to('#scene-3', { opacity: 1, duration: 0.4 }, 9.0);
+      tl.fromTo('#docked-mascot-container', { scale: 0.7, opacity: 0, y: -20 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 9.1);
+      tl.fromTo('#floating-island', { y: -60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'back.out(1.4)' }, 9.3);
+
+      // App Card 1: VS Code
+      tl.to('#app-card-vscode', { opacity: 1, scale: 1, duration: 0.5 }, 9.5);
+      tl.fromTo('#docked-pulse-ring', { scale: 0.8, opacity: 0.8 }, { scale: 1.4, opacity: 0, duration: 0.8, ease: 'power2.out' }, 10.0);
+
+      // App Card 2: Chrome switch
+      tl.to('#app-card-vscode', { opacity: 0, scale: 0.95, duration: 0.4 }, 11.0);
+      tl.to('#island-app-text', { textContent: 'Active: Chrome (45m)', duration: 0.2 }, 11.2);
+      tl.to('#app-card-chrome', { opacity: 1, scale: 1, duration: 0.4 }, 11.2);
+      tl.fromTo('#docked-pulse-ring', { scale: 0.8, opacity: 0.8 }, { scale: 1.4, opacity: 0, duration: 0.8, ease: 'power2.out', immediateRender: false }, 11.5);
+
+      // App Card 3: Terminal switch
+      tl.to('#app-card-chrome', { opacity: 0, scale: 0.95, duration: 0.4 }, 12.6);
+      tl.to('#island-app-text', { textContent: 'Active: Terminal (15m)', duration: 0.2 }, 12.8);
+      tl.to('#app-card-terminal', { opacity: 1, scale: 1, duration: 0.4 }, 12.8);
+      tl.fromTo('#docked-pulse-ring', { scale: 0.8, opacity: 0.8 }, { scale: 1.4, opacity: 0, duration: 0.8, ease: 'power2.out', immediateRender: false }, 13.0);
+
+      // Cursor clicks floating island to trigger workspace
+      tl.to('#sim-cursor', { opacity: 1, x: 960, y: 64, duration: 0.5 }, 13.6);
+      tl.to('#sim-cursor', { scale: 0.85, duration: 0.12, yoyo: true, repeat: 1 }, 14.1);
+      tl.to('#floating-island', { scale: 1.04, duration: 0.15, yoyo: true, repeat: 1 }, 14.15);
+      tl.to('#scene-3', { opacity: 0, duration: 0.4 }, 14.3);
+
+      // Scene 4: 14.5s -> 20.0s (Full Workspace Shell)
+      tl.to('#scene-4', { opacity: 1, duration: 0.4 }, 14.5);
+      tl.fromTo('#workspace-shell', { scale: 0.88, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.7, ease: 'power3.out' }, 14.6);
+      
+      // Cursor activates stopwatch
+      tl.to('#sim-cursor', { x: 935, y: 395, duration: 0.6, ease: 'power2.inOut' }, 15.3);
+      tl.to('#sim-cursor', { scale: 0.85, duration: 0.12, yoyo: true, repeat: 1 }, 16.0);
+      tl.to('.stopwatch-box', { background: 'rgba(245, 158, 11, 0.25)', borderColor: '#F59E0B', duration: 0.2 }, 16.1);
+      
+      // Ticking stopwatch numbers
+      tl.to('#stopwatch-digits', { textContent: '00:42:16', duration: 0.5 }, 16.6);
+      tl.to('#stopwatch-digits', { textContent: '00:42:17', duration: 0.5 }, 17.6);
+      tl.to('#stopwatch-digits', { textContent: '00:42:18', duration: 0.5 }, 18.6);
+
+      // Donut Chart Segment Fills
+      tl.to('#seg-blue', { strokeDashoffset: 154, duration: 1.2, ease: 'power2.out' }, 15.6);
+      tl.to('#seg-purple', { strokeDashoffset: 330, duration: 1.2, ease: 'power2.out' }, 15.9);
+      tl.to('#seg-green', { strokeDashoffset: 396, duration: 1.2, ease: 'power2.out' }, 16.2);
+
+      tl.to('#sim-cursor', { opacity: 0, duration: 0.3 }, 18.0);
+      tl.to('#scene-4', { opacity: 0, scale: 0.96, duration: 0.5, ease: 'power2.in' }, 19.6);
+
+      // Scene 5: 20.0s -> 24.5s (Local Security & Obsidian)
+      tl.to('#scene-5', { opacity: 1, duration: 0.4 }, 20.0);
+      tl.fromTo('#card-sec-crypto', { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 20.2);
+      tl.fromTo('#card-sec-obsidian', { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 20.4);
+      tl.to('#scene-5', { opacity: 0, duration: 0.4 }, 24.1);
+
+      // Scene 6: 24.5s -> 28.5s (Celebration & Outro)
+      tl.to('#scene-6', { opacity: 1, duration: 0.4 }, 24.5);
+      tl.fromTo('#celebration-center-stage', { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.2)' }, 24.6);
+      tl.fromTo('#celebration-mascot-box', { scale: 0.8, y: 20 }, { scale: 1.05, y: -10, duration: 0.5, yoyo: true, repeat: 1, ease: 'power2.out' }, 24.8);
+
+      // Confetti burst animation
+      confettiElements.forEach((el, index) => {
+        const angle = (index / confettiElements.length) * 360;
+        const targetX = (Math.cos(angle * Math.PI / 180) * 450) + (rand() * 200 - 100);
+        const targetY = (Math.sin(angle * Math.PI / 180) * 400) + (rand() * 200 + 100);
+        
+        tl.fromTo(el, 
+          { x: 960, y: 500, opacity: 1, scale: 0, rotate: 0 }, 
+          { 
+            x: 960 + targetX, 
+            y: 500 + targetY, 
+            opacity: 0, 
+            scale: 1, 
+            rotate: rand() * 720 - 360, 
+            duration: 1.8 + rand() * 0.8, 
+            ease: 'power2.out' 
+          }, 
+          24.8 + (rand() * 0.15)
+        );
+      });
+
+      // Background music fade out at conclusion
+      tl.to('#bgm', { volume: 0, duration: 1.5, ease: 'power1.in' }, 27.0);
+
+      // Register timeline globally for Hyperframes engine
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

@@ -147,9 +147,9 @@ Crucially, in accordance with user requirements, the video portrays seamless, na
 
 ## 6. Verification Plan & Exit Criteria
 
-- [ ] Spec approved by user.
-- [ ] HTML/CSS composition authored in `brag-output/composition/`.
-- [ ] `npx hyperframes check` passes with 0 errors and 0 contrast warnings.
-- [ ] Video rendered cleanly to `brag-output/brag.mp4` at 1920x1080 30fps.
-- [ ] Video verified visually across all 6 scenes.
-- [ ] Share copy saved to `brag-output/share-copy.txt`.
+- [x] Spec approved by user.
+- [x] HTML/CSS composition authored in `brag-output/composition/`.
+- [x] `npx hyperframes check` passes with 0 errors and 0 contrast warnings.
+- [x] Video rendered cleanly to `brag-output/brag.mp4` at 1920x1080 30fps.
+- [x] Video verified visually across all 6 scenes.
+- [x] Share copy saved to `brag-output/share-copy.txt`.
