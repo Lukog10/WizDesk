@@ -200,76 +200,43 @@ WizDesk underwent a comprehensive red-team security audit and code hardening pha
 
 ---
 
-## 8. Go-To-Market & Marketing Channel Playbooks
+## 8. Brand Assets & Marketing Production References
 
-### 8.1 GitHub & Developer Community Release Post
-```markdown
-Introducing WizDesk v1.2.0: The Autonomous Desktop Companion & Local-First Work Tracker for Windows
+External marketing agencies, motion designers, and creative AI workflows can draw from the following verified project assets and references:
 
-Most time trackers force you into manual start/stop stopwatch routines or upload your window titles to third-party cloud servers.
+### 8.1 Visual & Character Assets
+- **Vector Mascot Artwork**:
+  - Idle Companion: [assets/wiz-idle.svg](file:///H:/Projects/Wiz/assets/wiz-idle.svg)
+  - Working State: [assets/wiz-working.svg](file:///H:/Projects/Wiz/assets/wiz-working.svg)
+  - Notification State: [assets/wiz-notify.svg](file:///H:/Projects/Wiz/assets/wiz-notify.svg)
+  - Task Completion Celebration: [assets/wiz-complete.svg](file:///H:/Projects/Wiz/assets/wiz-complete.svg)
+  - Sleep State: [assets/wiz-sleep.svg](file:///H:/Projects/Wiz/assets/wiz-sleep.svg)
+- **Logos & App Icons**:
+  - Official Brand Logo: [assets/WizDesk Logo v1.jpeg](file:///H:/Projects/Wiz/assets/WizDesk%20Logo%20v1.jpeg)
+  - Windows Executable Icon: [assets/wizdesk.ico](file:///H:/Projects/Wiz/assets/wizdesk.ico)
+  - UI Icons Library: [assets/icons/](file:///H:/Projects/Wiz/assets/icons/)
+- **Bundled Typography**:
+  - Display Font: Space Grotesk (`assets/fonts/SpaceGrotesk-*.ttf`)
+  - Body & UI Font: Plus Jakarta Sans (`assets/fonts/PlusJakartaSans-*.ttf`)
 
-We built WizDesk to fix this:
-1. Autonomous Tracking: Interrogates your active window every 5s with built-in title sanitization.
-2. Desktop Companion: Wiz lives on your screen with cursor eye-tracking, companion mood states, and sound cues.
-3. Live Stopwatch & Custom Tags: Granular task tracking with persistent timers and tag filters.
-4. Obsidian Sync: Auto-generates structured daily work notes directly in your local Markdown vault.
-5. Zero Telemetry & Local AES-256: 100% offline, local SQLite, protected by Windows CredUI.
+### 8.2 Interactive Demonstrations & Media References
+- **Interactive System Architecture Map**: [docs/wizdesk-interactive-map.html](file:///H:/Projects/Wiz/docs/wizdesk-interactive-map.html)
+- **High-Resolution Architecture Screenshot**: [assets/screenshots/archify-system-design.png](file:///H:/Projects/Wiz/assets/screenshots/archify-system-design.png)
+- **Interactive Web Banner**: [docs/wizdesk-banner.html](file:///H:/Projects/Wiz/docs/wizdesk-banner.html)
+- **Motion Graphic Pacing Reference**: [scratch/instagram_1791512982158720p.mp4](file:///H:/Projects/Wiz/scratch/instagram_1791512982158720p.mp4) (Vertical companion animation reference illustrating character eye tracking, floating island docks, and session replay transitions)
 
-Free, open source, and available as a standalone Windows executable.
-Download v1.2.0: https://github.com/Lukog10/WizDesk/releases/tag/v1.2.0
-```
-
-### 8.2 Twitter / X Launch Thread Template
-- **Post 1 (Hook with Video)**: "You lose track of hours deep in flow. Where did your workday actually go? Meet Wiz: an autonomous desktop companion that tracks your focused work locally. Zero timers. Zero cloud. [Attach Motion Graphic Video]"
-- **Post 2 (The Mascot)**: "Wiz sits on your desktop, watches your cursor, reacts to your focus states, and celebrates when you crush tasks. Completely non-intrusive."
-- **Post 3 (Autonomous Tracking)**: "Every 5 seconds, WizDesk logs active windows and categorizes projects automatically. Sensitive tokens and banking URLs are sanitized on the spot."
-- **Post 4 (Obsidian Sync)**: "For Obsidian users: WizDesk compiles daily session logs, tasks, and notes into clean Markdown with frontmatter directly inside your vault."
-- **Post 5 (Security & Link)**: "100% free and open-source on Windows. Standalone .exe, no Python required. Download v1.2.0 on GitHub: https://github.com/Lukog10/WizDesk"
-
-### 8.3 LinkedIn Long-Form Post Template
-```text
-Why we stopped using cloud time trackers and built a local desktop companion.
-
-If you are a developer or creator, you know the friction:
-- You open an app to log hours, but forget to start the timer.
-- Or you install a tracker, only to realize it uploads every document title and browser tab to an external server.
-
-We wanted something better:
-- Autonomous: It watches window context every 5s so you stay in flow.
-- Companion-driven: A playful on-screen mascot that gives visual feedback and tracks your mouse cursor.
-- Local-first: 100% offline. AES-256 encrypted SQLite database with Windows Hello auth.
-- Knowledge-integrated: Auto-syncs daily recaps to your personal Obsidian vault.
-
-WizDesk v1.2.0 is now live and open source for Windows.
-Check out the repository and download the standalone release: https://github.com/Lukog10/WizDesk
-```
+### 8.3 Core Value Pillars for Campaign Messaging
+When structuring copy across channels (Product Hunt, Twitter/X, LinkedIn, Reddit, or technical blogs), campaigns should anchor to these six verified pillars:
+1. **Zero Manual Timers**: Passive 5-second active window polling eliminates forgotten timers and tracking anxiety.
+2. **Expressive Companion**: A desk mascot with real-time pupil tracking that reacts to user focus, celebration, and idle states.
+3. **Live Stopwatches & Tags**: Granular task management with live timers, subtask hierarchies, and custom color tags.
+4. **Local-First Zero Telemetry**: 100% offline, zero external API calls, zero analytics SDKs.
+5. **Hardware-Backed Encryption**: AES-256-GCM encrypted SQLite storage protected by Windows DPAPI and Windows CredUI / Windows Hello.
+6. **Native Obsidian Sync**: Direct unblocked Markdown synchronization into personal Obsidian vaults with frontmatter and checkboxes.
 
 ---
 
-## 9. Agency & AI Motion Design Creative Brief
-
-This creative brief is tailored for motion design agencies, video producers, and AI video generators creating promotional content for WizDesk.
-
-### 9.1 Core Motion Aesthetic
-- **Visual Style**: Clean dark tech aesthetic (`#0A0D12` backdrop), subtle ambient glow, frameless floating UI cards, crisp vector typography (Plus Jakarta Sans and Space Grotesk).
-- **Aspect Ratio**: 16:9 Landscape (1920x1080) for website hero and YouTube; adaptable to 9:16 Vertical (1080x1920) for Shorts/Reels.
-- **Duration**: 25 to 30 seconds.
-- **Audio Treatment**: Warm electronic ambient bed with subtle rhythmic accents, tactile UI pops, and a warm celebratory chime on task completion.
-
-### 9.2 Scene-by-Scene Storyboard Specification
-
-| Scene | Timestamp | Visual Action | On-Screen Text / VO | SFX / Audio |
-|---|---|---|---|---|
-| **Scene 1: The Friction** | 0.0s - 3.5s | Minimalist dark desktop. Digital clock accelerates. Browser tabs and terminal windows flash past. | "You lose track of hours deep in flow... Where did your workday actually go?" | Soft ticking tempo, low synth swell. |
-| **Scene 2: Meet Wiz** | 3.5s - 8.5s | Soft radial light illuminates the center. Wiz pops in (`wiz-idle.svg`). Pupils track a mouse cursor circling him; cursor boops his cheek, Wiz tilts with joy. | "Meet Wiz. Your autonomous desktop companion." | Tactile pop, soft character chirp. |
-| **Scene 3: Autonomous Tracking & Island** | 8.5s - 14.5s | User switches between VS Code and terminal. Wiz quietly logs focus in the corner. The floating Quick Bar Island docks at the screen top. | "He tracks your focused windows quietly in the background... without manual stopwatches." | Crisp window slide, subtle click. |
-| **Scene 4: Full Workspace Expansion** | 14.5s - 21.0s | The Island smoothly expands into the 920x680 QuickEntry workspace: tasks ticking with live stopwatches, tags, and donut charts. | "Tasks, live stopwatch timers, and project analytics. One hotkey away." | Smooth glass card expansion, ticking timer blips. |
-| **Scene 5: Privacy & Obsidian Sync** | 21.0s - 25.5s | Split card reveal: AES-256 local encryption shield on left, Obsidian daily note Markdown rendering on right. | "Zero telemetry. AES-256 encrypted at rest. Auto-synced to your Obsidian vault." | Deep security lock thud, paper slide SFX. |
-| **Scene 6: Celebration & Outro** | 25.5s - 30.0s | Task checkbox checked. Wiz transforms into celebration state (`wiz-complete.svg`) with confetti particles. Logo and GitHub URL settle. | "WizDesk. Free & open source on Windows. Download v1.2.0 on GitHub." | Harmonic celebration chime, fading warm synth bed. |
-
----
-
-## 10. Repository & Documentation Cross-References
+## 9. Repository & Documentation Cross-References
 
 - System Architecture Specification: [docs/CODEBASE_ARCHITECTURE.md](file:///H:/Projects/Wiz/docs/CODEBASE_ARCHITECTURE.md)
 - Interactive Archify System Map: [docs/wizdesk-interactive-map.html](file:///H:/Projects/Wiz/docs/wizdesk-interactive-map.html)
